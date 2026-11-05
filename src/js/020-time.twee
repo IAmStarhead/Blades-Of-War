@@ -79,8 +79,50 @@
     };
   }
 
+  /* ---------- Живое время ----------
+     Отдельный шаг «один игровой час» для хода времени без действия.
+     Отличие от advance(1) только в ответе: здесь сообщаем смену
+     суток — на это подписан интерфейс.
+     Второго владельца часов нет: и действие, и живое время идут
+     через advance(), поэтому час не удваивается. */
+  function tick(state) {
+    var before = {
+      day: state.time.day,
+      month: state.time.month,
+      year: state.time.year,
+      hour: state.time.hour
+    };
+    advance(state, 1);
+    return {
+      dayChanged: state.time.day !== before.day || state.time.month !== before.month || state.time.year !== before.year,
+      monthChanged: state.time.month !== before.month || state.time.year !== before.year,
+      hour: state.time.hour
+    };
+  }
+
+  /* Скорость хода: paused | 1x | 4x. Хранится в состоянии,
+     потому что это часть игры, а не оформления. */
+  var SCALES = ["paused", "1x", "4x"];
+
+  function setScale(state, scale) {
+    if (SCALES.indexOf(scale) === -1) { return state.time.scale; }
+    state.time.scale = scale;
+    return scale;
+  }
+
+  /* Сколько игровых часов проходит за одну реальную секунду. */
+  function hoursPerSecond(scale) {
+    if (scale === "1x") { return 1 / 3; }   /* час игры за 3 секунды */
+    if (scale === "4x") { return 1; }        /* час игры за секунду */
+    return 0;
+  }
+
   Bow.time = {
     advance: advance,
+    tick: tick,
+    setScale: setScale,
+    hoursPerSecond: hoursPerSecond,
+    SCALES: SCALES,
     format: format,
     seasonOf: seasonOf,
     isNight: isNight

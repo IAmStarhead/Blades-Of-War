@@ -22,6 +22,11 @@
       <span class="bow-tb-sep">·</span>
       <span class="bow-tb-money"><b id="bow-money">0</b> м.</span>
       <span id="bow-weather" class="bow-weather"></span>
+        <span class="bow-clock-controls" role="group" aria-label="Ход времени">
+          <button class="bow-clock-btn" data-act="clock" data-scale="paused" title="Время стоит">❙❙</button>
+          <button class="bow-clock-btn" data-act="clock" data-scale="1x" title="Обычный ход">▶</button>
+          <button class="bow-clock-btn" data-act="clock" data-scale="4x" title="Ускорить">▶▶</button>
+        </span>
     </div>
 
     <div class="bow-topbar-status" id="bow-topbar-status"></div>

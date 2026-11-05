@@ -235,6 +235,38 @@ body {
   font-style: italic;
 }
 
+/* Ход времени: три кнопки в шапке */
+.bow-clock-controls {
+  display: inline-flex;
+  gap: 2px;
+  margin-left: 4px;
+}
+
+.bow-clock-btn {
+  font-family: var(--bow-mono);
+  font-size: 0.6rem;
+  line-height: 1;
+  letter-spacing: -0.05em;
+  color: var(--bow-faint);
+  background: #141a1f;
+  border: 1px solid var(--bow-line-soft);
+  border-radius: 3px;
+  padding: 4px 5px;
+  min-width: 26px;
+  min-height: 24px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.bow-clock-btn:hover { color: var(--bow-silver); border-color: var(--bow-line); }
+
+.bow-clock-btn.bow-clock-on {
+  color: var(--bow-gold);
+  border-color: var(--bow-gold-dim);
+  background: #1e1c14;
+}
+
 /* Мини-полосы в шапке: видны всегда */
 .bow-topbar-status {
   display: flex;

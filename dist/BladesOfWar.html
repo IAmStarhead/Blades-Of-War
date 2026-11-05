@@ -341,6 +341,38 @@ body {
   font-style: italic;
 }
 
+/* Ход времени: три кнопки в шапке */
+.bow-clock-controls {
+  display: inline-flex;
+  gap: 2px;
+  margin-left: 4px;
+}
+
+.bow-clock-btn {
+  font-family: var(--bow-mono);
+  font-size: 0.6rem;
+  line-height: 1;
+  letter-spacing: -0.05em;
+  color: var(--bow-faint);
+  background: #141a1f;
+  border: 1px solid var(--bow-line-soft);
+  border-radius: 3px;
+  padding: 4px 5px;
+  min-width: 26px;
+  min-height: 24px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.bow-clock-btn:hover { color: var(--bow-silver); border-color: var(--bow-line); }
+
+.bow-clock-btn.bow-clock-on {
+  color: var(--bow-gold);
+  border-color: var(--bow-gold-dim);
+  background: #1e1c14;
+}
+
 /* Мини-полосы в шапке: видны всегда */
 .bow-topbar-status {
   display: flex;
@@ -2436,8 +2468,50 @@ body {
     };
   }
 
+  /* ---------- Живое время ----------
+     Отдельный шаг «один игровой час» для хода времени без действия.
+     Отличие от advance(1) только в ответе: здесь сообщаем смену
+     суток — на это подписан интерфейс.
+     Второго владельца часов нет: и действие, и живое время идут
+     через advance(), поэтому час не удваивается. */
+  function tick(state) {
+    var before = {
+      day: state.time.day,
+      month: state.time.month,
+      year: state.time.year,
+      hour: state.time.hour
+    };
+    advance(state, 1);
+    return {
+      dayChanged: state.time.day !== before.day || state.time.month !== before.month || state.time.year !== before.year,
+      monthChanged: state.time.month !== before.month || state.time.year !== before.year,
+      hour: state.time.hour
+    };
+  }
+
+  /* Скорость хода: paused | 1x | 4x. Хранится в состоянии,
+     потому что это часть игры, а не оформления. */
+  var SCALES = ["paused", "1x", "4x"];
+
+  function setScale(state, scale) {
+    if (SCALES.indexOf(scale) === -1) { return state.time.scale; }
+    state.time.scale = scale;
+    return scale;
+  }
+
+  /* Сколько игровых часов проходит за одну реальную секунду. */
+  function hoursPerSecond(scale) {
+    if (scale === "1x") { return 1 / 3; }   /* час игры за 3 секунды */
+    if (scale === "4x") { return 1; }        /* час игры за секунду */
+    return 0;
+  }
+
   Bow.time = {
     advance: advance,
+    tick: tick,
+    setScale: setScale,
+    hoursPerSecond: hoursPerSecond,
+    SCALES: SCALES,
     format: format,
     seasonOf: seasonOf,
     isNight: isNight
@@ -3894,6 +3968,16 @@ body {
 
     var w = $("bow-weather");
     if (w) { w.textContent = state.flags.weather || ""; }
+
+    /* Текущая скорость хода времени — видна, иначе непонятно,
+       идёт ли вообще время. */
+    var scale = state.time.scale || "paused";
+    var btns = document.querySelectorAll(".bow-clock-btn");
+    for (var i = 0; i < btns.length; i++) {
+      var on = btns[i].getAttribute("data-scale") === scale;
+      btns[i].classList.toggle("bow-clock-on", on);
+      btns[i].setAttribute("aria-pressed", on ? "true" : "false");
+    }
   }
 
   function renderNeeds(state) {
@@ -4353,6 +4437,14 @@ body {
     eat: function (el) { return Bow.adapter.act.eat(getState(), el.getAttribute("data-item")); },
     drink: function (el) { return Bow.adapter.act.drink(getState(), el.getAttribute("data-item")); },
     rest: function () { return Bow.adapter.act.rest(getState()); },
+    clock: function (el) {
+      var state = getState();
+      var scale = el.getAttribute("data-scale");
+      Bow.time.setScale(state, scale);
+      startClock();
+      return { ok: true, message: scale === "paused" ? "Время остановлено." :
+        scale === "1x" ? "Время идёт." : "Время идёт быстрее." };
+    },
     work: function (el) {
       return Bow.adapter.act.work(getState(), el.getAttribute("data-job"));
     },
@@ -4454,6 +4546,60 @@ body {
     el.disabled = false;
   }
 
+  /* ---------- Живое время ----------
+     Один таймер на всю игру. Он не двигает часы сам: только просит
+     Bow.time.tick() пройти один час через того же владельца времени,
+     что и действия. Поэтому ускорение не «дублирует» ход.
+     Пока панель или диалог открыты, время не идёт: игрок читает. */
+  var clockTimer = null;
+  var clockAccum = 0;
+
+  /* Правило одной строкой: время идёт, только если игрок не читает.
+     Вынесено отдельно, чтобы его можно было проверить тестом. */
+  function clockShouldRun(state) {
+    if (!state || !state.time) { return false; }
+    if (state.time.scale === "paused") { return false; }
+    if (state.dialog) { return false; }
+    if (Bow.ui.isDrawerOpen()) { return false; }
+    if (openPersonId) { return false; }
+    return true;
+  }
+
+  function stopClock() {
+    if (clockTimer) {
+      global.clearInterval(clockTimer);
+      clockTimer = null;
+    }
+    clockAccum = 0;
+  }
+
+  function startClock() {
+    stopClock();
+    var state = getState();
+    var scale = state.time.scale || "paused";
+    if (scale === "paused") { return; }
+
+    var perSecond = Bow.time.hoursPerSecond(scale);
+    if (!perSecond) { return; }
+
+    /* Тик раз в 500 мс: час на 1x — за 3 секунды, на 4x — за секунду. */
+    clockTimer = global.setInterval(function () {
+      var st = getState();
+      if (st.time.scale === "paused") { stopClock(); return; }
+
+      if (!clockShouldRun(st)) { return; }
+
+      clockAccum += Bow.time.hoursPerSecond(st.time.scale) * 0.5;
+      var steps = 0;
+      while (clockAccum >= 1 && steps < 6) {
+        clockAccum -= 1;
+        Bow.time.tick(st);
+        steps += 1;
+      }
+      if (steps > 0) { refresh(true); }
+    }, 500);
+  }
+
   /* ---------- Сохранения ---------- */
 
   function exportSave() {
@@ -4498,6 +4644,7 @@ body {
             : "Сохранение загружено."
         );
         refresh();
+        startClock();
       };
       reader.readAsText(file);
     });
@@ -4510,6 +4657,7 @@ body {
     vars().game.createdAt = Date.now();
     Bow.ui.setMessage("Новая игра начата. Прежний прогресс в памяти браузера перезаписан.");
     refresh();
+    startClock();
   }
 
   function loadAutosave() {
@@ -4537,6 +4685,7 @@ body {
     vars().game = result.state;
     Bow.ui.setMessage("Продолжаем с автосохранения.");
     refresh();
+    startClock();
   }
 
   /* Тихая проверка автосейва при старте: без сообщений игроку.
@@ -4560,6 +4709,9 @@ body {
   var api = {
     getState: getState,
     refresh: refresh,
+    clockShouldRun: clockShouldRun,
+    startClock: startClock,
+    stopClock: stopClock,
     exportSave: exportSave,
     importSave: importSave,
     restart: restart,
@@ -4637,6 +4789,7 @@ body {
     /* Отрисовка стартового экрана. */
     Bow.ui.setMessage("Осмотритесь. Здесь пока немного людей, но они настоящие.");
     refresh(true);
+    startClock();
   }
 
   if (document.readyState === "loading") {
@@ -4669,6 +4822,11 @@ body {
       &lt;span class=&quot;bow-tb-sep&quot;&gt;·&lt;/span&gt;
       &lt;span class=&quot;bow-tb-money&quot;&gt;&lt;b id=&quot;bow-money&quot;&gt;0&lt;/b&gt; м.&lt;/span&gt;
       &lt;span id=&quot;bow-weather&quot; class=&quot;bow-weather&quot;&gt;&lt;/span&gt;
+        &lt;span class=&quot;bow-clock-controls&quot; role=&quot;group&quot; aria-label=&quot;Ход времени&quot;&gt;
+          &lt;button class=&quot;bow-clock-btn&quot; data-act=&quot;clock&quot; data-scale=&quot;paused&quot; title=&quot;Время стоит&quot;&gt;❙❙&lt;/button&gt;
+          &lt;button class=&quot;bow-clock-btn&quot; data-act=&quot;clock&quot; data-scale=&quot;1x&quot; title=&quot;Обычный ход&quot;&gt;▶&lt;/button&gt;
+          &lt;button class=&quot;bow-clock-btn&quot; data-act=&quot;clock&quot; data-scale=&quot;4x&quot; title=&quot;Ускорить&quot;&gt;▶▶&lt;/button&gt;
+        &lt;/span&gt;
     &lt;/div&gt;
 
     &lt;div class=&quot;bow-topbar-status&quot; id=&quot;bow-topbar-status&quot;&gt;&lt;/div&gt;

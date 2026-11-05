@@ -394,6 +394,63 @@ function byAct(act, key) {
     return "достаток " + before.wealth + " → " + after.wealth + ", недовольство " + before.unrest + " → " + after.unrest;
   });
 
+  check("Живое время: есть кнопки паузы, 1x и 4x", () => {
+    const btns = doc().querySelectorAll(".bow-clock-btn");
+    eq(btns.length, 3, "кнопок хода времени");
+    const scales = [...btns].map((b) => b.getAttribute("data-scale"));
+    assert(scales.indexOf("paused") !== -1 && scales.indexOf("1x") !== -1 && scales.indexOf("4x") !== -1,
+      "нет одной из скоростей: " + scales.join(", "));
+    return scales.join(" / ");
+  });
+
+  check("Скорость хода времени — часть состояния и попадает в сохранение", () => {
+    const g = game();
+    g.time.scale = "paused";
+    click(doc().querySelector("[data-act='clock'][data-scale='4x']"));
+    eq(game().time.scale, "4x", "скорость после нажатия");
+    assert(doc().querySelector(".bow-clock-btn.bow-clock-on"), "активная скорость не подсвечена");
+
+    const text = win.Bow.save.serialize(game(), 1);
+    const back = win.Bow.save.deserialize(text);
+    eq(back.state.time.scale, "4x", "скорость после круга сохранения");
+
+    click(doc().querySelector("[data-act='clock'][data-scale='paused']"));
+    eq(game().time.scale, "paused", "пауза не включилась");
+    return "4x → сохранение → 4x → пауза";
+  });
+
+  check("Ход времени двигает часы через того же владельца, что и действия", () => {
+    const g = game();
+    const before = g.time.totalHours;
+    const res = win.Bow.time.tick(g);
+    eq(g.time.totalHours - before, 1, "часов за один тик");
+    assert(typeof res.dayChanged === "boolean", "тик не сообщает о смене суток");
+    return "один тик = один час";
+  });
+
+  check("Часы не идут, пока игрок читает диалог или панель", () => {
+    const g = game();
+    g.player.location = "tavern";
+    win.Bow.ui.setDrawer(false);
+
+    g.time.scale = "paused";
+    assert(!win.BowGame.clockShouldRun(g), "время идёт на паузе");
+
+    g.time.scale = "1x";
+    assert(win.BowGame.clockShouldRun(g), "время не идёт на 1x");
+
+    win.Bow.dialog.start(g, "person:sigi");
+    assert(!win.BowGame.clockShouldRun(g), "время идёт при открытом диалоге");
+    win.Bow.dialog.close(g);
+    assert(win.BowGame.clockShouldRun(g), "после закрытия диалога время не вернулось");
+
+    win.Bow.ui.setDrawer(true);
+    assert(!win.BowGame.clockShouldRun(g), "время идёт при открытой панели");
+    win.Bow.ui.setDrawer(false);
+    g.time.scale = "paused";
+    return "пауза, диалог и панель останавливают часы";
+  });
+
   check("Хороший разговор доходит до общины как молва", () => {
     const g = game();
     g.player.location = "tavern";

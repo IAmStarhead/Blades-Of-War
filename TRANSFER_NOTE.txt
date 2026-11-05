@@ -10,7 +10,7 @@
 КАК СОБИРАТЬ
 npm install
 npm run build     (.twee -> dist/BladesOfWar.html)
-npm run check     (78 автопроверок логики и интерфейса)
+npm run check     (82 автопроверки логики и интерфейса)
 npm run verify    (сборка + проверки)
 
 ГДЕ ЧТО МЕНЯТЬ
@@ -23,6 +23,7 @@ npm run verify    (сборка + проверки)
 Логотип                           -> assets/logo-192.png, встроен в CSS
 Работы и оплата                   -> src/js/005-data.twee (поле jobs у локаций)
 Логика труда и репутации          -> src/js/055-work.twee
+Живое время (таймер)              -> src/js/900-game.twee (startClock)
 Репутация в панели                -> src/js/110-ui.twee (renderOrgs)
 Выдвижная панель                  -> src/ui/900-styles.twee (.bow-drawer)
 Лента диалога                     -> src/js/110-ui.twee (renderDialog)

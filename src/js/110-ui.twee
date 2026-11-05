@@ -75,6 +75,16 @@
 
     var w = $("bow-weather");
     if (w) { w.textContent = state.flags.weather || ""; }
+
+    /* Текущая скорость хода времени — видна, иначе непонятно,
+       идёт ли вообще время. */
+    var scale = state.time.scale || "paused";
+    var btns = document.querySelectorAll(".bow-clock-btn");
+    for (var i = 0; i < btns.length; i++) {
+      var on = btns[i].getAttribute("data-scale") === scale;
+      btns[i].classList.toggle("bow-clock-on", on);
+      btns[i].setAttribute("aria-pressed", on ? "true" : "false");
+    }
   }
 
   function renderNeeds(state) {
