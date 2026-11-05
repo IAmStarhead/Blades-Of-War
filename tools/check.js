@@ -563,6 +563,106 @@ function byAct(act, key) {
     return "миграция применена";
   });
 
+  /* 8д. Значки, выдвижная панель, логотип */
+  check("Логотип встроен и является кнопкой", () => {
+    const styles = [...doc().querySelectorAll("style")].map((x) => x.textContent).join("\n");
+    assert(/--bow-logo:\s*url\("data:image\/png;base64,/.test(styles), "логотип не встроен в CSS");
+    const btn = doc().getElementById("bow-logo-btn");
+    assert(btn, "кнопки-логотипа нет");
+    eq(btn.tagName, "BUTTON", "логотип не кнопка");
+    return "логотип встроен, кнопка на месте";
+  });
+
+  check("Выдвижная панель закрыта при старте", () => {
+    const drawer = doc().getElementById("bow-drawer");
+    assert(drawer, "панели нет в разметке");
+    assert(!drawer.classList.contains("bow-drawer-open"), "панель открыта при старте");
+    eq(doc().getElementById("bow-logo-btn").getAttribute("aria-expanded"), "false", "aria-expanded");
+    return "закрыта";
+  });
+
+  check("Клик по логотипу открывает панель", () => {
+    click(doc().getElementById("bow-logo-btn"));
+    const drawer = doc().getElementById("bow-drawer");
+    assert(drawer.classList.contains("bow-drawer-open"), "панель не открылась");
+    eq(doc().getElementById("bow-logo-btn").getAttribute("aria-expanded"), "true", "aria-expanded");
+    return "открыта";
+  });
+
+  check("Клик по логотипу повторно закрывает панель", () => {
+    click(doc().getElementById("bow-logo-btn"));
+    const drawer = doc().getElementById("bow-drawer");
+    assert(!drawer.classList.contains("bow-drawer-open"), "панель не закрылась");
+    return "закрыта";
+  });
+
+  check("Затемнение закрывает панель", () => {
+    click(doc().getElementById("bow-logo-btn"));
+    assert(doc().getElementById("bow-drawer").classList.contains("bow-drawer-open"), "панель не открылась");
+    click(doc().getElementById("bow-scrim"));
+    assert(!doc().getElementById("bow-drawer").classList.contains("bow-drawer-open"), "затемнение не закрыло панель");
+    return "закрыта по клику на фон";
+  });
+
+  check("Значки разделов открывают панель", () => {
+    const railBtns = doc().querySelectorAll(".bow-rail-btn");
+    assert(railBtns.length >= 6, "значков меньше шести: " + railBtns.length);
+    const invBtn = doc().querySelector("[data-act='panel'][data-panel='inv']");
+    assert(invBtn, "значка «Вещи» нет");
+    click(invBtn);
+    assert(doc().getElementById("bow-drawer").classList.contains("bow-drawer-open"), "значок не открыл панель");
+    assert(invBtn.classList.contains("bow-rail-active"), "значок не подсвечен");
+    win.Bow.ui.setDrawer(false);
+    return railBtns.length + " значков";
+  });
+
+  check("Панель содержит все нужные разделы", () => {
+    const panels = doc().querySelectorAll("#bow-drawer .bow-dpanel");
+    assert(panels.length >= 5, "разделов меньше пяти: " + panels.length);
+    const text = doc().getElementById("bow-drawer").textContent;
+    ["Состояние", "Умения", "При себе", "Хроника", "Память игры"].forEach((name) => {
+      assert(text.indexOf(name) !== -1, "в панели нет раздела: " + name);
+    });
+    return panels.length + " разделов";
+  });
+
+  check("Сохранения вынесены в панель, а не в главное окно", () => {
+    const drawer = doc().getElementById("bow-drawer");
+    ["bow-btn-save", "bow-btn-load", "bow-btn-restart"].forEach((id) => {
+      const el = doc().getElementById(id);
+      assert(el, "нет кнопки " + id);
+      assert(drawer.contains(el), "кнопка " + id + " вне панели");
+    });
+    return "все кнопки сохранений в панели";
+  });
+
+  check("Мини-полосы состояния видны в шапке", () => {
+    const minis = doc().querySelectorAll("#bow-topbar-status .bow-mini");
+    eq(minis.length, 4, "количество мини-полос");
+    return minis.length + " мини-полосы";
+  });
+
+  check("Карточка жителя показывает его состояние (как в Kenshi)", () => {
+    const g = game();
+    g.player.location = "smithy";
+    win.BowGame.refresh(true);
+    click(doc().querySelector("[data-act='inspect']"));
+    const sheet = doc().getElementById("bow-sheet");
+    const text = sheet.textContent;
+    assert(/Состояние/.test(text), "нет блока состояния");
+    assert(/Здоровье/.test(text), "нет строки здоровья");
+    assert(/Бодрость/.test(text), "нет строки бодрости");
+    assert(/Наружность/.test(text), "нет наружности");
+    win.Bow.ui.renderPersonSheet(null);
+    return "состояние + наружность в карточке";
+  });
+
+  check("Панель не попадает в сохранение (это не игровое состояние)", () => {
+    const serialized = win.Bow.save.serialize(game(), Date.now());
+    assert(serialized.indexOf("drawerOpen") === -1, "состояние панели попало в сейв");
+    return "сейв чист";
+  });
+
   /* 9. Ошибки JS */
   check("За весь прогон не было ошибок JavaScript", () => {
     assert(jsdomErrors.length === 0, "ошибки: " + jsdomErrors.slice(0, 3).join(" | "));
@@ -572,10 +672,10 @@ function byAct(act, key) {
   /* 10. Мобильная вёрстка — проверяем то, что проверяемо без браузера */
   check("В CSS есть медиазапросы для планшета и телефона", () => {
     const styles = [...doc().querySelectorAll("style")].map((s) => s.textContent).join("\n");
-    assert(/@media \(max-width: 1100px\)/.test(styles), "нет медиазапроса для планшета");
+    assert(/@media \(max-width: 900px\)/.test(styles), "нет медиазапроса для планшета");
     assert(/@media \(max-width: 720px\)/.test(styles), "нет медиазапроса для телефона");
     assert(/prefers-reduced-motion/.test(styles), "нет поддержки reduced-motion");
-    return "1100px, 720px, reduced-motion";
+    return "900px, 720px, reduced-motion";
   });
 
   check("Тач-цели не мельче 34px", () => {

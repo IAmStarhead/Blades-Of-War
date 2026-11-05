@@ -34,6 +34,27 @@
       '</div>';
   }
 
+  /* Мини-полосы в шапке: состояние видно всегда, даже с закрытой панелью.
+     Это то, что владелец просил по образцу Kenshi: нажал на человека —
+     сразу видишь его состояние. */
+  function renderTopStatus(state) {
+    var box = $("bow-topbar-status");
+    if (!box) { return; }
+
+    var short = { health: "Здор.", hunger: "Сыт.", fatigue: "Бодр.", mood: "Дух" };
+    var n = state.player.needs;
+
+    box.innerHTML = Bow.needs.KEYS.map(function (k) {
+      var v = Math.round(n[k]);
+      var lvl = Bow.needs.level(n[k]);
+      return '<span class="bow-mini">' +
+        '<span>' + short[k] + '</span>' +
+        '<span class="bow-mini-bar"><i class="bow-mini-fill bow-fill bow-' + lvl + '" style="width:' + v + '%"></i></span>' +
+        '<b class="bow-mini-val bow-' + lvl + '">' + v + '</b>' +
+      '</span>';
+    }).join("");
+  }
+
   function renderHeader(state) {
     var el = $("bow-time");
     if (el) { el.textContent = Bow.time.format(state); }
@@ -228,6 +249,21 @@
       return '<div class="bow-appearance-row"><dt>' + APPERANCE_LABELS[k] + '</dt><dd>' + esc(app[k]) + '</dd></div>';
     }).join("");
 
+    /* Состояние собеседника — как в Kenshi: сразу видно, сыт ли,
+       здоров ли, насколько вымотан. Значения реальные, из симуляции. */
+    var needLabels = { health: "Здоровье", hunger: "Сытость", fatigue: "Бодрость", mood: "Расположение" };
+    var needRows = Bow.needs.KEYS.map(function (k) {
+      var v = Math.round(person.needs[k]);
+      var lvl = Bow.needs.level(person.needs[k]);
+      return '<div class="bow-need">' +
+        '<div class="bow-need-head">' +
+          '<span>' + needLabels[k] + '</span>' +
+          '<b class="bow-need-val bow-' + lvl + '">' + v + '</b>' +
+        '</div>' +
+        '<div class="bow-bar"><i class="bow-fill bow-' + lvl + '" style="width:' + v + '%"></i></div>' +
+      '</div>';
+    }).join("");
+
     var memoryRows = (person.memory || []).slice(-6).reverse().map(function (m) {
       return '<div class="bow-mem">' + esc(m.text) + '</div>';
     }).join("") || '<div class="bow-empty">Пока ничего не запомнил.</div>';
@@ -244,6 +280,7 @@
         (appearanceRows
           ? '<div class="bow-sheet-block"><h4>Наружность</h4><dl class="bow-appearance">' + appearanceRows + '</dl></div>'
           : '<div class="bow-sheet-block"><h4>Наружность</h4><div class="bow-empty">Описание ещё не написано.</div></div>') +
+        '<div class="bow-sheet-block"><h4>Состояние</h4><div class="bow-needs">' + needRows + '</div></div>' +
         '<div class="bow-sheet-block"><h4>Характер</h4>' + (traits || '<span class="bow-empty">—</span>') + '</div>' +
         '<div class="bow-sheet-block"><h4>Умения</h4><div class="bow-skills">' + skills + '</div></div>' +
         '<div class="bow-sheet-block"><h4>Помнит о вас</h4>' + memoryRows + '</div>' +
@@ -270,6 +307,7 @@
     lastSceneKey = sceneKey;
 
     renderHeader(state);
+    renderTopStatus(state);
     renderNeeds(state);
     renderSkills(state);
     renderInventory(state);
@@ -279,8 +317,44 @@
     renderDialog(state);
   }
 
+  /* ---------- Выдвижная панель ----------
+     Открытие/закрытие — визуальное состояние, не игровое.
+     Поэтому не попадает в сохранение. */
+  var drawerOpen = false;
+
+  function setDrawer(open) {
+    drawerOpen = !!open;
+    var drawer = $("bow-drawer");
+    var scrim = $("bow-scrim");
+    var btn = $("bow-logo-btn");
+
+    if (drawer) { drawer.classList.toggle("bow-drawer-open", drawerOpen); }
+    if (scrim) { scrim.classList.toggle("bow-scrim-on", drawerOpen); }
+    if (btn) { btn.setAttribute("aria-expanded", drawerOpen ? "true" : "false"); }
+    if (drawer) { drawer.setAttribute("aria-hidden", drawerOpen ? "false" : "true"); }
+    return drawerOpen;
+  }
+
+  function toggleDrawer() { return setDrawer(!drawerOpen); }
+
+  function isDrawerOpen() { return drawerOpen; }
+
+  /* Прокрутка панели к нужному разделу по клику на значок. */
+  function scrollDrawerTo(index) {
+    var drawer = $("bow-drawer");
+    if (!drawer) { return; }
+    var panels = drawer.querySelectorAll(".bow-dpanel");
+    if (panels[index]) {
+      panels[index].scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }
+
   Bow.ui = {
     render: render,
+    setDrawer: setDrawer,
+    toggleDrawer: toggleDrawer,
+    isDrawerOpen: isDrawerOpen,
+    scrollDrawerTo: scrollDrawerTo,
     renderPersonSheet: renderPersonSheet,
     setMessage: setMessage,
     esc: esc

@@ -70,6 +70,29 @@
     choose: function (el) {
       var idx = parseInt(el.getAttribute("data-choice"), 10);
       return Bow.adapter.act.choose(getState(), idx);
+    },
+    /* Значок раздела: открывает панель и прокручивает к нужному блоку. */
+    panel: function (el) {
+      var map = { state: 0, skills: 1, inv: 2, journal: 3, save: 4, people: -1 };
+      var idx = map[el.getAttribute("data-panel")];
+
+      if (idx === -1) {
+        /* «Люди» — не панель, а прокрутка к списку людей в сцене. */
+        var target = document.getElementById("bow-people");
+        if (target) { target.scrollIntoView({ behavior: "smooth", block: "center" }); }
+        return { ok: true, message: "" };
+      }
+
+      Bow.ui.setDrawer(true);
+      /* Даём панели выехать, затем прокручиваем. */
+      setTimeout(function () { Bow.ui.scrollDrawerTo(idx); }, 340);
+
+      document.querySelectorAll(".bow-rail-btn").forEach(function (b) {
+        b.classList.remove("bow-rail-active");
+      });
+      el.classList.add("bow-rail-active");
+
+      return { ok: true, message: "" };
     }
   };
 
@@ -254,8 +277,25 @@
 
     /* Escape закрывает окно. */
     document.addEventListener("keydown", function (event) {
-      if (event.key === "Escape" && openPersonId) { openSheet(null); }
+      if (event.key !== "Escape") { return; }
+      if (Bow.ui.isDrawerOpen()) { Bow.ui.setDrawer(false); return; }
+      if (openPersonId) { openSheet(null); }
     });
+
+    /* Логотип раскрывает и убирает панель. */
+    var logoBtn = document.getElementById("bow-logo-btn");
+    if (logoBtn) {
+      logoBtn.addEventListener("click", function (event) {
+        event.preventDefault();
+        Bow.ui.toggleDrawer();
+      });
+    }
+
+    /* Клик по затемнению закрывает панель. */
+    var scrim = document.getElementById("bow-scrim");
+    if (scrim) {
+      scrim.addEventListener("click", function () { Bow.ui.setDrawer(false); });
+    }
 
     var btnSave = document.getElementById("bow-btn-save");
     if (btnSave) { btnSave.addEventListener("click", exportSave); }
