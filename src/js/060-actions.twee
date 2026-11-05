@@ -36,15 +36,30 @@
       hours = Math.max(1, Math.round((from.travelHours + target.travelHours) / 2) + 1);
     }
 
+    var firstVisit = !state.visits[toKey];
     state.player.location = toKey;
+    state.visits[toKey] = (state.visits[toKey] || 0) + 1;
     state.stats.actionsTaken += 1;
 
     Bow.time.advance(state, hours);
 
-    Bow.journal.add(state, "Вы пришли: " + target.name + " (в пути " + hours + " ч.).", "move");
+    /* Погода пересчитывается при смене сцены: она часть атмосферы. */
+    state.flags.weather = Bow.events.weatherOf(state, Bow.adapter ? Bow.adapter.rng : Math.random);
+
+    /* Смена сцены помечается для затухания экрана (визуальная часть). */
+    state.flags.sceneChanged = (state.flags.sceneChanged || 0) + 1;
+
+    var arrival = firstVisit
+      ? "Вы впервые пришли: " + target.name + " (в пути " + hours + " ч.)."
+      : "Вы пришли: " + target.name + " (в пути " + hours + " ч.).";
+    Bow.journal.add(state, arrival, "move");
+
+    /* Атмосфера новой сцены — сразу, чтобы экран не был пустым. */
+    state.flags.ambience = Bow.events.ambience(state, Bow.adapter ? Bow.adapter.rng : Math.random);
+
     Bow.bus.emit("player:moved", { state: state, location: toKey, hours: hours });
 
-    return { ok: true, message: target.name, hours: hours };
+    return { ok: true, message: target.name, hours: hours, firstVisit: firstVisit };
   }
 
   /* ---------- Еда ---------- */

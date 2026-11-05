@@ -11,8 +11,30 @@
 
   /* Порядок применения миграций. Ключ — версия, ИЗ которой мигрируем. */
   var MIGRATIONS = {
-    /* Пример на будущее:
-       "0.0.2": function (state) { ...; state.version = "0.0.3"; return state; } */
+    /* 0.0.2 → 0.0.3: добавлены диалоги, визиты, погода.
+       Старые сохранения продолжают работать: недостающие поля
+       создаются, а не приводят к отказу загрузки. */
+    "0.0.2": function (state) {
+      if (!("dialog" in state)) { state.dialog = null; }
+      if (!Bow.util.isPlainObject(state.visits)) { state.visits = {}; }
+      if (!Bow.util.isPlainObject(state.flags)) { state.flags = {}; }
+      if (!("weather" in state.flags)) { state.flags.weather = null; }
+
+      /* Добавляем новые поля персонажам из данных, не теряя память. */
+      var fresh = Bow.state.create(Bow.data, state.seed || 1);
+      Object.keys(state.people || {}).forEach(function (id) {
+        var p = state.people[id];
+        var f = fresh.people[id];
+        if (!f) { return; }
+        if (!p.appearance) { p.appearance = f.appearance; }
+        if (!p.dialog) { p.dialog = f.dialog; }
+        if (!p.traits) { p.traits = f.traits; }
+        if (!p.lines) { p.lines = f.lines; }
+      });
+
+      state.version = "0.0.3";
+      return state;
+    }
   };
 
   function create(data, seed) {
@@ -55,6 +77,10 @@
       journal: [],
       events: [],
       flags: {},
+      /* Текущий разговор: { personId, nodeId, visited[], startedAt } */
+      dialog: null,
+      /* Счётчик визитов в локации — для сюжетных условий */
+      visits: {},
 
       stats: {
         hoursPlayed: 0,
@@ -79,6 +105,8 @@
         needs: Bow.util.clone(p.needs),
         traits: p.traits.slice(),
         about: p.about,
+        appearance: Bow.util.clone(p.appearance || {}),
+        dialog: Bow.util.clone(p.dialog || null),
         greet: p.greet,
         lines: p.lines.slice(),
         alive: true,
@@ -89,6 +117,14 @@
         talkedToday: 0
       };
     });
+
+    /* Отмечаем, что игрок уже здесь (для затухания и условий). */
+    state.visits[data.meta.startLocation] = 1;
+    /* Погода и атмосфера первой сцены. Считаются здесь, а не в UI:
+       это часть состояния и должна попадать в сохранение. */
+    var seedRng = Bow.rng.make(seed + 7);
+    state.flags.weather = Bow.events.weatherOf(state, seedRng);
+    state.flags.ambience = Bow.events.ambience(state, seedRng);
 
     /* Стартовая запись журнала — часть состояния, а не UI. */
     state.journal.push({
@@ -140,7 +176,11 @@
         });
       }
       need(Array.isArray(p.memory), "player.memory не массив");
+      need(Array.isArray(state.journal), "journal не массив");
     }
+
+    need(state.dialog === null || Bow.util.isPlainObject(state.dialog), "поле dialog повреждено");
+    need(Bow.util.isPlainObject(state.visits), "поле visits не объект");
 
     if (Bow.util.isPlainObject(state.people)) {
       Object.keys(state.people).forEach(function (id) {
@@ -150,6 +190,10 @@
           need(typeof n.name === "string", "у персонажа " + id + " нет имени");
           need(n.pron === "m" || n.pron === "f", "у персонажа " + id + " некорректный pron");
           need(typeof n.attitude === "number", "у персонажа " + id + " нет attitude");
+          need(n.appearance === null || Bow.util.isPlainObject(n.appearance),
+            "внешность персонажа " + id + " повреждена");
+          need(n.dialog === null || Bow.util.isPlainObject(n.dialog),
+            "диалог персонажа " + id + " повреждён");
         }
       });
     }

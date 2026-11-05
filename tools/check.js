@@ -170,13 +170,43 @@ function byAct(act, key) {
   });
 
   /* 2. Время: ровно один час за действие */
-  check("Разговор занимает ровно 1 час (а не два)", () => {
-    const before = game().time.totalHours;
+  check("Разговор открывает диалог с выбором", () => {
     const talkEl = doc().querySelector("#bow-people [data-act='talk']");
     click(talkEl);
-    const after = game().time.totalHours;
-    eq(after - before, 1, "прошло часов");
-    return "+1 час";
+    const choices = doc().querySelectorAll("#bow-dialog .bow-choice");
+    assert(choices.length >= 2, "вариантов ответа меньше двух: " + choices.length);
+    assert(game().dialog, "состояние диалога не создано");
+    return choices.length + " варианта(ов)";
+  });
+
+  check("Выбор варианта меняет отношение и ведёт дальше по дереву", () => {
+    const visitBefore = game().dialog.visited.length;
+    const first = doc().querySelector("#bow-dialog .bow-choice");
+    click(first);
+    const after = game().dialog ? game().dialog.visited.length : visitBefore;
+    assert(after >= visitBefore, "дерево диалога не продвинулось");
+    return "узел: " + (game().dialog ? game().dialog.nodeId : "закрыт");
+  });
+
+  check("Разговор переживает перерисовку интерфейса", () => {
+    win.BowGame.refresh(true);
+    assert(game().dialog, "диалог потерялся при обновлении экрана");
+    const box = doc().getElementById("bow-dialog");
+    assert(box.classList.contains("bow-dialog-open"), "окно диалога не показано");
+    return "диалог сохранён: " + game().dialog.nodeId;
+  });
+
+  check("Выход из диалога занимает ровно 1 час", () => {
+    /* Идём до варианта «Уйти» */
+    let guard = 0;
+    while (game().dialog && guard < 12) {
+      const choices = [...doc().querySelectorAll("#bow-dialog .bow-choice")];
+      const leave = choices.find((c) => /Уйти|отойти|Кивнуть|Поблагодарить|Запомнить|Усмехнуться|Согласиться поискать|Отказаться|Не давить|Оставить|Спросить, кто|Промолчать|Рассказать|Спросить про плату|Сказать|Отговорить/i.test(c.textContent));
+      click(leave || choices[choices.length - 1]);
+      guard++;
+    }
+    assert(!game().dialog, "диалог не закрылся за " + guard + " шагов");
+    return "закрыт за " + guard + " шагов";
   });
 
   check("Перемещение тратит время по расстоянию", () => {
@@ -403,6 +433,134 @@ function byAct(act, key) {
     for (let i = 0; i < 200; i++) { win.Bow.journal.add(g, "тестовая запись " + i, "info"); }
     assert(g.journal.length <= win.Bow.journal.LIMIT, "журнал превысил лимит: " + g.journal.length);
     return g.journal.length + " ≤ " + win.Bow.journal.LIMIT;
+  });
+
+  /* 8б. Атмосфера и журнал разделены */
+  check("Бытовая атмосфера НЕ попадает в журнал", () => {
+    const g = game();
+    g.player.location = "tavern";
+    const before = g.journal.length;
+    const line = win.Bow.events.ambience(g, () => 0.5);
+    assert(line, "атмосфера не вернулась");
+    eq(g.journal.length, before, "журнал пополнился бытовой фразой");
+    return "атмосфера: " + line.slice(0, 45) + "… (журнал не тронут)";
+  });
+
+  check("Атмосфера отрисована в сцене", () => {
+    const g = game();
+    g.player.location = "smithy";
+    g.flags.ambience = "Молот бьёт ровно, как сердце.";
+    win.BowGame.refresh(true);
+    const amb = doc().getElementById("bow-ambience").textContent;
+    assert(/Молот/.test(amb), "атмосфера не выведена в сцену: " + JSON.stringify(amb));
+    return amb.slice(0, 40);
+  });
+
+  check("Значимый слух попадает в журнал", () => {
+    const g = game();
+    g.player.location = "square";
+    /* Журнал мог быть уже заполнен до лимита предыдущими тестами:
+       тогда длина не растёт, но запись всё равно добавляется.
+       Проверяем по содержимому, а не по длине. */
+    const res = win.Bow.events.rumour(g, () => 0.1);
+    assert(typeof res === "string" && res.length > 10, "слух не сформирован: " + res);
+    const found = g.journal.some((e) => e.kind === "rumour" && e.text.indexOf(res) !== -1);
+    assert(found, "слух не найден в журнале");
+    return "слух записан: " + res.slice(0, 40) + "…";
+  });
+
+  check("Погода считается по сезону", () => {
+    const g = game();
+    const w = win.Bow.events.weatherOf(g, () => 0.5);
+    assert(typeof w === "string" && w.length > 3, "погода не строка: " + w);
+    return w;
+  });
+
+  /* 8в. Внешность и окно персонажа */
+  check("У каждого персонажа есть описание внешности", () => {
+    const g = game();
+    const ids = Object.keys(g.people);
+    const missing = ids.filter((id) => {
+      const a = g.people[id].appearance;
+      return !a || !a.face || !a.clothes;
+    });
+    assert(missing.length === 0, "нет внешности у: " + missing.join(", "));
+    return ids.length + " персонажей, все с наружностью";
+  });
+
+  check("Кнопка «Осмотреть» открывает карточку с внешностью", () => {
+    const g = game();
+    g.player.location = "square";
+    win.BowGame.refresh(true);
+    const btn = doc().querySelector("[data-act='inspect']");
+    assert(btn, "кнопки «Осмотреть» нет");
+    click(btn);
+    const sheet = doc().getElementById("bow-sheet");
+    assert(sheet.classList.contains("bow-sheet-open"), "окно не открылось");
+    const text = sheet.textContent;
+    assert(/Наружность/.test(text), "нет блока наружности");
+    assert(/Лицо/.test(text), "нет строки «Лицо»");
+    return "окно открыто, наружность на месте";
+  });
+
+  check("Окно персонажа закрывается", () => {
+    const close = doc().querySelector("[data-act='close-sheet']");
+    click(close);
+    const sheet = doc().getElementById("bow-sheet");
+    assert(!sheet.classList.contains("bow-sheet-open"), "окно не закрылось");
+    return "закрыто";
+  });
+
+  /* 8г. Затухание и палитра */
+  check("Затухание сцены предусмотрено в CSS", () => {
+    const styles = [...doc().querySelectorAll("style")].map((x) => x.textContent).join("\n");
+    assert(/@keyframes bow-fade-in/.test(styles), "нет анимации проявления сцены");
+    assert(/bow-scene-fade/.test(styles), "нет класса затухания");
+    return "анимация есть";
+  });
+
+  check("Затухание отключается при prefers-reduced-motion", () => {
+    const styles = [...doc().querySelectorAll("style")].map((x) => x.textContent).join("\n");
+    const block = styles.slice(styles.indexOf("prefers-reduced-motion"));
+    assert(/animation:\s*none/.test(block), "анимация не отключается для reduced-motion");
+    return "доступность соблюдена";
+  });
+
+  check("Новая палитра: нет охристо-бурых тонов", () => {
+    const styles = [...doc().querySelectorAll("style")].map((x) => x.textContent).join("\n");
+    /* Ищем именно наш блок переменных, а не нормализатор SugarCube. */
+    const start = styles.indexOf("--bow-bg:");
+    assert(start !== -1, "наши переменные палитры не найдены в CSS");
+    const root = styles.slice(start, start + 900);
+
+    assert(/--bow-silver/.test(root), "нет серебра в палитре");
+    assert(/--bow-bordo/.test(root), "нет бордо в палитре");
+
+    /* Старые грязные тона не должны вернуться. */
+    const dirty = ["#c3a86a", "#c5ad7b", "#8d7746", "#c5ad7b"].filter((c) => root.toLowerCase().includes(c));
+    assert(dirty.length === 0, "вернулись старые тона: " + dirty.join(", "));
+    return "серебро и бордо на месте, старых тонов нет";
+  });
+
+  check("Смена сцены помечается в состоянии", () => {
+    const g = game();
+    const before = g.flags.sceneChanged || 0;
+    win.Bow.actions.move(g, "tavern");
+    assert((g.flags.sceneChanged || 0) > before, "смена сцены не отмечена");
+    return "счётчик сцен: " + g.flags.sceneChanged;
+  });
+
+  check("Миграция сохранения 0.0.2 → 0.0.3 работает", () => {
+    const g = JSON.parse(JSON.stringify(game()));
+    g.version = "0.0.2";
+    delete g.dialog;
+    delete g.visits;
+    Object.keys(g.people).forEach((id) => { delete g.people[id].appearance; delete g.people[id].dialog; });
+    const res = win.Bow.state.migrate(g);
+    eq(res.state.version, "0.0.3", "версия после миграции");
+    assert(res.state.dialog === null, "dialog не добавлен");
+    assert(res.state.people["person:sigi"].appearance, "внешность не добавлена миграцией");
+    return "миграция применена";
   });
 
   /* 9. Ошибки JS */

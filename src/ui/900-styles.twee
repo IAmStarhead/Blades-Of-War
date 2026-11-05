@@ -6,31 +6,71 @@
    ============================================================ */
 
 :root {
-  --bow-bg:        #14130f;
-  --bow-bg-deep:   #0e0d0a;
-  --bow-panel:     #1c1a15;
-  --bow-panel-2:   #232019;
-  --bow-line:      #38322a;
-  --bow-line-soft: #2a251f;
+  /* Палитра: холодный камень, серебро, воронёная сталь, бордо.
+     Никаких охристо-бурых тонов, которые читаются как «грязные». */
 
-  --bow-text:      #ddd6c6;
-  --bow-dim:       #9a927f;
-  --bow-faint:     #6d6657;
+  --bow-bg:        #0f1215;   /* почти чёрный с холодным синим */
+  --bow-bg-deep:   #0a0c0e;
+  --bow-panel:     #161a1e;   /* камень в тени */
+  --bow-panel-2:   #1d2227;   /* камень на свету */
+  --bow-line:      #333d45;   /* шов кладки */
+  --bow-line-soft: #262e35;
 
-  --bow-brass:     #c3a86a;
-  --bow-brass-dim: #8d7746;
+  --bow-text:      #dbe1e6;   /* светлый холодный серый */
+  --bow-dim:       #939ca5;   /* камень светлее */
+  --bow-faint:     #68727a;   /* камень тёмнее */
 
-  --bow-good:      #8fa36b;
-  --bow-ok:        #b8a878;
-  --bow-low:       #c08c52;
-  --bow-crit:      #b25f52;
-  --bow-warm:      #a9b98a;
+  --bow-silver:    #c8d2da;   /* серебро — заголовки */
+  --bow-steel:     #7f929f;   /* воронёная сталь */
+
+  --bow-gold:      #c9a961;   /* латунь как акцент, дозированно */
+  --bow-gold-dim:  #8a7440;
+
+  --bow-bordo:     #7d2b33;   /* бордо — королевский акцент */
+  --bow-bordo-dim: #561d23;
+
+  --bow-good:      #6f9478;   /* мох — хорошо */
+  --bow-ok:        #a8b0a0;
+  --bow-low:       #c08b4e;   /* тёплый янтарь — предупреждение */
+  --bow-crit:      #b04a45;   /* ржавчина — опасно */
+
+  --bow-warm:      #8fae8a;
   --bow-cold:      #b0736a;
 
   --bow-mono: "Courier New", "Nimbus Mono PS", monospace;
   --bow-serif: Georgia, "Times New Roman", serif;
 
-  --bow-radius: 3px;
+  --bow-radius: 2px;
+}
+
+/* ============================================================
+   ЗАТУХАНИЕ СЦЕНЫ
+   При смене пассажа сцена гаснет и проявляется заново.
+   Реализовано на CSS-анимации, класс вешает интерфейс.
+   ============================================================ */
+@keyframes bow-fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes bow-veil {
+  0%   { opacity: 0.85; }
+  100% { opacity: 0; }
+}
+
+.bow-scene.bow-scene-fade {
+  animation: bow-fade-in 460ms ease-out both;
+}
+
+/* Короткая «завеса» поверх сцены — как закрывающийся и открывающийся
+   взгляд в темноте. Легкая, не мешает читать. */
+.bow-veil {
+  position: fixed;
+  inset: 0;
+  background: var(--bow-bg-deep);
+  pointer-events: none;
+  z-index: 40;
+  animation: bow-veil 380ms ease-out forwards;
 }
 
 /* --- Сброс внутри оболочки SugarCube --- */
@@ -83,8 +123,8 @@ body {
   place-items: center;
   width: 38px;
   height: 38px;
-  border: 1px solid var(--bow-brass-dim);
-  color: var(--bow-brass);
+  border: 1px solid var(--bow-steel);
+  color: var(--bow-silver);
   font-size: 18px;
   background: #1a1712;
 }
@@ -94,7 +134,7 @@ body {
   font-size: 1.18rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--bow-brass);
+  color: var(--bow-silver);
   font-weight: 600;
 }
 
@@ -121,7 +161,7 @@ body {
   margin-top: 3px;
 }
 
-.bow-head-sub b { color: var(--bow-brass); font-weight: 600; }
+.bow-head-sub b { color: var(--bow-silver); font-weight: 600; }
 
 /* --- Сетка --- */
 .bow-grid {
@@ -147,7 +187,7 @@ body {
   font-size: 0.66rem;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: var(--bow-brass-dim);
+  color: var(--bow-steel);
   font-weight: 600;
   border-bottom: 1px solid var(--bow-line-soft);
   padding-bottom: 7px;
@@ -222,7 +262,7 @@ body {
   padding: 4px 6px;
 }
 
-.bow-skill b { color: var(--bow-brass); }
+.bow-skill b { color: var(--bow-silver); }
 
 /* --- Инвентарь --- */
 .bow-inventory { display: flex; flex-direction: column; gap: 4px; }
@@ -268,7 +308,7 @@ body {
   margin: 0;
   font-size: 1.06rem;
   letter-spacing: 0.04em;
-  color: var(--bow-brass);
+  color: var(--bow-silver);
   font-weight: 600;
 }
 
@@ -293,7 +333,7 @@ body {
   border-top: 1px solid var(--bow-line-soft);
   font-family: var(--bow-mono);
   font-size: 0.76rem;
-  color: var(--bow-brass);
+  color: var(--bow-silver);
   white-space: pre-line;
 }
 
@@ -321,14 +361,14 @@ body {
 }
 
 .bow-btn:hover:not(:disabled) {
-  border-color: var(--bow-brass-dim);
-  color: var(--bow-brass);
+  border-color: var(--bow-steel);
+  color: var(--bow-silver);
 }
 
 .bow-btn:active:not(:disabled) { background: #12100c; }
 
 .bow-btn:focus-visible {
-  outline: 2px solid var(--bow-brass-dim);
+  outline: 2px solid var(--bow-steel);
   outline-offset: 2px;
 }
 
@@ -337,7 +377,7 @@ body {
   cursor: default;
 }
 
-.bow-btn-i { color: var(--bow-brass); margin-right: 6px; }
+.bow-btn-i { color: var(--bow-silver); margin-right: 6px; }
 
 .bow-btn-sm {
   display: block;
@@ -365,7 +405,7 @@ body {
   padding: 8px 9px;
   background: #17150f;
   border: 1px solid var(--bow-line-soft);
-  border-left: 2px solid var(--bow-brass-dim);
+  border-left: 2px solid var(--bow-steel);
   border-radius: var(--bow-radius);
   cursor: pointer;
   transition: border-color 0.15s, background 0.15s;
@@ -374,7 +414,7 @@ body {
 .bow-person:hover {
   background: #1e1b14;
   border-color: var(--bow-line);
-  border-left-color: var(--bow-brass);
+  border-left-color: var(--bow-silver);
 }
 
 .bow-person-name { font-size: 0.86rem; color: var(--bow-text); }
@@ -454,7 +494,7 @@ body {
 .bow-sheet-head h3 {
   margin: 0;
   font-size: 1.15rem;
-  color: var(--bow-brass);
+  color: var(--bow-silver);
   letter-spacing: 0.04em;
 }
 
@@ -495,7 +535,7 @@ body {
   font-size: 0.64rem;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: var(--bow-brass-dim);
+  color: var(--bow-steel);
 }
 
 .bow-tag {
@@ -553,7 +593,7 @@ body {
 .bow-trade-price {
   font-family: var(--bow-mono);
   font-size: 0.74rem;
-  color: var(--bow-brass);
+  color: var(--bow-silver);
   white-space: nowrap;
 }
 
@@ -570,7 +610,7 @@ body {
   cursor: pointer;
 }
 
-.bow-trade-btn:hover:not(:disabled) { border-color: var(--bow-brass-dim); color: var(--bow-brass); }
+.bow-trade-btn:hover:not(:disabled) { border-color: var(--bow-steel); color: var(--bow-silver); }
 .bow-trade-btn:disabled { opacity: 0.4; cursor: default; }
 
 /* --- Журнал --- */
@@ -611,11 +651,11 @@ body {
 
 .bow-kind-danger .bow-jtext { color: #c08a80; }
 .bow-kind-need .bow-jtext { color: var(--bow-low); }
-.bow-kind-trade .bow-jtext { color: var(--bow-brass); }
+.bow-kind-trade .bow-jtext { color: var(--bow-silver); }
 .bow-kind-talk .bow-jtext { color: #b6b09c; }
 .bow-kind-move .bow-jtext { color: var(--bow-faint); }
 .bow-kind-rumour .bow-jtext { color: #a9a084; font-style: italic; }
-.bow-kind-system .bow-jtext { color: var(--bow-brass); }
+.bow-kind-system .bow-jtext { color: var(--bow-silver); }
 
 /* --- Подвал --- */
 .bow-footer {
@@ -687,6 +727,131 @@ body {
 @media (max-width: 380px) {
   .bow-btn { flex: 1 1 100%; }
   .bow-trade-row { grid-template-columns: 1fr auto; }
+}
+
+/* ============================================================
+   ДИАЛОГ И ВНЕШНОСТЬ
+   ============================================================ */
+
+.bow-dialog { display: none; }
+
+.bow-dialog.bow-dialog-open {
+  display: block;
+}
+
+.bow-dialog-open {
+  border: 1px solid var(--bow-line);
+  border-left: 3px solid var(--bow-bordo);
+  background: linear-gradient(160deg, #1b2126, var(--bow-panel) 75%);
+  border-radius: var(--bow-radius);
+  padding: 14px 16px;
+  margin-bottom: 14px;
+}
+
+.bow-dialog-open.bow-dialog { display: block; }
+
+.bow-dialog-who {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  border-bottom: 1px solid var(--bow-line-soft);
+  padding-bottom: 8px;
+  margin-bottom: 10px;
+}
+
+.bow-dialog-who h3 {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--bow-silver);
+  letter-spacing: 0.05em;
+}
+
+.bow-dialog-who span {
+  font-family: var(--bow-mono);
+  font-size: 0.66rem;
+  color: var(--bow-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.bow-dialog-text {
+  font-size: 0.94rem;
+  line-height: 1.62;
+  color: var(--bow-text);
+  margin: 0 0 12px;
+}
+
+.bow-choices { display: flex; flex-direction: column; gap: 6px; }
+
+.bow-choice {
+  text-align: left;
+  cursor: pointer;
+  font-family: var(--bow-serif);
+  font-size: 0.86rem;
+  line-height: 1.45;
+  color: var(--bow-text);
+  background: #1a1f24;
+  border: 1px solid var(--bow-line-soft);
+  border-left: 2px solid var(--bow-steel);
+  border-radius: var(--bow-radius);
+  padding: 9px 12px;
+  min-height: 40px;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+
+.bow-choice:hover:not(:disabled) {
+  background: #212832;
+  border-left-color: var(--bow-bordo);
+  color: var(--bow-silver);
+}
+
+.bow-choice:disabled { opacity: 0.4; cursor: default; }
+
+.bow-choice-leave { border-left-color: var(--bow-line); color: var(--bow-dim); }
+
+/* --- Внешность --- */
+.bow-appearance {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+}
+
+.bow-appearance-row {
+  display: grid;
+  grid-template-columns: 92px 1fr;
+  gap: 10px;
+  font-size: 0.82rem;
+  padding: 3px 0;
+  border-bottom: 1px dotted var(--bow-line-soft);
+}
+
+.bow-appearance-row dt {
+  font-family: var(--bow-mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--bow-faint);
+  padding-top: 2px;
+}
+
+.bow-appearance-row dd { margin: 0; color: var(--bow-dim); }
+
+/* --- Атмосфера сцены --- */
+.bow-ambience {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--bow-line-soft);
+  font-style: italic;
+  font-size: 0.86rem;
+  color: var(--bow-faint);
+}
+
+.bow-weather {
+  font-family: var(--bow-mono);
+  font-size: 0.68rem;
+  color: var(--bow-steel);
+  letter-spacing: 0.06em;
 }
 
 /* --- Уважение к настройкам доступности --- */

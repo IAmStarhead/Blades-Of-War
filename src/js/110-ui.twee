@@ -1,14 +1,14 @@
 :: bow-ui [script]
 /* ============================================================
    BOW UI — отрисовка интерфейса поверх состояния.
-   Читает состояние и пишет в DOM. Ничего не решает про правила игры.
+   Читает состояние и пишет в DOM. Правил игры не решает.
    ============================================================ */
 (function (global) {
   "use strict";
 
   var Bow = global.Bow = global.Bow || {};
 
-  function $(id) { return document.getElementById(id); }
+  var $ = function (id) { return document.getElementById(id); };
 
   function esc(text) {
     return String(text)
@@ -18,22 +18,19 @@
       .replace(/"/g, "&quot;");
   }
 
-  /* Последнее сообщение для строки статуса: не модальное окно,
-     а спокойная строка — так игра не «выпрыгивает» на игрока. */
   var lastMessage = "";
-
   function setMessage(text) { lastMessage = text || ""; }
 
+  /* ---------- Потребности ---------- */
   function needBar(key, value) {
     var lvl = Bow.needs.level(value);
-    var pct = Math.round(value);
     return '' +
       '<div class="bow-need">' +
         '<div class="bow-need-head">' +
           '<span>' + esc(Bow.needs.label(key)) + '</span>' +
           '<b class="bow-need-val bow-' + lvl + '">' + Math.round(value) + '</b>' +
         '</div>' +
-        '<div class="bow-bar"><i class="bow-fill bow-' + lvl + '" style="width:' + pct + '%"></i></div>' +
+        '<div class="bow-bar"><i class="bow-fill bow-' + lvl + '" style="width:' + Math.round(value) + '%"></i></div>' +
       '</div>';
   }
 
@@ -42,7 +39,9 @@
     if (el) { el.textContent = Bow.time.format(state); }
 
     var season = $("bow-season");
-    if (season) { season.textContent = Bow.time.seasonOf(state) + " · " + Bow.data.meta.settlementName; }
+    if (season) {
+      season.textContent = Bow.time.seasonOf(state) + " · " + Bow.data.meta.settlementName;
+    }
 
     var money = $("bow-money");
     if (money) { money.textContent = state.player.money; }
@@ -52,6 +51,9 @@
       var loc = Bow.data.locations[state.player.location];
       where.textContent = loc ? loc.name : "—";
     }
+
+    var w = $("bow-weather");
+    if (w) { w.textContent = state.flags.weather || ""; }
   }
 
   function renderNeeds(state) {
@@ -66,8 +68,7 @@
     if (!box) { return; }
     var names = { combat: "Бой", trade: "Торг", survival: "Выживание", medicine: "Лечение", leadership: "Власть" };
     box.innerHTML = Object.keys(names).map(function (k) {
-      var v = state.player.skills[k] || 0;
-      return '<div class="bow-skill"><span>' + names[k] + '</span><b>' + v + '</b></div>';
+      return '<div class="bow-skill"><span>' + names[k] + '</span><b>' + (state.player.skills[k] || 0) + '</b></div>';
     }).join("");
   }
 
@@ -104,8 +105,6 @@
 
     box.innerHTML = people.map(function (p) {
       var tone = p.attitude >= 20 ? "warm" : p.attitude <= -20 ? "cold" : "neutral";
-      /* Кнопки «поговорить» и «осмотреть» — настоящие действия,
-         а не декоративная карточка. */
       return '<div class="bow-person">' +
         '<div class="bow-person-head">' +
           '<span class="bow-person-name">' + esc(p.name) + '</span>' +
@@ -124,7 +123,7 @@
     var box = $("bow-journal");
     if (!box) { return; }
 
-    box.innerHTML = Bow.journal.recent(state, 14).map(function (e) {
+    box.innerHTML = Bow.journal.recent(state, 16).map(function (e) {
       var hh = (e.hour < 10 ? "0" : "") + e.hour;
       return '<div class="bow-jrow bow-kind-' + esc(e.kind) + '">' +
         '<span class="bow-jtime">' + hh + ':00</span>' +
@@ -133,31 +132,82 @@
     }).join("");
   }
 
-  function renderScene(state) {
+  /* ---------- Сцена ----------
+     Здесь только описание места и атмосфера. Бытовые зарисовки
+     НЕ попадают в журнал: журнал — это история, а не фон. */
+  function renderScene(state, animate) {
     var loc = Bow.data.locations[state.player.location];
     var title = $("bow-loc-name");
     var sub = $("bow-loc-sub");
     var text = $("bow-loc-text");
+    var amb = $("bow-ambience");
+    var scene = $("bow-scene");
 
     if (title && loc) { title.textContent = loc.name; }
     if (sub && loc) { sub.textContent = loc.sub; }
     if (text && loc) {
       text.innerHTML = loc.desc.map(function (p) { return '<p>' + esc(p) + '</p>'; }).join("");
     }
+    if (amb) { amb.textContent = state.flags.ambience || ""; }
+
+    /* Затухание при смене сцены. */
+    if (animate && scene) {
+      scene.classList.remove("bow-scene-fade");
+      /* Перезапуск анимации: чтение offsetWidth сбрасывает состояние. */
+      void scene.offsetWidth;
+      scene.classList.add("bow-scene-fade");
+    }
 
     var res = $("bow-last");
     if (res) { res.textContent = lastMessage; }
   }
 
-  /* ---------- Окно персонажа ----------
-     Открывается по кнопке «Осмотреть». Данные только для чтения:
-     здесь ничего не меняется, чтобы не было «скрытых» действий. */
+  /* ---------- Диалог с выбором ---------- */
+  function renderDialog(state) {
+    var box = $("bow-dialog");
+    if (!box) { return; }
+
+    var current = Bow.dialog.currentNode(state);
+    if (!current) {
+      box.classList.remove("bow-dialog-open");
+      box.innerHTML = "";
+      return;
+    }
+
+    var p = current.person;
+    var choices = (current.node.choices || []).map(function (c, i) {
+      var cls = c.close ? "bow-choice bow-choice-leave" : "bow-choice";
+      return '<button class="' + cls + '" data-act="choose" data-choice="' + i + '">' +
+        esc(c.text) + '</button>';
+    }).join("");
+
+    box.innerHTML = '' +
+      '<div class="bow-dialog-who">' +
+        '<h3>' + esc(p.name) + '</h3>' +
+        '<span>' + esc(p.role) + ' · отношение ' + p.attitude + '</span>' +
+      '</div>' +
+      '<p class="bow-dialog-text">' + esc(current.node.text) + '</p>' +
+      '<div class="bow-choices">' + choices + '</div>';
+
+    box.classList.add("bow-dialog-open");
+  }
+
+  /* ---------- Окно персонажа с внешностью ---------- */
+  var APPERANCE_LABELS = {
+    height: "Рост",
+    build: "Телосложение",
+    face: "Лицо",
+    clothes: "Одежда",
+    marks: "Приметы"
+  };
+
   function renderPersonSheet(person) {
     var box = $("bow-sheet");
     if (!box) { return; }
 
     if (!person) {
       box.classList.remove("bow-sheet-open");
+      box.setAttribute("aria-hidden", "true");
       box.innerHTML = "";
       return;
     }
@@ -169,6 +219,13 @@
 
     var traits = (person.traits || []).map(function (t) {
       return '<span class="bow-tag">' + esc(t) + '</span>';
+    }).join("");
+
+    var app = person.appearance || {};
+    var appearanceRows = Object.keys(APPERANCE_LABELS).filter(function (k) {
+      return app[k];
+    }).map(function (k) {
+      return '<div class="bow-appearance-row"><dt>' + APPERANCE_LABELS[k] + '</dt><dd>' + esc(app[k]) + '</dd></div>';
     }).join("");
 
     var memoryRows = (person.memory || []).slice(-6).reverse().map(function (m) {
@@ -184,6 +241,9 @@
         '<div class="bow-sheet-sub">' + esc(person.role) + ' · ' + person.age + ' лет · ' +
           (person.pron === "f" ? "женщина" : "мужчина") + '</div>' +
         '<p class="bow-sheet-about">' + esc(person.about) + '</p>' +
+        (appearanceRows
+          ? '<div class="bow-sheet-block"><h4>Наружность</h4><dl class="bow-appearance">' + appearanceRows + '</dl></div>'
+          : '<div class="bow-sheet-block"><h4>Наружность</h4><div class="bow-empty">Описание ещё не написано.</div></div>') +
         '<div class="bow-sheet-block"><h4>Характер</h4>' + (traits || '<span class="bow-empty">—</span>') + '</div>' +
         '<div class="bow-sheet-block"><h4>Умения</h4><div class="bow-skills">' + skills + '</div></div>' +
         '<div class="bow-sheet-block"><h4>Помнит о вас</h4>' + memoryRows + '</div>' +
@@ -194,11 +254,20 @@
       '</div>';
 
     box.classList.add("bow-sheet-open");
+    box.setAttribute("aria-hidden", "false");
   }
 
-  function render(state) {
+  /* ---------- Отрисовка всего ---------- */
+  var lastSceneKey = null;
+
+  function render(state, options) {
     var app = $("bow-app");
     if (!app || !state) { return; }
+
+    var sceneKey = state.player.location + "|" + (state.flags.sceneChanged || 0);
+    var animate = !options || options.animate !== false;
+    var sceneChanged = lastSceneKey !== null && lastSceneKey !== sceneKey;
+    lastSceneKey = sceneKey;
 
     renderHeader(state);
     renderNeeds(state);
@@ -206,7 +275,8 @@
     renderInventory(state);
     renderPeople(state);
     renderJournal(state);
-    renderScene(state);
+    renderScene(state, animate && (sceneChanged || (options && options.forceFade)));
+    renderDialog(state);
   }
 
   Bow.ui = {

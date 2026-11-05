@@ -112,31 +112,71 @@ var LZString=function(){var r=String.fromCharCode,o="ABCDEFGHIJKLMNOPQRSTUVWXYZa
    ============================================================ */
 
 :root {
-  --bow-bg:        #14130f;
-  --bow-bg-deep:   #0e0d0a;
-  --bow-panel:     #1c1a15;
-  --bow-panel-2:   #232019;
-  --bow-line:      #38322a;
-  --bow-line-soft: #2a251f;
+  /* Палитра: холодный камень, серебро, воронёная сталь, бордо.
+     Никаких охристо-бурых тонов, которые читаются как «грязные». */
 
-  --bow-text:      #ddd6c6;
-  --bow-dim:       #9a927f;
-  --bow-faint:     #6d6657;
+  --bow-bg:        #0f1215;   /* почти чёрный с холодным синим */
+  --bow-bg-deep:   #0a0c0e;
+  --bow-panel:     #161a1e;   /* камень в тени */
+  --bow-panel-2:   #1d2227;   /* камень на свету */
+  --bow-line:      #333d45;   /* шов кладки */
+  --bow-line-soft: #262e35;
 
-  --bow-brass:     #c3a86a;
-  --bow-brass-dim: #8d7746;
+  --bow-text:      #dbe1e6;   /* светлый холодный серый */
+  --bow-dim:       #939ca5;   /* камень светлее */
+  --bow-faint:     #68727a;   /* камень тёмнее */
 
-  --bow-good:      #8fa36b;
-  --bow-ok:        #b8a878;
-  --bow-low:       #c08c52;
-  --bow-crit:      #b25f52;
-  --bow-warm:      #a9b98a;
+  --bow-silver:    #c8d2da;   /* серебро — заголовки */
+  --bow-steel:     #7f929f;   /* воронёная сталь */
+
+  --bow-gold:      #c9a961;   /* латунь как акцент, дозированно */
+  --bow-gold-dim:  #8a7440;
+
+  --bow-bordo:     #7d2b33;   /* бордо — королевский акцент */
+  --bow-bordo-dim: #561d23;
+
+  --bow-good:      #6f9478;   /* мох — хорошо */
+  --bow-ok:        #a8b0a0;
+  --bow-low:       #c08b4e;   /* тёплый янтарь — предупреждение */
+  --bow-crit:      #b04a45;   /* ржавчина — опасно */
+
+  --bow-warm:      #8fae8a;
   --bow-cold:      #b0736a;
 
   --bow-mono: "Courier New", "Nimbus Mono PS", monospace;
   --bow-serif: Georgia, "Times New Roman", serif;
 
-  --bow-radius: 3px;
+  --bow-radius: 2px;
+}
+
+/* ============================================================
+   ЗАТУХАНИЕ СЦЕНЫ
+   При смене пассажа сцена гаснет и проявляется заново.
+   Реализовано на CSS-анимации, класс вешает интерфейс.
+   ============================================================ */
+@keyframes bow-fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes bow-veil {
+  0%   { opacity: 0.85; }
+  100% { opacity: 0; }
+}
+
+.bow-scene.bow-scene-fade {
+  animation: bow-fade-in 460ms ease-out both;
+}
+
+/* Короткая «завеса» поверх сцены — как закрывающийся и открывающийся
+   взгляд в темноте. Легкая, не мешает читать. */
+.bow-veil {
+  position: fixed;
+  inset: 0;
+  background: var(--bow-bg-deep);
+  pointer-events: none;
+  z-index: 40;
+  animation: bow-veil 380ms ease-out forwards;
 }
 
 /* --- Сброс внутри оболочки SugarCube --- */
@@ -189,8 +229,8 @@ body {
   place-items: center;
   width: 38px;
   height: 38px;
-  border: 1px solid var(--bow-brass-dim);
-  color: var(--bow-brass);
+  border: 1px solid var(--bow-steel);
+  color: var(--bow-silver);
   font-size: 18px;
   background: #1a1712;
 }
@@ -200,7 +240,7 @@ body {
   font-size: 1.18rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--bow-brass);
+  color: var(--bow-silver);
   font-weight: 600;
 }
 
@@ -227,7 +267,7 @@ body {
   margin-top: 3px;
 }
 
-.bow-head-sub b { color: var(--bow-brass); font-weight: 600; }
+.bow-head-sub b { color: var(--bow-silver); font-weight: 600; }
 
 /* --- Сетка --- */
 .bow-grid {
@@ -253,7 +293,7 @@ body {
   font-size: 0.66rem;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: var(--bow-brass-dim);
+  color: var(--bow-steel);
   font-weight: 600;
   border-bottom: 1px solid var(--bow-line-soft);
   padding-bottom: 7px;
@@ -328,7 +368,7 @@ body {
   padding: 4px 6px;
 }
 
-.bow-skill b { color: var(--bow-brass); }
+.bow-skill b { color: var(--bow-silver); }
 
 /* --- Инвентарь --- */
 .bow-inventory { display: flex; flex-direction: column; gap: 4px; }
@@ -374,7 +414,7 @@ body {
   margin: 0;
   font-size: 1.06rem;
   letter-spacing: 0.04em;
-  color: var(--bow-brass);
+  color: var(--bow-silver);
   font-weight: 600;
 }
 
@@ -399,7 +439,7 @@ body {
   border-top: 1px solid var(--bow-line-soft);
   font-family: var(--bow-mono);
   font-size: 0.76rem;
-  color: var(--bow-brass);
+  color: var(--bow-silver);
   white-space: pre-line;
 }
 
@@ -427,14 +467,14 @@ body {
 }
 
 .bow-btn:hover:not(:disabled) {
-  border-color: var(--bow-brass-dim);
-  color: var(--bow-brass);
+  border-color: var(--bow-steel);
+  color: var(--bow-silver);
 }
 
 .bow-btn:active:not(:disabled) { background: #12100c; }
 
 .bow-btn:focus-visible {
-  outline: 2px solid var(--bow-brass-dim);
+  outline: 2px solid var(--bow-steel);
   outline-offset: 2px;
 }
 
@@ -443,7 +483,7 @@ body {
   cursor: default;
 }
 
-.bow-btn-i { color: var(--bow-brass); margin-right: 6px; }
+.bow-btn-i { color: var(--bow-silver); margin-right: 6px; }
 
 .bow-btn-sm {
   display: block;
@@ -471,7 +511,7 @@ body {
   padding: 8px 9px;
   background: #17150f;
   border: 1px solid var(--bow-line-soft);
-  border-left: 2px solid var(--bow-brass-dim);
+  border-left: 2px solid var(--bow-steel);
   border-radius: var(--bow-radius);
   cursor: pointer;
   transition: border-color 0.15s, background 0.15s;
@@ -480,7 +520,7 @@ body {
 .bow-person:hover {
   background: #1e1b14;
   border-color: var(--bow-line);
-  border-left-color: var(--bow-brass);
+  border-left-color: var(--bow-silver);
 }
 
 .bow-person-name { font-size: 0.86rem; color: var(--bow-text); }
@@ -560,7 +600,7 @@ body {
 .bow-sheet-head h3 {
   margin: 0;
   font-size: 1.15rem;
-  color: var(--bow-brass);
+  color: var(--bow-silver);
   letter-spacing: 0.04em;
 }
 
@@ -601,7 +641,7 @@ body {
   font-size: 0.64rem;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: var(--bow-brass-dim);
+  color: var(--bow-steel);
 }
 
 .bow-tag {
@@ -659,7 +699,7 @@ body {
 .bow-trade-price {
   font-family: var(--bow-mono);
   font-size: 0.74rem;
-  color: var(--bow-brass);
+  color: var(--bow-silver);
   white-space: nowrap;
 }
 
@@ -676,7 +716,7 @@ body {
   cursor: pointer;
 }
 
-.bow-trade-btn:hover:not(:disabled) { border-color: var(--bow-brass-dim); color: var(--bow-brass); }
+.bow-trade-btn:hover:not(:disabled) { border-color: var(--bow-steel); color: var(--bow-silver); }
 .bow-trade-btn:disabled { opacity: 0.4; cursor: default; }
 
 /* --- Журнал --- */
@@ -717,11 +757,11 @@ body {
 
 .bow-kind-danger .bow-jtext { color: #c08a80; }
 .bow-kind-need .bow-jtext { color: var(--bow-low); }
-.bow-kind-trade .bow-jtext { color: var(--bow-brass); }
+.bow-kind-trade .bow-jtext { color: var(--bow-silver); }
 .bow-kind-talk .bow-jtext { color: #b6b09c; }
 .bow-kind-move .bow-jtext { color: var(--bow-faint); }
 .bow-kind-rumour .bow-jtext { color: #a9a084; font-style: italic; }
-.bow-kind-system .bow-jtext { color: var(--bow-brass); }
+.bow-kind-system .bow-jtext { color: var(--bow-silver); }
 
 /* --- Подвал --- */
 .bow-footer {
@@ -793,6 +833,131 @@ body {
 @media (max-width: 380px) {
   .bow-btn { flex: 1 1 100%; }
   .bow-trade-row { grid-template-columns: 1fr auto; }
+}
+
+/* ============================================================
+   ДИАЛОГ И ВНЕШНОСТЬ
+   ============================================================ */
+
+.bow-dialog { display: none; }
+
+.bow-dialog.bow-dialog-open {
+  display: block;
+}
+
+.bow-dialog-open {
+  border: 1px solid var(--bow-line);
+  border-left: 3px solid var(--bow-bordo);
+  background: linear-gradient(160deg, #1b2126, var(--bow-panel) 75%);
+  border-radius: var(--bow-radius);
+  padding: 14px 16px;
+  margin-bottom: 14px;
+}
+
+.bow-dialog-open.bow-dialog { display: block; }
+
+.bow-dialog-who {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  border-bottom: 1px solid var(--bow-line-soft);
+  padding-bottom: 8px;
+  margin-bottom: 10px;
+}
+
+.bow-dialog-who h3 {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--bow-silver);
+  letter-spacing: 0.05em;
+}
+
+.bow-dialog-who span {
+  font-family: var(--bow-mono);
+  font-size: 0.66rem;
+  color: var(--bow-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.bow-dialog-text {
+  font-size: 0.94rem;
+  line-height: 1.62;
+  color: var(--bow-text);
+  margin: 0 0 12px;
+}
+
+.bow-choices { display: flex; flex-direction: column; gap: 6px; }
+
+.bow-choice {
+  text-align: left;
+  cursor: pointer;
+  font-family: var(--bow-serif);
+  font-size: 0.86rem;
+  line-height: 1.45;
+  color: var(--bow-text);
+  background: #1a1f24;
+  border: 1px solid var(--bow-line-soft);
+  border-left: 2px solid var(--bow-steel);
+  border-radius: var(--bow-radius);
+  padding: 9px 12px;
+  min-height: 40px;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+
+.bow-choice:hover:not(:disabled) {
+  background: #212832;
+  border-left-color: var(--bow-bordo);
+  color: var(--bow-silver);
+}
+
+.bow-choice:disabled { opacity: 0.4; cursor: default; }
+
+.bow-choice-leave { border-left-color: var(--bow-line); color: var(--bow-dim); }
+
+/* --- Внешность --- */
+.bow-appearance {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+}
+
+.bow-appearance-row {
+  display: grid;
+  grid-template-columns: 92px 1fr;
+  gap: 10px;
+  font-size: 0.82rem;
+  padding: 3px 0;
+  border-bottom: 1px dotted var(--bow-line-soft);
+}
+
+.bow-appearance-row dt {
+  font-family: var(--bow-mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--bow-faint);
+  padding-top: 2px;
+}
+
+.bow-appearance-row dd { margin: 0; color: var(--bow-dim); }
+
+/* --- Атмосфера сцены --- */
+.bow-ambience {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--bow-line-soft);
+  font-style: italic;
+  font-size: 0.86rem;
+  color: var(--bow-faint);
+}
+
+.bow-weather {
+  font-family: var(--bow-mono);
+  font-size: 0.68rem;
+  color: var(--bow-steel);
+  letter-spacing: 0.06em;
 }
 
 /* --- Уважение к настройкам доступности --- */
@@ -922,7 +1087,7 @@ body {
   Bow.data = {
 
     meta: {
-      version: "0.0.2",
+      version: "0.0.3",
       title: "Blades Of War",
       worldName: "Эдем · Королевство Хладных Ветров",
       /* ВНИМАНИЕ: поселение ниже — тестовое, придумано разработчиком
@@ -951,8 +1116,14 @@ body {
         type: "kingdom",
         short: "Хладные Ветры",
         ruler: "Норвинг IV",
+        seat: "Стужа-на-Тайге",
         desc: "Северное королевство среди стужи и тайги. Здесь не терпят слабость, интриги и коварство.",
-        laws: { slavery: "prohibited", heresy: "ignored", violence: "punished" }
+        laws: [
+          { key: "slavery", label: "Рабство", value: "запрещено" },
+          { key: "heresy", label: "Ересь", value: "не преследуется" },
+          { key: "violence", label: "Насилие", value: "наказуемо" },
+          { key: "oath", label: "Клятва вождю", value: "нерушима" }
+        ]
       },
       "org:brod": {
         id: "org:brod",
@@ -961,7 +1132,7 @@ body {
         short: "Брод",
         ruler: "староста Хаген",
         desc: "Небольшое поселение на тракте. Живёт с торговли мехом, солью и перевозок.",
-        laws: { slavery: "prohibited", heresy: "ignored", violence: "punished" }
+        laws: []
       }
     },
 
@@ -976,6 +1147,11 @@ body {
           "Площадь вымощена тёсаным камнем, между плитами пробивается ледяная крошка. Ветер гонит по камню солому и обрывки рогожи.",
           "Справа возвышается дощатый навес трактира, слева — торговые лавки. У колодца переминаются двое возчиков, лошади выдыхают пар."
         ],
+        ambience: [
+          "Возчик у колодца поправляет упряжь и что-то говорит лошади вполголоса.",
+          "С площади видно, как над крышами стоит дым — ровный, без ветра, к морозу.",
+          "Мимо проходит женщина с коромыслом, вода в ведрах подёрнута коркой льда."
+        ],
         trades: ["bread", "salt", "fur", "rope"],
         people: ["sigi", "liva"]
       },
@@ -987,6 +1163,12 @@ body {
         desc: [
           "Низкий потолок, тёмные балки, запах дыма и варёной репы. Над очагом висит вырезанный из дерева олень с треснувшим рогом.",
           "За стойкой протирает кружки хозяйка. Пара возчиков играет в кости у окна, негромко и без азарта."
+        ],
+        ambience: [
+          "Огонь в очаге щёлкает, и на миг тени на стенах вытягиваются до потолка.",
+          "За дальним столом двое возчиков спорят о дороге — тихо, чтобы не привлекать хозяйку.",
+          "С потолка тянет сквозняком. Кто-то прикрыл дверь неплотно, и она дышит.",
+          "Пахнет мокрой шерстью и печёным хлебом."
         ],
         trades: ["stew", "ale", "bread"],
         people: ["sigi", "tarn"]
@@ -1000,6 +1182,11 @@ body {
           "Жар и грохот. Горн раздут до белого, на наковальне лежит заготовка ножа. Стены увешаны клещами и старыми подковами.",
           "Хозяин работает молча. Он не любит, когда его отвлекают, но цену за работу называет честно."
         ],
+        ambience: [
+          "Молот бьёт ровно, как сердце. Между ударами слышно, как гудит воздух в мехах.",
+          "На полу — слой окалины и стружки. Она хрустит под ногами, как снег.",
+          "Искры улетают в темноту и гаснут, не долетая до стены."
+        ],
         trades: ["knife", "rope", "tool"],
         people: ["tarn"]
       },
@@ -1012,6 +1199,11 @@ body {
           "Здесь кончаются дворы и начинается мокрая земля. Плетни стоят криво, за ними — сараи и поленницы.",
           "Следы на снегу ведут к частоколу, а от него — в тайгу. Кто-то ходил этой дорогой недавно."
         ],
+        ambience: [
+          "Где-то за сараями лает собака — коротко, дважды, и замолкает.",
+          "Из трубы крайней избы идёт дым, но окна тёмные. Хозяева либо спят, либо их нет.",
+          "Ветер приносит запах мокрой коры — значит, кто-то недавно рубил дрова за околицей."
+        ],
         trades: [],
         people: ["bror"]
       },
@@ -1023,6 +1215,11 @@ body {
         desc: [
           "Тайга дышит сыростью и смолой. Ветки смыкаются над головой, свет пробивается серыми полосами.",
           "Дальше в глубину идти без лыж и без провожатого не стоит: здесь легко обойти круг и не вернуться."
+        ],
+        ambience: [
+          "Снег на ветках держится тяжело. Где-то в глубине срывается пласт — глухой хлопок, и снова тишина.",
+          "На снегу — цепочка следов. Она уходит в чащу и не возвращается.",
+          "Тайга не шумит. Она слушает."
         ],
         trades: [],
         people: ["bror"]
@@ -1041,23 +1238,68 @@ body {
       tool:   { id: "item:tool",   name: "Инструмент",      weight: 1.8, base: 22, desc: "Клещи и молоток кузнечной работы." }
     },
 
-    /* ---------- Персонажи ---------- */
-    /* pron: m — мужской, f — женский. Текст обращений строится из этого поля,
-       а не задаётся вручную, поэтому ошибок «она» про мужчину здесь нет. */
+    /* ---------- Персонажи ----------
+       pron: m/f — пол. Текст обращений строится из этого поля.
+       appearance — статичное описание наружности (не симуляция).
+       dialog — дерево разговора: узлы с текстом и выбором.     */
     people: [
       {
         key: "sigi", id: "person:sigi", name: "Сигрид", age: 46, pron: "f",
         role: "трактирщица", location: "tavern", org: "org:brod",
         skills: { combat: 8, trade: 52, survival: 30, medicine: 18, leadership: 34 },
         needs: { health: 82, hunger: 68, fatigue: 55, mood: 61 },
-        traits: ["практичная", "памятливая", "не любит долги"],
-        about: "Держит трактир «Хромой олень» уже девятнадцать лет. Знает, кто в округе чем дышит, и помнит каждую unpaid кружку пива.",
+        traits: ["практичная", "памятливая", "не любит долгов"],
+        about: "Держит трактир «Хромой олень» уже девятнадцать лет. Знает, кто в округе чем дышит, и помнит каждую неоплаченную кружку пива.",
+        appearance: {
+          height: "среднего роста",
+          build: "плотная, с привычкой к тяжёлой работе",
+          face: "обветренное лицо, светлые волосы убраны под тёмный платок",
+          clothes: "шерстяное платье цвета старого вина, поверх — фартук в муке",
+          marks: "на левом предплечье старый ожог от печной заслонки"
+        },
         greet: "Сигрид вытирает руки о полотенце и смотрит на вас без спешки. Она оценивает не человека, а его кошель.",
         lines: [
           "«На севере не спрашивают, откуда ты. Спрашивают, чем заплатишь».",
           "«Возчики говорят, на тракте за Бродом второй раз видели волчьи следы. Только слишком крупные для волка».",
           "«Купишь похлёбку — расскажу, что слышала от солевого обоза»."
-        ]
+        ],
+        dialog: {
+          root: {
+            text: "Сигрид ставит кружку, но не наливает. «Сначала скажи, чем заплатишь. Или что принесло тебя в Брод».",
+            choices: [
+              { text: "Спросить про трактовую дорогу", goto: "road", attitude: 1 },
+              { text: "Спросить о ней самой", goto: "self", attitude: 2 },
+              { text: "Уйти", close: true }
+            ]
+          },
+          road: {
+            text: "«Обоз с солью вышел три дня назад и до сих пор не вернулся. Возчики говорят про следы за частоколом. Я говорю: либо волки, либо кто похуже».",
+            choices: [
+              { text: "Спросить, кто может быть похуже", goto: "worse", attitude: 1 },
+              { text: "Поблагодарить и отойти", close: true, attitude: 1 }
+            ]
+          },
+          worse: {
+            text: "«Люди. Всегда люди. Волк не станет резать мешки с солью и оставлять их на дороге».",
+            choices: [
+              { text: "Запомнить это", close: true, attitude: 1, journal: "Сигрид считает, что солевой обоз пропал не из-за волков." }
+            ]
+          },
+          self: {
+            text: "«Девятнадцать лет держу этот трактир. Мужа забрала лихорадка, сын ушёл на юг и не пишет. Вот и всё, что обо мне нужно знать».",
+            choices: [
+              { text: "Сказать, что это тяжело", close: true, attitude: 2 },
+              { text: "Спросить, не нужна ли помощь", goto: "help", attitude: 3 }
+            ]
+          },
+          help: {
+            text: "«Помощь? Принеси мне весть о солевом обозе. Тогда и поговорим по-человечески».",
+            choices: [
+              { text: "Согласиться поискать вести", close: true, attitude: 3, journal: "Сигрид просит узнать, что случилось с солевым обозом." },
+              { text: "Отказаться", close: true, attitude: -1 }
+            ]
+          }
+        }
       },
       {
         key: "tarn", id: "person:tarn", name: "Тарн", age: 38, pron: "m",
@@ -1066,12 +1308,55 @@ body {
         needs: { health: 88, hunger: 62, fatigue: 48, mood: 44 },
         traits: ["молчаливый", "упрямый", "честный в работе"],
         about: "Пришёл в Брод десять лет назад с войны и остался. Кует всё, от гвоздей до наконечников, и не любит разговаривать о прошлом.",
+        appearance: {
+          height: "высокий, под потолок кузницы",
+          build: "широкоплечий, с руками тяжелее, чем кажется по виду",
+          face: "тёмная борода с проседью, глаза светлые и спокойные",
+          clothes: "кожаный фартук, прожжённый в нескольких местах, рубаха без ворота",
+          marks: "правая рука в старых ожогах, мизинец и безымянный покалечены"
+        },
         greet: "Тарн не поднимает глаз от наковальни. Он ждёт, пока вы скажете, зачем пришли.",
         lines: [
           "«Железо не врёт. Люди врут».",
           "«Нож тебе не нужен, если не умеешь им работать. Возьми лучше топор».",
           "«В прошлом месяце кто-то ночью вынес из кузни клещи. Нашёл я их у частокола»."
-        ]
+        ],
+        dialog: {
+          root: {
+            text: "Тарн опускает молот, но не выпускает рукоять. «Говори быстро. Железо ждать не будет».",
+            choices: [
+              { text: "Спросить про работу", goto: "work", attitude: 1 },
+              { text: "Спросить про войну", goto: "war", attitude: 1 },
+              { text: "Уйти", close: true }
+            ]
+          },
+          work: {
+            text: "«Нужны гвозди, подковы, клинки. Платят мало, работы много. Хочешь — приходи, руки всегда нужны».",
+            choices: [
+              { text: "Спросить, сколько стоит нож", goto: "price", attitude: 1 },
+              { text: "Уйти", close: true }
+            ]
+          },
+          price: {
+            text: "«Пятнадцать монет. Дешевле не отдам — сталь не вода, её не зачерпнёшь».",
+            choices: [
+              { text: "Кивнуть и отойти", close: true, attitude: 1 }
+            ]
+          },
+          war: {
+            text: "«Был на юге, воевал. Вернулся без двух пальцев и без охоты говорить об этом».",
+            choices: [
+              { text: "Не давить на него", close: true, attitude: 2 },
+              { text: "Спросить, с кем воевал", goto: "war2", attitude: -1 }
+            ]
+          },
+          war2: {
+            text: "«С теми же, с кем и все. Север с югом не делит ничего, кроме дорог и кладбищ».",
+            choices: [
+              { text: "Оставить тему", close: true }
+            ]
+          }
+        }
       },
       {
         key: "liva", id: "person:liva", name: "Лива", age: 19, pron: "f",
@@ -1080,12 +1365,42 @@ body {
         needs: { health: 94, hunger: 76, fatigue: 39, mood: 72 },
         traits: ["любопытная", "доверчивая", "хочет уехать на юг"],
         about: "Дочь торговца припасами. Считает, что жизнь в Броде слишком мала для неё, и говорит об этом вслух.",
+        appearance: {
+          height: "невысокая, тонкая",
+          build: "худая, с острыми плечами под тёплой накидкой",
+          face: "русые волосы выбиваются из-под клетчатого платка, глаза серые и быстрые",
+          clothes: "накидка из овечьей шерсти, под ней простое платье с заплатой на локте",
+          marks: "чернильное пятно на пальце — переписывала накладные за отцом"
+        },
         greet: "Лива откладывает в сторону связку сушёной рыбы и смотрит на вас с живым интересом.",
         lines: [
           "«Вы ведь не здешний? Расскажите, что за Бродом. Только правду, а не как возчики».",
           "«Отец говорит, на юге города в три раза больше. Я бы уехала, если бы было с кем».",
           "«Сигрид думает, что я ничего не замечаю. А я замечаю»."
-        ]
+        ],
+        dialog: {
+          root: {
+            text: "Лива откладывает рыбу и вытирает руки. «Вы ведь не здешний? Расскажите, что за Бродом».",
+            choices: [
+              { text: "Рассказать о дороге", goto: "road", attitude: 1 },
+              { text: "Спросить, чего она сама хочет", goto: "dream", attitude: 2 },
+              { text: "Уйти", close: true }
+            ]
+          },
+          road: {
+            text: "«Правда? А я думала, там всё так же: снег, снег, ещё снег и возчики с обмороженными носами».",
+            choices: [
+              { text: "Усмехнуться", close: true, attitude: 1 }
+            ]
+          },
+          dream: {
+            text: "«Я хочу на юг. Там города в три раза больше, и никто не знает, чья ты дочь. Здесь все знают».",
+            choices: [
+              { text: "Сказать, что это смело", close: true, attitude: 2 },
+              { text: "Отговорить: дорога опасна", close: true, attitude: -1 }
+            ]
+          }
+        }
       },
       {
         key: "bror", id: "person:bror", name: "Брор", age: 57, pron: "m",
@@ -1094,12 +1409,55 @@ body {
         needs: { health: 66, hunger: 58, fatigue: 62, mood: 37 },
         traits: ["нелюдимый", "осторожный", "знает тайгу"],
         about: "Живёт на околице, промышляет охотой. В поселение заходит редко и разговаривает ещё реже.",
+        appearance: {
+          height: "сухой и жилистый",
+          build: "узкий в плечах, но с цепкой хваткой",
+          face: "седой, борода короткая, глаза выцветшие, как старое дерево",
+          clothes: "меховая куртка, сшитая из разных шкур, и валенки с обмоткой",
+          marks: "старый шрам через левую бровь, след когтя"
+        },
         greet: "Брор стоит у поленницы с топором в руке. Он не опускает топор и не отводит взгляда.",
         lines: [
           "«В тайгу без провожатого не ходи. Там три дня — и ты уже не помнишь, откуда шёл».",
           "«Следы за частоколом не мои. Я своих следов не путаю».",
           "«Хочешь шкуру — приноси соль. Соль здесь дороже монеты»."
-        ]
+        ],
+        dialog: {
+          root: {
+            text: "Брор держит топор опущенным, но не убирает. «Чего надо?»",
+            choices: [
+              { text: "Спросить о следах за частоколом", goto: "traces", attitude: 1 },
+              { text: "Спросить о тайге", goto: "forest", attitude: 1 },
+              { text: "Уйти", close: true }
+            ]
+          },
+          traces: {
+            text: "«Следы не мои. Я своих не путаю. И не волчьи — волк так лапу не ставит, он её бережёт».",
+            choices: [
+              { text: "Спросить, кто тогда", goto: "who", attitude: 1 },
+              { text: "Промолчать", close: true }
+            ]
+          },
+          who: {
+            text: "«Кто-то, кто хочет, чтобы его не нашли. Пока не найдёшь — не суйся в тайгу один».",
+            choices: [
+              { text: "Поблагодарить за предупреждение", close: true, attitude: 2, journal: "Брор предупредил: в тайгу одному не ходить." }
+            ]
+          },
+          forest: {
+            text: "«В тайге три дня — и ты уже не помнишь, откуда шёл. Провожатый нужен. Плата — соль или шкура».",
+            choices: [
+              { text: "Спросить про плату", goto: "pay", attitude: 1 },
+              { text: "Уйти", close: true }
+            ]
+          },
+          pay: {
+            text: "«Соль. Здесь соль дороже монеты. Принесёшь мешочек — поговорим».",
+            choices: [
+              { text: "Кивнуть", close: true, attitude: 1 }
+            ]
+          }
+        }
       }
     ],
 
@@ -1123,7 +1481,6 @@ body {
     /* ---------- Правила потребностей ---------- */
     needsRules: {
       perHour: { hunger: -1.6, fatigue: -1.1, mood: -0.3 },
-      /* Порог, ниже которого начинаются последствия */
       hungerLow: 20,
       fatigueLow: 15,
       healthPenalty: { hunger: -1.4, fatigue: -0.6, both: -2.4 },
@@ -1145,8 +1502,30 @@ body {
 
   /* Порядок применения миграций. Ключ — версия, ИЗ которой мигрируем. */
   var MIGRATIONS = {
-    /* Пример на будущее:
-       "0.0.2": function (state) { ...; state.version = "0.0.3"; return state; } */
+    /* 0.0.2 → 0.0.3: добавлены диалоги, визиты, погода.
+       Старые сохранения продолжают работать: недостающие поля
+       создаются, а не приводят к отказу загрузки. */
+    "0.0.2": function (state) {
+      if (!("dialog" in state)) { state.dialog = null; }
+      if (!Bow.util.isPlainObject(state.visits)) { state.visits = {}; }
+      if (!Bow.util.isPlainObject(state.flags)) { state.flags = {}; }
+      if (!("weather" in state.flags)) { state.flags.weather = null; }
+
+      /* Добавляем новые поля персонажам из данных, не теряя память. */
+      var fresh = Bow.state.create(Bow.data, state.seed || 1);
+      Object.keys(state.people || {}).forEach(function (id) {
+        var p = state.people[id];
+        var f = fresh.people[id];
+        if (!f) { return; }
+        if (!p.appearance) { p.appearance = f.appearance; }
+        if (!p.dialog) { p.dialog = f.dialog; }
+        if (!p.traits) { p.traits = f.traits; }
+        if (!p.lines) { p.lines = f.lines; }
+      });
+
+      state.version = "0.0.3";
+      return state;
+    }
   };
 
   function create(data, seed) {
@@ -1189,6 +1568,10 @@ body {
       journal: [],
       events: [],
       flags: {},
+      /* Текущий разговор: { personId, nodeId, visited[], startedAt } */
+      dialog: null,
+      /* Счётчик визитов в локации — для сюжетных условий */
+      visits: {},
 
       stats: {
         hoursPlayed: 0,
@@ -1213,6 +1596,8 @@ body {
         needs: Bow.util.clone(p.needs),
         traits: p.traits.slice(),
         about: p.about,
+        appearance: Bow.util.clone(p.appearance || {}),
+        dialog: Bow.util.clone(p.dialog || null),
         greet: p.greet,
         lines: p.lines.slice(),
         alive: true,
@@ -1223,6 +1608,14 @@ body {
         talkedToday: 0
       };
     });
+
+    /* Отмечаем, что игрок уже здесь (для затухания и условий). */
+    state.visits[data.meta.startLocation] = 1;
+    /* Погода и атмосфера первой сцены. Считаются здесь, а не в UI:
+       это часть состояния и должна попадать в сохранение. */
+    var seedRng = Bow.rng.make(seed + 7);
+    state.flags.weather = Bow.events.weatherOf(state, seedRng);
+    state.flags.ambience = Bow.events.ambience(state, seedRng);
 
     /* Стартовая запись журнала — часть состояния, а не UI. */
     state.journal.push({
@@ -1274,7 +1667,11 @@ body {
         });
       }
       need(Array.isArray(p.memory), "player.memory не массив");
+      need(Array.isArray(state.journal), "journal не массив");
     }
+
+    need(state.dialog === null || Bow.util.isPlainObject(state.dialog), "поле dialog повреждено");
+    need(Bow.util.isPlainObject(state.visits), "поле visits не объект");
 
     if (Bow.util.isPlainObject(state.people)) {
       Object.keys(state.people).forEach(function (id) {
@@ -1284,6 +1681,10 @@ body {
           need(typeof n.name === "string", "у персонажа " + id + " нет имени");
           need(n.pron === "m" || n.pron === "f", "у персонажа " + id + " некорректный pron");
           need(typeof n.attitude === "number", "у персонажа " + id + " нет attitude");
+          need(n.appearance === null || Bow.util.isPlainObject(n.appearance),
+            "внешность персонажа " + id + " повреждена");
+          need(n.dialog === null || Bow.util.isPlainObject(n.dialog),
+            "диалог персонажа " + id + " повреждён");
         }
       });
     }
@@ -1763,15 +2164,30 @@ body {
       hours = Math.max(1, Math.round((from.travelHours + target.travelHours) / 2) + 1);
     }
 
+    var firstVisit = !state.visits[toKey];
     state.player.location = toKey;
+    state.visits[toKey] = (state.visits[toKey] || 0) + 1;
     state.stats.actionsTaken += 1;
 
     Bow.time.advance(state, hours);
 
-    Bow.journal.add(state, "Вы пришли: " + target.name + " (в пути " + hours + " ч.).", "move");
+    /* Погода пересчитывается при смене сцены: она часть атмосферы. */
+    state.flags.weather = Bow.events.weatherOf(state, Bow.adapter ? Bow.adapter.rng : Math.random);
+
+    /* Смена сцены помечается для затухания экрана (визуальная часть). */
+    state.flags.sceneChanged = (state.flags.sceneChanged || 0) + 1;
+
+    var arrival = firstVisit
+      ? "Вы впервые пришли: " + target.name + " (в пути " + hours + " ч.)."
+      : "Вы пришли: " + target.name + " (в пути " + hours + " ч.).";
+    Bow.journal.add(state, arrival, "move");
+
+    /* Атмосфера новой сцены — сразу, чтобы экран не был пустым. */
+    state.flags.ambience = Bow.events.ambience(state, Bow.adapter ? Bow.adapter.rng : Math.random);
+
     Bow.bus.emit("player:moved", { state: state, location: toKey, hours: hours });
 
-    return { ok: true, message: target.name, hours: hours };
+    return { ok: true, message: target.name, hours: hours, firstVisit: firstVisit };
   }
 
   /* ---------- Еда ---------- */
@@ -1918,89 +2334,233 @@ body {
   });
 
 })(typeof window !== "undefined" ? window : this);/* ============================================================
-   BOW EVENTS — происшествия в мире.
-   Принцип: у события есть причина. Часть событий — следствие
-   состояния (голод, ночь, чужое место), а не чистый случай.
+   BOW DIALOG — разговоры с выбором ответа.
+   Дерево диалога лежит в данных персонажа (dialog).
+   Состояние разговора хранится в состоянии игры, чтобы
+   переход в другую сцену его не терял.
    ============================================================ */
 (function (global) {
   "use strict";
 
   var Bow = global.Bow = global.Bow || {};
 
-  /* Таблица «причинных» событий: проверяются по порядку,
-     первое подходящее срабатывает. Каждая запись:
-     id, условие(state, rng) -> bool, вес (шанс), текст, журнал(да/нет). */
+  function node(person, nodeId) {
+    if (!person || !person.dialog) { return null; }
+    return person.dialog[nodeId] || null;
+  }
+
+  /* Начать разговор: возвращает первый узел. */
+  function start(state, personId) {
+    var person = state.people[personId];
+    if (!person || !person.alive) { return { ok: false, message: "Здесь никого нет." }; }
+    if (person.location !== state.player.location) {
+      return { ok: false, message: person.name + " сейчас в другом месте." };
+    }
+    if (!person.dialog) {
+      return { ok: false, message: person.name + " не расположен к разговору." };
+    }
+
+    var root = node(person, "root");
+    if (!root) { return { ok: false, message: "Не о чем говорить." }; }
+
+    state.dialog = {
+      personId: personId,
+      nodeId: "root",
+      visited: ["root"],
+      startedAt: state.time.totalHours
+    };
+
+    /* Первый разговор за день считается за встречу: время идёт один раз. */
+    person.memory.push({
+      kind: "talk",
+      text: "Разговаривал(а) с " + state.player.name + " (" + Bow.time.format(state) + ").",
+      weight: 1,
+      totalHours: state.time.totalHours
+    });
+    Bow.util.trim(person.memory, 40);
+    person.talkedToday += 1;
+    state.stats.talksMade += 1;
+    state.stats.actionsTaken += 1;
+
+    Bow.journal.add(state, "Начался разговор: " + person.name + ".", "talk");
+
+    return {
+      ok: true,
+      node: root,
+      personId: personId,
+      name: person.name,
+      message: person.name + ": разговор начат."
+    };
+  }
+
+  /* Выбрать вариант ответа. Возвращает либо следующий узел,
+     либо признак закрытия разговора. */
+  function choose(state, choiceIndex) {
+    var d = state.dialog;
+    if (!d) { return { ok: false, message: "Разговор не начат." }; }
+
+    var person = state.people[d.personId];
+    if (!person) { return { ok: false, message: "Собеседник исчез." }; }
+
+    var current = node(person, d.nodeId);
+    if (!current || !current.choices) { return { ok: false, message: "Ответить нечего." }; }
+
+    var choice = current.choices[choiceIndex];
+    if (!choice) { return { ok: false, message: "Такого варианта нет." }; }
+
+    /* Отношение меняется сразу: выбор — это поступок, а не текст. */
+    if (typeof choice.attitude === "number") {
+      person.attitude = Bow.util.clamp(person.attitude + choice.attitude, -100, 100);
+      if (choice.attitude !== 0) {
+        person.memory.push({
+          kind: "dialog",
+          text: (choice.attitude > 0 ? "Остался доволен разговором: " : "Остался недоволен разговором: ") +
+                (choice.journal || choice.text),
+          weight: Math.abs(choice.attitude),
+          totalHours: state.time.totalHours
+        });
+        Bow.util.trim(person.memory, 40);
+      }
+    }
+
+    /* Значимая реплика попадает в журнал — бытовые уходят в атмосферу. */
+    if (choice.journal) {
+      Bow.journal.add(state, person.name + ": " + choice.journal, "talk");
+    }
+
+    if (choice.close) {
+      state.dialog = null;
+      Bow.time.advance(state, 1);
+      return {
+        ok: true,
+        closed: true,
+        message: "Разговор окончен. Отношение " + person.name + ": " + person.attitude + "."
+      };
+    }
+
+    var next = node(person, choice.goto);
+    if (!next) {
+      state.dialog = null;
+      return { ok: true, closed: true, message: "Разговор окончен." };
+    }
+
+    d.nodeId = choice.goto;
+    if (d.visited.indexOf(choice.goto) === -1) { d.visited.push(choice.goto); }
+
+    return {
+      ok: true,
+      node: next,
+      personId: d.personId,
+      name: person.name,
+      message: person.name + ": " + choice.text
+    };
+  }
+
+  function close(state) {
+    state.dialog = null;
+    return { ok: true, closed: true, message: "Вы отошли." };
+  }
+
+  function currentNode(state) {
+    var d = state.dialog;
+    if (!d) { return null; }
+    var person = state.people[d.personId];
+    var n = node(person, d.nodeId);
+    if (!n) { return null; }
+    return { node: n, personId: d.personId, name: person.name, person: person };
+  }
+
+  Bow.dialog = {
+    start: start,
+    choose: choose,
+    close: close,
+    currentNode: currentNode
+  };
+
+})(typeof window !== "undefined" ? window : this);/* ============================================================
+   BOW EVENTS — атмосфера сцены и значимые события.
+
+   ВАЖНОЕ РАЗДЕЛЕНИЕ (исправление по замечанию владельца):
+   - АТМОСФЕРА (ambience) — бытовые зарисовки места. Идут в сцену,
+     в журнал НЕ пишутся. Иначе хроника забивается «кто-то сидит
+     за столом».
+   - СОБЫТИЕ (event) — то, что случилось ИМЕННО С ВАМИ или важно
+     для мира. Идёт в журнал, потому что это часть истории.
+   - У ГЛАВНЫХ событий есть причина. Чистый случай — только
+     для погоды и мелочей.
+   ============================================================ */
+(function (global) {
+  "use strict";
+
+  var Bow = global.Bow = global.Bow || {};
+
+  /* --- Атмосфера: не журнал, только сцена --- */
+  function ambience(state, rng) {
+    var loc = Bow.data.locations[state.player.location];
+    if (!loc || !loc.ambience || loc.ambience.length === 0) { return null; }
+
+    /* Не повторять предыдущую фразу подряд. */
+    var pool = loc.ambience.filter(function (line) { return line !== state.flags.lastAmbience; });
+    if (pool.length === 0) { pool = loc.ambience; }
+
+    var line = Bow.rng.pick(rng || Math.random, pool);
+    state.flags.lastAmbience = line;
+    return line;
+  }
+
+  /* Погода — единственное, что может быть чистым случаем.
+     Пока это описательная погода; механического влияния нет,
+     и это честно: не выдаём её за работающую систему сезонов. */
+  var WEATHER = {
+    winter: ["сухой мороз", "низкая метель", "ясно и стыло", "сырой ветер с реки"],
+    spring: ["оттепель", "мелкий дождь", "ветрено", "туман к вечеру"],
+    summer: ["тёплый день", "душно", "гроза собирается", "ягодный ветер"],
+    autumn: ["мокрая морось", "первый иней", "сильный ветер", "низкое небо"]
+  };
+
+  function weatherOf(state, rng) {
+    var season = Bow.time.seasonOf(state);
+    var key = { "Зима": "winter", "Весна": "spring", "Лето": "summer", "Осень": "autumn" }[season] || "winter";
+    return Bow.rng.pick(rng || Math.random, WEATHER[key]);
+  }
+
+  /* --- События: только то, что касается вас или мира --- */
   var CAUSED = [
     {
       id: "night-forest",
       when: function (s) { return s.player.location === "forest" && Bow.time.isNight(s); },
-      chance: 0.55,
+      chance: 0.5,
       text: "В темноте между стволами что-то хрустит. Не ветер: ветер здесь не идёт по кругу.",
       kind: "danger"
     },
     {
-      id: "night-anywhere",
-      when: function (s) { return Bow.time.isNight(s) && s.player.location !== "tavern"; },
-      chance: 0.3,
-      text: "Холод пробирается под одежду. Ночь на севере коротка, но зла.",
-      kind: "environment"
-    },
-    {
       id: "hungry",
       when: function (s) { return s.player.needs.hunger < 20; },
-      chance: 0.6,
+      chance: 0.55,
       text: "Живот сводит от голода. Мысли становятся короче и злее.",
       kind: "need"
     },
     {
       id: "tired",
       when: function (s) { return s.player.needs.fatigue < 15; },
-      chance: 0.5,
+      chance: 0.45,
       text: "Ноги тяжелеют. Вы ловите себя на том, что стоите и смотрите в одну точку.",
       kind: "need"
     },
     {
-      id: "market-rumour",
-      when: function (s) { return s.player.location === "square"; },
-      chance: 0.28,
-      text: "У колодца возчики спорят о следах за частоколом. Говорят, след слишком велик для волка.",
-      kind: "rumour"
-    },
-    {
-      id: "tavern-talk",
-      when: function (s) { return s.player.location === "tavern"; },
-      chance: 0.25,
-      text: "За соседним столом кто-то тихо считает дни до солевого обоза.",
-      kind: "ambient"
-    },
-    {
-      id: "smithy-work",
-      when: function (s) { return s.player.location === "smithy"; },
-      chance: 0.22,
-      text: "Тарн бросает заготовку в воду. Пар шипит, и на миг в кузнице становится тихо.",
-      kind: "ambient"
-    },
-    {
-      id: "outskirts-traces",
-      when: function (s) { return s.player.location === "outskirts"; },
-      chance: 0.3,
-      text: "На снегу у частокола — следы. Кто-то стоял здесь и смотрел в сторону тайги.",
-      kind: "rumour"
+      id: "cold-exposed",
+      when: function (s) { return Bow.time.isNight(s) && s.player.location === "outskirts"; },
+      chance: 0.35,
+      text: "Ночью на околице холод забирается под одежду. Здесь негде согреться.",
+      kind: "environment"
     }
   ];
 
-  /* Настроение: событие может поднять или испортить расположение духа. */
-  var MOOD_EFFECT = {
-    danger: -4,
-    need: -2,
-    environment: -1,
-    rumour: 1,
-    ambient: 0
-  };
+  var MOOD_EFFECT = { danger: -4, need: -2, environment: -1 };
 
   function roll(state, rng) {
-    var candidates = CAUSED.filter(function (e) { return e.when(state, rng); });
-    if (candidates.length === 0) { return null; }
+    rng = rng || Math.random;
+    var candidates = CAUSED.filter(function (e) { return e.when(state); });
 
     for (var i = 0; i < candidates.length; i++) {
       var c = candidates[i];
@@ -2016,22 +2576,38 @@ body {
     return null;
   }
 
-  /* Проверка после каждого действия игрока и после каждого часа пути.
-     В прототипе — не чаще одного события за действие. */
+  /* Слух: попадает в журнал, потому что это сведения, а не фон. */
+  var RUMOURS = [
+    "У колодца возчики спорят о следах за частоколом. Говорят, след слишком велик для волка.",
+    "Кто-то клянётся, что видел ночью огонь в тайге. Другой говорит, что это был месяц.",
+    "Старуха с околицы говорит: солевой обоз пропал не сам. Но кто её слушает."
+  ];
+
+  function rumour(state, rng) {
+    if (state.player.location !== "square" && state.player.location !== "tavern") { return null; }
+    if ((rng || Math.random)() > 0.35) { return null; }
+    var text = Bow.rng.pick(rng || Math.random, RUMOURS);
+    Bow.journal.add(state, "Слух: " + text, "rumour");
+    return text;
+  }
+
   function afterAction(state, rng) {
     return roll(state, rng);
   }
 
+  /* После перехода: смена места — повод для слуха, но не для
+     случайного события «из воздуха». */
   function afterMove(state, rng) {
-    /* После перехода шанс выше: дорога — источник новостей. */
-    var hit = roll(state, rng);
-    if (hit) { return hit; }
-    return null;
+    rumour(state, rng);
+    return roll(state, rng);
   }
 
   Bow.events = {
     afterAction: afterAction,
     afterMove: afterMove,
+    ambience: ambience,
+    weatherOf: weatherOf,
+    rumour: rumour,
     table: CAUSED
   };
 
@@ -2191,8 +2767,13 @@ body {
       return res;
     },
     talk: function (state, id) {
-      var res = Bow.actions.talk(state, id);
-      if (res.ok) { Bow.events.afterAction(state, rng); }
+      /* Разговор — это диалог с выбором; узлы дерева лежат в данных. */
+      return Bow.dialog.start(state, id);
+    },
+    choose: function (state, index) {
+      var res = Bow.dialog.choose(state, index);
+      if (res.ok && res.closed) { Bow.events.afterAction(state, rng); }
+      if (res.ok) { Bow.needs.ensure(state.player); }
       return res;
     },
     buy: function (state, key, qty) {
@@ -2216,14 +2797,14 @@ body {
 
 })(typeof window !== "undefined" ? window : this);/* ============================================================
    BOW UI — отрисовка интерфейса поверх состояния.
-   Читает состояние и пишет в DOM. Ничего не решает про правила игры.
+   Читает состояние и пишет в DOM. Правил игры не решает.
    ============================================================ */
 (function (global) {
   "use strict";
 
   var Bow = global.Bow = global.Bow || {};
 
-  function $(id) { return document.getElementById(id); }
+  var $ = function (id) { return document.getElementById(id); };
 
   function esc(text) {
     return String(text)
@@ -2233,22 +2814,19 @@ body {
       .replace(/"/g, "&quot;");
   }
 
-  /* Последнее сообщение для строки статуса: не модальное окно,
-     а спокойная строка — так игра не «выпрыгивает» на игрока. */
   var lastMessage = "";
-
   function setMessage(text) { lastMessage = text || ""; }
 
+  /* ---------- Потребности ---------- */
   function needBar(key, value) {
     var lvl = Bow.needs.level(value);
-    var pct = Math.round(value);
     return '' +
       '<div class="bow-need">' +
         '<div class="bow-need-head">' +
           '<span>' + esc(Bow.needs.label(key)) + '</span>' +
           '<b class="bow-need-val bow-' + lvl + '">' + Math.round(value) + '</b>' +
         '</div>' +
-        '<div class="bow-bar"><i class="bow-fill bow-' + lvl + '" style="width:' + pct + '%"></i></div>' +
+        '<div class="bow-bar"><i class="bow-fill bow-' + lvl + '" style="width:' + Math.round(value) + '%"></i></div>' +
       '</div>';
   }
 
@@ -2257,7 +2835,9 @@ body {
     if (el) { el.textContent = Bow.time.format(state); }
 
     var season = $("bow-season");
-    if (season) { season.textContent = Bow.time.seasonOf(state) + " · " + Bow.data.meta.settlementName; }
+    if (season) {
+      season.textContent = Bow.time.seasonOf(state) + " · " + Bow.data.meta.settlementName;
+    }
 
     var money = $("bow-money");
     if (money) { money.textContent = state.player.money; }
@@ -2267,6 +2847,9 @@ body {
       var loc = Bow.data.locations[state.player.location];
       where.textContent = loc ? loc.name : "—";
     }
+
+    var w = $("bow-weather");
+    if (w) { w.textContent = state.flags.weather || ""; }
   }
 
   function renderNeeds(state) {
@@ -2281,8 +2864,7 @@ body {
     if (!box) { return; }
     var names = { combat: "Бой", trade: "Торг", survival: "Выживание", medicine: "Лечение", leadership: "Власть" };
     box.innerHTML = Object.keys(names).map(function (k) {
-      var v = state.player.skills[k] || 0;
-      return '<div class="bow-skill"><span>' + names[k] + '</span><b>' + v + '</b></div>';
+      return '<div class="bow-skill"><span>' + names[k] + '</span><b>' + (state.player.skills[k] || 0) + '</b></div>';
     }).join("");
   }
 
@@ -2319,8 +2901,6 @@ body {
 
     box.innerHTML = people.map(function (p) {
       var tone = p.attitude >= 20 ? "warm" : p.attitude <= -20 ? "cold" : "neutral";
-      /* Кнопки «поговорить» и «осмотреть» — настоящие действия,
-         а не декоративная карточка. */
       return '<div class="bow-person">' +
         '<div class="bow-person-head">' +
           '<span class="bow-person-name">' + esc(p.name) + '</span>' +
@@ -2339,7 +2919,7 @@ body {
     var box = $("bow-journal");
     if (!box) { return; }
 
-    box.innerHTML = Bow.journal.recent(state, 14).map(function (e) {
+    box.innerHTML = Bow.journal.recent(state, 16).map(function (e) {
       var hh = (e.hour < 10 ? "0" : "") + e.hour;
       return '<div class="bow-jrow bow-kind-' + esc(e.kind) + '">' +
         '<span class="bow-jtime">' + hh + ':00</span>' +
@@ -2348,31 +2928,82 @@ body {
     }).join("");
   }
 
-  function renderScene(state) {
+  /* ---------- Сцена ----------
+     Здесь только описание места и атмосфера. Бытовые зарисовки
+     НЕ попадают в журнал: журнал — это история, а не фон. */
+  function renderScene(state, animate) {
     var loc = Bow.data.locations[state.player.location];
     var title = $("bow-loc-name");
     var sub = $("bow-loc-sub");
     var text = $("bow-loc-text");
+    var amb = $("bow-ambience");
+    var scene = $("bow-scene");
 
     if (title && loc) { title.textContent = loc.name; }
     if (sub && loc) { sub.textContent = loc.sub; }
     if (text && loc) {
       text.innerHTML = loc.desc.map(function (p) { return '<p>' + esc(p) + '</p>'; }).join("");
     }
+    if (amb) { amb.textContent = state.flags.ambience || ""; }
+
+    /* Затухание при смене сцены. */
+    if (animate && scene) {
+      scene.classList.remove("bow-scene-fade");
+      /* Перезапуск анимации: чтение offsetWidth сбрасывает состояние. */
+      void scene.offsetWidth;
+      scene.classList.add("bow-scene-fade");
+    }
 
     var res = $("bow-last");
     if (res) { res.textContent = lastMessage; }
   }
 
-  /* ---------- Окно персонажа ----------
-     Открывается по кнопке «Осмотреть». Данные только для чтения:
-     здесь ничего не меняется, чтобы не было «скрытых» действий. */
+  /* ---------- Диалог с выбором ---------- */
+  function renderDialog(state) {
+    var box = $("bow-dialog");
+    if (!box) { return; }
+
+    var current = Bow.dialog.currentNode(state);
+    if (!current) {
+      box.classList.remove("bow-dialog-open");
+      box.innerHTML = "";
+      return;
+    }
+
+    var p = current.person;
+    var choices = (current.node.choices || []).map(function (c, i) {
+      var cls = c.close ? "bow-choice bow-choice-leave" : "bow-choice";
+      return '<button class="' + cls + '" data-act="choose" data-choice="' + i + '">' +
+        esc(c.text) + '</button>';
+    }).join("");
+
+    box.innerHTML = '' +
+      '<div class="bow-dialog-who">' +
+        '<h3>' + esc(p.name) + '</h3>' +
+        '<span>' + esc(p.role) + ' · отношение ' + p.attitude + '</span>' +
+      '</div>' +
+      '<p class="bow-dialog-text">' + esc(current.node.text) + '</p>' +
+      '<div class="bow-choices">' + choices + '</div>';
+
+    box.classList.add("bow-dialog-open");
+  }
+
+  /* ---------- Окно персонажа с внешностью ---------- */
+  var APPERANCE_LABELS = {
+    height: "Рост",
+    build: "Телосложение",
+    face: "Лицо",
+    clothes: "Одежда",
+    marks: "Приметы"
+  };
+
   function renderPersonSheet(person) {
     var box = $("bow-sheet");
     if (!box) { return; }
 
     if (!person) {
       box.classList.remove("bow-sheet-open");
+      box.setAttribute("aria-hidden", "true");
       box.innerHTML = "";
       return;
     }
@@ -2384,6 +3015,13 @@ body {
 
     var traits = (person.traits || []).map(function (t) {
       return '<span class="bow-tag">' + esc(t) + '</span>';
+    }).join("");
+
+    var app = person.appearance || {};
+    var appearanceRows = Object.keys(APPERANCE_LABELS).filter(function (k) {
+      return app[k];
+    }).map(function (k) {
+      return '<div class="bow-appearance-row"><dt>' + APPERANCE_LABELS[k] + '</dt><dd>' + esc(app[k]) + '</dd></div>';
     }).join("");
 
     var memoryRows = (person.memory || []).slice(-6).reverse().map(function (m) {
@@ -2399,6 +3037,9 @@ body {
         '<div class="bow-sheet-sub">' + esc(person.role) + ' · ' + person.age + ' лет · ' +
           (person.pron === "f" ? "женщина" : "мужчина") + '</div>' +
         '<p class="bow-sheet-about">' + esc(person.about) + '</p>' +
+        (appearanceRows
+          ? '<div class="bow-sheet-block"><h4>Наружность</h4><dl class="bow-appearance">' + appearanceRows + '</dl></div>'
+          : '<div class="bow-sheet-block"><h4>Наружность</h4><div class="bow-empty">Описание ещё не написано.</div></div>') +
         '<div class="bow-sheet-block"><h4>Характер</h4>' + (traits || '<span class="bow-empty">—</span>') + '</div>' +
         '<div class="bow-sheet-block"><h4>Умения</h4><div class="bow-skills">' + skills + '</div></div>' +
         '<div class="bow-sheet-block"><h4>Помнит о вас</h4>' + memoryRows + '</div>' +
@@ -2409,11 +3050,20 @@ body {
       '</div>';
 
     box.classList.add("bow-sheet-open");
+    box.setAttribute("aria-hidden", "false");
   }
 
-  function render(state) {
+  /* ---------- Отрисовка всего ---------- */
+  var lastSceneKey = null;
+
+  function render(state, options) {
     var app = $("bow-app");
     if (!app || !state) { return; }
+
+    var sceneKey = state.player.location + "|" + (state.flags.sceneChanged || 0);
+    var animate = !options || options.animate !== false;
+    var sceneChanged = lastSceneKey !== null && lastSceneKey !== sceneKey;
+    lastSceneKey = sceneKey;
 
     renderHeader(state);
     renderNeeds(state);
@@ -2421,7 +3071,8 @@ body {
     renderInventory(state);
     renderPeople(state);
     renderJournal(state);
-    renderScene(state);
+    renderScene(state, animate && (sceneChanged || (options && options.forceFade)));
+    renderDialog(state);
   }
 
   Bow.ui = {
@@ -2475,7 +3126,13 @@ body {
   /* ---------- Обработчики ---------- */
 
   var handlers = {
-    move: function (el) { return Bow.adapter.act.move(getState(), el.getAttribute("data-loc")); },
+    move: function (el) {
+      var state = getState();
+      /* Смена сцены закрывает разговор и окно персонажа. */
+      if (state.dialog) { Bow.dialog.close(state); }
+      openSheet(null);
+      return Bow.adapter.act.move(state, el.getAttribute("data-loc"));
+    },
     talk: function (el) { return Bow.adapter.act.talk(getState(), el.getAttribute("data-person")); },
     eat: function (el) { return Bow.adapter.act.eat(getState(), el.getAttribute("data-item")); },
     drink: function (el) { return Bow.adapter.act.drink(getState(), el.getAttribute("data-item")); },
@@ -2492,6 +3149,10 @@ body {
     "close-sheet": function () {
       openSheet(null);
       return { ok: true, message: "" };
+    },
+    choose: function (el) {
+      var idx = parseInt(el.getAttribute("data-choice"), 10);
+      return Bow.adapter.act.choose(getState(), idx);
     }
   };
 
@@ -2718,7 +3379,7 @@ body {
     &lt;/div&gt;
     &lt;div class=&quot;bow-head-info&quot;&gt;
       &lt;div class=&quot;bow-head-line&quot; id=&quot;bow-time&quot;&gt;—&lt;/div&gt;
-      &lt;div class=&quot;bow-head-sub&quot;&gt;Место: &lt;b id=&quot;bow-where&quot;&gt;—&lt;/b&gt; · Монет: &lt;b id=&quot;bow-money&quot;&gt;0&lt;/b&gt;&lt;/div&gt;
+      &lt;div class=&quot;bow-head-sub&quot;&gt;Место: &lt;b id=&quot;bow-where&quot;&gt;—&lt;/b&gt; · Монет: &lt;b id=&quot;bow-money&quot;&gt;0&lt;/b&gt; · &lt;span id=&quot;bow-weather&quot; class=&quot;bow-weather&quot;&gt;&lt;/span&gt;&lt;/div&gt;
     &lt;/div&gt;
   &lt;/header&gt;
 
@@ -2744,15 +3405,19 @@ body {
 
     &lt;!-- Центр: сцена и действия --&gt;
     &lt;main class=&quot;bow-col bow-col-center&quot;&gt;
-      &lt;section class=&quot;bow-scene&quot;&gt;
+      &lt;section class=&quot;bow-scene&quot; id=&quot;bow-scene&quot;&gt;
         &lt;div class=&quot;bow-scene-head&quot;&gt;
           &lt;h2 id=&quot;bow-loc-name&quot;&gt;—&lt;/h2&gt;
           &lt;span id=&quot;bow-loc-sub&quot; class=&quot;bow-dim&quot;&gt;—&lt;/span&gt;
         &lt;/div&gt;
         &lt;div id=&quot;bow-loc-text&quot; class=&quot;bow-scene-text&quot;&gt;&lt;/div&gt;
+        &lt;div id=&quot;bow-ambience&quot; class=&quot;bow-ambience&quot;&gt;&lt;/div&gt;
 
         &lt;div class=&quot;bow-result&quot; id=&quot;bow-last&quot; aria-live=&quot;polite&quot;&gt;&lt;/div&gt;
       &lt;/section&gt;
+
+      &lt;!-- Окно разговора: только когда разговор идёт --&gt;
+      &lt;div id=&quot;bow-dialog&quot; class=&quot;bow-dialog&quot; aria-live=&quot;polite&quot;&gt;&lt;/div&gt;
 
       &lt;section class=&quot;bow-panel&quot;&gt;
         &lt;h2 class=&quot;bow-h2&quot;&gt;Действия&lt;/h2&gt;

@@ -1,0 +1,146 @@
+:: bow-dialog [script]
+/* ============================================================
+   BOW DIALOG — разговоры с выбором ответа.
+   Дерево диалога лежит в данных персонажа (dialog).
+   Состояние разговора хранится в состоянии игры, чтобы
+   переход в другую сцену его не терял.
+   ============================================================ */
+(function (global) {
+  "use strict";
+
+  var Bow = global.Bow = global.Bow || {};
+
+  function node(person, nodeId) {
+    if (!person || !person.dialog) { return null; }
+    return person.dialog[nodeId] || null;
+  }
+
+  /* Начать разговор: возвращает первый узел. */
+  function start(state, personId) {
+    var person = state.people[personId];
+    if (!person || !person.alive) { return { ok: false, message: "Здесь никого нет." }; }
+    if (person.location !== state.player.location) {
+      return { ok: false, message: person.name + " сейчас в другом месте." };
+    }
+    if (!person.dialog) {
+      return { ok: false, message: person.name + " не расположен к разговору." };
+    }
+
+    var root = node(person, "root");
+    if (!root) { return { ok: false, message: "Не о чем говорить." }; }
+
+    state.dialog = {
+      personId: personId,
+      nodeId: "root",
+      visited: ["root"],
+      startedAt: state.time.totalHours
+    };
+
+    /* Первый разговор за день считается за встречу: время идёт один раз. */
+    person.memory.push({
+      kind: "talk",
+      text: "Разговаривал(а) с " + state.player.name + " (" + Bow.time.format(state) + ").",
+      weight: 1,
+      totalHours: state.time.totalHours
+    });
+    Bow.util.trim(person.memory, 40);
+    person.talkedToday += 1;
+    state.stats.talksMade += 1;
+    state.stats.actionsTaken += 1;
+
+    Bow.journal.add(state, "Начался разговор: " + person.name + ".", "talk");
+
+    return {
+      ok: true,
+      node: root,
+      personId: personId,
+      name: person.name,
+      message: person.name + ": разговор начат."
+    };
+  }
+
+  /* Выбрать вариант ответа. Возвращает либо следующий узел,
+     либо признак закрытия разговора. */
+  function choose(state, choiceIndex) {
+    var d = state.dialog;
+    if (!d) { return { ok: false, message: "Разговор не начат." }; }
+
+    var person = state.people[d.personId];
+    if (!person) { return { ok: false, message: "Собеседник исчез." }; }
+
+    var current = node(person, d.nodeId);
+    if (!current || !current.choices) { return { ok: false, message: "Ответить нечего." }; }
+
+    var choice = current.choices[choiceIndex];
+    if (!choice) { return { ok: false, message: "Такого варианта нет." }; }
+
+    /* Отношение меняется сразу: выбор — это поступок, а не текст. */
+    if (typeof choice.attitude === "number") {
+      person.attitude = Bow.util.clamp(person.attitude + choice.attitude, -100, 100);
+      if (choice.attitude !== 0) {
+        person.memory.push({
+          kind: "dialog",
+          text: (choice.attitude > 0 ? "Остался доволен разговором: " : "Остался недоволен разговором: ") +
+                (choice.journal || choice.text),
+          weight: Math.abs(choice.attitude),
+          totalHours: state.time.totalHours
+        });
+        Bow.util.trim(person.memory, 40);
+      }
+    }
+
+    /* Значимая реплика попадает в журнал — бытовые уходят в атмосферу. */
+    if (choice.journal) {
+      Bow.journal.add(state, person.name + ": " + choice.journal, "talk");
+    }
+
+    if (choice.close) {
+      state.dialog = null;
+      Bow.time.advance(state, 1);
+      return {
+        ok: true,
+        closed: true,
+        message: "Разговор окончен. Отношение " + person.name + ": " + person.attitude + "."
+      };
+    }
+
+    var next = node(person, choice.goto);
+    if (!next) {
+      state.dialog = null;
+      return { ok: true, closed: true, message: "Разговор окончен." };
+    }
+
+    d.nodeId = choice.goto;
+    if (d.visited.indexOf(choice.goto) === -1) { d.visited.push(choice.goto); }
+
+    return {
+      ok: true,
+      node: next,
+      personId: d.personId,
+      name: person.name,
+      message: person.name + ": " + choice.text
+    };
+  }
+
+  function close(state) {
+    state.dialog = null;
+    return { ok: true, closed: true, message: "Вы отошли." };
+  }
+
+  function currentNode(state) {
+    var d = state.dialog;
+    if (!d) { return null; }
+    var person = state.people[d.personId];
+    var n = node(person, d.nodeId);
+    if (!n) { return null; }
+    return { node: n, personId: d.personId, name: person.name, person: person };
+  }
+
+  Bow.dialog = {
+    start: start,
+    choose: choose,
+    close: close,
+    currentNode: currentNode
+  };
+
+})(typeof window !== "undefined" ? window : this);

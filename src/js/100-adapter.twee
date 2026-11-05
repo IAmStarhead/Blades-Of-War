@@ -60,8 +60,13 @@
       return res;
     },
     talk: function (state, id) {
-      var res = Bow.actions.talk(state, id);
-      if (res.ok) { Bow.events.afterAction(state, rng); }
+      /* Разговор — это диалог с выбором; узлы дерева лежат в данных. */
+      return Bow.dialog.start(state, id);
+    },
+    choose: function (state, index) {
+      var res = Bow.dialog.choose(state, index);
+      if (res.ok && res.closed) { Bow.events.afterAction(state, rng); }
+      if (res.ok) { Bow.needs.ensure(state.player); }
       return res;
     },
     buy: function (state, key, qty) {

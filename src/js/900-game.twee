@@ -43,7 +43,13 @@
   /* ---------- Обработчики ---------- */
 
   var handlers = {
-    move: function (el) { return Bow.adapter.act.move(getState(), el.getAttribute("data-loc")); },
+    move: function (el) {
+      var state = getState();
+      /* Смена сцены закрывает разговор и окно персонажа. */
+      if (state.dialog) { Bow.dialog.close(state); }
+      openSheet(null);
+      return Bow.adapter.act.move(state, el.getAttribute("data-loc"));
+    },
     talk: function (el) { return Bow.adapter.act.talk(getState(), el.getAttribute("data-person")); },
     eat: function (el) { return Bow.adapter.act.eat(getState(), el.getAttribute("data-item")); },
     drink: function (el) { return Bow.adapter.act.drink(getState(), el.getAttribute("data-item")); },
@@ -60,6 +66,10 @@
     "close-sheet": function () {
       openSheet(null);
       return { ok: true, message: "" };
+    },
+    choose: function (el) {
+      var idx = parseInt(el.getAttribute("data-choice"), 10);
+      return Bow.adapter.act.choose(getState(), idx);
     }
   };
 

@@ -11,7 +11,7 @@
     </div>
     <div class="bow-head-info">
       <div class="bow-head-line" id="bow-time">—</div>
-      <div class="bow-head-sub">Место: <b id="bow-where">—</b> · Монет: <b id="bow-money">0</b></div>
+      <div class="bow-head-sub">Место: <b id="bow-where">—</b> · Монет: <b id="bow-money">0</b> · <span id="bow-weather" class="bow-weather"></span></div>
     </div>
   </header>
 
@@ -37,15 +37,19 @@
 
     <!-- Центр: сцена и действия -->
     <main class="bow-col bow-col-center">
-      <section class="bow-scene">
+      <section class="bow-scene" id="bow-scene">
         <div class="bow-scene-head">
           <h2 id="bow-loc-name">—</h2>
           <span id="bow-loc-sub" class="bow-dim">—</span>
         </div>
         <div id="bow-loc-text" class="bow-scene-text"></div>
+        <div id="bow-ambience" class="bow-ambience"></div>
 
         <div class="bow-result" id="bow-last" aria-live="polite"></div>
       </section>
+
+      <!-- Окно разговора: только когда разговор идёт -->
+      <div id="bow-dialog" class="bow-dialog" aria-live="polite"></div>
 
       <section class="bow-panel">
         <h2 class="bow-h2">Действия</h2>
