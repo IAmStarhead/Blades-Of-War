@@ -1,0 +1,186 @@
+:: bow-state [script]
+/* ============================================================
+   BOW STATE — создание, проверка и миграция состояния.
+   Модуль чистый: не знает ни про SugarCube, ни про DOM.
+   Принимает объект данных и возвращает новое состояние.
+   ============================================================ */
+(function (global) {
+  "use strict";
+
+  var Bow = global.Bow = global.Bow || {};
+
+  /* Порядок применения миграций. Ключ — версия, ИЗ которой мигрируем. */
+  var MIGRATIONS = {
+    /* Пример на будущее:
+       "0.0.2": function (state) { ...; state.version = "0.0.3"; return state; } */
+  };
+
+  function create(data, seed) {
+    var cal = data.calendar;
+    var rng = Bow.rng.make(seed);
+
+    var state = {
+      version: data.meta.version,
+      seed: seed,
+      createdAt: null, // заполняется адаптером: Date.now() запрещён в чистом ядре
+
+      time: {
+        year: cal.startYear,
+        month: cal.startMonth,
+        day: cal.startDay,
+        hour: cal.startHour,
+        minute: 0,
+        totalHours: 0,
+        scale: "paused"   // paused | 1x | 4x
+      },
+
+      player: {
+        id: data.player.id,
+        name: data.player.name,
+        age: data.player.age,
+        pron: data.player.pron,
+        role: data.player.role,
+        status: data.player.status,
+        location: data.meta.startLocation,
+        skills: Bow.util.clone(data.player.skills),
+        needs: Bow.util.clone(data.player.needs),
+        money: data.player.money,
+        inventory: Bow.util.clone(data.player.inventory),
+        conditions: [],
+        memory: []
+      },
+
+      people: {},
+      orgs: Bow.util.clone(data.orgs),
+      journal: [],
+      events: [],
+      flags: {},
+
+      stats: {
+        hoursPlayed: 0,
+        actionsTaken: 0,
+        tradesMade: 0,
+        talksMade: 0
+      }
+    };
+
+    /* Персонажи копируются в состояние: дальше мир живёт своей жизнью. */
+    data.people.forEach(function (p) {
+      state.people[p.id] = {
+        id: p.id,
+        key: p.key,
+        name: p.name,
+        age: p.age,
+        pron: p.pron,
+        role: p.role,
+        location: p.location,
+        org: p.org,
+        skills: Bow.util.clone(p.skills),
+        needs: Bow.util.clone(p.needs),
+        traits: p.traits.slice(),
+        about: p.about,
+        greet: p.greet,
+        lines: p.lines.slice(),
+        alive: true,
+        /* Память о значимых поступках игрока: { text, kind, weight, day } */
+        memory: [],
+        /* Личное отношение к игроку, -100..100 */
+        attitude: 0,
+        talkedToday: 0
+      };
+    });
+
+    /* Стартовая запись журнала — часть состояния, а не UI. */
+    state.journal.push({
+      totalHours: 0,
+      day: state.time.day,
+      month: state.time.month,
+      year: state.time.year,
+      hour: state.time.hour,
+      kind: "system",
+      text: "Вы прибыли в " + data.meta.settlementName + ". Ветер с севера, дорога за спиной, в кармане " + state.player.money + " монет."
+    });
+
+    return state;
+  }
+
+  /* ---------- Валидация ----------
+     Проверяет структуру ДО применения. Возвращает {ok, errors[]}. */
+  function validate(state) {
+    var errors = [];
+
+    function need(cond, msg) { if (!cond) { errors.push(msg); } }
+
+    need(Bow.util.isPlainObject(state), "состояние не является объектом");
+    if (!Bow.util.isPlainObject(state)) { return { ok: false, errors: errors }; }
+
+    need(typeof state.version === "string", "нет строки version");
+    need(Bow.util.isPlainObject(state.time), "нет блока time");
+    need(Bow.util.isPlainObject(state.player), "нет блока player");
+    need(Bow.util.isPlainObject(state.people), "нет блока people");
+    need(Bow.util.isPlainObject(state.orgs), "нет блока orgs");
+
+    if (Bow.util.isPlainObject(state.time)) {
+      need(typeof state.time.hour === "number" && state.time.hour >= 0 && state.time.hour <= 23, "time.hour вне диапазона");
+      need(typeof state.time.day === "number" && state.time.day >= 1 && state.time.day <= 30, "time.day вне диапазона");
+      need(typeof state.time.month === "number" && state.time.month >= 1 && state.time.month <= 12, "time.month вне диапазона");
+    }
+
+    if (Bow.util.isPlainObject(state.player)) {
+      var p = state.player;
+      need(typeof p.name === "string" && p.name.length > 0, "player.name пустое");
+      need(typeof p.location === "string", "player.location не указан");
+      need(Array.isArray(p.inventory), "player.inventory не массив");
+      need(typeof p.money === "number" && p.money >= 0, "player.money отрицательное или не число");
+      need(Bow.util.isPlainObject(p.needs), "player.needs не объект");
+      if (Bow.util.isPlainObject(p.needs)) {
+        ["health", "hunger", "fatigue", "mood"].forEach(function (k) {
+          var v = p.needs[k];
+          need(typeof v === "number" && v >= 0 && v <= 100, "player.needs." + k + " вне 0..100");
+        });
+      }
+      need(Array.isArray(p.memory), "player.memory не массив");
+    }
+
+    if (Bow.util.isPlainObject(state.people)) {
+      Object.keys(state.people).forEach(function (id) {
+        var n = state.people[id];
+        need(Bow.util.isPlainObject(n), "персонаж " + id + " не объект");
+        if (Bow.util.isPlainObject(n)) {
+          need(typeof n.name === "string", "у персонажа " + id + " нет имени");
+          need(n.pron === "m" || n.pron === "f", "у персонажа " + id + " некорректный pron");
+          need(typeof n.attitude === "number", "у персонажа " + id + " нет attitude");
+        }
+      });
+    }
+
+    return { ok: errors.length === 0, errors: errors };
+  }
+
+  /* ---------- Миграции ----------
+     Применяются последовательно по цепочке версий. */
+  function migrate(state) {
+    var guard = 0;
+    var applied = [];
+
+    while (state.version !== Bow.data.meta.version && guard < 20) {
+      var fn = MIGRATIONS[state.version];
+      if (!fn) { break; }
+      state = fn(state);
+      applied.push(state.version);
+      guard++;
+    }
+
+    return { state: state, applied: applied };
+  }
+
+  Bow.state = {
+    create: create,
+    validate: validate,
+    migrate: migrate,
+    isCurrentVersion: function (state) {
+      return state && state.version === Bow.data.meta.version;
+    }
+  };
+
+})(typeof window !== "undefined" ? window : this);

@@ -1,0 +1,105 @@
+:: StoryInterface
+<div id="bow-app" class="bow-app">
+
+  <header class="bow-header">
+    <div class="bow-brand">
+      <span class="bow-brand-mark">⚔</span>
+      <div>
+        <h1>Blades Of War</h1>
+        <div class="bow-brand-sub" id="bow-season">Эдем</div>
+      </div>
+    </div>
+    <div class="bow-head-info">
+      <div class="bow-head-line" id="bow-time">—</div>
+      <div class="bow-head-sub">Место: <b id="bow-where">—</b> · Монет: <b id="bow-money">0</b></div>
+    </div>
+  </header>
+
+  <div class="bow-grid">
+
+    <!-- Левая колонка: персонаж -->
+    <aside class="bow-col bow-col-left">
+      <section class="bow-panel">
+        <h2 class="bow-h2">Состояние</h2>
+        <div id="bow-needs" class="bow-needs"></div>
+      </section>
+
+      <section class="bow-panel">
+        <h2 class="bow-h2">Умения</h2>
+        <div id="bow-skills" class="bow-skills"></div>
+      </section>
+
+      <section class="bow-panel">
+        <h2 class="bow-h2">При себе</h2>
+        <div id="bow-inventory" class="bow-inventory"></div>
+      </section>
+    </aside>
+
+    <!-- Центр: сцена и действия -->
+    <main class="bow-col bow-col-center">
+      <section class="bow-scene">
+        <div class="bow-scene-head">
+          <h2 id="bow-loc-name">—</h2>
+          <span id="bow-loc-sub" class="bow-dim">—</span>
+        </div>
+        <div id="bow-loc-text" class="bow-scene-text"></div>
+
+        <div class="bow-result" id="bow-last" aria-live="polite"></div>
+      </section>
+
+      <section class="bow-panel">
+        <h2 class="bow-h2">Действия</h2>
+        <div class="bow-actions">
+          <button class="bow-btn" data-act="rest"><span class="bow-btn-i">☾</span>Отдохнуть</button>
+          <button class="bow-btn" data-act="move" data-loc="square">Площадь</button>
+          <button class="bow-btn" data-act="move" data-loc="tavern">Трактир</button>
+          <button class="bow-btn" data-act="move" data-loc="smithy">Кузница</button>
+          <button class="bow-btn" data-act="move" data-loc="outskirts">Околица</button>
+          <button class="bow-btn" data-act="move" data-loc="forest">Опушка тайги</button>
+        </div>
+
+        <h2 class="bow-h2 bow-h2-gap">Рядом</h2>
+        <div id="bow-people" class="bow-people"></div>
+      </section>
+
+      <section class="bow-panel">
+        <h2 class="bow-h2">Товар и снедь</h2>
+        <!-- #passages обязателен для SugarCube: сюда выводится пассаж
+             с виджетом торговли. -->
+        <div id="passages"></div>
+      </section>
+    </main>
+
+    <!-- Правая колонка: журнал -->
+    <aside class="bow-col bow-col-right">
+      <section class="bow-panel bow-panel-tall">
+        <h2 class="bow-h2">Хроника</h2>
+        <div id="bow-journal" class="bow-journal"></div>
+      </section>
+
+      <section class="bow-panel">
+        <h2 class="bow-h2">Память игры</h2>
+        <div class="bow-saves">
+          <button class="bow-btn bow-btn-sm" id="bow-btn-save">Выгрузить сохранение</button>
+          <button class="bow-btn bow-btn-sm" id="bow-btn-load">Загрузить файл</button>
+          <button class="bow-btn bow-btn-sm" id="bow-btn-continue" disabled>Продолжить с автосейва</button>
+          <button class="bow-btn bow-btn-sm bow-btn-danger" id="bow-btn-restart">Начать заново</button>
+        </div>
+        <p class="bow-note">
+          Игра сохраняется в браузере после каждого действия. Чтобы перенести
+          прогресс на другое устройство — выгрузите файл.
+        </p>
+      </section>
+    </aside>
+
+  </div>
+
+  <!-- Окно персонажа: оверлей, наполняется по кнопке «Осмотреть» -->
+  <div id="bow-sheet" class="bow-sheet" aria-hidden="true"></div>
+
+  <footer class="bow-footer">
+    <span>Blades Of War · прототип 0.0.2 · тестовая локация: Студёный Брод</span>
+    <span class="bow-dim">Текст мира — черновой, имена и место подлежат согласованию</span>
+  </footer>
+
+</div>

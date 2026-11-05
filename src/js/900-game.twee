@@ -1,0 +1,276 @@
+:: bow-game [script]
+/* ============================================================
+   BOW GAME — связка интерфейса с SugarCube.
+   Здесь: хранение состояния в State.variables.game, обработчики
+   кнопок, автосохранение, экспорт и импорт файла.
+   ============================================================ */
+(function (global) {
+  "use strict";
+
+  var Bow = global.Bow;
+  var SC = global.SugarCube;
+  var AUTOSAVE_KEY = "bow-autosave-v1";
+
+  function vars() { return SC.State.variables; }
+
+  function getState() {
+    var v = vars();
+    if (!v.game) {
+      v.game = Bow.adapter.freshState();
+      v.game.createdAt = Date.now();
+    }
+    return v.game;
+  }
+
+  /* Перерисовка + сохранение в память SugarCube + автосейв. */
+  function refresh(quiet) {
+    var state = getState();
+    Bow.ui.render(state);
+    try {
+      global.localStorage.setItem(AUTOSAVE_KEY, Bow.save.serialize(state, Date.now()));
+    } catch (err) {
+      /* Приватный режим браузера может запрещать localStorage.
+         Это не повод ронять игру — просто нет автосейва. */
+      if (!quiet && global.console) { global.console.warn("[Bow] автосохранение недоступно:", err); }
+    }
+  }
+
+  function say(result) {
+    if (result && result.message) { Bow.ui.setMessage(result.message); }
+    refresh();
+  }
+
+  /* ---------- Обработчики ---------- */
+
+  var handlers = {
+    move: function (el) { return Bow.adapter.act.move(getState(), el.getAttribute("data-loc")); },
+    talk: function (el) { return Bow.adapter.act.talk(getState(), el.getAttribute("data-person")); },
+    eat: function (el) { return Bow.adapter.act.eat(getState(), el.getAttribute("data-item")); },
+    drink: function (el) { return Bow.adapter.act.drink(getState(), el.getAttribute("data-item")); },
+    rest: function () { return Bow.adapter.act.rest(getState()); },
+    buy: function (el) { return Bow.adapter.act.buy(getState(), el.getAttribute("data-key"), 1); },
+    sell: function (el) { return Bow.adapter.act.sell(getState(), el.getAttribute("data-key"), 1); },
+    inspect: function (el) {
+      var state = getState();
+      var person = state.people[el.getAttribute("data-person")];
+      if (!person) { return { ok: false, message: "Здесь никого нет." }; }
+      openSheet(person.id);
+      return { ok: true, message: "" };
+    },
+    "close-sheet": function () {
+      openSheet(null);
+      return { ok: true, message: "" };
+    }
+  };
+
+  /* Окно персонажа: открытие/закрытие без изменения игрового состояния. */
+  var openPersonId = null;
+
+  function openSheet(personId) {
+    openPersonId = personId;
+    var person = personId ? getState().people[personId] : null;
+    Bow.ui.renderPersonSheet(person || null);
+  }
+
+  function onClick(event) {
+    var el = event.target.closest("[data-act]");
+    if (!el) { return; }
+
+    var act = el.getAttribute("data-act");
+    var fn = handlers[act];
+    if (!fn) { return; }
+
+    event.preventDefault();
+
+    /* Кнопка блокируется на время обработки: защита от двойного клика,
+       из-за которого в прототипе время шло вдвое быстрее. */
+    if (el.disabled) { return; }
+    el.disabled = true;
+
+    var result;
+    try {
+      result = fn(el);
+    } catch (err) {
+      if (global.console) { global.console.error("[Bow] ошибка действия", err); }
+      Bow.ui.setMessage("Действие не выполнено: внутренняя ошибка.");
+      el.disabled = false;
+      refresh(true);
+      return;
+    }
+
+    if (result && result.ok === false) {
+      Bow.ui.setMessage(result.message);
+      el.disabled = false;
+      refresh(true);
+      return;
+    }
+
+    say(result);
+    el.disabled = false;
+  }
+
+  /* ---------- Сохранения ---------- */
+
+  function exportSave() {
+    var state = getState();
+    var data = Bow.save.serialize(state, Date.now());
+    var blob = new Blob([data], { type: "application/json" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = "blades-of-war-" + state.version + "-" + state.time.totalHours + "h.json";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    Bow.ui.setMessage("Сохранение выгружено в файл.");
+    refresh(true);
+  }
+
+  function importSave() {
+    var input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".json,application/json";
+
+    input.addEventListener("change", function () {
+      var file = input.files && input.files[0];
+      if (!file) { return; }
+
+      var reader = new FileReader();
+      reader.onload = function () {
+        var result = Bow.save.deserialize(String(reader.result));
+
+        if (!result.ok) {
+          Bow.ui.setMessage("Загрузка отклонена: " + result.reason);
+          refresh(true);
+          return;
+        }
+
+        vars().game = result.state;
+        Bow.ui.setMessage(
+          result.mode === "migrated"
+            ? "Сохранение перенесено с версии " + result.migratedFrom + " и загружено."
+            : "Сохранение загружено."
+        );
+        refresh();
+      };
+      reader.readAsText(file);
+    });
+
+    input.click();
+  }
+
+  function restart() {
+    vars().game = Bow.adapter.freshState();
+    vars().game.createdAt = Date.now();
+    Bow.ui.setMessage("Новая игра начата. Прежний прогресс в памяти браузера перезаписан.");
+    refresh();
+  }
+
+  function loadAutosave() {
+    var raw;
+    try {
+      raw = global.localStorage.getItem(AUTOSAVE_KEY);
+    } catch (err) {
+      Bow.ui.setMessage("Автосохранение недоступно в этом режиме браузера.");
+      refresh(true);
+      return;
+    }
+    if (!raw) {
+      Bow.ui.setMessage("Автосохранения нет — вы в начале пути.");
+      refresh(true);
+      return;
+    }
+
+    var result = Bow.save.deserialize(raw);
+    if (!result.ok) {
+      Bow.ui.setMessage("Автосохранение не подходит: " + result.reason);
+      refresh(true);
+      return;
+    }
+
+    vars().game = result.state;
+    Bow.ui.setMessage("Продолжаем с автосохранения.");
+    refresh();
+  }
+
+  /* Тихая проверка автосейва при старте: без сообщений игроку.
+     Вызывается из StoryInit. */
+  function loadAutosaveSilent() {
+    var raw = null;
+    try { raw = global.localStorage.getItem(AUTOSAVE_KEY); }
+    catch (err) { return false; }
+
+    if (!raw) { return false; }
+
+    var result = Bow.save.deserialize(raw);
+    if (!result.ok) { return false; }
+
+    vars().game = result.state;
+    return true;
+  }
+
+  /* ---------- Публичный мост ---------- */
+
+  var api = {
+    getState: getState,
+    refresh: refresh,
+    exportSave: exportSave,
+    importSave: importSave,
+    restart: restart,
+    loadAutosave: loadAutosave,
+    loadAutosaveSilent: loadAutosaveSilent,
+    hasAutosave: function () {
+      try { return !!global.localStorage.getItem(AUTOSAVE_KEY); }
+      catch (err) { return false; }
+    }
+  };
+
+  global.BowGame = api;
+
+  /* Инициализация после загрузки DOM. */
+  function boot() {
+    if (!document.getElementById("bow-app")) { return; }
+
+    document.getElementById("bow-app").addEventListener("click", onClick);
+
+    /* Клик по тёмному фону закрывает окно персонажа. */
+    var sheet = document.getElementById("bow-sheet");
+    if (sheet) {
+      sheet.addEventListener("click", function (event) {
+        if (event.target === sheet) { openSheet(null); }
+      });
+    }
+
+    /* Escape закрывает окно. */
+    document.addEventListener("keydown", function (event) {
+      if (event.key === "Escape" && openPersonId) { openSheet(null); }
+    });
+
+    var btnSave = document.getElementById("bow-btn-save");
+    if (btnSave) { btnSave.addEventListener("click", exportSave); }
+
+    var btnLoad = document.getElementById("bow-btn-load");
+    if (btnLoad) { btnLoad.addEventListener("click", importSave); }
+
+    var btnRestart = document.getElementById("bow-btn-restart");
+    if (btnRestart) { btnRestart.addEventListener("click", restart); }
+
+    var btnContinue = document.getElementById("bow-btn-continue");
+    if (btnContinue) {
+      btnContinue.addEventListener("click", loadAutosave);
+      btnContinue.disabled = false;
+    }
+
+    /* Отрисовка стартового экрана. */
+    Bow.ui.setMessage("Осмотритесь. Здесь пока немного людей, но они настоящие.");
+    refresh(true);
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", boot);
+  } else {
+    boot();
+  }
+
+})(typeof window !== "undefined" ? window : this);

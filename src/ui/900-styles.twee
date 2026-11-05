@@ -1,0 +1,708 @@
+:: Story Stylesheet [stylesheet]
+/* ============================================================
+   BLADES OF WAR — оформление прототипа 0.0.2
+   Палитра: уголь, камень, приглушённая латунь. Без картинок.
+   Адаптив: 3 колонки → 2 (≤1100px) → 1 (≤720px).
+   ============================================================ */
+
+:root {
+  --bow-bg:        #14130f;
+  --bow-bg-deep:   #0e0d0a;
+  --bow-panel:     #1c1a15;
+  --bow-panel-2:   #232019;
+  --bow-line:      #38322a;
+  --bow-line-soft: #2a251f;
+
+  --bow-text:      #ddd6c6;
+  --bow-dim:       #9a927f;
+  --bow-faint:     #6d6657;
+
+  --bow-brass:     #c3a86a;
+  --bow-brass-dim: #8d7746;
+
+  --bow-good:      #8fa36b;
+  --bow-ok:        #b8a878;
+  --bow-low:       #c08c52;
+  --bow-crit:      #b25f52;
+  --bow-warm:      #a9b98a;
+  --bow-cold:      #b0736a;
+
+  --bow-mono: "Courier New", "Nimbus Mono PS", monospace;
+  --bow-serif: Georgia, "Times New Roman", serif;
+
+  --bow-radius: 3px;
+}
+
+/* --- Сброс внутри оболочки SugarCube --- */
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bow-bg-deep);
+}
+
+body {
+  color: var(--bow-text);
+  font-family: var(--bow-serif);
+  font-size: 16px;
+  line-height: 1.55;
+  -webkit-text-size-adjust: 100%;
+}
+
+#story, #passages { margin: 0; padding: 0; }
+
+.passage { margin: 0; }
+
+/* --- Каркас --- */
+.bow-app {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 14px 28px;
+  background:
+    radial-gradient(1200px 500px at 50% -220px, #221f18 0%, transparent 70%),
+    var(--bow-bg);
+  min-height: 100vh;
+  box-sizing: border-box;
+}
+
+/* --- Шапка --- */
+.bow-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 4px 14px;
+  border-bottom: 1px solid var(--bow-line);
+  margin-bottom: 16px;
+}
+
+.bow-brand { display: flex; align-items: center; gap: 12px; }
+
+.bow-brand-mark {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--bow-brass-dim);
+  color: var(--bow-brass);
+  font-size: 18px;
+  background: #1a1712;
+}
+
+.bow-brand h1 {
+  margin: 0;
+  font-size: 1.18rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--bow-brass);
+  font-weight: 600;
+}
+
+.bow-brand-sub {
+  font-family: var(--bow-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  color: var(--bow-faint);
+  text-transform: uppercase;
+}
+
+.bow-head-info { text-align: right; }
+
+.bow-head-line {
+  font-family: var(--bow-mono);
+  font-size: 0.82rem;
+  color: var(--bow-text);
+}
+
+.bow-head-sub {
+  font-family: var(--bow-mono);
+  font-size: 0.7rem;
+  color: var(--bow-faint);
+  margin-top: 3px;
+}
+
+.bow-head-sub b { color: var(--bow-brass); font-weight: 600; }
+
+/* --- Сетка --- */
+.bow-grid {
+  display: grid;
+  grid-template-columns: minmax(230px, 280px) minmax(0, 1fr) minmax(250px, 320px);
+  gap: 14px;
+  align-items: start;
+}
+
+.bow-col { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+
+/* --- Панели --- */
+.bow-panel {
+  background: linear-gradient(165deg, var(--bow-panel-2), var(--bow-panel) 70%);
+  border: 1px solid var(--bow-line-soft);
+  border-radius: var(--bow-radius);
+  padding: 12px 13px;
+}
+
+.bow-h2 {
+  margin: 0 0 10px;
+  font-family: var(--bow-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--bow-brass-dim);
+  font-weight: 600;
+  border-bottom: 1px solid var(--bow-line-soft);
+  padding-bottom: 7px;
+}
+
+.bow-h2-gap { margin-top: 18px; }
+
+.bow-dim { color: var(--bow-dim); }
+.bow-faint { color: var(--bow-faint); }
+
+.bow-empty {
+  font-family: var(--bow-mono);
+  font-size: 0.74rem;
+  color: var(--bow-faint);
+  padding: 4px 0;
+}
+
+.bow-note {
+  margin: 10px 0 0;
+  font-size: 0.72rem;
+  line-height: 1.45;
+  color: var(--bow-faint);
+}
+
+/* --- Потребности --- */
+.bow-needs { display: flex; flex-direction: column; gap: 9px; }
+
+.bow-need-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 0.76rem;
+  color: var(--bow-dim);
+  margin-bottom: 3px;
+}
+
+.bow-need-val { font-family: var(--bow-mono); font-size: 0.78rem; }
+
+.bow-bar {
+  height: 5px;
+  background: #100f0c;
+  border: 1px solid var(--bow-line-soft);
+  overflow: hidden;
+}
+
+.bow-fill { display: block; height: 100%; transition: width 0.28s ease; }
+
+.bow-good { color: var(--bow-good); }
+.bow-fill.bow-good { background: var(--bow-good); }
+.bow-ok { color: var(--bow-ok); }
+.bow-fill.bow-ok { background: var(--bow-ok); }
+.bow-low { color: var(--bow-low); }
+.bow-fill.bow-low { background: var(--bow-low); }
+.bow-critical { color: var(--bow-crit); }
+.bow-fill.bow-critical { background: var(--bow-crit); }
+
+/* --- Умения --- */
+.bow-skills {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.bow-skill {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--bow-mono);
+  font-size: 0.72rem;
+  color: var(--bow-dim);
+  background: #17150f;
+  border: 1px solid var(--bow-line-soft);
+  padding: 4px 6px;
+}
+
+.bow-skill b { color: var(--bow-brass); }
+
+/* --- Инвентарь --- */
+.bow-inventory { display: flex; flex-direction: column; gap: 4px; }
+
+.bow-inv-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.78rem;
+  padding: 3px 0;
+  border-bottom: 1px dotted var(--bow-line-soft);
+}
+
+.bow-inv-row .bow-dim { font-family: var(--bow-mono); font-size: 0.68rem; }
+
+.bow-inv-total {
+  margin-top: 7px;
+  font-family: var(--bow-mono);
+  font-size: 0.7rem;
+  color: var(--bow-faint);
+  text-align: right;
+}
+
+/* --- Сцена --- */
+.bow-scene {
+  background: linear-gradient(165deg, #201d16, var(--bow-panel) 75%);
+  border: 1px solid var(--bow-line);
+  border-radius: var(--bow-radius);
+  padding: 16px 17px 14px;
+}
+
+.bow-scene-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid var(--bow-line-soft);
+  padding-bottom: 9px;
+}
+
+.bow-scene-head h2 {
+  margin: 0;
+  font-size: 1.06rem;
+  letter-spacing: 0.04em;
+  color: var(--bow-brass);
+  font-weight: 600;
+}
+
+.bow-scene-head .bow-dim {
+  font-family: var(--bow-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.bow-scene-text p {
+  margin: 0 0 9px;
+  font-size: 0.94rem;
+  line-height: 1.62;
+  color: var(--bow-text);
+}
+
+.bow-result {
+  min-height: 1.1em;
+  margin-top: 6px;
+  padding-top: 9px;
+  border-top: 1px solid var(--bow-line-soft);
+  font-family: var(--bow-mono);
+  font-size: 0.76rem;
+  color: var(--bow-brass);
+  white-space: pre-line;
+}
+
+/* --- Кнопки --- */
+.bow-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.bow-btn {
+  appearance: none;
+  cursor: pointer;
+  font-family: var(--bow-mono);
+  font-size: 0.76rem;
+  letter-spacing: 0.03em;
+  color: var(--bow-text);
+  background: linear-gradient(180deg, #262219, #1b1813);
+  border: 1px solid var(--bow-line);
+  border-radius: var(--bow-radius);
+  padding: 9px 13px;
+  min-height: 40px;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.bow-btn:hover:not(:disabled) {
+  border-color: var(--bow-brass-dim);
+  color: var(--bow-brass);
+}
+
+.bow-btn:active:not(:disabled) { background: #12100c; }
+
+.bow-btn:focus-visible {
+  outline: 2px solid var(--bow-brass-dim);
+  outline-offset: 2px;
+}
+
+.bow-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.bow-btn-i { color: var(--bow-brass); margin-right: 6px; }
+
+.bow-btn-sm {
+  display: block;
+  width: 100%;
+  text-align: left;
+  font-size: 0.72rem;
+  padding: 8px 10px;
+  margin-bottom: 6px;
+  min-height: 38px;
+}
+
+.bow-btn-danger { border-color: #4a2f2a; color: #c08a80; }
+.bow-btn-danger:hover:not(:disabled) { border-color: var(--bow-crit); color: var(--bow-crit); }
+
+.bow-saves { display: flex; flex-direction: column; }
+
+/* --- Люди рядом --- */
+.bow-people { display: flex; flex-direction: column; gap: 5px; }
+
+.bow-person {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 10px;
+  align-items: center;
+  padding: 8px 9px;
+  background: #17150f;
+  border: 1px solid var(--bow-line-soft);
+  border-left: 2px solid var(--bow-brass-dim);
+  border-radius: var(--bow-radius);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.bow-person:hover {
+  background: #1e1b14;
+  border-color: var(--bow-line);
+  border-left-color: var(--bow-brass);
+}
+
+.bow-person-name { font-size: 0.86rem; color: var(--bow-text); }
+
+.bow-person .bow-dim {
+  grid-column: 1;
+  font-family: var(--bow-mono);
+  font-size: 0.66rem;
+  color: var(--bow-faint);
+}
+
+.bow-tone {
+  grid-row: 1 / span 2;
+  grid-column: 2;
+  font-family: var(--bow-mono);
+  font-size: 0.74rem;
+}
+
+.bow-warm { color: var(--bow-warm); }
+.bow-neutral { color: var(--bow-dim); }
+.bow-cold { color: var(--bow-cold); }
+
+/* --- Карточка человека --- */
+.bow-person {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.bow-person-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.bow-person-acts {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.bow-person-acts .bow-trade-btn { flex: 1; }
+
+/* --- Окно персонажа --- */
+.bow-sheet {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(8, 7, 5, 0.78);
+  padding: 18px;
+  overflow-y: auto;
+}
+
+.bow-sheet-open { display: block; }
+
+.bow-sheet-card {
+  max-width: 560px;
+  margin: 4vh auto;
+  background: linear-gradient(170deg, #242019, #1a1812 80%);
+  border: 1px solid var(--bow-line);
+  border-radius: var(--bow-radius);
+  padding: 18px 20px 16px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.6);
+}
+
+.bow-sheet-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px solid var(--bow-line-soft);
+  padding-bottom: 10px;
+}
+
+.bow-sheet-head h3 {
+  margin: 0;
+  font-size: 1.15rem;
+  color: var(--bow-brass);
+  letter-spacing: 0.04em;
+}
+
+.bow-sheet-close {
+  background: none;
+  border: 1px solid var(--bow-line);
+  color: var(--bow-dim);
+  font-size: 0.9rem;
+  width: 34px;
+  height: 34px;
+  cursor: pointer;
+  border-radius: var(--bow-radius);
+}
+
+.bow-sheet-close:hover { color: var(--bow-crit); border-color: var(--bow-crit); }
+
+.bow-sheet-sub {
+  font-family: var(--bow-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--bow-faint);
+  margin: 9px 0 10px;
+}
+
+.bow-sheet-about {
+  font-size: 0.92rem;
+  line-height: 1.6;
+  color: var(--bow-text);
+  margin: 0 0 14px;
+}
+
+.bow-sheet-block { margin-bottom: 14px; }
+
+.bow-sheet-block h4 {
+  margin: 0 0 6px;
+  font-family: var(--bow-mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--bow-brass-dim);
+}
+
+.bow-tag {
+  display: inline-block;
+  font-family: var(--bow-mono);
+  font-size: 0.68rem;
+  color: var(--bow-dim);
+  background: #1a1712;
+  border: 1px solid var(--bow-line-soft);
+  padding: 3px 8px;
+  margin: 0 5px 5px 0;
+  border-radius: var(--bow-radius);
+}
+
+.bow-mem {
+  font-size: 0.78rem;
+  color: var(--bow-dim);
+  padding: 4px 0;
+  border-bottom: 1px dotted var(--bow-line-soft);
+}
+
+.bow-sheet-acts {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+  padding-top: 12px;
+  border-top: 1px solid var(--bow-line-soft);
+}
+
+.bow-sheet-acts .bow-btn { flex: 1; }
+
+/* --- Торговля --- */
+.bow-trade { display: flex; flex-direction: column; gap: 9px; }
+
+.bow-trade-group-title {
+  font-family: var(--bow-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--bow-faint);
+  margin-bottom: 2px;
+}
+
+.bow-trade-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px dotted var(--bow-line-soft);
+}
+
+.bow-trade-name { font-size: 0.8rem; }
+
+.bow-trade-price {
+  font-family: var(--bow-mono);
+  font-size: 0.74rem;
+  color: var(--bow-brass);
+  white-space: nowrap;
+}
+
+.bow-trade-btn {
+  font-family: var(--bow-mono);
+  font-size: 0.7rem;
+  color: var(--bow-text);
+  background: #201d16;
+  border: 1px solid var(--bow-line);
+  border-radius: var(--bow-radius);
+  padding: 6px 10px;
+  min-width: 40px;
+  min-height: 34px;
+  cursor: pointer;
+}
+
+.bow-trade-btn:hover:not(:disabled) { border-color: var(--bow-brass-dim); color: var(--bow-brass); }
+.bow-trade-btn:disabled { opacity: 0.4; cursor: default; }
+
+/* --- Журнал --- */
+.bow-panel-tall { display: flex; flex-direction: column; }
+
+.bow-journal {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 46vh;
+  overflow-y: auto;
+  padding-right: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--bow-line) transparent;
+}
+
+.bow-journal::-webkit-scrollbar { width: 6px; }
+.bow-journal::-webkit-scrollbar-thumb { background: var(--bow-line); }
+
+.bow-jrow {
+  display: grid;
+  grid-template-columns: 42px 1fr;
+  gap: 8px;
+  font-size: 0.76rem;
+  line-height: 1.45;
+  padding-bottom: 5px;
+  border-bottom: 1px dotted var(--bow-line-soft);
+}
+
+.bow-jtime {
+  font-family: var(--bow-mono);
+  font-size: 0.66rem;
+  color: var(--bow-faint);
+  padding-top: 2px;
+}
+
+.bow-jtext { color: var(--bow-dim); }
+
+.bow-kind-danger .bow-jtext { color: #c08a80; }
+.bow-kind-need .bow-jtext { color: var(--bow-low); }
+.bow-kind-trade .bow-jtext { color: var(--bow-brass); }
+.bow-kind-talk .bow-jtext { color: #b6b09c; }
+.bow-kind-move .bow-jtext { color: var(--bow-faint); }
+.bow-kind-rumour .bow-jtext { color: #a9a084; font-style: italic; }
+.bow-kind-system .bow-jtext { color: var(--bow-brass); }
+
+/* --- Подвал --- */
+.bow-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: space-between;
+  margin-top: 20px;
+  padding-top: 12px;
+  border-top: 1px solid var(--bow-line-soft);
+  font-family: var(--bow-mono);
+  font-size: 0.66rem;
+  color: var(--bow-faint);
+}
+
+/* ============================================================
+   Адаптив
+   ============================================================ */
+
+/* Планшет: две колонки, журнал уходит вниз на всю ширину */
+@media (max-width: 1100px) {
+  .bow-grid {
+    grid-template-columns: minmax(200px, 250px) minmax(0, 1fr);
+  }
+  .bow-col-right {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(220px, 300px);
+    gap: 14px;
+    align-items: start;
+  }
+  .bow-journal { max-height: 260px; }
+}
+
+/* Телефон: одна колонка, порядок — состояние, сцена, люди, хроника */
+@media (max-width: 720px) {
+  body { font-size: 15px; }
+
+  .bow-app { padding: 0 10px 22px; }
+
+  .bow-grid { grid-template-columns: minmax(0, 1fr); }
+
+  .bow-col-left { order: 1; }
+  .bow-col-center { order: 2; }
+  .bow-col-right {
+    order: 3;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .bow-header { padding: 12px 2px 10px; }
+  .bow-brand h1 { font-size: 1rem; letter-spacing: 0.1em; }
+  .bow-head-info { text-align: left; width: 100%; }
+
+  .bow-skills { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+  /* Кнопки крупнее: палец, а не курсор */
+  .bow-btn { flex: 1 1 calc(50% - 7px); font-size: 0.8rem; min-height: 46px; }
+  .bow-btn-sm { flex: none; width: 100%; min-height: 44px; }
+  .bow-trade-btn { min-height: 40px; min-width: 46px; }
+
+  .bow-person { padding: 10px; min-height: 46px; }
+  .bow-journal { max-height: 300px; }
+  .bow-scene { padding: 13px 13px 11px; }
+  .bow-scene-text p { font-size: 0.92rem; }
+}
+
+/* Очень узкий экран */
+@media (max-width: 380px) {
+  .bow-btn { flex: 1 1 100%; }
+  .bow-trade-row { grid-template-columns: 1fr auto; }
+}
+
+/* --- Уважение к настройкам доступности --- */
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}
+
+@media (prefers-contrast: more) {
+  :root {
+    --bow-text: #f0ead9;
+    --bow-dim: #c2b9a3;
+    --bow-line: #5a5142;
+  }
+}
+
+/* Печать не нужна, но пусть не ломается */
+@media print {
+  .bow-actions, .bow-saves, .bow-footer { display: none; }
+}

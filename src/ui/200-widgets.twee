@@ -1,0 +1,110 @@
+:: tradeWidget [widget]
+/* Виджет торговли.
+
+   Два правила, выведенных из реальных ошибок SugarCube:
+   1. Виджет НЕ принимает аргументов: аргументы макросов приходят
+      строками, и объект превращается в "[object Object]". Состояние
+      виджет читает сам через window.BowGame.getState().
+   2. Внутри HTML-атрибутов НЕТ макросов: `<<if>>` внутри тега ломает
+      парсер ("child tag <</if>> found outside"). Поэтому варианты
+      кнопки рисуются двумя полными ветками if/else. */
+<<widget "tradeWidget">>
+<<nobr>>
+<<set _s to window.BowGame.getState()>>
+<<set _l to Bow.data.locations[_s.player.location]>>
+<<set _money to _s.player.money>>
+
+<div class="bow-trade">
+
+  <<if _l and _l.trades>>
+    <<if _l.trades.length gt 0>>
+      <div class="bow-trade-group-title">Купить</div>
+    <</if>>
+    <<for _i to 0; _i lt _l.trades.length; _i++>>
+      <<set _key to _l.trades[_i]>>
+      <<set _item to Bow.data.items[_key]>>
+      <<set _price to Bow.economy.buyPrice(_key, _s)>>
+      <<set _btn to '<button class="bow-trade-btn" data-act="buy" data-key="' + _key + '"' + (_money gte _price ? '' : ' disabled') + '>Взять</button>'>>
+      <div class="bow-trade-row">
+        <span class="bow-trade-name"><<= _item.name>></span>
+        <span class="bow-trade-price"><<= _price>> м.</span>
+        <<= _btn>>
+      </div>
+    <</for>>
+  <</if>>
+
+  <<set _sellable to []>>
+  <<if _l and _l.trades>>
+    <<for _i to 0; _i lt _s.player.inventory.length; _i++>>
+      <<set _entry to _s.player.inventory[_i]>>
+      <<for _j to 0; _j lt _l.trades.length; _j++>>
+        <<set _tk to _l.trades[_j]>>
+        <<if Bow.data.items[_tk].id is _entry.itemId>>
+          <<run _sellable.push(_tk)>>
+        <</if>>
+      <</for>>
+    <</for>>
+  <</if>>
+
+  <<if _sellable.length gt 0>>
+    <div class="bow-trade-group-title">Продать</div>
+    <<for _i to 0; _i lt _sellable.length; _i++>>
+      <<set _key to _sellable[_i]>>
+      <<set _item to Bow.data.items[_key]>>
+      <<set _have to Bow.economy.countItem(_s.player, _item.id)>>
+      <<set _price to Bow.economy.sellPrice(_key)>>
+      <<set _btn to '<button class="bow-trade-btn" data-act="sell" data-key="' + _key + '">Сбыть</button>'>>
+      <div class="bow-trade-row">
+        <span class="bow-trade-name"><<= _item.name>> <span class="bow-faint">×<<= _have>></span></span>
+        <span class="bow-trade-price"><<= _price>> м.</span>
+        <<= _btn>>
+      </div>
+    <</for>>
+  <</if>>
+
+  <<set _noTrade to true>>
+  <<if _l and _l.trades>>
+    <<if _l.trades.length gt 0>>
+      <<set _noTrade to false>>
+    <</if>>
+  <</if>>
+  <<if _sellable.length gt 0>>
+    <<set _noTrade to false>>
+  <</if>>
+  <<if _noTrade>>
+    <div class="bow-empty">Здесь не торгуют. Товар — на площади, в трактире или у кузнеца.</div>
+  <</if>>
+
+  <<set _consumables to []>>
+  <<for _i to 0; _i lt _s.player.inventory.length; _i++>>
+    <<set _entry to _s.player.inventory[_i]>>
+    <<set _def to Bow.economy.findItemDef(_entry.itemId)>>
+    <<set _edible to false>>
+    <<if _def>>
+      <<if _def.food or _def.mood>>
+        <<set _edible to true>>
+      <</if>>
+    <</if>>
+    <<if _edible>>
+      <<set _cItem to { key: Bow.economy.keyOf(_def), defName: _def.name, food: _def.food, mood: _def.mood, qty: _entry.qty }>>
+      <<run _consumables.push(_cItem)>>
+    <</if>>
+  <</for>>
+
+  <<if _consumables.length gt 0>>
+    <div class="bow-trade-group-title">Съесть и выпить</div>
+    <<for _i to 0; _i lt _consumables.length; _i++>>
+      <<set _c to _consumables[_i]>>
+      <<set _btn to '<button class="bow-trade-btn" data-act="' + (_c.food ? 'eat' : 'drink') + '" data-item="' + _c.key + '">' + (_c.food ? 'Съесть' : 'Выпить') + '</button>'>>
+      <<set _effect to _c.food ? ('+' + _c.food + ' сыт.') : ('+' + _c.mood + ' дух.')>>
+      <div class="bow-trade-row">
+        <span class="bow-trade-name"><<= _c.defName>> <span class="bow-faint">×<<= _c.qty>></span></span>
+        <span class="bow-trade-price"><<= _effect>></span>
+        <<= _btn>>
+      </div>
+    <</for>>
+  <</if>>
+
+</div>
+<</nobr>>
+<</widget>>

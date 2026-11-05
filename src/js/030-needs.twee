@@ -1,0 +1,111 @@
+:: bow-needs [script]
+/* ============================================================
+   BOW NEEDS — потребности и здоровье.
+   Падение зависит от прошедших часов, а не от числа вызовов.
+   Границы 0..100 соблюдаются всегда, в обе стороны.
+   ============================================================ */
+(function (global) {
+  "use strict";
+
+  var Bow = global.Bow = global.Bow || {};
+
+  var KEYS = ["health", "hunger", "fatigue", "mood"];
+
+  function ensure(person) {
+    KEYS.forEach(function (k) {
+      if (typeof person.needs[k] !== "number" || isNaN(person.needs[k])) {
+        person.needs[k] = 50;
+      }
+      person.needs[k] = Bow.util.clamp(person.needs[k], 0, 100);
+    });
+    return person;
+  }
+
+  /* Часовая деградация. Вызывается подпиской на tick:hour. */
+  function hourly(state) {
+    var rules = Bow.data.needsRules;
+    var targets = [state.player];
+
+    Object.keys(state.people).forEach(function (id) {
+      var n = state.people[id];
+      if (n.alive) { targets.push(n); }
+    });
+
+    targets.forEach(function (person) {
+      ensure(person);
+      var n = person.needs;
+
+      if (n.hunger > 0) {
+        n.hunger += rules.perHour.hunger;
+      }
+      if (n.fatigue > 0) {
+        n.fatigue += rules.perHour.fatigue;
+      }
+      n.mood += rules.perHour.mood;
+
+      /* Последствия голода и истощения — только для игрока:
+         у NPC ресурсы считаются упрощённо (производительность). */
+      if (person === state.player) {
+        var hungry = n.hunger < rules.hungerLow;
+        var tired = n.fatigue < rules.fatigueLow;
+
+        if (hungry && tired) {
+          n.health += rules.healthPenalty.both;
+        } else if (hungry) {
+          n.health += rules.healthPenalty.hunger;
+        } else if (tired) {
+          n.health += rules.healthPenalty.fatigue;
+        }
+        if (hungry) {
+          n.mood += rules.moodPenaltyHunger;
+        }
+      }
+
+      KEYS.forEach(function (k) {
+        n[k] = Bow.util.clamp(n[k], 0, 100);
+        n[k] = Bow.util.round1(n[k]);
+      });
+    });
+  }
+
+  /* Сколько дней продержится персонаж при текущем голоде — для подсказки в UI.
+     Это оценка, а не точная механика. */
+  function estimateDaysOfHunger(person) {
+    var rules = Bow.data.needsRules;
+    var perHour = Math.abs(rules.perHour.hunger);
+    var hoursLeft = person.needs.hunger / perHour;
+    return Math.max(0, Math.round((hoursLeft / 24) * 10) / 10);
+  }
+
+  function applyChange(person, key, delta) {
+    if (KEYS.indexOf(key) === -1) { return; }
+    person.needs[key] = Bow.util.clamp(Bow.util.round1((person.needs[key] + delta)), 0, 100);
+  }
+
+  /* Ключ слова и текст для интерфейса — в одном месте. */
+  function label(key) {
+    return { health: "Здоровье", hunger: "Сытость", fatigue: "Бодрость", mood: "Расположение духа" }[key] || key;
+  }
+
+  /* Цвет-подсказка для полосы: 3 ступени, без «красивостей». */
+  function level(value) {
+    if (value <= 20) { return "critical"; }
+    if (value <= 45) { return "low"; }
+    if (value <= 75) { return "ok"; }
+    return "good";
+  }
+
+  Bow.needs = {
+    KEYS: KEYS,
+    hourly: hourly,
+    ensure: ensure,
+    applyChange: applyChange,
+    label: label,
+    level: level,
+    estimateDaysOfHunger: estimateDaysOfHunger
+  };
+
+  /* Подписка: ядро не знает, кто её установил. */
+  Bow.bus.on("tick:hour", hourly);
+
+})(typeof window !== "undefined" ? window : this);

@@ -1,0 +1,120 @@
+:: bow-events [script]
+/* ============================================================
+   BOW EVENTS — происшествия в мире.
+   Принцип: у события есть причина. Часть событий — следствие
+   состояния (голод, ночь, чужое место), а не чистый случай.
+   ============================================================ */
+(function (global) {
+  "use strict";
+
+  var Bow = global.Bow = global.Bow || {};
+
+  /* Таблица «причинных» событий: проверяются по порядку,
+     первое подходящее срабатывает. Каждая запись:
+     id, условие(state, rng) -> bool, вес (шанс), текст, журнал(да/нет). */
+  var CAUSED = [
+    {
+      id: "night-forest",
+      when: function (s) { return s.player.location === "forest" && Bow.time.isNight(s); },
+      chance: 0.55,
+      text: "В темноте между стволами что-то хрустит. Не ветер: ветер здесь не идёт по кругу.",
+      kind: "danger"
+    },
+    {
+      id: "night-anywhere",
+      when: function (s) { return Bow.time.isNight(s) && s.player.location !== "tavern"; },
+      chance: 0.3,
+      text: "Холод пробирается под одежду. Ночь на севере коротка, но зла.",
+      kind: "environment"
+    },
+    {
+      id: "hungry",
+      when: function (s) { return s.player.needs.hunger < 20; },
+      chance: 0.6,
+      text: "Живот сводит от голода. Мысли становятся короче и злее.",
+      kind: "need"
+    },
+    {
+      id: "tired",
+      when: function (s) { return s.player.needs.fatigue < 15; },
+      chance: 0.5,
+      text: "Ноги тяжелеют. Вы ловите себя на том, что стоите и смотрите в одну точку.",
+      kind: "need"
+    },
+    {
+      id: "market-rumour",
+      when: function (s) { return s.player.location === "square"; },
+      chance: 0.28,
+      text: "У колодца возчики спорят о следах за частоколом. Говорят, след слишком велик для волка.",
+      kind: "rumour"
+    },
+    {
+      id: "tavern-talk",
+      when: function (s) { return s.player.location === "tavern"; },
+      chance: 0.25,
+      text: "За соседним столом кто-то тихо считает дни до солевого обоза.",
+      kind: "ambient"
+    },
+    {
+      id: "smithy-work",
+      when: function (s) { return s.player.location === "smithy"; },
+      chance: 0.22,
+      text: "Тарн бросает заготовку в воду. Пар шипит, и на миг в кузнице становится тихо.",
+      kind: "ambient"
+    },
+    {
+      id: "outskirts-traces",
+      when: function (s) { return s.player.location === "outskirts"; },
+      chance: 0.3,
+      text: "На снегу у частокола — следы. Кто-то стоял здесь и смотрел в сторону тайги.",
+      kind: "rumour"
+    }
+  ];
+
+  /* Настроение: событие может поднять или испортить расположение духа. */
+  var MOOD_EFFECT = {
+    danger: -4,
+    need: -2,
+    environment: -1,
+    rumour: 1,
+    ambient: 0
+  };
+
+  function roll(state, rng) {
+    var candidates = CAUSED.filter(function (e) { return e.when(state, rng); });
+    if (candidates.length === 0) { return null; }
+
+    for (var i = 0; i < candidates.length; i++) {
+      var c = candidates[i];
+      if (rng() < c.chance) {
+        var effect = MOOD_EFFECT[c.kind] || 0;
+        if (effect) { Bow.needs.applyChange(state.player, "mood", effect); }
+
+        Bow.journal.event(state, c.text, c.kind, { causeId: c.id });
+        Bow.journal.add(state, c.text, c.kind);
+        return c.id;
+      }
+    }
+    return null;
+  }
+
+  /* Проверка после каждого действия игрока и после каждого часа пути.
+     В прототипе — не чаще одного события за действие. */
+  function afterAction(state, rng) {
+    return roll(state, rng);
+  }
+
+  function afterMove(state, rng) {
+    /* После перехода шанс выше: дорога — источник новостей. */
+    var hit = roll(state, rng);
+    if (hit) { return hit; }
+    return null;
+  }
+
+  Bow.events = {
+    afterAction: afterAction,
+    afterMove: afterMove,
+    table: CAUSED
+  };
+
+})(typeof window !== "undefined" ? window : this);
