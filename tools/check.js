@@ -131,11 +131,40 @@ function byAct(act, key) {
     return "вложенность верная";
   });
 
-  check("Стартовый пассаж вывел торговый виджет", () => {
-    const trade = doc().querySelector(".bow-trade");
-    assert(trade, "виджет торговли не отрисован");
+  check("Торговля отрисована и знает, где игрок", () => {
+    const g = game();
+    g.player.location = "square";
+    win.BowGame.refresh(true);
+    const trade = doc().querySelector("#passages .bow-trade");
+    assert(trade, "торговля не отрисована");
     assert(trade.querySelector("[data-act='buy']"), "нет ни одной кнопки покупки");
-    return "кнопки покупки есть";
+
+    /* Ключевая проверка: в лесу торговать нечем, и старого товара
+       с площади там быть не должно. */
+    g.player.location = "forest";
+    win.BowGame.refresh(true);
+    const forest = doc().querySelector("#passages .bow-trade");
+    assert(!forest.querySelector("[data-act='buy']"),
+      "в лесу остался товар прошлой локации");
+    assert(forest.querySelector(".bow-empty"), "в лесу нет честной надписи «здесь не торгуют»");
+
+    g.player.location = "square";
+    win.BowGame.refresh(true);
+    return "товар следует за локацией";
+  });
+
+  check("Цена пересчитывается сразу после покупки", () => {
+    const g = game();
+    g.player.location = "square";
+    g.player.money = 18;
+    win.BowGame.refresh(true);
+    const row = () => doc().querySelector("#passages .bow-trade-row").textContent.replace(/\s+/g, " ");
+    const before = row();
+    click(doc().querySelector("#passages [data-act='buy']"));
+    const after = row();
+    assert(before !== after || g.player.money === 15,
+      "торговля не обновилась после покупки");
+    return "деньги " + g.player.money + " м.";
   });
 
   check("Время отформатировано и не пустое", () => {
@@ -463,6 +492,87 @@ function byAct(act, key) {
     assert(rep > 0, "молва о тёплом разговоре не дошла до общины");
     g.reputation["org:brod"] = 0;
     return "отношение +" + res.summary.delta + " → молва +" + rep;
+  });
+
+  /* 8ж. Оформление: холодная поверхность, глубина, читаемость */
+  check("Ни одной тёплой коричневой подложки в оформлении", () => {
+    const styles = [...doc().querySelectorAll("style")].map((x) => x.textContent).join("\n");
+    /* Прежние коричневые тона: от них владелец просил уйти. */
+    const warm = ["#17150f", "#201d16", "#262219", "#1b1813", "#1a1812",
+                  "#242019", "#1e1b14", "#1a1712", "#221f18", "#100f0c", "#12100c"];
+    const found = warm.filter((c) => styles.indexOf(c) !== -1);
+    assert(found.length === 0, "остались тёплые подложки: " + found.join(", "));
+    assert(/--bow-surface-1/.test(styles), "нет шкалы поверхностей");
+    return "поверхности холодные, токенов: " +
+      (styles.match(/--bow-surface-/g) || []).length;
+  });
+
+  check("У кнопок есть отдача от нажатия", () => {
+    const styles = [...doc().querySelectorAll("style")].map((x) => x.textContent).join("\n");
+    const active = styles.slice(styles.indexOf(".bow-btn:active"));
+    assert(/transform:\s*translateY\(1px\)/.test(active.slice(0, 300)),
+      "кнопка не реагирует на нажатие");
+    return "сдвиг на 1px и провал тени";
+  });
+
+  check("Текст сцены ограничен мерой чтения", () => {
+    const styles = [...doc().querySelectorAll("style")].map((x) => x.textContent).join("\n");
+    assert(/max-width:\s*7\dch/.test(styles), "строка не ограничена по ширине чтения");
+    assert(/--bow-leading/.test(styles), "нет единого межстрочного интервала");
+    return "74ch и единый межстрочный";
+  });
+
+  check("На телефоне шапка липкая и без лишних строк", () => {
+    const styles = [...doc().querySelectorAll("style")].map((x) => x.textContent).join("\n");
+    /* SugarCube вставляет таблицу стилей дважды (style-story и
+       twine-user-stylesheet), а внутри неё есть ещё однострочный
+       медиазапрос про подсказку логотипа. Поэтому собираем все блоки
+       и проверяем самый длинный — настоящий блок телефона. */
+    const blocks = [];
+    let at = -1;
+    while ((at = styles.indexOf("@media (max-width: 720px)", at + 1)) !== -1) {
+      const open = styles.indexOf("{", at);
+      const close = styles.indexOf("\n}\n", open);
+      blocks.push(styles.slice(at, close === -1 ? open + 2400 : close));
+    }
+    assert(blocks.length > 0, "нет медиазапроса телефона");
+    const block = blocks.reduce((a, b) => (b.length > a.length ? b : a), "");
+    assert(/position:\s*sticky/.test(block), "шапка уезжает при прокрутке");
+    assert(/\.bow-logo-text\s*\{\s*display:\s*none/.test(block), "название не скрыто");
+    assert(/\.bow-weather\s*\{\s*display:\s*none/.test(block), "погода не скрыта");
+    return "одна липкая строка";
+  });
+
+  check("Шкала отношения видна и меняет сторону", () => {
+    const g = game();
+    g.reputation["org:brod"] = 60;
+    win.BowGame.refresh(true);
+    const pick = () => [...doc().querySelectorAll("#bow-orgs .bow-org")]
+      .find((o) => /Брод/.test(o.textContent));
+    const warm = pick().querySelector(".bow-org-fill");
+    assert(warm.classList.contains("bow-org-fill-warm"), "уважение не показано тёплой стороной");
+    const warmLeft = warm.style.left;
+
+    g.reputation["org:brod"] = -60;
+    win.BowGame.refresh(true);
+    const cold = pick().querySelector(".bow-org-fill");
+    assert(cold.classList.contains("bow-org-fill-cold"), "вражда не показана холодной стороной");
+    assert(cold.style.left !== warmLeft, "заливка не сдвинулась в другую сторону");
+
+    g.reputation["org:brod"] = 0;
+    win.BowGame.refresh(true);
+    return "вправо — уважение, влево — вражда";
+  });
+
+  check("Блоки сцены можно свернуть", () => {
+    const folds = doc().querySelectorAll(".bow-fold");
+    assert(folds.length >= 3, "блоков для сворачивания меньше трёх: " + folds.length);
+    const first = folds[0];
+    assert(first.open, "заработок закрыт по умолчанию");
+    first.open = false;
+    assert(!first.open, "блок не сворачивается");
+    first.open = true;
+    return folds.length + " блока: заработок, люди, товар";
   });
 
   check("В панели есть раздел «Общины», а в сцене — заработок", () => {

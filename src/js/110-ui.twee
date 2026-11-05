@@ -204,17 +204,27 @@
       var tone = rep >= 25 ? "warm" : rep <= -25 ? "cold" : "neutral";
       var sign = rep > 0 ? "+" : "";
 
+      /* Отношение — шкала от -100 до +100 с нулём по центру.
+         Слева вражда, справа уважение: видно не число, а сторону. */
+      var left = rep < 0 ? 50 + rep / 2 : 50;
+      var width = Math.abs(rep) / 2;
+      var fill = rep < 0 ? "bow-org-fill-cold" : "bow-org-fill-warm";
+
       return '<div class="bow-org">' +
         '<div class="bow-org-head">' +
           '<b>' + esc(org.short || org.name) + '</b>' +
           '<span class="bow-tone bow-' + tone + '">' + sign + rep + '</span>' +
         '</div>' +
         '<div class="bow-org-word">' + esc(Bow.work.reputationWord(rep)) + '</div>' +
-        '<div class="bow-org-bars">' +
-          '<span class="bow-org-bar" title="Достаток"><i style="width:' + Math.round(org.wealth || 0) + '%"></i></span>' +
-          '<span class="bow-org-bar bow-org-bar-unrest" title="Недовольство"><i style="width:' + Math.round(org.unrest || 0) + '%"></i></span>' +
+        '<div class="bow-org-track" role="img" aria-label="Отношение: ' + rep + ' из 100">' +
+          '<span class="bow-org-mid"></span>' +
+          '<span class="bow-org-fill ' + fill + '" style="left:' + left + '%;width:' + width + '%"></span>' +
         '</div>' +
-        '<div class="bow-org-legend"><span>достаток</span><span>недовольство</span></div>' +
+        '<div class="bow-org-legend"><span>вражда</span><span>уважение</span></div>' +
+        '<div class="bow-org-stats">' +
+          '<span title="Достаток общины">достаток <b>' + Math.round(org.wealth || 0) + '</b></span>' +
+          '<span title="Недовольство в общине">недовольство <b>' + Math.round(org.unrest || 0) + '</b></span>' +
+        '</div>' +
       '</div>';
     }).join("");
   }
@@ -436,6 +446,91 @@
     renderJournal(state);
     renderScene(state, animate && (sceneChanged || (options && options.forceFade)));
     renderDialog(state);
+    renderTrade(state);
+  }
+
+  /* ---------- Товар и снедь ----------
+     Раньше это был виджет SugarCube в пассаже, и он рисовался один раз
+     при запуске: в лесу показывался хлеб с площади, а после покупки
+     цена не обновлялась. Теперь, как и всё остальное в интерфейсе,
+     блок строится из состояния — и потому не может отстать на шаг. */
+  function renderTrade(state) {
+    var box = $("passages");
+    if (!box || !state || !state.player) { return; }
+    var loc = Bow.data.locations[state.player.location];
+    var trades = (loc && loc.trades) ? loc.trades : [];
+    var money = state.player.money;
+    var html = [];
+
+    /* --- Купить --- */
+    if (trades.length) {
+      html.push('<div class="bow-trade-group-title">Купить</div>');
+      trades.forEach(function (key) {
+        var item = Bow.data.items[key];
+        if (!item) { return; }
+        var price = Bow.economy.buyPrice(key, state, state.player.location);
+        var short = money < price;
+        html.push('<div class="bow-trade-row">' +
+          '<span class="bow-trade-name">' + esc(item.name) + '</span>' +
+          '<span class="bow-trade-price' + (short ? " bow-trade-short" : "") + '">' + price + ' м.</span>' +
+          '<button class="bow-trade-btn" data-act="buy" data-key="' + esc(key) + '"' +
+            (short ? " disabled" : "") + '>Взять</button>' +
+        '</div>');
+      });
+    }
+
+    /* --- Продать --- */
+    var sellable = [];
+    state.player.inventory.forEach(function (entry) {
+      trades.forEach(function (key) {
+        var item = Bow.data.items[key];
+        if (item && item.id === entry.itemId) { sellable.push({ key: key, def: item }); }
+      });
+    });
+
+    if (sellable.length) {
+      html.push('<div class="bow-trade-group-title">Продать</div>');
+      sellable.forEach(function (ent) {
+        var have = Bow.economy.countItem(state.player, ent.def.id);
+        var price = Bow.economy.sellPrice(ent.key, state, state.player.location);
+        html.push('<div class="bow-trade-row">' +
+          '<span class="bow-trade-name">' + esc(ent.def.name) +
+            ' <span class="bow-faint">×' + have + '</span></span>' +
+          '<span class="bow-trade-price">' + price + ' м.</span>' +
+          '<button class="bow-trade-btn" data-act="sell" data-key="' + esc(ent.key) + '">Сбыть</button>' +
+        '</div>');
+      });
+    }
+
+    if (!trades.length && !sellable.length) {
+      html.push('<div class="bow-empty">Здесь не торгуют. Товар — на площади, в трактире или у кузница.</div>');
+    }
+
+    /* --- Съесть и выпить --- */
+    var consumables = [];
+    state.player.inventory.forEach(function (entry) {
+      var def = Bow.economy.findItemDef(entry.itemId);
+      if (def && (def.food || def.mood)) {
+        consumables.push({ key: Bow.economy.keyOf(def), def: def, qty: entry.qty });
+      }
+    });
+
+    if (consumables.length) {
+      html.push('<div class="bow-trade-group-title">Съесть и выпить</div>');
+      consumables.forEach(function (c) {
+        var act = c.def.food ? "eat" : "drink";
+        var label = c.def.food ? "Съесть" : "Выпить";
+        var effect = c.def.food ? ("+" + c.def.food + " сыт.") : ("+" + c.def.mood + " дух.");
+        html.push('<div class="bow-trade-row">' +
+          '<span class="bow-trade-name">' + esc(c.def.name) +
+            ' <span class="bow-faint">×' + c.qty + '</span></span>' +
+          '<span class="bow-trade-price">' + esc(effect) + '</span>' +
+          '<button class="bow-trade-btn" data-act="' + act + '" data-item="' + esc(c.key) + '">' + label + '</button>' +
+        '</div>');
+      });
+    }
+
+    box.innerHTML = '<div class="bow-trade">' + html.join("") + '</div>';
   }
 
   /* ---------- Выдвижная панель ----------

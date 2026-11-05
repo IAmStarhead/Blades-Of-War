@@ -20,7 +20,7 @@
       <span class="bow-tb-sep">·</span>
       <span id="bow-where" class="bow-tb-place">—</span>
       <span class="bow-tb-sep">·</span>
-      <span class="bow-tb-money"><b id="bow-money">0</b> м.</span>
+      <span class="bow-tb-money" title="Монеты"><b id="bow-money">0</b> м.</span>
       <span id="bow-weather" class="bow-weather"></span>
         <span class="bow-clock-controls" role="group" aria-label="Ход времени">
           <button class="bow-clock-btn" data-act="clock" data-scale="paused" title="Время стоит">❙❙</button>
@@ -138,17 +138,24 @@
           <button class="bow-btn" data-act="move" data-loc="forest">Опушка тайги</button>
         </div>
 
-        <h2 class="bow-h2 bow-h2-gap">Заработок</h2>
-        <div id="bow-jobs" class="bow-jobs"></div>
+        <!-- Складывающиеся блоки: экран не превращается в полотно,
+             а игрок сам решает, что держать открытым. Заработок
+             открыт по умолчанию — это основное действие. -->
+        <details class="bow-fold" open>
+          <summary class="bow-h2 bow-fold-sum"><span>Заработок</span><i class="bow-fold-i"></i></summary>
+          <div id="bow-jobs" class="bow-jobs"></div>
+        </details>
 
-        <h2 class="bow-h2 bow-h2-gap">Рядом</h2>
-        <div id="bow-people" class="bow-people"></div>
-      </section>
+        <details class="bow-fold" open>
+          <summary class="bow-h2 bow-fold-sum"><span>Рядом</span><i class="bow-fold-i"></i></summary>
+          <div id="bow-people" class="bow-people"></div>
+        </details>
 
-      <section class="bow-panel">
-        <h2 class="bow-h2">Товар и снедь</h2>
-        <!-- #passages обязателен для SugarCube -->
-        <div id="passages"></div>
+        <details class="bow-fold" open>
+          <summary class="bow-h2 bow-fold-sum"><span>Товар и снедь</span><i class="bow-fold-i"></i></summary>
+          <!-- #passages обязателен для SugarCube -->
+          <div id="passages"></div>
+        </details>
       </section>
 
     </main>
