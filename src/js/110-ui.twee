@@ -140,6 +140,75 @@
     }).join("");
   }
 
+  /* ---------- Заработок ----------
+     Игрок должен видеть риск: сколько часов, сколько платят,
+     насколько велик шанс и от какого навыка он зависит. */
+  function renderJobs(state) {
+    var box = $("bow-jobs");
+    if (!box) { return; }
+
+    var jobs = Bow.work.listAt(state);
+    if (!jobs.length) {
+      box.innerHTML = '<div class="bow-empty">Здесь некому платить за работу.</div>';
+      return;
+    }
+
+    box.innerHTML = jobs.map(function (j) {
+      var pct = Math.round(j.chance * 100);
+      var risky = j.chance < 0.4 ? "bow-job-risky" : j.chance > 0.7 ? "bow-job-safe" : "";
+      if (!j.available) {
+        return '<div class="bow-job bow-job-locked">' +
+          '<div class="bow-job-head"><b>' + esc(j.title) + '</b>' +
+            '<span class="bow-dim">' + esc(j.orgName) + '</span></div>' +
+          '<div class="bow-job-note">Не доверят: община относится к вам как «' +
+            esc(Bow.work.reputationWord(Bow.work.reputation(state, j.org))) + '».</div>' +
+        '</div>';
+      }
+      return '<div class="bow-job">' +
+        '<div class="bow-job-head">' +
+          '<b>' + esc(j.title) + '</b>' +
+          '<span class="bow-job-pay">' + j.payMin + '–' + j.payMax + ' м.</span>' +
+        '</div>' +
+        '<div class="bow-job-note">' + esc(j.desc) + '</div>' +
+        '<div class="bow-job-meta">' +
+          '<span>' + j.hours + ' ч.</span>' +
+          '<span class="' + risky + '">шанс ' + pct + '%</span>' +
+          '<span>' + esc({ combat: "Бой", trade: "Торг", survival: "Выживание", medicine: "Лечение", leadership: "Власть" }[j.skill] || j.skill) + ' ' + j.skillValue + '</span>' +
+        '</div>' +
+        '<button class="bow-btn bow-btn-sm" data-act="work" data-job="' + esc(j.key) + '">Взяться за работу</button>' +
+      '</div>';
+    }).join("");
+  }
+
+  /* ---------- Общины ----------
+     Репутация — это отношение конкретной общины, а не «очки героя»
+     вообще. Здесь же её достаток и недовольство: мир живёт сам. */
+  function renderOrgs(state) {
+    var box = $("bow-orgs");
+    if (!box) { return; }
+
+    var ids = Object.keys(state.orgs || {});
+    box.innerHTML = ids.map(function (id) {
+      var org = state.orgs[id];
+      var rep = Bow.work.reputation(state, id);
+      var tone = rep >= 25 ? "warm" : rep <= -25 ? "cold" : "neutral";
+      var sign = rep > 0 ? "+" : "";
+
+      return '<div class="bow-org">' +
+        '<div class="bow-org-head">' +
+          '<b>' + esc(org.short || org.name) + '</b>' +
+          '<span class="bow-tone bow-' + tone + '">' + sign + rep + '</span>' +
+        '</div>' +
+        '<div class="bow-org-word">' + esc(Bow.work.reputationWord(rep)) + '</div>' +
+        '<div class="bow-org-bars">' +
+          '<span class="bow-org-bar" title="Достаток"><i style="width:' + Math.round(org.wealth || 0) + '%"></i></span>' +
+          '<span class="bow-org-bar bow-org-bar-unrest" title="Недовольство"><i style="width:' + Math.round(org.unrest || 0) + '%"></i></span>' +
+        '</div>' +
+        '<div class="bow-org-legend"><span>достаток</span><span>недовольство</span></div>' +
+      '</div>';
+    }).join("");
+  }
+
   function renderJournal(state) {
     var box = $("bow-journal");
     if (!box) { return; }
@@ -351,7 +420,9 @@
     renderNeeds(state);
     renderSkills(state);
     renderInventory(state);
+    renderJobs(state);
     renderPeople(state);
+    renderOrgs(state);
     renderJournal(state);
     renderScene(state, animate && (sceneChanged || (options && options.forceFade)));
     renderDialog(state);

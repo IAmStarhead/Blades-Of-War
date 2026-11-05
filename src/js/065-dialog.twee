@@ -126,6 +126,15 @@
 
     var attitudeChanged = person.attitude !== attitudeBefore;
 
+    /* 3а. Молва: о разговоре узнают в общине собеседника.
+       Слух расходится, только если разговор того стоил: вежливая
+       беседа на ходу ничего не меняет, а ссора или услуга — да.
+       Это честное правило, а не «+1 за каждый клик». */
+    function spreadWord(delta) {
+      if (!person.org || !delta) { return 0; }
+      return Bow.work ? Bow.work.addReputation(state, person.org, delta) : 0;
+    }
+
     /* 4. Закрытие разговора. */
     if (choice.close) {
       /* Прощальная реплика собеседника, чтобы лента не обрывалась. */
@@ -141,6 +150,9 @@
       };
 
       state.dialog = null;
+      /* Молва о беседе: сильная симпатия или обида доходит до общины. */
+      if (summary.delta >= 2) { spreadWord(1); }
+      else if (summary.delta <= -2) { spreadWord(-1); }
       Bow.time.advance(state, 1);
 
       return { ok: true, closed: true, summary: summary, message: "" };

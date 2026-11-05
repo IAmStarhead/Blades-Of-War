@@ -283,6 +283,144 @@ function byAct(act, key) {
     return "+1 час";
   });
 
+  /* 8е. Труд, навыки и отношение общин (0.0.4) */
+  check("Навык влияет на работу: шанс растёт вместе с навыком", () => {
+    const g = game();
+    const job = win.Bow.data.locations[g.player.location].jobs[0];
+    const low = { ...g, player: { ...g.player, skills: { ...g.player.skills, [job.skill]: 5 } } };
+    const high = { ...g, player: { ...g.player, skills: { ...g.player.skills, [job.skill]: 80 } } };
+    const c1 = win.Bow.work.successChance(low, job);
+    const c2 = win.Bow.work.successChance(high, job);
+    assert(c2 > c1, "навык не влияет на шанс: " + c1 + " vs " + c2);
+    return "навык 5 → " + Math.round(c1 * 100) + "%, навык 80 → " + Math.round(c2 * 100) + "%";
+  });
+
+  check("Усталость снижает шанс успеха", () => {
+    const g = game();
+    const job = win.Bow.data.locations[g.player.location].jobs[0];
+    const fresh = { ...g, player: { ...g.player, needs: { ...g.player.needs, fatigue: 90, hunger: 90 } } };
+    const tired = { ...g, player: { ...g.player, needs: { ...g.player.needs, fatigue: 10, hunger: 15 } } };
+    assert(win.Bow.work.successChance(tired, job) < win.Bow.work.successChance(fresh, job),
+      "усталость и голод не влияют на шанс");
+    return "усталый работает хуже";
+  });
+
+  check("Работа платит деньги, тратит время и растит навык", () => {
+    const g = game();
+    g.player.location = "square";
+    g.player.needs.fatigue = 90;
+    g.player.needs.hunger = 90;
+    const money0 = g.player.money;
+    const hours0 = g.time.totalHours;
+    const skill0 = g.player.skills.survival;
+    const res = win.Bow.work.perform(g, "porter", () => 0); // гарантированный успех
+    assert(res.ok && res.success, "работа не выполнена");
+    assert(g.player.money > money0, "деньги не начислены");
+    eq(g.time.totalHours - hours0, 3, "потрачено часов");
+    assert(g.player.skills.survival > skill0, "навык не вырос");
+    return "+" + res.pay + " м., +3 ч., навык " + skill0 + " → " + g.player.skills.survival;
+  });
+
+  check("Провал работы платит половину, а не всё", () => {
+    /* Бросок оплаты задаём одинаковый: иначе сравниваем не успех
+       с провалом, а два разных случайных числа. */
+    const seq = (vals) => { let i = 0; return () => vals[Math.min(i++, vals.length - 1)]; };
+
+    const g = game();
+    g.player.location = "square";
+    g.player.needs.fatigue = 90;
+    g.player.needs.hunger = 90;
+    const ok = win.Bow.work.perform(g, "porter", seq([0, 0]));   // успех, низкая оплата
+
+    const g2 = game();
+    g2.player.location = "square";
+    g2.player.needs.fatigue = 90;
+    g2.player.needs.hunger = 90;
+    const fail = win.Bow.work.perform(g2, "porter", seq([0.99, 0])); // провал, та же оплата
+
+    assert(ok.success === true, "успех не распознан");
+    assert(fail.success === false, "провал не распознан");
+    assert(fail.pay < ok.pay, "за провал заплатили не меньше: " + fail.pay + " vs " + ok.pay);
+    eq(fail.pay, Math.floor(ok.pay / 2), "доля оплаты за провал");
+    return "успех " + ok.pay + " м., провал " + fail.pay + " м.";
+  });
+
+  check("Репутация общины меняет цену в лавке", () => {
+    const g = game();
+    const loc = g.player.location;
+    g.reputation["org:brod"] = 0;
+    const neutral = win.Bow.economy.buyPrice("bread", g, loc);
+    g.reputation["org:brod"] = 70;
+    const friendly = win.Bow.economy.buyPrice("bread", g, loc);
+    g.reputation["org:brod"] = -70;
+    const hostile = win.Bow.economy.buyPrice("bread", g, loc);
+    assert(friendly < neutral, "уважение не снижает цену");
+    assert(hostile > neutral, "вражда не поднимает цену");
+    g.reputation["org:brod"] = 0;
+    return "хлеб: свой " + friendly + " / нейтрально " + neutral + " / враг " + hostile;
+  });
+
+  check("Община не даёт работу тому, кого считает врагом", () => {
+    const g = game();
+    g.player.location = "square";
+    g.reputation["org:brod"] = -80;
+    const jobs = win.Bow.work.listAt(g);
+    assert(jobs.some((j) => !j.available), "все работы доступны врагу общины");
+    const res = win.Bow.work.perform(g, "hawk", () => 0);
+    assert(!res.ok, "врагу всё-таки дали работу");
+    g.reputation["org:brod"] = 0;
+    return "закрыто: " + (res.message || "").slice(0, 40);
+  });
+
+  check("Репутация попадает в сохранение и читается обратно", () => {
+    const g = JSON.parse(JSON.stringify(game()));
+    g.reputation["org:brod"] = 42;
+    const text = win.Bow.save.serialize(g, 12345);
+    const back = win.Bow.save.deserialize(text);
+    assert(back.ok, "сохранение не прочиталось: " + back.reason);
+    eq(back.state.reputation["org:brod"], 42, "репутация после круга");
+    return "42 → сохранение → 42";
+  });
+
+  check("Мир живёт сам: достаток и недовольство общин меняются", () => {
+    const g = game();
+    const before = { wealth: g.orgs["org:brod"].wealth, unrest: g.orgs["org:brod"].unrest };
+    let seed = 7;
+    const rng = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+    for (let i = 0; i < 25; i++) { win.Bow.work.worldTick(g, rng); }
+    const after = g.orgs["org:brod"];
+    assert(after.wealth !== before.wealth || after.unrest !== before.unrest,
+      "община не меняется без игрока");
+    return "достаток " + before.wealth + " → " + after.wealth + ", недовольство " + before.unrest + " → " + after.unrest;
+  });
+
+  check("Хороший разговор доходит до общины как молва", () => {
+    const g = game();
+    g.player.location = "tavern";
+    g.reputation["org:brod"] = 0;
+    win.Bow.dialog.start(g, "person:sigi");
+    win.Bow.adapter.act.choose(g, 1);           // «Спросить о ней самой» (+2)
+    const res = win.Bow.adapter.act.choose(g, 0); // «Сказать, что это тяжело» (+2, уйти)
+    assert(res.closed, "разговор не закрылся");
+    const rep = win.Bow.work.reputation(g, "org:brod");
+    assert(rep > 0, "молва о тёплом разговоре не дошла до общины");
+    g.reputation["org:brod"] = 0;
+    return "отношение +" + res.summary.delta + " → молва +" + rep;
+  });
+
+  check("В панели есть раздел «Общины», а в сцене — заработок", () => {
+    const g = game();
+    g.player.location = "square";
+    win.BowGame.refresh(true);
+    const orgs = doc().querySelectorAll("#bow-orgs .bow-org");
+    assert(orgs.length >= 2, "общин в панели меньше двух: " + orgs.length);
+    const jobs = doc().querySelectorAll("#bow-jobs .bow-job");
+    assert(jobs.length >= 1, "нет карточек работы");
+    const railBtn = doc().querySelector("[data-act='panel'][data-panel='orgs']");
+    assert(railBtn, "нет значка «Общины» на рельсе");
+    return orgs.length + " общины, " + jobs.length + " работы на площади";
+  });
+
   check("Разговор можно прервать крестиком", () => {
     const g = game();
     g.player.location = "tavern";
@@ -623,17 +761,22 @@ function byAct(act, key) {
     return "счётчик сцен: " + g.flags.sceneChanged;
   });
 
-  check("Миграция сохранения 0.0.2 → 0.0.3 работает", () => {
+  check("Миграция старого сохранения проходит всю цепочку до текущей версии", () => {
     const g = JSON.parse(JSON.stringify(game()));
     g.version = "0.0.2";
     delete g.dialog;
     delete g.visits;
+    delete g.reputation;
     Object.keys(g.people).forEach((id) => { delete g.people[id].appearance; delete g.people[id].dialog; });
+    Object.keys(g.orgs).forEach((id) => { delete g.orgs[id].wealth; delete g.orgs[id].unrest; });
     const res = win.Bow.state.migrate(g);
-    eq(res.state.version, "0.0.3", "версия после миграции");
+    eq(res.state.version, win.Bow.data.meta.version, "версия после миграции");
     assert(res.state.dialog === null, "dialog не добавлен");
     assert(res.state.people["person:sigi"].appearance, "внешность не добавлена миграцией");
-    return "миграция применена";
+    assert(win.Bow.util.isPlainObject(res.state.reputation), "репутация не добавлена миграцией");
+    eq(res.state.reputation["org:brod"], 0, "репутация новой системы");
+    assert(typeof res.state.orgs["org:brod"].wealth === "number", "достаток общины не добавлен");
+    return "0.0.2 → " + res.state.version + ", шагов: " + res.applied.length;
   });
 
   /* 8д. Значки, выдвижная панель, логотип */

@@ -893,6 +893,131 @@ body {
 .bow-kind-rumour .bow-jtext { color: #a9a084; font-style: italic; }
 .bow-kind-system .bow-jtext { color: var(--bow-silver); }
 
+/* --- Заработок --- */
+.bow-jobs {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bow-job {
+  border: 1px solid var(--bow-line-soft);
+  border-left: 2px solid var(--bow-steel);
+  border-radius: var(--bow-radius);
+  background: linear-gradient(170deg, #191f25, #14181d 80%);
+  padding: 10px 12px;
+}
+
+.bow-job-locked {
+  border-left-color: var(--bow-line);
+  opacity: 0.72;
+}
+
+.bow-job-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.bow-job-head b { color: var(--bow-silver); font-weight: 600; }
+
+.bow-job-pay {
+  font-family: var(--bow-mono);
+  font-size: 0.7rem;
+  color: var(--bow-gold);
+  white-space: nowrap;
+}
+
+.bow-job-note {
+  font-size: 0.84rem;
+  color: var(--bow-dim);
+  line-height: 1.5;
+  margin-bottom: 7px;
+}
+
+.bow-job-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-family: var(--bow-mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.05em;
+  color: var(--bow-faint);
+  margin-bottom: 8px;
+}
+
+.bow-job-safe { color: var(--bow-good); }
+.bow-job-risky { color: var(--bow-crit); }
+
+.bow-job .bow-btn { width: 100%; }
+
+/* --- Общины --- */
+.bow-orgs {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.bow-org {
+  border: 1px solid var(--bow-line-soft);
+  border-radius: var(--bow-radius);
+  padding: 9px 11px;
+  background: rgba(0, 0, 0, 0.16);
+}
+
+.bow-org-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.bow-org-head b { color: var(--bow-silver); font-size: 0.88rem; }
+
+.bow-org-word {
+  font-family: var(--bow-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--bow-faint);
+  margin: 2px 0 7px;
+}
+
+.bow-org-bars {
+  display: flex;
+  gap: 5px;
+}
+
+.bow-org-bar {
+  flex: 1 1 0;
+  height: 4px;
+  background: #0d1114;
+  border: 1px solid var(--bow-line-soft);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.bow-org-bar i {
+  display: block;
+  height: 100%;
+  background: var(--bow-steel);
+  transition: width 0.3s ease;
+}
+
+.bow-org-bar-unrest i { background: var(--bow-low); }
+
+.bow-org-legend {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--bow-mono);
+  font-size: 0.55rem;
+  letter-spacing: 0.06em;
+  color: var(--bow-faint);
+  margin-top: 3px;
+}
+
 /* --- Подвал --- */
 .bow-footer {
   display: flex;

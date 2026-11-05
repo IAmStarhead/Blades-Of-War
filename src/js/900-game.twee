@@ -55,6 +55,9 @@
     eat: function (el) { return Bow.adapter.act.eat(getState(), el.getAttribute("data-item")); },
     drink: function (el) { return Bow.adapter.act.drink(getState(), el.getAttribute("data-item")); },
     rest: function () { return Bow.adapter.act.rest(getState()); },
+    work: function (el) {
+      return Bow.adapter.act.work(getState(), el.getAttribute("data-job"));
+    },
     buy: function (el) { return Bow.adapter.act.buy(getState(), el.getAttribute("data-key"), 1); },
     sell: function (el) { return Bow.adapter.act.sell(getState(), el.getAttribute("data-key"), 1); },
     inspect: function (el) {

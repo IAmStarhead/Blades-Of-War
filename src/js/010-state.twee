@@ -34,6 +34,27 @@
 
       state.version = "0.0.3";
       return state;
+    },
+
+    /* 0.0.3 → 0.0.4: труд, навыки и отношение общин.
+       Старое сохранение получает нейтральную репутацию: игрок ещё
+       ничего не сделал, и общины его не знают. Это не потеря
+       прогресса, а честный старт новой системы. */
+    "0.0.3": function (state) {
+      if (!Bow.util.isPlainObject(state.reputation)) { state.reputation = {}; }
+      Object.keys(state.orgs || {}).forEach(function (id) {
+        if (typeof state.reputation[id] !== "number") { state.reputation[id] = 0; }
+        var org = state.orgs[id];
+        if (org && typeof org.wealth !== "number") { org.wealth = 50; }
+        if (org && typeof org.unrest !== "number") { org.unrest = 20; }
+      });
+
+      if (!Bow.util.isPlainObject(state.stats)) { state.stats = {}; }
+      if (typeof state.stats.jobsMade !== "number") { state.stats.jobsMade = 0; }
+      if (typeof state.stats.moneyEarned !== "number") { state.stats.moneyEarned = 0; }
+
+      state.version = "0.0.4";
+      return state;
     }
   };
 
@@ -74,6 +95,8 @@
 
       people: {},
       orgs: Bow.util.clone(data.orgs),
+      /* Отношение каждой общины к игроку: { "org:brod": 0 }. */
+      reputation: {},
       journal: [],
       events: [],
       flags: {},
@@ -117,6 +140,9 @@
         talkedToday: 0
       };
     });
+
+    /* Все общины начинают с нейтрального отношения. */
+    Object.keys(state.orgs).forEach(function (id) { state.reputation[id] = 0; });
 
     /* Отмечаем, что игрок уже здесь (для затухания и условий). */
     state.visits[data.meta.startLocation] = 1;
@@ -180,6 +206,14 @@
     }
 
     need(state.dialog === null || Bow.util.isPlainObject(state.dialog), "поле dialog повреждено");
+    need(Bow.util.isPlainObject(state.reputation || {}), "поле reputation не объект");
+    if (Bow.util.isPlainObject(state.reputation)) {
+      Object.keys(state.reputation).forEach(function (id) {
+        var v = state.reputation[id];
+        need(typeof v === "number" && v >= -100 && v <= 100,
+          "репутация у " + id + " вне -100..100");
+      });
+    }
     need(Bow.util.isPlainObject(state.visits), "поле visits не объект");
 
     if (Bow.util.isPlainObject(state.people)) {

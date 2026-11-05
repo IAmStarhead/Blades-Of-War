@@ -52,7 +52,7 @@
       <<set _key to _sellable[_i]>>
       <<set _item to Bow.data.items[_key]>>
       <<set _have to Bow.economy.countItem(_s.player, _item.id)>>
-      <<set _price to Bow.economy.sellPrice(_key)>>
+      <<set _price to Bow.economy.sellPrice(_key, _s, _s.player.location)>>
       <<set _btn to '<button class="bow-trade-btn" data-act="sell" data-key="' + _key + '">Сбыть</button>'>>
       <div class="bow-trade-row">
         <span class="bow-trade-name"><<= _item.name>> <span class="bow-faint">×<<= _have>></span></span>

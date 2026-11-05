@@ -999,6 +999,131 @@ body {
 .bow-kind-rumour .bow-jtext { color: #a9a084; font-style: italic; }
 .bow-kind-system .bow-jtext { color: var(--bow-silver); }
 
+/* --- Заработок --- */
+.bow-jobs {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bow-job {
+  border: 1px solid var(--bow-line-soft);
+  border-left: 2px solid var(--bow-steel);
+  border-radius: var(--bow-radius);
+  background: linear-gradient(170deg, #191f25, #14181d 80%);
+  padding: 10px 12px;
+}
+
+.bow-job-locked {
+  border-left-color: var(--bow-line);
+  opacity: 0.72;
+}
+
+.bow-job-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.bow-job-head b { color: var(--bow-silver); font-weight: 600; }
+
+.bow-job-pay {
+  font-family: var(--bow-mono);
+  font-size: 0.7rem;
+  color: var(--bow-gold);
+  white-space: nowrap;
+}
+
+.bow-job-note {
+  font-size: 0.84rem;
+  color: var(--bow-dim);
+  line-height: 1.5;
+  margin-bottom: 7px;
+}
+
+.bow-job-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-family: var(--bow-mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.05em;
+  color: var(--bow-faint);
+  margin-bottom: 8px;
+}
+
+.bow-job-safe { color: var(--bow-good); }
+.bow-job-risky { color: var(--bow-crit); }
+
+.bow-job .bow-btn { width: 100%; }
+
+/* --- Общины --- */
+.bow-orgs {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.bow-org {
+  border: 1px solid var(--bow-line-soft);
+  border-radius: var(--bow-radius);
+  padding: 9px 11px;
+  background: rgba(0, 0, 0, 0.16);
+}
+
+.bow-org-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.bow-org-head b { color: var(--bow-silver); font-size: 0.88rem; }
+
+.bow-org-word {
+  font-family: var(--bow-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--bow-faint);
+  margin: 2px 0 7px;
+}
+
+.bow-org-bars {
+  display: flex;
+  gap: 5px;
+}
+
+.bow-org-bar {
+  flex: 1 1 0;
+  height: 4px;
+  background: #0d1114;
+  border: 1px solid var(--bow-line-soft);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.bow-org-bar i {
+  display: block;
+  height: 100%;
+  background: var(--bow-steel);
+  transition: width 0.3s ease;
+}
+
+.bow-org-bar-unrest i { background: var(--bow-low); }
+
+.bow-org-legend {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--bow-mono);
+  font-size: 0.55rem;
+  letter-spacing: 0.06em;
+  color: var(--bow-faint);
+  margin-top: 3px;
+}
+
 /* --- Подвал --- */
 .bow-footer {
   display: flex;
@@ -1520,7 +1645,7 @@ body {
   Bow.data = {
 
     meta: {
-      version: "0.0.3",
+      version: "0.0.4",
       title: "Blades Of War",
       worldName: "Эдем · Королевство Хладных Ветров",
       /* ВНИМАНИЕ: поселение ниже — тестовое, придумано разработчиком
@@ -1551,6 +1676,8 @@ body {
         ruler: "Норвинг IV",
         seat: "Стужа-на-Тайге",
         desc: "Северное королевство среди стужи и тайги. Здесь не терпят слабость, интриги и коварство.",
+        wealth: 62,
+        unrest: 24,
         laws: [
           { key: "slavery", label: "Рабство", value: "запрещено" },
           { key: "heresy", label: "Ересь", value: "не преследуется" },
@@ -1565,6 +1692,8 @@ body {
         short: "Брод",
         ruler: "староста Хаген",
         desc: "Небольшое поселение на тракте. Живёт с торговли мехом, солью и перевозок.",
+        wealth: 38,
+        unrest: 31,
         laws: []
       }
     },
@@ -1575,6 +1704,7 @@ body {
         id: "loc:square",
         name: "Торговая площадь",
         sub: "Студёный Брод",
+        org: "org:brod",
         travelHours: 0,
         desc: [
           "Площадь вымощена тёсаным камнем, между плитами пробивается ледяная крошка. Ветер гонит по камню солому и обрывки рогожи.",
@@ -1585,6 +1715,14 @@ body {
           "С площади видно, как над крышами стоит дым — ровный, без ветра, к морозу.",
           "Мимо проходит женщина с коромыслом, вода в ведрах подёрнута коркой льда."
         ],
+        jobs: [
+          { key: "porter", title: "Помочь возчикам с грузом", org: "org:brod", skill: "survival",
+            desc: "Перетаскать мешки от лавок к навесу. Спина и руки, больше ничего.",
+            hours: 3, pay: [4, 8], fatigue: 14, hunger: 7, rep: 1, minRep: -40 },
+          { key: "hawk", title: "Поторговать за лавочника", org: "org:brod", skill: "trade",
+            desc: "Постоять за прилавок, пока хозяин ушёл. Надо считать и не путать сдачу.",
+            hours: 4, pay: [6, 12], fatigue: 6, hunger: 5, rep: 2, minRep: 0 }
+        ],
         trades: ["bread", "salt", "fur", "rope"],
         people: ["sigi", "liva"]
       },
@@ -1592,6 +1730,7 @@ body {
         id: "loc:tavern",
         name: "Трактир «Хромой олень»",
         sub: "Студёный Брод",
+        org: "org:brod",
         travelHours: 1,
         desc: [
           "Низкий потолок, тёмные балки, запах дыма и варёной репы. Над очагом висит вырезанный из дерева олень с треснувшим рогом.",
@@ -1603,6 +1742,14 @@ body {
           "С потолка тянет сквозняком. Кто-то прикрыл дверь неплотно, и она дышит.",
           "Пахнет мокрой шерстью и печёным хлебом."
         ],
+        jobs: [
+          { key: "taproom", title: "Помочь в трактире", org: "org:brod", skill: "trade",
+            desc: "Носить кружки, вытирать столы, слушать, о чём спорят возчики.",
+            hours: 4, pay: [3, 7], fatigue: 8, hunger: 5, rep: 2, minRep: -25 },
+          { key: "cook", title: "Постоять у котла", org: "org:brod", skill: "medicine",
+            desc: "Резать репу, следить за огнём и не дать похлёбке подгореть.",
+            hours: 3, pay: [4, 9], fatigue: 9, hunger: 4, rep: 1, minRep: 10 }
+        ],
         trades: ["stew", "ale", "bread"],
         people: ["sigi", "tarn"]
       },
@@ -1610,6 +1757,7 @@ body {
         id: "loc:smithy",
         name: "Кузница",
         sub: "Студёный Брод",
+        org: "org:brod",
         travelHours: 1,
         desc: [
           "Жар и грохот. Горн раздут до белого, на наковальне лежит заготовка ножа. Стены увешаны клещами и старыми подковами.",
@@ -1620,6 +1768,14 @@ body {
           "На полу — слой окалины и стружки. Она хрустит под ногами, как снег.",
           "Искры улетают в темноту и гаснут, не долетая до стены."
         ],
+        jobs: [
+          { key: "bellows", title: "Поработать мехами", org: "org:brod", skill: "combat",
+            desc: "Держать мехи, пока Тарн кует. Жар, грохот, окалина на руках.",
+            hours: 4, pay: [5, 11], fatigue: 16, hunger: 8, rep: 2, minRep: -30 },
+          { key: "grind", title: "Точить и править железо", org: "org:brod", skill: "combat",
+            desc: "Работа для тех, кто уже понимает, где у клинка край.",
+            hours: 3, pay: [7, 14], fatigue: 10, hunger: 6, rep: 2, minRep: 25 }
+        ],
         trades: ["knife", "rope", "tool"],
         people: ["tarn"]
       },
@@ -1627,6 +1783,7 @@ body {
         id: "loc:outskirts",
         name: "Околица",
         sub: "Студёный Брод",
+        org: "org:brod",
         travelHours: 2,
         desc: [
           "Здесь кончаются дворы и начинается мокрая земля. Плетни стоят криво, за ними — сараи и поленницы.",
@@ -1637,6 +1794,11 @@ body {
           "Из трубы крайней избы идёт дым, но окна тёмные. Хозяева либо спят, либо их нет.",
           "Ветер приносит запах мокрой коры — значит, кто-то недавно рубил дрова за околицей."
         ],
+        jobs: [
+          { key: "firewood", title: "Наколоть дров", org: "org:brod", skill: "survival",
+            desc: "За околицей стоят поленницы. Работа простая, но спину ломит.",
+            hours: 3, pay: [3, 7], fatigue: 15, hunger: 7, rep: 1, minRep: -50 }
+        ],
         trades: [],
         people: ["bror"]
       },
@@ -1644,6 +1806,7 @@ body {
         id: "loc:forest",
         name: "Опушка тайги",
         sub: "За околицей",
+        org: "org:brod",
         travelHours: 3,
         desc: [
           "Тайга дышит сыростью и смолой. Ветки смыкаются над головой, свет пробивается серыми полосами.",
@@ -1653,6 +1816,14 @@ body {
           "Снег на ветках держится тяжело. Где-то в глубине срывается пласт — глухой хлопок, и снова тишина.",
           "На снегу — цепочка следов. Она уходит в чащу и не возвращается.",
           "Тайга не шумит. Она слушает."
+        ],
+        jobs: [
+          { key: "deadwood", title: "Собрать валежник", org: "org:brod", skill: "survival",
+            desc: "Сухие сучья у опушки. Без провожатого дальше не уходить.",
+            hours: 4, pay: [4, 9], fatigue: 13, hunger: 8, rep: 1, minRep: 0 },
+          { key: "scout", title: "Пройтись по следам", org: "org:brod", skill: "survival",
+            desc: "Обойти опушку по кругу и посмотреть, что за следы тут остались.",
+            hours: 5, pay: [8, 16], fatigue: 18, hunger: 10, rep: 3, minRep: 30 }
         ],
         trades: [],
         people: ["bror"]
@@ -1958,6 +2129,27 @@ body {
 
       state.version = "0.0.3";
       return state;
+    },
+
+    /* 0.0.3 → 0.0.4: труд, навыки и отношение общин.
+       Старое сохранение получает нейтральную репутацию: игрок ещё
+       ничего не сделал, и общины его не знают. Это не потеря
+       прогресса, а честный старт новой системы. */
+    "0.0.3": function (state) {
+      if (!Bow.util.isPlainObject(state.reputation)) { state.reputation = {}; }
+      Object.keys(state.orgs || {}).forEach(function (id) {
+        if (typeof state.reputation[id] !== "number") { state.reputation[id] = 0; }
+        var org = state.orgs[id];
+        if (org && typeof org.wealth !== "number") { org.wealth = 50; }
+        if (org && typeof org.unrest !== "number") { org.unrest = 20; }
+      });
+
+      if (!Bow.util.isPlainObject(state.stats)) { state.stats = {}; }
+      if (typeof state.stats.jobsMade !== "number") { state.stats.jobsMade = 0; }
+      if (typeof state.stats.moneyEarned !== "number") { state.stats.moneyEarned = 0; }
+
+      state.version = "0.0.4";
+      return state;
     }
   };
 
@@ -1998,6 +2190,8 @@ body {
 
       people: {},
       orgs: Bow.util.clone(data.orgs),
+      /* Отношение каждой общины к игроку: { "org:brod": 0 }. */
+      reputation: {},
       journal: [],
       events: [],
       flags: {},
@@ -2041,6 +2235,9 @@ body {
         talkedToday: 0
       };
     });
+
+    /* Все общины начинают с нейтрального отношения. */
+    Object.keys(state.orgs).forEach(function (id) { state.reputation[id] = 0; });
 
     /* Отмечаем, что игрок уже здесь (для затухания и условий). */
     state.visits[data.meta.startLocation] = 1;
@@ -2104,6 +2301,14 @@ body {
     }
 
     need(state.dialog === null || Bow.util.isPlainObject(state.dialog), "поле dialog повреждено");
+    need(Bow.util.isPlainObject(state.reputation || {}), "поле reputation не объект");
+    if (Bow.util.isPlainObject(state.reputation)) {
+      Object.keys(state.reputation).forEach(function (id) {
+        var v = state.reputation[id];
+        need(typeof v === "number" && v >= -100 && v <= 100,
+          "репутация у " + id + " вне -100..100");
+      });
+    }
     need(Bow.util.isPlainObject(state.visits), "поле visits не объект");
 
     if (Bow.util.isPlainObject(state.people)) {
@@ -2386,19 +2591,49 @@ body {
 
   /* Цена покупки: базовая, слегка плывёт от состояния поселения.
      Пока без сложной экономики — честная простая надбавка. */
-  function buyPrice(key, state) {
+  /* Наценка за отношение общины: тому, кого уважают, продают дешевле,
+     а тому, кого считают врагом, — дороже. Репутация не «очки в вакууме»:
+     она меняет цену на прилавке, и это видно в подписи товара. */
+  function repModifier(state, locationId) {
+    var orgId = Bow.data.locations[locationId] ? Bow.data.locations[locationId].org : null;
+    if (!orgId || !Bow.work || !state.reputation) { return 1; }
+    var rep = Bow.work.reputation(state, orgId);
+    if (rep >= 60) { return 0.88; }
+    if (rep >= 25) { return 0.95; }
+    if (rep <= -60) { return 1.35; }
+    if (rep <= -25) { return 1.2; }
+    return 1;
+  }
+
+  function buyPrice(key, state, locationId) {
     var item = Bow.data.items[key];
     if (!item) { return null; }
     var mood = state.player.needs.mood;
     /* Рынок чуть охотнее торгуется с тем, у кого спокойный вид. */
     var modifier = mood >= 60 ? 1.0 : mood >= 30 ? 1.05 : 1.12;
-    return Math.max(1, Math.round(item.base * modifier));
+    var loc = locationId || (state.player ? state.player.location : null);
+    modifier *= repModifier(state, loc);
+
+    /* Округление — в пользу того, кто торгуется: скидка округляется
+       вниз, наценка вверх. Иначе на дешёвом хлебе отношение общины
+       не видно вовсе (3 × 0.88 = 2.64 → 3, и разницы нет). */
+    var raw = item.base * modifier;
+    var price = modifier < 1 ? Math.floor(raw) : Math.ceil(raw);
+    return Math.max(1, price);
   }
 
-  function sellPrice(key) {
+  function sellPrice(key, state, locationId) {
     var item = Bow.data.items[key];
     if (!item) { return null; }
-    return Math.max(1, Math.floor(item.base * 0.55));
+    var factor = 0.55;
+    /* Хорошее имя помогает и при продаже: скупщик даёт больше. */
+    if (state) {
+      var loc = locationId || (state.player ? state.player.location : null);
+      factor = factor / repModifier(state, loc);
+    }
+    /* Округление в пользу игрока: иначе на дешёвом товаре разница
+       между «уважают» и «не знают» исчезает в floor (3 × 0.55 = 1.65). */
+    return Math.max(1, Math.round(item.base * factor));
   }
 
   function addItem(player, itemId, qty) {
@@ -2449,7 +2684,7 @@ body {
       return { ok: false, message: "В этом месте таким не торгуют." };
     }
 
-    var price = buyPrice(key, state) * qty;
+    var price = buyPrice(key, state, locationId) * qty;
     if (state.player.money < price) {
       return { ok: false, message: "Не хватает монет: нужно " + price + ", у вас " + state.player.money + "." };
     }
@@ -2480,7 +2715,7 @@ body {
       return { ok: false, message: "У вас нет столько: " + item.name + "." };
     }
 
-    var price = sellPrice(key) * qty;
+    var price = sellPrice(key, state, locationId) * qty;
     removeItem(state.player, item.id, qty);
     state.player.money += price;
     state.stats.tradesMade += 1;
@@ -2559,6 +2794,258 @@ body {
     recent: recent,
     LIMIT: JOURNAL_LIMIT
   };
+
+})(typeof window !== "undefined" ? window : this);/* ============================================================
+   BOW WORK — труд, навыки и молва.
+
+   Зачем этот модуль: до него навыки (бой, торг, выживание,
+   лечение, власть) только показывались в панели и ни на что
+   не влияли. По ТЗ это запрещённая фиктивная механика.
+
+   Здесь навык — это то, чем игрок зарабатывает:
+     • шанс успеха зависит от навыка и от усталости;
+     • успех приносит деньги, опыт и уважение общины;
+     • провал приносит половину платы и портит расположение духа;
+     • навык растёт от любой честной работы, но медленно.
+
+   Репутация — это не «очки игрока вообще», а отношение
+   конкретной общины (org) к нему. Она видна, влияет на цену
+   у её торговцев и на то, кто вообще готов дать работу.
+
+   Модуль чистый: не знает ни про SugarCube, ни про DOM.
+   ============================================================ */
+(function (global) {
+  "use strict";
+
+  var Bow = global.Bow = global.Bow || {};
+
+  var REP_LIMIT = 100;
+
+  function jobDefs(locationId) {
+    var loc = Bow.data.locations[locationId];
+    return (loc && loc.jobs) ? loc.jobs : [];
+  }
+
+  function orgOf(state, orgId) {
+    return state.orgs[orgId] || null;
+  }
+
+  function orgName(state, orgId) {
+    var org = orgOf(state, orgId);
+    return org ? (org.short || org.name) : "община";
+  }
+
+  /* Репутация игрока у общины: -100..100. */
+  function reputation(state, orgId) {
+    var v = state.reputation ? state.reputation[orgId] : 0;
+    return typeof v === "number" ? v : 0;
+  }
+
+  function addReputation(state, orgId, delta) {
+    if (!orgId || !state.reputation) { return 0; }
+    var before = reputation(state, orgId);
+    state.reputation[orgId] = Bow.util.clamp(before + delta, -REP_LIMIT, REP_LIMIT);
+    return state.reputation[orgId] - before;
+  }
+
+  /* Слово для интерфейса: не «+12», а понятная оценка. */
+  function reputationWord(value) {
+    if (value <= -60) { return "враг"; }
+    if (value <= -25) { return "под подозрением"; }
+    if (value < 0) { return "недовольны"; }
+    if (value === 0) { return "не знают"; }
+    if (value < 25) { return "примечают"; }
+    if (value < 60) { return "уважают"; }
+    return "свой человек";
+  }
+
+  /* Доступна ли работа: община не даст её тому, кого считает врагом. */
+  function jobAvailable(state, job) {
+    if (!job) { return false; }
+    var need = typeof job.minRep === "number" ? job.minRep : -100;
+    return reputation(state, job.org) >= need;
+  }
+
+  function jobByKey(state, key) {
+    var all = jobDefs(state.player.location);
+    for (var i = 0; i < all.length; i++) {
+      if (all[i].key === key) { return all[i]; }
+    }
+    return null;
+  }
+
+  /* Шанс успеха: навык тянет вверх, усталость и голод — вниз.
+     Считаем честно и открыто, чтобы игрок понимал, на что идёт. */
+  function successChance(state, job) {
+    var skill = state.player.skills[job.skill] || 0;
+    var n = state.player.needs;
+    var chance = 0.35 + skill / 150;
+    if (n.fatigue < 30) { chance -= 0.12; }
+    if (n.hunger < 25) { chance -= 0.10; }
+    if (n.health < 40) { chance -= 0.10; }
+    if (n.mood < 25) { chance -= 0.05; }
+    return Bow.util.clamp(chance, 0.05, 0.95);
+  }
+
+  function payFor(job, success, rng) {
+    var span = Math.max(0, job.pay[1] - job.pay[0]);
+    var base = job.pay[0] + Math.round((rng ? rng() : Math.random) * span);
+    return success ? base : Math.floor(base / 2);
+  }
+
+  /* Выполнить работу. Возвращает отчёт, пригодный для интерфейса. */
+  function perform(state, jobKey, rng) {
+    var job = jobByKey(state, jobKey);
+    if (!job) { return { ok: false, message: "Такой работы здесь нет." }; }
+    if (!jobAvailable(state, job)) {
+      return { ok: false, message: "В " + orgName(state, job.org) + " вам этой работы не доверят." };
+    }
+
+    var n = state.player.needs;
+    if (n.fatigue < 12) {
+      return { ok: false, message: "Вы едва держитесь на ногах. Нужен отдых." };
+    }
+
+    var chance = successChance(state, job);
+    var roll = (rng || Math.random)();
+    var success = roll < chance;
+
+    /* Время идёт до расчёта: работа — это потраченные часы. */
+    Bow.time.advance(state, job.hours);
+
+    var pay = payFor(job, success, rng);
+    state.player.money += pay;
+
+    /* Усталость от работы: тяжёлая — сильнее. */
+    Bow.needs.applyChange(state.player, "fatigue", -(job.fatigue || 10));
+    Bow.needs.applyChange(state.player, "hunger", -(job.hunger || 6));
+    Bow.needs.applyChange(state.player, "mood", success ? 2 : -5);
+
+    /* Навык растёт от любой работы, но быстрее — на низких значениях. */
+    var skillKey = job.skill;
+    var before = state.player.skills[skillKey] || 0;
+    var gain = before < 25 ? 2 : before < 60 ? 1 : 0.5;
+    state.player.skills[skillKey] = Math.min(100, Math.round((before + gain) * 10) / 10);
+
+    /* Молва: успех примечают, провал забывают. */
+    var repDelta = success ? (job.rep || 1) : 0;
+    if (repDelta) { addReputation(state, job.org, repDelta); }
+
+    state.stats.actionsTaken += 1;
+    state.stats.jobsMade = (state.stats.jobsMade || 0) + 1;
+    state.stats.moneyEarned = (state.stats.moneyEarned || 0) + pay;
+
+    var skillName = { combat: "Бой", trade: "Торг", survival: "Выживание", medicine: "Лечение", leadership: "Власть" }[skillKey] || skillKey;
+
+    if (success) {
+      Bow.journal.add(state, "Работа: " + job.title + " — " + pay + " м. (" + skillName + " +" +
+        (state.player.skills[skillKey] - before).toFixed(1) + ")", "work");
+      return {
+        ok: true,
+        success: true,
+        pay: pay,
+        skill: skillKey,
+        skillGain: state.player.skills[skillKey] - before,
+        reputation: repDelta,
+        message: job.title + ": удалось. " + pay + " м. " + skillName + " " +
+          (state.player.skills[skillKey]) + "."
+      };
+    }
+
+    Bow.journal.add(state, "Работа: " + job.title + " сорвалась — заплатили " + pay + " м. как за полдела.", "work");
+    return {
+      ok: true,
+      success: false,
+      pay: pay,
+      skill: skillKey,
+      skillGain: state.player.skills[skillKey] - before,
+      reputation: 0,
+      message: job.title + ": не вышло. Заплатили " + pay + " м. — половину."
+    };
+  }
+
+  /* Описание условий для интерфейса: игрок должен видеть риск. */
+  function preview(state, job) {
+    var skill = state.player.skills[job.skill] || 0;
+    return {
+      key: job.key,
+      title: job.title,
+      desc: job.desc,
+      skill: job.skill,
+      skillValue: skill,
+      hours: job.hours,
+      payMin: job.pay[0],
+      payMax: job.pay[1],
+      chance: successChance(state, job),
+      available: jobAvailable(state, job),
+      org: job.org,
+      orgName: orgName(state, job.org),
+      minRep: job.minRep || -100
+    };
+  }
+
+  function listAt(state) {
+    return jobDefs(state.player.location).map(function (job) { return preview(state, job); });
+  }
+
+  /* ---------- Мир без игрока ----------
+     Общины живут сами: их достаток и недовольство меняются,
+     и это видно игроку, когда он рядом. Никаких событий
+     «из воздуха» — только дрейф и пороги. */
+  function worldTick(state, rng) {
+    var r = rng || Math.random;
+    var news = [];
+
+    Object.keys(state.orgs || {}).forEach(function (id) {
+      var org = state.orgs[id];
+      if (!org || org.type === "settlement" && id === "org:brod") { /* Брод живёт, но тише */ }
+
+      if (typeof org.wealth !== "number") { org.wealth = 50; }
+      if (typeof org.unrest !== "number") { org.unrest = 20; }
+
+      var dw = Math.round((r() - 0.45) * 6);
+      var du = Math.round((r() - 0.5) * 8);
+      var wealthBefore = org.wealth;
+      var unrestBefore = org.unrest;
+
+      org.wealth = Bow.util.clamp(org.wealth + dw, 0, 100);
+      org.unrest = Bow.util.clamp(org.unrest + du, 0, 100);
+
+      /* Сообщаем только о заметных переменах, иначе журнал станет шумом. */
+      if (Math.abs(org.wealth - wealthBefore) >= 4) {
+        news.push(org.short + ": " + (org.wealth > wealthBefore ? "дела идут бойчее" : "кошель оскудел"));
+      }
+      if (Math.abs(org.unrest - unrestBefore) >= 5 && org.unrest >= 55) {
+        news.push(org.short + ": в воздухе недовольство");
+      }
+    });
+
+    state.flags.worldTick = (state.flags.worldTick || 0) + 1;
+
+    if (news.length) {
+      Bow.journal.add(state, "На селе говорят — " + news.join("; ") + ".", "world");
+    }
+    return news;
+  }
+
+  Bow.work = {
+    listAt: listAt,
+    perform: perform,
+    preview: preview,
+    successChance: successChance,
+    reputation: reputation,
+    addReputation: addReputation,
+    reputationWord: reputationWord,
+    orgName: orgName,
+    worldTick: worldTick,
+    jobByKey: jobByKey,
+    jobAvailable: jobAvailable
+  };
+
+  /* Молва меняется раз в сутки — не каждый час. */
+  Bow.bus.on("tick:day", function (state) {
+    worldTick(state, Bow.adapter ? Bow.adapter.rng : Math.random);
+  });
 
 })(typeof window !== "undefined" ? window : this);/* ============================================================
    BOW ACTIONS — действия игрока.
@@ -2893,6 +3380,15 @@ body {
 
     var attitudeChanged = person.attitude !== attitudeBefore;
 
+    /* 3а. Молва: о разговоре узнают в общине собеседника.
+       Слух расходится, только если разговор того стоил: вежливая
+       беседа на ходу ничего не меняет, а ссора или услуга — да.
+       Это честное правило, а не «+1 за каждый клик». */
+    function spreadWord(delta) {
+      if (!person.org || !delta) { return 0; }
+      return Bow.work ? Bow.work.addReputation(state, person.org, delta) : 0;
+    }
+
     /* 4. Закрытие разговора. */
     if (choice.close) {
       /* Прощальная реплика собеседника, чтобы лента не обрывалась. */
@@ -2908,6 +3404,9 @@ body {
       };
 
       state.dialog = null;
+      /* Молва о беседе: сильная симпатия или обида доходит до общины. */
+      if (summary.delta >= 2) { spreadWord(1); }
+      else if (summary.delta <= -2) { spreadWord(-1); }
       Bow.time.advance(state, 1);
 
       return { ok: true, closed: true, summary: summary, message: "" };
@@ -3297,6 +3796,14 @@ body {
       if (res.ok) { Bow.events.afterAction(state, rng); }
       return res;
     },
+    work: function (state, jobKey) {
+      var res = Bow.work.perform(state, jobKey, rng);
+      if (res.ok) {
+        Bow.events.afterAction(state, rng);
+        Bow.needs.ensure(state.player);
+      }
+      return res;
+    },
     sell: function (state, key, qty) {
       var res = Bow.economy.sell(state, state.player.location, key, qty);
       if (res.ok) { Bow.events.afterAction(state, rng); }
@@ -3448,6 +3955,75 @@ body {
           '<button class="bow-trade-btn" data-act="talk" data-person="' + esc(p.id) + '">Говорить</button>' +
           '<button class="bow-trade-btn" data-act="inspect" data-person="' + esc(p.id) + '">Осмотреть</button>' +
         '</div>' +
+      '</div>';
+    }).join("");
+  }
+
+  /* ---------- Заработок ----------
+     Игрок должен видеть риск: сколько часов, сколько платят,
+     насколько велик шанс и от какого навыка он зависит. */
+  function renderJobs(state) {
+    var box = $("bow-jobs");
+    if (!box) { return; }
+
+    var jobs = Bow.work.listAt(state);
+    if (!jobs.length) {
+      box.innerHTML = '<div class="bow-empty">Здесь некому платить за работу.</div>';
+      return;
+    }
+
+    box.innerHTML = jobs.map(function (j) {
+      var pct = Math.round(j.chance * 100);
+      var risky = j.chance < 0.4 ? "bow-job-risky" : j.chance > 0.7 ? "bow-job-safe" : "";
+      if (!j.available) {
+        return '<div class="bow-job bow-job-locked">' +
+          '<div class="bow-job-head"><b>' + esc(j.title) + '</b>' +
+            '<span class="bow-dim">' + esc(j.orgName) + '</span></div>' +
+          '<div class="bow-job-note">Не доверят: община относится к вам как «' +
+            esc(Bow.work.reputationWord(Bow.work.reputation(state, j.org))) + '».</div>' +
+        '</div>';
+      }
+      return '<div class="bow-job">' +
+        '<div class="bow-job-head">' +
+          '<b>' + esc(j.title) + '</b>' +
+          '<span class="bow-job-pay">' + j.payMin + '–' + j.payMax + ' м.</span>' +
+        '</div>' +
+        '<div class="bow-job-note">' + esc(j.desc) + '</div>' +
+        '<div class="bow-job-meta">' +
+          '<span>' + j.hours + ' ч.</span>' +
+          '<span class="' + risky + '">шанс ' + pct + '%</span>' +
+          '<span>' + esc({ combat: "Бой", trade: "Торг", survival: "Выживание", medicine: "Лечение", leadership: "Власть" }[j.skill] || j.skill) + ' ' + j.skillValue + '</span>' +
+        '</div>' +
+        '<button class="bow-btn bow-btn-sm" data-act="work" data-job="' + esc(j.key) + '">Взяться за работу</button>' +
+      '</div>';
+    }).join("");
+  }
+
+  /* ---------- Общины ----------
+     Репутация — это отношение конкретной общины, а не «очки героя»
+     вообще. Здесь же её достаток и недовольство: мир живёт сам. */
+  function renderOrgs(state) {
+    var box = $("bow-orgs");
+    if (!box) { return; }
+
+    var ids = Object.keys(state.orgs || {});
+    box.innerHTML = ids.map(function (id) {
+      var org = state.orgs[id];
+      var rep = Bow.work.reputation(state, id);
+      var tone = rep >= 25 ? "warm" : rep <= -25 ? "cold" : "neutral";
+      var sign = rep > 0 ? "+" : "";
+
+      return '<div class="bow-org">' +
+        '<div class="bow-org-head">' +
+          '<b>' + esc(org.short || org.name) + '</b>' +
+          '<span class="bow-tone bow-' + tone + '">' + sign + rep + '</span>' +
+        '</div>' +
+        '<div class="bow-org-word">' + esc(Bow.work.reputationWord(rep)) + '</div>' +
+        '<div class="bow-org-bars">' +
+          '<span class="bow-org-bar" title="Достаток"><i style="width:' + Math.round(org.wealth || 0) + '%"></i></span>' +
+          '<span class="bow-org-bar bow-org-bar-unrest" title="Недовольство"><i style="width:' + Math.round(org.unrest || 0) + '%"></i></span>' +
+        '</div>' +
+        '<div class="bow-org-legend"><span>достаток</span><span>недовольство</span></div>' +
       '</div>';
     }).join("");
   }
@@ -3663,7 +4239,9 @@ body {
     renderNeeds(state);
     renderSkills(state);
     renderInventory(state);
+    renderJobs(state);
     renderPeople(state);
+    renderOrgs(state);
     renderJournal(state);
     renderScene(state, animate && (sceneChanged || (options && options.forceFade)));
     renderDialog(state);
@@ -3775,6 +4353,9 @@ body {
     eat: function (el) { return Bow.adapter.act.eat(getState(), el.getAttribute("data-item")); },
     drink: function (el) { return Bow.adapter.act.drink(getState(), el.getAttribute("data-item")); },
     rest: function () { return Bow.adapter.act.rest(getState()); },
+    work: function (el) {
+      return Bow.adapter.act.work(getState(), el.getAttribute("data-job"));
+    },
     buy: function (el) { return Bow.adapter.act.buy(getState(), el.getAttribute("data-key"), 1); },
     sell: function (el) { return Bow.adapter.act.sell(getState(), el.getAttribute("data-key"), 1); },
     inspect: function (el) {
@@ -4113,6 +4694,9 @@ body {
       &lt;button class=&quot;bow-rail-btn&quot; data-act=&quot;panel&quot; data-panel=&quot;people&quot; title=&quot;Люди рядом&quot;&gt;
         &lt;span class=&quot;bow-rail-i&quot;&gt;◉&lt;/span&gt;&lt;span class=&quot;bow-rail-l&quot;&gt;Люди&lt;/span&gt;
       &lt;/button&gt;
+      &lt;button class=&quot;bow-rail-btn&quot; data-act=&quot;panel&quot; data-panel=&quot;orgs&quot; title=&quot;Общины&quot;&gt;
+        &lt;span class=&quot;bow-rail-i&quot;&gt;◇&lt;/span&gt;&lt;span class=&quot;bow-rail-l&quot;&gt;Общ.&lt;/span&gt;
+      &lt;/button&gt;
       &lt;button class=&quot;bow-rail-btn&quot; data-act=&quot;panel&quot; data-panel=&quot;journal&quot; title=&quot;Хроника&quot;&gt;
         &lt;span class=&quot;bow-rail-i&quot;&gt;≡&lt;/span&gt;&lt;span class=&quot;bow-rail-l&quot;&gt;Хрон.&lt;/span&gt;
       &lt;/button&gt;
@@ -4139,6 +4723,11 @@ body {
           &lt;section class=&quot;bow-dpanel&quot; data-section=&quot;inv&quot;&gt;
             &lt;h2 class=&quot;bow-h2&quot;&gt;При себе&lt;/h2&gt;
             &lt;div id=&quot;bow-inventory&quot; class=&quot;bow-inventory&quot;&gt;&lt;/div&gt;
+          &lt;/section&gt;
+
+          &lt;section class=&quot;bow-dpanel&quot; data-section=&quot;orgs&quot;&gt;
+            &lt;h2 class=&quot;bow-h2&quot;&gt;Общины&lt;/h2&gt;
+            &lt;div id=&quot;bow-orgs&quot; class=&quot;bow-orgs&quot;&gt;&lt;/div&gt;
           &lt;/section&gt;
 
           &lt;section class=&quot;bow-dpanel&quot; data-section=&quot;journal&quot;&gt;
@@ -4190,6 +4779,9 @@ body {
           &lt;button class=&quot;bow-btn&quot; data-act=&quot;move&quot; data-loc=&quot;outskirts&quot;&gt;Околица&lt;/button&gt;
           &lt;button class=&quot;bow-btn&quot; data-act=&quot;move&quot; data-loc=&quot;forest&quot;&gt;Опушка тайги&lt;/button&gt;
         &lt;/div&gt;
+
+        &lt;h2 class=&quot;bow-h2 bow-h2-gap&quot;&gt;Заработок&lt;/h2&gt;
+        &lt;div id=&quot;bow-jobs&quot; class=&quot;bow-jobs&quot;&gt;&lt;/div&gt;
 
         &lt;h2 class=&quot;bow-h2 bow-h2-gap&quot;&gt;Рядом&lt;/h2&gt;
         &lt;div id=&quot;bow-people&quot; class=&quot;bow-people&quot;&gt;&lt;/div&gt;
@@ -4265,7 +4857,7 @@ body {
       &lt;&lt;set _key to _sellable[_i]&gt;&gt;
       &lt;&lt;set _item to Bow.data.items[_key]&gt;&gt;
       &lt;&lt;set _have to Bow.economy.countItem(_s.player, _item.id)&gt;&gt;
-      &lt;&lt;set _price to Bow.economy.sellPrice(_key)&gt;&gt;
+      &lt;&lt;set _price to Bow.economy.sellPrice(_key, _s, _s.player.location)&gt;&gt;
       &lt;&lt;set _btn to &apos;&lt;button class=&quot;bow-trade-btn&quot; data-act=&quot;sell&quot; data-key=&quot;&apos; + _key + &apos;&quot;&gt;Сбыть&lt;/button&gt;&apos;&gt;&gt;
       &lt;div class=&quot;bow-trade-row&quot;&gt;
         &lt;span class=&quot;bow-trade-name&quot;&gt;&lt;&lt;= _item.name&gt;&gt; &lt;span class=&quot;bow-faint&quot;&gt;×&lt;&lt;= _have&gt;&gt;&lt;/span&gt;&lt;/span&gt;

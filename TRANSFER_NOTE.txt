@@ -1,4 +1,4 @@
-ПЕРЕДАЧА ПРОЕКТА BLADES OF WAR — версия 0.0.3
+ПЕРЕДАЧА ПРОЕКТА BLADES OF WAR — версия 0.0.4
 
 ЧТО ЭТО
 Настоящая история Twine 2 / SugarCube 2, собираемая в один HTML.
@@ -10,7 +10,7 @@
 КАК СОБИРАТЬ
 npm install
 npm run build     (.twee -> dist/BladesOfWar.html)
-npm run check     (68 автопроверок логики и интерфейса)
+npm run check     (78 автопроверок логики и интерфейса)
 npm run verify    (сборка + проверки)
 
 ГДЕ ЧТО МЕНЯТЬ
@@ -21,6 +21,9 @@ npm run verify    (сборка + проверки)
 Внешность персонажей              -> src/js/005-data.twee (поле appearance)
 Оформление и палитра              -> src/ui/900-styles.twee (:root)
 Логотип                           -> assets/logo-192.png, встроен в CSS
+Работы и оплата                   -> src/js/005-data.twee (поле jobs у локаций)
+Логика труда и репутации          -> src/js/055-work.twee
+Репутация в панели                -> src/js/110-ui.twee (renderOrgs)
 Выдвижная панель                  -> src/ui/900-styles.twee (.bow-drawer)
 Лента диалога                     -> src/js/110-ui.twee (renderDialog)
 

@@ -47,6 +47,9 @@
       <button class="bow-rail-btn" data-act="panel" data-panel="people" title="Люди рядом">
         <span class="bow-rail-i">◉</span><span class="bow-rail-l">Люди</span>
       </button>
+      <button class="bow-rail-btn" data-act="panel" data-panel="orgs" title="Общины">
+        <span class="bow-rail-i">◇</span><span class="bow-rail-l">Общ.</span>
+      </button>
       <button class="bow-rail-btn" data-act="panel" data-panel="journal" title="Хроника">
         <span class="bow-rail-i">≡</span><span class="bow-rail-l">Хрон.</span>
       </button>
@@ -73,6 +76,11 @@
           <section class="bow-dpanel" data-section="inv">
             <h2 class="bow-h2">При себе</h2>
             <div id="bow-inventory" class="bow-inventory"></div>
+          </section>
+
+          <section class="bow-dpanel" data-section="orgs">
+            <h2 class="bow-h2">Общины</h2>
+            <div id="bow-orgs" class="bow-orgs"></div>
           </section>
 
           <section class="bow-dpanel" data-section="journal">
@@ -124,6 +132,9 @@
           <button class="bow-btn" data-act="move" data-loc="outskirts">Околица</button>
           <button class="bow-btn" data-act="move" data-loc="forest">Опушка тайги</button>
         </div>
+
+        <h2 class="bow-h2 bow-h2-gap">Заработок</h2>
+        <div id="bow-jobs" class="bow-jobs"></div>
 
         <h2 class="bow-h2 bow-h2-gap">Рядом</h2>
         <div id="bow-people" class="bow-people"></div>

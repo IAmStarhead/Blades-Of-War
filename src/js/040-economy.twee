@@ -38,19 +38,49 @@
 
   /* Цена покупки: базовая, слегка плывёт от состояния поселения.
      Пока без сложной экономики — честная простая надбавка. */
-  function buyPrice(key, state) {
+  /* Наценка за отношение общины: тому, кого уважают, продают дешевле,
+     а тому, кого считают врагом, — дороже. Репутация не «очки в вакууме»:
+     она меняет цену на прилавке, и это видно в подписи товара. */
+  function repModifier(state, locationId) {
+    var orgId = Bow.data.locations[locationId] ? Bow.data.locations[locationId].org : null;
+    if (!orgId || !Bow.work || !state.reputation) { return 1; }
+    var rep = Bow.work.reputation(state, orgId);
+    if (rep >= 60) { return 0.88; }
+    if (rep >= 25) { return 0.95; }
+    if (rep <= -60) { return 1.35; }
+    if (rep <= -25) { return 1.2; }
+    return 1;
+  }
+
+  function buyPrice(key, state, locationId) {
     var item = Bow.data.items[key];
     if (!item) { return null; }
     var mood = state.player.needs.mood;
     /* Рынок чуть охотнее торгуется с тем, у кого спокойный вид. */
     var modifier = mood >= 60 ? 1.0 : mood >= 30 ? 1.05 : 1.12;
-    return Math.max(1, Math.round(item.base * modifier));
+    var loc = locationId || (state.player ? state.player.location : null);
+    modifier *= repModifier(state, loc);
+
+    /* Округление — в пользу того, кто торгуется: скидка округляется
+       вниз, наценка вверх. Иначе на дешёвом хлебе отношение общины
+       не видно вовсе (3 × 0.88 = 2.64 → 3, и разницы нет). */
+    var raw = item.base * modifier;
+    var price = modifier < 1 ? Math.floor(raw) : Math.ceil(raw);
+    return Math.max(1, price);
   }
 
-  function sellPrice(key) {
+  function sellPrice(key, state, locationId) {
     var item = Bow.data.items[key];
     if (!item) { return null; }
-    return Math.max(1, Math.floor(item.base * 0.55));
+    var factor = 0.55;
+    /* Хорошее имя помогает и при продаже: скупщик даёт больше. */
+    if (state) {
+      var loc = locationId || (state.player ? state.player.location : null);
+      factor = factor / repModifier(state, loc);
+    }
+    /* Округление в пользу игрока: иначе на дешёвом товаре разница
+       между «уважают» и «не знают» исчезает в floor (3 × 0.55 = 1.65). */
+    return Math.max(1, Math.round(item.base * factor));
   }
 
   function addItem(player, itemId, qty) {
@@ -101,7 +131,7 @@
       return { ok: false, message: "В этом месте таким не торгуют." };
     }
 
-    var price = buyPrice(key, state) * qty;
+    var price = buyPrice(key, state, locationId) * qty;
     if (state.player.money < price) {
       return { ok: false, message: "Не хватает монет: нужно " + price + ", у вас " + state.player.money + "." };
     }
@@ -132,7 +162,7 @@
       return { ok: false, message: "У вас нет столько: " + item.name + "." };
     }
 
-    var price = sellPrice(key) * qty;
+    var price = sellPrice(key, state, locationId) * qty;
     removeItem(state.player, item.id, qty);
     state.player.money += price;
     state.stats.tradesMade += 1;
