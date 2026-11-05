@@ -183,10 +183,28 @@
     if (res) { res.textContent = lastMessage; }
   }
 
-  /* ---------- Диалог с выбором ---------- */
+  /* ---------- Диалог: лента реплик ----------
+     Показывает и слова собеседника, и слова игрока.
+     После закрытия остаётся итог: кто, чем закончилось, как изменилось отношение. */
   function renderDialog(state) {
     var box = $("bow-dialog");
     if (!box) { return; }
+
+    /* Итог только что законченного разговора */
+    if (!state.dialog && state.flags.lastDialogSummary) {
+      var sum = state.flags.lastDialogSummary;
+      var cls = sum.delta > 0 ? "bow-summary-up" : sum.delta < 0 ? "bow-summary-down" : "bow-summary-flat";
+      var sign = sum.delta > 0 ? "+" : "";
+      box.innerHTML = '' +
+        '<div class="bow-dialog-summary">' +
+          '<span>Разговор с ' + esc(sum.name) + ' окончен.</span>' +
+          '<span class="' + cls + '">' +
+            (sum.delta === 0 ? "отношение не изменилось" : "отношение " + sign + sum.delta + " → " + sum.attitude) +
+          '</span>' +
+        '</div>';
+      box.classList.add("bow-dialog-open");
+      return;
+    }
 
     var current = Bow.dialog.currentNode(state);
     if (!current) {
@@ -196,6 +214,21 @@
     }
 
     var p = current.person;
+    var log = current.log || [];
+
+    var lines = log.map(function (entry) {
+      /* Три вида строк: моя реплика, реплика собеседника и ремарка
+         (что происходит, а не что сказано). */
+      if (entry.who === "narr") {
+        return '<div class="bow-line bow-line-narr">' + esc(entry.text) + '</div>';
+      }
+      var isPlayer = entry.who === "player";
+      return '<div class="bow-line ' + (isPlayer ? "bow-line-player" : "bow-line-npc") + '">' +
+        '<span class="bow-line-who">' + esc(isPlayer ? "Вы" : p.name) + '</span>' +
+        esc(entry.text) +
+      '</div>';
+    }).join("");
+
     var choices = (current.node.choices || []).map(function (c, i) {
       var cls = c.close ? "bow-choice bow-choice-leave" : "bow-choice";
       return '<button class="' + cls + '" data-act="choose" data-choice="' + i + '">' +
@@ -203,14 +236,21 @@
     }).join("");
 
     box.innerHTML = '' +
-      '<div class="bow-dialog-who">' +
-        '<h3>' + esc(p.name) + '</h3>' +
-        '<span>' + esc(p.role) + ' · отношение ' + p.attitude + '</span>' +
+      '<div class="bow-dialog-head">' +
+        '<h3>' + esc(p.name) + ', ' + esc(p.role) + '</h3>' +
+        '<span class="bow-dialog-meta">отношение ' + (p.attitude > 0 ? "+" : "") + p.attitude + '</span>' +
+        '<button class="bow-dialog-close" data-act="close-dialog" aria-label="Прервать разговор">✕</button>' +
       '</div>' +
-      '<p class="bow-dialog-text">' + esc(current.node.text) + '</p>' +
-      '<div class="bow-choices">' + choices + '</div>';
+      '<div class="bow-dialog-log" id="bow-dialog-log">' + lines + '</div>' +
+      '<div class="bow-dialog-choices">' +
+        '<div class="bow-dialog-choices-title">Что ответить</div>' + choices +
+      '</div>';
 
     box.classList.add("bow-dialog-open");
+
+    /* Прокрутка ленты вниз: читаем последнее. */
+    var lg = $("bow-dialog-log");
+    if (lg) { lg.scrollTop = lg.scrollHeight; }
   }
 
   /* ---------- Окно персонажа с внешностью ---------- */
@@ -324,14 +364,14 @@
 
   function setDrawer(open) {
     drawerOpen = !!open;
+    var body = $("bow-body");
     var drawer = $("bow-drawer");
-    var scrim = $("bow-scrim");
     var btn = $("bow-logo-btn");
 
-    if (drawer) { drawer.classList.toggle("bow-drawer-open", drawerOpen); }
-    if (scrim) { scrim.classList.toggle("bow-scrim-on", drawerOpen); }
-    if (btn) { btn.setAttribute("aria-expanded", drawerOpen ? "true" : "false"); }
+    if (body) { body.classList.toggle("bow-body-open", drawerOpen); }
     if (drawer) { drawer.setAttribute("aria-hidden", drawerOpen ? "false" : "true"); }
+    if (btn) { btn.setAttribute("aria-expanded", drawerOpen ? "true" : "false"); }
+
     return drawerOpen;
   }
 
@@ -340,12 +380,19 @@
   function isDrawerOpen() { return drawerOpen; }
 
   /* Прокрутка панели к нужному разделу по клику на значок. */
-  function scrollDrawerTo(index) {
+  function scrollDrawerTo(key) {
     var drawer = $("bow-drawer");
-    if (!drawer) { return; }
+    if (!drawer || !key) { return; }
+
     var panels = drawer.querySelectorAll(".bow-dpanel");
-    if (panels[index]) {
-      panels[index].scrollIntoView({ behavior: "smooth", block: "start" });
+    for (var i = 0; i < panels.length; i++) {
+      panels[i].classList.remove("bow-dpanel-focus");
+      if (panels[i].getAttribute("data-section") === key) {
+        panels[i].classList.add("bow-dpanel-focus");
+        /* Внутренняя прокрутка: внешняя страница не дёргается. */
+        var scroller = drawer.querySelector(".bow-drawer-scroll");
+        if (scroller) { scroller.scrollTop = panels[i].offsetTop - 8; }
+      }
     }
   }
 

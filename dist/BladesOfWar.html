@@ -229,6 +229,30 @@ body {
   flex-wrap: wrap;
 }
 
+/* Подсказка у логотипа: без неё неочевидно, что это кнопка панели.
+   Гаснет при наведении — она нужна один раз, а не постоянно. */
+.bow-logo-hint {
+  font-family: var(--bow-mono);
+  font-size: 0.52rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--bow-faint);
+  border: 1px solid var(--bow-line-soft);
+  border-radius: 3px;
+  padding: 2px 5px;
+  align-self: center;
+  transition: color 0.18s, border-color 0.18s, opacity 0.25s;
+}
+
+.bow-logo-btn:hover .bow-logo-hint {
+  color: var(--bow-steel);
+  border-color: var(--bow-line);
+}
+
+.bow-logo-btn[aria-expanded="true"] .bow-logo-hint { opacity: 0; }
+
+@media (max-width: 720px) { .bow-logo-hint { display: none; } }
+
 .bow-logo-btn {
   display: flex;
   align-items: center;
@@ -355,66 +379,86 @@ body {
 
 /* ============================================================
    ВЫДВИЖНАЯ ПАНЕЛЬ
-   Закрыта: сдвинута влево и скрыта. Открыта: выезжает вправо.
+
+   Схема: body — флекс-строка из трёх соседей.
+   [рельса] [панель] [сцена]
+
+   Панель анимируется по СВОЕЙ ширине: 12px → 348px. Это важно:
+   `auto` в grid-колонках браузер не интерполирует, поэтому
+   прежняя схема «grid-template-columns: auto 0 1fr» переключалась
+   рывком — панель просто появлялась. Ширина и opacity анимируются
+   везде, включая мобильные браузеры с адресной строкой.
    ============================================================ */
 
-.bow-drawer {
-  position: fixed;
-  top: 0;
-  left: 0;
-  bottom: 0;
-  width: min(340px, 88vw);
-  z-index: 60;
-  background: linear-gradient(180deg, #171c21, var(--bow-panel) 40%, #12161a);
-  border-right: 1px solid var(--bow-line);
-  box-shadow: 14px 0 40px rgba(0, 0, 0, 0.55);
-  transform: translateX(-102%);
-  transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
-  overflow-y: auto;
-  overscroll-behavior: contain;
+.bow-body {
+  --bow-drawer-w: 336px;   /* ширина панели в открытом виде */
+
+  display: flex;
+  align-items: flex-start;
+  gap: 0;
 }
 
-.bow-drawer.bow-drawer-open { transform: translateX(0); }
+/* Панель — сосед сцены во флекс-строке, а не колонка сетки.
+   Анимируется её собственная ширина: 0 → 336px. Ширину браузер
+   интерполирует плавно, а `auto` в grid-колонке — нет, из-за чего
+   панель раньше «телепортировалась» без выезда.
+   Отступ от рельсы держит сама рельса: так закрытая панель занимает
+   ровно ноль места и не оставляет пустого шва. */
+.bow-drawer {
+  flex: 0 0 auto;
+  box-sizing: border-box;
+  width: 0;
+  min-width: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: width 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+              opacity 0.26s ease 0.05s;
+}
+
+.bow-body.bow-body-open .bow-drawer {
+  width: var(--bow-drawer-w);
+  opacity: 1;
+}
+
+/* Содержимое держит постоянную ширину (336px без внутреннего отступа):
+   при выезде оно не переливается и не перестраивается, а открывается
+   вместе с панелью. */
+.bow-drawer-scroll {
+  width: var(--bow-drawer-w);
+  box-sizing: border-box;
+  padding-right: 12px;
+  max-height: calc(100vh - 130px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--bow-line) transparent;
+  padding-right: 2px;
+}
+
+.bow-drawer-scroll::-webkit-scrollbar { width: 6px; }
+.bow-drawer-scroll::-webkit-scrollbar-thumb { background: var(--bow-line); }
 
 .bow-drawer-inner {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 70px 14px 22px;
+  gap: 10px;
+  width: 100%;
 }
 
 .bow-dpanel {
-  background: rgba(255, 255, 255, 0.018);
+  background: linear-gradient(165deg, var(--bow-panel-2), var(--bow-panel) 75%);
   border: 1px solid var(--bow-line-soft);
+  border-left: 2px solid var(--bow-line);
   border-radius: var(--bow-radius);
   padding: 11px 12px;
+  transition: border-left-color 0.2s;
 }
 
-/* Затемнение под панелью */
-.bow-scrim {
-  position: fixed;
-  inset: 0;
-  background: rgba(5, 7, 9, 0.6);
-  z-index: 55;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.3s;
-}
-
-.bow-scrim.bow-scrim-on {
-  opacity: 1;
-  pointer-events: auto;
-}
+.bow-dpanel.bow-dpanel-focus { border-left-color: var(--bow-bordo); }
 
 /* ============================================================
    РЕЛЬСА ЗНАЧКОВ СЛЕВА
    ============================================================ */
-
-.bow-body {
-  display: flex;
-  gap: 12px;
-  align-items: flex-start;
-}
 
 .bow-rail {
   display: flex;
@@ -423,6 +467,7 @@ body {
   flex: 0 0 auto;
   position: sticky;
   top: 8px;
+  margin-right: 12px;
 }
 
 .bow-rail-btn {
@@ -996,7 +1041,64 @@ body {
     border-bottom-color: var(--bow-bordo);
   }
 
-  .bow-body { flex-direction: column; }
+  /* На узком экране панель не может отнимать место у сцены:
+     она наезжает поверх неё и уходит по повторному нажатию. */
+  .bow-body {
+    flex-direction: column;
+    position: relative;
+  }
+
+  .bow-rail {
+    position: sticky;
+    top: 0;
+    z-index: 6;
+    background: var(--bow-bg);
+  }
+
+  /* Панель выезжает из-под горизонтальной рельсы, слева направо:
+     рельса остаётся видимой и доступной, пока панель открыта. */
+  .bow-drawer {
+    position: absolute;
+    top: 54px;
+    left: 0;
+    z-index: 5;
+    width: 0;
+    padding-right: 0;
+    max-height: 72vh;
+    border-radius: 0 var(--bow-radius) var(--bow-radius) 0;
+    background: var(--bow-panel);
+  }
+
+  .bow-body.bow-body-open .bow-drawer {
+    width: min(var(--bow-drawer-w), 90vw);
+    box-shadow: 14px 0 34px rgba(0, 0, 0, 0.55);
+    overflow-y: auto;
+  }
+
+  .bow-drawer-scroll {
+    width: auto;
+    max-width: min(var(--bow-drawer-w), 90vw);
+    padding: 8px 10px;
+  }
+
+  .bow-body.bow-body-open .bow-drawer-scroll { max-height: none; }
+
+  /* Затемнение под панелью: тап по сцене тоже закрывает её. */
+  .bow-body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 4;
+    background: rgba(6, 9, 11, 0.6);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.24s ease;
+  }
+
+  .bow-body.bow-body-open::after {
+    opacity: 1;
+    pointer-events: auto;
+  }
 
   .bow-topbar-status { margin-left: 0; width: 100%; }
 }
@@ -1037,8 +1139,7 @@ body {
   .bow-scene { padding: 13px 13px 11px; }
   .bow-scene-text p { font-size: 0.92rem; }
   .bow-rail-btn { min-width: 54px; padding: 8px 2px 7px; }
-  .bow-drawer { width: min(320px, 92vw); }
-  .bow-drawer-inner { padding: 64px 11px 20px; }
+  .bow-drawer-inner { padding: 2px; }
 }
 
 /* Очень узкий экран */
@@ -1049,9 +1150,252 @@ body {
   .bow-rail-btn { min-width: 44px; }
 }
 
-/* --- Уважение к настройкам доступности --- */
+/* ============================================================
+   ДИАЛОГ: лента реплик
+
+   Каждая реплика — отдельная плашка с указанием, кто говорит.
+   Реплики игрока справа с бордовой линией,
+   реплики собеседника слева со стальной.
+   Так видно и то, что сказал ГГ, и то, что ответили ему.
+   ============================================================ */
+
+.bow-dialog { display: none; }
+
+.bow-dialog.bow-dialog-open {
+  display: block;
+  border: 1px solid var(--bow-line);
+  border-radius: var(--bow-radius);
+  background: linear-gradient(170deg, #1a2027, var(--bow-panel) 80%);
+  overflow: hidden;
+}
+
+.bow-dialog-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--bow-line);
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.bow-dialog-head h3 {
+  margin: 0;
+  font-size: 0.96rem;
+  color: var(--bow-silver);
+  letter-spacing: 0.06em;
+}
+
+.bow-dialog-meta {
+  font-family: var(--bow-mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--bow-faint);
+}
+
+.bow-dialog-close {
+  background: none;
+  border: 1px solid var(--bow-line);
+  color: var(--bow-dim);
+  width: 30px;
+  height: 30px;
+  cursor: pointer;
+  border-radius: var(--bow-radius);
+  flex: 0 0 auto;
+}
+
+.bow-dialog-close:hover { color: var(--bow-crit); border-color: var(--bow-crit); }
+
+.bow-dialog-log {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 13px 14px;
+  max-height: 42vh;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--bow-line) transparent;
+}
+
+.bow-dialog-log::-webkit-scrollbar { width: 6px; }
+.bow-dialog-log::-webkit-scrollbar-thumb { background: var(--bow-line); }
+
+.bow-line {
+  max-width: 88%;
+  padding: 8px 12px 9px;
+  border-radius: var(--bow-radius);
+  font-size: 0.9rem;
+  line-height: 1.58;
+  animation: bow-line-in 0.22s ease both;
+}
+
+@keyframes bow-line-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.bow-line-npc {
+  align-self: flex-start;
+  background: #191f25;
+  border: 1px solid var(--bow-line-soft);
+  border-left: 2px solid var(--bow-steel);
+  color: var(--bow-text);
+}
+
+/* Реплика игрока — самая заметная часть разговора:
+   она сдвинута вправо и подписана «Вы», чтобы даже при беглом
+   взгляде было видно, что главный герой говорит, а не молчит. */
+.bow-line-player {
+  align-self: flex-end;
+  background: linear-gradient(200deg, #2a2431, #221d2a);
+  border: 1px solid #3d3446;
+  border-right: 3px solid var(--bow-bordo);
+  color: #d9dfe5;
+  box-shadow: -3px 3px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Ремарка: без рамки и подписи, курсивом, с тонкой линией слева.
+   Так видно, где говорят, а где просто происходит действие. */
+.bow-line-narr {
+  align-self: center;
+  max-width: 96%;
+  background: none;
+  border: 0;
+  border-left: 1px solid var(--bow-line-soft);
+  border-radius: 0;
+  padding: 2px 10px;
+  color: var(--bow-faint);
+  font-style: italic;
+  font-size: 0.84rem;
+  animation: none;
+}
+
+
+.bow-line-who {
+  display: block;
+  font-family: var(--bow-mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--bow-faint);
+  margin-bottom: 3px;
+}
+
+.bow-line-player .bow-line-who { color: #a8565f; text-align: right; }
+
+.bow-dialog-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 11px 14px 14px;
+  border-top: 1px solid var(--bow-line-soft);
+}
+
+.bow-dialog-choices-title {
+  font-family: var(--bow-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--bow-faint);
+  margin-bottom: 2px;
+}
+
+.bow-choice {
+  text-align: left;
+  cursor: pointer;
+  font-family: var(--bow-serif);
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: var(--bow-text);
+  background: #1a1f24;
+  border: 1px solid var(--bow-line-soft);
+  border-left: 2px solid var(--bow-steel);
+  border-radius: var(--bow-radius);
+  padding: 9px 12px;
+  min-height: 40px;
+  transition: border-color 0.15s, background 0.15s, color 0.15s, padding-left 0.15s;
+}
+
+.bow-choice:hover:not(:disabled) {
+  background: #212832;
+  border-left-color: var(--bow-bordo);
+  color: var(--bow-silver);
+  padding-left: 16px;
+}
+
+.bow-choice:disabled { opacity: 0.4; cursor: default; }
+
+.bow-choice-leave { border-left-color: var(--bow-line); color: var(--bow-dim); }
+
+.bow-dialog-summary {
+  padding: 12px 14px;
+  border-top: 1px solid var(--bow-line-soft);
+  font-family: var(--bow-mono);
+  font-size: 0.76rem;
+  color: var(--bow-dim);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.bow-summary-up { color: var(--bow-good); font-weight: 600; }
+.bow-summary-down { color: var(--bow-crit); font-weight: 600; }
+.bow-summary-flat { color: var(--bow-faint); }
+
+/* --- Внешность в карточке персонажа --- */
+.bow-appearance { display: grid; gap: 4px; margin: 0; }
+
+.bow-appearance-row {
+  display: grid;
+  grid-template-columns: 92px 1fr;
+  gap: 10px;
+  font-size: 0.82rem;
+  padding: 3px 0;
+  border-bottom: 1px dotted var(--bow-line-soft);
+}
+
+.bow-appearance-row dt {
+  font-family: var(--bow-mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--bow-faint);
+  padding-top: 2px;
+}
+
+.bow-appearance-row dd { margin: 0; color: var(--bow-dim); }
+
+/* --- Атмосфера сцены --- */
+.bow-ambience {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--bow-line-soft);
+  font-style: italic;
+  font-size: 0.88rem;
+  color: var(--bow-faint);
+}
+
+/* --- Уважение к настройкам доступности ---
+   Отключаем движение там, где оно и есть движение: выезд панели,
+   появление диалога, затухание сцены. Не глушим разом весь документ:
+   иначе интерфейс «дёргается» вместо того, чтобы просто не двигаться. */
 @media (prefers-reduced-motion: reduce) {
-  * { transition: none !important; animation: none !important; }
+  .bow-body,
+  .bow-drawer,
+  .bow-drawer-scroll,
+  .bow-scene,
+  .bow-scene-text p,
+  .bow-dialog,
+  .bow-line,
+  .bow-choice,
+  .bow-btn,
+  .bow-rail-btn {
+    transition-duration: 0.001s !important;
+    animation-duration: 0.001s !important;
+  }
 }
 
 @media (prefers-contrast: more) {
@@ -1354,38 +1698,38 @@ body {
         ],
         dialog: {
           root: {
-            text: "Сигрид ставит кружку, но не наливает. «Сначала скажи, чем заплатишь. Или что принесло тебя в Брод».",
+            text: "«Сначала скажи, чем заплатишь. Или что принесло тебя в Брод».",
             choices: [
-              { text: "Спросить про трактовую дорогу", goto: "road", attitude: 1 },
-              { text: "Спросить о ней самой", goto: "self", attitude: 2 },
+              { text: "Спросить про трактовую дорогу", say: "Что слышно на трактовой дороге? Обозы ходят?", goto: "road", attitude: 1 },
+              { text: "Спросить о ней самой", say: "А вы давно здесь? Трактир, кажется, старше половины Брода.", goto: "self", attitude: 2 },
               { text: "Уйти", close: true }
             ]
           },
           road: {
             text: "«Обоз с солью вышел три дня назад и до сих пор не вернулся. Возчики говорят про следы за частоколом. Я говорю: либо волки, либо кто похуже».",
             choices: [
-              { text: "Спросить, кто может быть похуже", goto: "worse", attitude: 1 },
-              { text: "Поблагодарить и отойти", close: true, attitude: 1 }
+              { text: "Спросить, кто может быть похуже", say: "Похуже волков — это кто? Люди?", goto: "worse", attitude: 1 },
+              { text: "Поблагодарить и отойти", say: "Спасибо. Буду знать, куда смотреть.", close: true, attitude: 1 }
             ]
           },
           worse: {
             text: "«Люди. Всегда люди. Волк не станет резать мешки с солью и оставлять их на дороге».",
             choices: [
-              { text: "Запомнить это", close: true, attitude: 1, journal: "Сигрид считает, что солевой обоз пропал не из-за волков." }
+              { text: "Запомнить это", say: "Значит, не волки. Запомню.", close: true, attitude: 1, journal: "Сигрид считает, что солевой обоз пропал не из-за волков." }
             ]
           },
           self: {
             text: "«Девятнадцать лет держу этот трактир. Мужа забрала лихорадка, сын ушёл на юг и не пишет. Вот и всё, что обо мне нужно знать».",
             choices: [
-              { text: "Сказать, что это тяжело", close: true, attitude: 2 },
-              { text: "Спросить, не нужна ли помощь", goto: "help", attitude: 3 }
+              { text: "Сказать, что это тяжело", say: "Девятнадцать лет одному. Это тяжело, что бы вы ни говорили.", close: true, attitude: 2 },
+              { text: "Спросить, не нужна ли помощь", say: "Может, вам нужна помощь? Я не за тем пришёл, но руки у меня есть.", goto: "help", attitude: 3 }
             ]
           },
           help: {
             text: "«Помощь? Принеси мне весть о солевом обозе. Тогда и поговорим по-человечески».",
             choices: [
-              { text: "Согласиться поискать вести", close: true, attitude: 3, journal: "Сигрид просит узнать, что случилось с солевым обозом." },
-              { text: "Отказаться", close: true, attitude: -1 }
+              { text: "Согласиться поискать вести", say: "Хорошо. Найду, что случилось с обозом, и вернусь.", close: true, attitude: 3, journal: "Сигрид просит узнать, что случилось с солевым обозом." },
+              { text: "Отказаться", say: "Нет. Я не за этим сюда шёл.", close: true, attitude: -1 }
             ]
           }
         }
@@ -1412,37 +1756,37 @@ body {
         ],
         dialog: {
           root: {
-            text: "Тарн опускает молот, но не выпускает рукоять. «Говори быстро. Железо ждать не будет».",
+            text: "«Говори быстро. Железо ждать не будет».",
             choices: [
-              { text: "Спросить про работу", goto: "work", attitude: 1 },
-              { text: "Спросить про войну", goto: "war", attitude: 1 },
+              { text: "Спросить про работу", say: "Работа есть? Я не боюсь ни горна, ни молота.", goto: "work", attitude: 1 },
+              { text: "Спросить про войну", say: "Вы воевали. Видно по рукам. Где?", goto: "war", attitude: 1 },
               { text: "Уйти", close: true }
             ]
           },
           work: {
             text: "«Нужны гвозди, подковы, клинки. Платят мало, работы много. Хочешь — приходи, руки всегда нужны».",
             choices: [
-              { text: "Спросить, сколько стоит нож", goto: "price", attitude: 1 },
+              { text: "Спросить, сколько стоит нож", say: "А нож сколько стоит? Тот, что у вас на стене.", goto: "price", attitude: 1 },
               { text: "Уйти", close: true }
             ]
           },
           price: {
             text: "«Пятнадцать монет. Дешевле не отдам — сталь не вода, её не зачерпнёшь».",
             choices: [
-              { text: "Кивнуть и отойти", close: true, attitude: 1 }
+              { text: "Кивнуть и отойти", say: "Пятнадцать так пятнадцать. Спасибо, что сказали прямо.", close: true, attitude: 1 }
             ]
           },
           war: {
             text: "«Был на юге, воевал. Вернулся без двух пальцев и без охоты говорить об этом».",
             choices: [
-              { text: "Не давить на него", close: true, attitude: 2 },
-              { text: "Спросить, с кем воевал", goto: "war2", attitude: -1 }
+              { text: "Не давить на него", say: "Понял. Не буду спрашивать.", close: true, attitude: 2 },
+              { text: "Спросить, с кем воевал", say: "С кем воевали-то? Не за пустое место же пальцы отдают.", goto: "war2", attitude: -1 }
             ]
           },
           war2: {
             text: "«С теми же, с кем и все. Север с югом не делит ничего, кроме дорог и кладбищ».",
             choices: [
-              { text: "Оставить тему", close: true }
+              { text: "Оставить тему", say: "Ясно. Не моё дело.", close: true }
             ]
           }
         }
@@ -1469,24 +1813,24 @@ body {
         ],
         dialog: {
           root: {
-            text: "Лива откладывает рыбу и вытирает руки. «Вы ведь не здешний? Расскажите, что за Бродом».",
+            text: "«Вы ведь не здешний? Расскажите, что за Бродом».",
             choices: [
-              { text: "Рассказать о дороге", goto: "road", attitude: 1 },
-              { text: "Спросить, чего она сама хочет", goto: "dream", attitude: 2 },
+              { text: "Рассказать о дороге", say: "Дорога как дорога. Снег, обозы, обмороженные носы. Никаких чудес.", goto: "road", attitude: 1 },
+              { text: "Спросить, чего она сама хочет", say: "А вы сами чего хотите? Не отец, не Брод — вы.", goto: "dream", attitude: 2 },
               { text: "Уйти", close: true }
             ]
           },
           road: {
             text: "«Правда? А я думала, там всё так же: снег, снег, ещё снег и возчики с обмороженными носами».",
             choices: [
-              { text: "Усмехнуться", close: true, attitude: 1 }
+              { text: "Усмехнуться", say: "Вот именно. Снег, снег и ещё раз снег.", close: true, attitude: 1 }
             ]
           },
           dream: {
             text: "«Я хочу на юг. Там города в три раза больше, и никто не знает, чья ты дочь. Здесь все знают».",
             choices: [
-              { text: "Сказать, что это смело", close: true, attitude: 2 },
-              { text: "Отговорить: дорога опасна", close: true, attitude: -1 }
+              { text: "Сказать, что это смело", say: "Уехать одному, без денег и имени, — это смело. Глупо, но смело.", close: true, attitude: 2 },
+              { text: "Отговорить: дорога опасна", say: "Не надо. Дорога никого не жалеет, а вас — тем более.", close: true, attitude: -1 }
             ]
           }
         }
@@ -1513,37 +1857,37 @@ body {
         ],
         dialog: {
           root: {
-            text: "Брор держит топор опущенным, но не убирает. «Чего надо?»",
+            text: "«Чего надо?»",
             choices: [
-              { text: "Спросить о следах за частоколом", goto: "traces", attitude: 1 },
-              { text: "Спросить о тайге", goto: "forest", attitude: 1 },
+              { text: "Спросить о следах за частоколом", say: "За частоколом следы. Говорят, ваши. Это так?", goto: "traces", attitude: 1 },
+              { text: "Спросить о тайге", say: "Что в тайге? Вы там каждый день, а я — ни разу.", goto: "forest", attitude: 1 },
               { text: "Уйти", close: true }
             ]
           },
           traces: {
             text: "«Следы не мои. Я своих не путаю. И не волчьи — волк так лапу не ставит, он её бережёт».",
             choices: [
-              { text: "Спросить, кто тогда", goto: "who", attitude: 1 },
-              { text: "Промолчать", close: true }
+              { text: "Спросить, кто тогда", say: "Тогда чьи? И почему вы так спокойны, если не ваши?", goto: "who", attitude: 1 },
+              { text: "Промолчать", say: "…", close: true }
             ]
           },
           who: {
             text: "«Кто-то, кто хочет, чтобы его не нашли. Пока не найдёшь — не суйся в тайгу один».",
             choices: [
-              { text: "Поблагодарить за предупреждение", close: true, attitude: 2, journal: "Брор предупредил: в тайгу одному не ходить." }
+              { text: "Поблагодарить за предупреждение", say: "Спасибо. В тайгу один не пойду.", close: true, attitude: 2, journal: "Брор предупредил: в тайгу одному не ходить." }
             ]
           },
           forest: {
             text: "«В тайге три дня — и ты уже не помнишь, откуда шёл. Провожатый нужен. Плата — соль или шкура».",
             choices: [
-              { text: "Спросить про плату", goto: "pay", attitude: 1 },
+              { text: "Спросить про плату", say: "Сколько и чем? Монета у меня есть, соли — не всегда.", goto: "pay", attitude: 1 },
               { text: "Уйти", close: true }
             ]
           },
           pay: {
             text: "«Соль. Здесь соль дороже монеты. Принесёшь мешочек — поговорим».",
             choices: [
-              { text: "Кивнуть", close: true, attitude: 1 }
+              { text: "Кивнуть", say: "Соль так соль. Будет мешочек — вернусь.", close: true, attitude: 1 }
             ]
           }
         }
@@ -2423,22 +2767,38 @@ body {
   });
 
 })(typeof window !== "undefined" ? window : this);/* ============================================================
-   BOW DIALOG — разговоры с выбором ответа.
-   Дерево диалога лежит в данных персонажа (dialog).
-   Состояние разговора хранится в состоянии игры, чтобы
-   переход в другую сцену его не терял.
+   BOW DIALOG — разговор как лента реплик.
+
+   Почему так: в 0.0.3 диалог показывал только реплику собеседника,
+   и было непонятно, что вообще говорит игрок. Теперь ведётся
+   стенограмма: каждая выбранная фраза игрока остаётся в ленте,
+   а ответ собеседника идёт следом.
+
+   Состояние разговора хранится в state.dialog и переживает
+   перерисовку экрана и переход по панелям.
    ============================================================ */
 (function (global) {
   "use strict";
 
   var Bow = global.Bow = global.Bow || {};
 
+  /* Представление персонажа для ленты: имя и пол в одном месте. */
+  function who(person) {
+    return {
+      id: person.id,
+      name: person.name,
+      pron: person.pron,
+      role: person.role,
+      attitude: person.attitude
+    };
+  }
+
   function node(person, nodeId) {
     if (!person || !person.dialog) { return null; }
     return person.dialog[nodeId] || null;
   }
 
-  /* Начать разговор: возвращает первый узел. */
+  /* ---------- Начать разговор ---------- */
   function start(state, personId) {
     var person = state.people[personId];
     if (!person || !person.alive) { return { ok: false, message: "Здесь никого нет." }; }
@@ -2452,14 +2812,21 @@ body {
     var root = node(person, "root");
     if (!root) { return { ok: false, message: "Не о чем говорить." }; }
 
+    /* Стенограмма: первая запись — вступительная реплика собеседника. */
     state.dialog = {
       personId: personId,
       nodeId: "root",
       visited: ["root"],
-      startedAt: state.time.totalHours
+      startedAt: state.time.totalHours,
+      log: [
+        /* Ремарка — это описание действия, а не речь. В ленте она
+           идёт отдельной строкой без подписи, чтобы не приписывать
+           собеседнику слова, которых он не говорил. */
+        { who: "narr", text: person.greet },
+        { who: "npc", text: root.text }
+      ]
     };
 
-    /* Первый разговор за день считается за встречу: время идёт один раз. */
     person.memory.push({
       kind: "talk",
       text: "Разговаривал(а) с " + state.player.name + " (" + Bow.time.format(state) + ").",
@@ -2471,19 +2838,18 @@ body {
     state.stats.talksMade += 1;
     state.stats.actionsTaken += 1;
 
-    Bow.journal.add(state, "Начался разговор: " + person.name + ".", "talk");
+    Bow.journal.add(state, "Разговор с " + person.name + ".", "talk");
 
     return {
       ok: true,
-      node: root,
       personId: personId,
       name: person.name,
-      message: person.name + ": разговор начат."
+      who: who(person),
+      message: ""
     };
   }
 
-  /* Выбрать вариант ответа. Возвращает либо следующий узел,
-     либо признак закрытия разговора. */
+  /* ---------- Выбрать вариант ответа ---------- */
   function choose(state, choiceIndex) {
     var d = state.dialog;
     if (!d) { return { ok: false, message: "Разговор не начат." }; }
@@ -2497,57 +2863,102 @@ body {
     var choice = current.choices[choiceIndex];
     if (!choice) { return { ok: false, message: "Такого варианта нет." }; }
 
-    /* Отношение меняется сразу: выбор — это поступок, а не текст. */
-    if (typeof choice.attitude === "number") {
+    /* 1. Фраза игрока попадает в ленту — теперь видно, что говорит ГГ.
+       В ленту идёт живая реплика (say), а не подпись кнопки (text):
+       «Спросить про дорогу» — это действие, «Что слышно на трактовой
+       дороге?» — это то, что персонаж действительно произносит. */
+    var spoken = choice.say || choice.text;
+    d.log.push({ who: "player", text: spoken });
+    Bow.util.trim(d.log, 40);
+
+    /* 2. Отношение меняется сразу: выбор — поступок, а не текст. */
+    var attitudeBefore = person.attitude;
+    if (typeof choice.attitude === "number" && choice.attitude !== 0) {
       person.attitude = Bow.util.clamp(person.attitude + choice.attitude, -100, 100);
-      if (choice.attitude !== 0) {
-        person.memory.push({
-          kind: "dialog",
-          text: (choice.attitude > 0 ? "Остался доволен разговором: " : "Остался недоволен разговором: ") +
-                (choice.journal || choice.text),
-          weight: Math.abs(choice.attitude),
-          totalHours: state.time.totalHours
-        });
-        Bow.util.trim(person.memory, 40);
-      }
+      person.memory.push({
+        kind: "dialog",
+        text: (choice.attitude > 0 ? "Остался доволен разговором: " : "Остался недоволен разговором: ") +
+              (choice.journal || choice.text),
+        weight: Math.abs(choice.attitude),
+        totalHours: state.time.totalHours
+      });
+      Bow.util.trim(person.memory, 40);
     }
 
-    /* Значимая реплика попадает в журнал — бытовые уходят в атмосферу. */
+    /* 3. Значимая реплика идёт в журнал. */
     if (choice.journal) {
       Bow.journal.add(state, person.name + ": " + choice.journal, "talk");
     }
 
+
+    var attitudeChanged = person.attitude !== attitudeBefore;
+
+    /* 4. Закрытие разговора. */
     if (choice.close) {
+      /* Прощальная реплика собеседника, чтобы лента не обрывалась. */
+      d.log.push({ who: "narr", text: closingLine(person, choice) });
+
+      var summary = {
+        personId: d.personId,
+        name: person.name,
+        attitude: person.attitude,
+        attitudeChanged: attitudeChanged,
+        delta: person.attitude - attitudeBefore,
+        log: d.log.slice()
+      };
+
       state.dialog = null;
       Bow.time.advance(state, 1);
-      return {
-        ok: true,
-        closed: true,
-        message: "Разговор окончен. Отношение " + person.name + ": " + person.attitude + "."
-      };
+
+      return { ok: true, closed: true, summary: summary, message: "" };
     }
 
+    /* 5. Переход к следующему узлу. */
     var next = node(person, choice.goto);
     if (!next) {
+      d.log.push({ who: "narr", text: "Собеседник молчит, и разговор сам собой сходит на нет." });
+      var sum2 = {
+        personId: d.personId, name: person.name, attitude: person.attitude,
+        attitudeChanged: attitudeChanged, delta: person.attitude - attitudeBefore, log: d.log.slice()
+      };
       state.dialog = null;
-      return { ok: true, closed: true, message: "Разговор окончен." };
+      Bow.time.advance(state, 1);
+      return { ok: true, closed: true, summary: sum2, message: "" };
     }
+
+    d.log.push({ who: "npc", text: next.text });
+    Bow.util.trim(d.log, 40);
 
     d.nodeId = choice.goto;
     if (d.visited.indexOf(choice.goto) === -1) { d.visited.push(choice.goto); }
 
     return {
       ok: true,
-      node: next,
       personId: d.personId,
       name: person.name,
-      message: person.name + ": " + choice.text
+      attitudeChanged: attitudeChanged,
+      delta: person.attitude - attitudeBefore,
+      message: ""
     };
   }
 
+  /* Прощальная фраза: зависит от того, как закончился разговор.
+     Это не отдельные данные, а честная реакция на последний выбор. */
+  function closingLine(person, choice) {
+    if (choice.attitude < 0) {
+      return person.pron === "f" ? "Она отворачивается." : "Он отворачивается.";
+    }
+    if (choice.attitude > 0) {
+      return person.pron === "f" ? "Она кивает вам вслед." : "Он кивает вам вслед.";
+    }
+    return person.pron === "f" ? "Она возвращается к своему делу." : "Он возвращается к своему делу.";
+  }
+
   function close(state) {
+    var d = state.dialog;
+    if (!d) { return { ok: true, closed: true, message: "" }; }
     state.dialog = null;
-    return { ok: true, closed: true, message: "Вы отошли." };
+    return { ok: true, closed: true, message: "" };
   }
 
   function currentNode(state) {
@@ -2556,7 +2967,14 @@ body {
     var person = state.people[d.personId];
     var n = node(person, d.nodeId);
     if (!n) { return null; }
-    return { node: n, personId: d.personId, name: person.name, person: person };
+    return {
+      node: n,
+      personId: d.personId,
+      name: person.name,
+      person: person,
+      who: who(person),
+      log: d.log || []
+    };
   }
 
   Bow.dialog = {
@@ -2861,8 +3279,17 @@ body {
     },
     choose: function (state, index) {
       var res = Bow.dialog.choose(state, index);
-      if (res.ok && res.closed) { Bow.events.afterAction(state, rng); }
-      if (res.ok) { Bow.needs.ensure(state.player); }
+      if (!res.ok) { return res; }
+
+      /* Час за разговор уже прошёл внутри диалога; здесь — только то,
+         что следует за любым действием. */
+      Bow.needs.ensure(state.player);
+      if (res.closed) {
+        /* Итог переживает закрытие: игрок должен увидеть, чем кончилась
+           беседа, а не пустой экран. */
+        state.flags.lastDialogSummary = res.summary || null;
+        Bow.events.afterAction(state, rng);
+      }
       return res;
     },
     buy: function (state, key, qty) {
@@ -3068,10 +3495,28 @@ body {
     if (res) { res.textContent = lastMessage; }
   }
 
-  /* ---------- Диалог с выбором ---------- */
+  /* ---------- Диалог: лента реплик ----------
+     Показывает и слова собеседника, и слова игрока.
+     После закрытия остаётся итог: кто, чем закончилось, как изменилось отношение. */
   function renderDialog(state) {
     var box = $("bow-dialog");
     if (!box) { return; }
+
+    /* Итог только что законченного разговора */
+    if (!state.dialog && state.flags.lastDialogSummary) {
+      var sum = state.flags.lastDialogSummary;
+      var cls = sum.delta > 0 ? "bow-summary-up" : sum.delta < 0 ? "bow-summary-down" : "bow-summary-flat";
+      var sign = sum.delta > 0 ? "+" : "";
+      box.innerHTML = '' +
+        '<div class="bow-dialog-summary">' +
+          '<span>Разговор с ' + esc(sum.name) + ' окончен.</span>' +
+          '<span class="' + cls + '">' +
+            (sum.delta === 0 ? "отношение не изменилось" : "отношение " + sign + sum.delta + " → " + sum.attitude) +
+          '</span>' +
+        '</div>';
+      box.classList.add("bow-dialog-open");
+      return;
+    }
 
     var current = Bow.dialog.currentNode(state);
     if (!current) {
@@ -3081,6 +3526,21 @@ body {
     }
 
     var p = current.person;
+    var log = current.log || [];
+
+    var lines = log.map(function (entry) {
+      /* Три вида строк: моя реплика, реплика собеседника и ремарка
+         (что происходит, а не что сказано). */
+      if (entry.who === "narr") {
+        return '<div class="bow-line bow-line-narr">' + esc(entry.text) + '</div>';
+      }
+      var isPlayer = entry.who === "player";
+      return '<div class="bow-line ' + (isPlayer ? "bow-line-player" : "bow-line-npc") + '">' +
+        '<span class="bow-line-who">' + esc(isPlayer ? "Вы" : p.name) + '</span>' +
+        esc(entry.text) +
+      '</div>';
+    }).join("");
+
     var choices = (current.node.choices || []).map(function (c, i) {
       var cls = c.close ? "bow-choice bow-choice-leave" : "bow-choice";
       return '<button class="' + cls + '" data-act="choose" data-choice="' + i + '">' +
@@ -3088,14 +3548,21 @@ body {
     }).join("");
 
     box.innerHTML = '' +
-      '<div class="bow-dialog-who">' +
-        '<h3>' + esc(p.name) + '</h3>' +
-        '<span>' + esc(p.role) + ' · отношение ' + p.attitude + '</span>' +
+      '<div class="bow-dialog-head">' +
+        '<h3>' + esc(p.name) + ', ' + esc(p.role) + '</h3>' +
+        '<span class="bow-dialog-meta">отношение ' + (p.attitude > 0 ? "+" : "") + p.attitude + '</span>' +
+        '<button class="bow-dialog-close" data-act="close-dialog" aria-label="Прервать разговор">✕</button>' +
       '</div>' +
-      '<p class="bow-dialog-text">' + esc(current.node.text) + '</p>' +
-      '<div class="bow-choices">' + choices + '</div>';
+      '<div class="bow-dialog-log" id="bow-dialog-log">' + lines + '</div>' +
+      '<div class="bow-dialog-choices">' +
+        '<div class="bow-dialog-choices-title">Что ответить</div>' + choices +
+      '</div>';
 
     box.classList.add("bow-dialog-open");
+
+    /* Прокрутка ленты вниз: читаем последнее. */
+    var lg = $("bow-dialog-log");
+    if (lg) { lg.scrollTop = lg.scrollHeight; }
   }
 
   /* ---------- Окно персонажа с внешностью ---------- */
@@ -3209,14 +3676,14 @@ body {
 
   function setDrawer(open) {
     drawerOpen = !!open;
+    var body = $("bow-body");
     var drawer = $("bow-drawer");
-    var scrim = $("bow-scrim");
     var btn = $("bow-logo-btn");
 
-    if (drawer) { drawer.classList.toggle("bow-drawer-open", drawerOpen); }
-    if (scrim) { scrim.classList.toggle("bow-scrim-on", drawerOpen); }
-    if (btn) { btn.setAttribute("aria-expanded", drawerOpen ? "true" : "false"); }
+    if (body) { body.classList.toggle("bow-body-open", drawerOpen); }
     if (drawer) { drawer.setAttribute("aria-hidden", drawerOpen ? "false" : "true"); }
+    if (btn) { btn.setAttribute("aria-expanded", drawerOpen ? "true" : "false"); }
+
     return drawerOpen;
   }
 
@@ -3225,12 +3692,19 @@ body {
   function isDrawerOpen() { return drawerOpen; }
 
   /* Прокрутка панели к нужному разделу по клику на значок. */
-  function scrollDrawerTo(index) {
+  function scrollDrawerTo(key) {
     var drawer = $("bow-drawer");
-    if (!drawer) { return; }
+    if (!drawer || !key) { return; }
+
     var panels = drawer.querySelectorAll(".bow-dpanel");
-    if (panels[index]) {
-      panels[index].scrollIntoView({ behavior: "smooth", block: "start" });
+    for (var i = 0; i < panels.length; i++) {
+      panels[i].classList.remove("bow-dpanel-focus");
+      if (panels[i].getAttribute("data-section") === key) {
+        panels[i].classList.add("bow-dpanel-focus");
+        /* Внутренняя прокрутка: внешняя страница не дёргается. */
+        var scroller = drawer.querySelector(".bow-drawer-scroll");
+        if (scroller) { scroller.scrollTop = panels[i].offsetTop - 8; }
+      }
     }
   }
 
@@ -3293,6 +3767,7 @@ body {
       var state = getState();
       /* Смена сцены закрывает разговор и окно персонажа. */
       if (state.dialog) { Bow.dialog.close(state); }
+      state.flags.lastDialogSummary = null;
       openSheet(null);
       return Bow.adapter.act.move(state, el.getAttribute("data-loc"));
     },
@@ -3319,25 +3794,35 @@ body {
     },
     /* Значок раздела: открывает панель и прокручивает к нужному блоку. */
     panel: function (el) {
-      var map = { state: 0, skills: 1, inv: 2, journal: 3, save: 4, people: -1 };
-      var idx = map[el.getAttribute("data-panel")];
+      var key = el.getAttribute("data-panel");
 
-      if (idx === -1) {
+      if (key === "people") {
         /* «Люди» — не панель, а прокрутка к списку людей в сцене. */
         var target = document.getElementById("bow-people");
         if (target) { target.scrollIntoView({ behavior: "smooth", block: "center" }); }
         return { ok: true, message: "" };
       }
 
-      Bow.ui.setDrawer(true);
-      /* Даём панели выехать, затем прокручиваем. */
-      setTimeout(function () { Bow.ui.scrollDrawerTo(idx); }, 340);
-
       document.querySelectorAll(".bow-rail-btn").forEach(function (b) {
         b.classList.remove("bow-rail-active");
       });
       el.classList.add("bow-rail-active");
 
+      if (Bow.ui.isDrawerOpen()) {
+        /* Панель уже открыта: просто переходим к разделу. */
+        Bow.ui.scrollDrawerTo(key);
+      } else {
+        Bow.ui.setDrawer(true);
+        /* Даём колонке доехать, затем прокручиваем к нужному разделу. */
+        setTimeout(function () { Bow.ui.scrollDrawerTo(key); }, 360);
+      }
+
+      return { ok: true, message: "" };
+    },
+    "close-dialog": function () {
+      var state = getState();
+      Bow.dialog.close(state);
+      state.flags.lastDialogSummary = null;
       return { ok: true, message: "" };
     }
   };
@@ -3528,6 +4013,22 @@ body {
       if (openPersonId) { openSheet(null); }
     });
 
+    /* Тап мимо панели закрывает её — но только там, где панель
+       наезжает поверх сцены (планшет и телефон). На компьютере панель
+       встроена в поток: закрывать её от случайного клика по сцене
+       было бы неожиданно. Само затемнение рисует ::after на узком
+       экране; событие всплывает от него к контейнеру. */
+    var bodyEl = document.getElementById("bow-body");
+    if (bodyEl) {
+      bodyEl.addEventListener("click", function (event) {
+        if (!Bow.ui.isDrawerOpen()) { return; }
+        if (!window.matchMedia || !window.matchMedia("(max-width: 900px)").matches) { return; }
+        /* Клик пришёл мимо панели и мимо рельсы — значит, по затемнению. */
+        if (event.target.closest("#bow-drawer") || event.target.closest("#bow-rail")) { return; }
+        Bow.ui.setDrawer(false);
+      });
+    }
+
     /* Логотип раскрывает и убирает панель. */
     var logoBtn = document.getElementById("bow-logo-btn");
     if (logoBtn) {
@@ -3535,12 +4036,6 @@ body {
         event.preventDefault();
         Bow.ui.toggleDrawer();
       });
-    }
-
-    /* Клик по затемнению закрывает панель. */
-    var scrim = document.getElementById("bow-scrim");
-    if (scrim) {
-      scrim.addEventListener("click", function () { Bow.ui.setDrawer(false); });
     }
 
     var btnSave = document.getElementById("bow-btn-save");
@@ -3573,15 +4068,17 @@ body {
 	<tw-passagedata pid="1" name="StoryInterface" tags="" >&lt;div id=&quot;bow-app&quot; class=&quot;bow-app&quot;&gt;
 
   &lt;!-- ============================================================
-       ВЕРХНЯЯ ПАЛКА: логотип-кнопка и краткая сводка
+       ВЕРХНЯЯ ПАЛКА
+       Логотип слева, сводка по центру, состояние справа.
        ============================================================ --&gt;
   &lt;header class=&quot;bow-topbar&quot;&gt;
-    &lt;button class=&quot;bow-logo-btn&quot; id=&quot;bow-logo-btn&quot; aria-label=&quot;Открыть панель&quot; aria-expanded=&quot;false&quot; title=&quot;Панель&quot;&gt;
+    &lt;button class=&quot;bow-logo-btn&quot; id=&quot;bow-logo-btn&quot; aria-label=&quot;Показать или скрыть панель&quot; aria-expanded=&quot;false&quot; title=&quot;Нажмите, чтобы показать или убрать панель&quot;&gt;
       &lt;span class=&quot;bow-logo-img&quot; aria-hidden=&quot;true&quot;&gt;&lt;/span&gt;
       &lt;span class=&quot;bow-logo-text&quot;&gt;
         &lt;b&gt;Blades Of War&lt;/b&gt;
         &lt;i id=&quot;bow-season&quot;&gt;Эдем&lt;/i&gt;
       &lt;/span&gt;
+      &lt;span class=&quot;bow-logo-hint&quot; aria-hidden=&quot;true&quot;&gt;панель&lt;/span&gt;
     &lt;/button&gt;
 
     &lt;div class=&quot;bow-topbar-info&quot;&gt;
@@ -3593,61 +4090,15 @@ body {
       &lt;span id=&quot;bow-weather&quot; class=&quot;bow-weather&quot;&gt;&lt;/span&gt;
     &lt;/div&gt;
 
-    &lt;div class=&quot;bow-topbar-status&quot; id=&quot;bow-topbar-status&quot;&gt;
-      &lt;!-- мини-полосы состояния: видны всегда, даже когда панель закрыта --&gt;
-    &lt;/div&gt;
+    &lt;div class=&quot;bow-topbar-status&quot; id=&quot;bow-topbar-status&quot;&gt;&lt;/div&gt;
   &lt;/header&gt;
 
   &lt;!-- ============================================================
-       ВЫДВИЖНАЯ ПАНЕЛЬ: здесь всё, что не нужно в главном окне
+       ОСНОВНОЕ ПОЛЕ: рельса слева, панель, сцена справа
+       Панель встроена в поток, поэтому её выезд не зависит
+       от position: fixed и не может «телепортироваться».
        ============================================================ --&gt;
-  &lt;div class=&quot;bow-drawer&quot; id=&quot;bow-drawer&quot; aria-hidden=&quot;true&quot;&gt;
-    &lt;div class=&quot;bow-drawer-inner&quot;&gt;
-
-      &lt;section class=&quot;bow-dpanel&quot;&gt;
-        &lt;h2 class=&quot;bow-h2&quot;&gt;Состояние&lt;/h2&gt;
-        &lt;div id=&quot;bow-needs&quot; class=&quot;bow-needs&quot;&gt;&lt;/div&gt;
-      &lt;/section&gt;
-
-      &lt;section class=&quot;bow-dpanel&quot;&gt;
-        &lt;h2 class=&quot;bow-h2&quot;&gt;Умения&lt;/h2&gt;
-        &lt;div id=&quot;bow-skills&quot; class=&quot;bow-skills&quot;&gt;&lt;/div&gt;
-      &lt;/section&gt;
-
-      &lt;section class=&quot;bow-dpanel&quot;&gt;
-        &lt;h2 class=&quot;bow-h2&quot;&gt;При себе&lt;/h2&gt;
-        &lt;div id=&quot;bow-inventory&quot; class=&quot;bow-inventory&quot;&gt;&lt;/div&gt;
-      &lt;/section&gt;
-
-      &lt;section class=&quot;bow-dpanel&quot;&gt;
-        &lt;h2 class=&quot;bow-h2&quot;&gt;Хроника&lt;/h2&gt;
-        &lt;div id=&quot;bow-journal&quot; class=&quot;bow-journal&quot;&gt;&lt;/div&gt;
-      &lt;/section&gt;
-
-      &lt;section class=&quot;bow-dpanel&quot;&gt;
-        &lt;h2 class=&quot;bow-h2&quot;&gt;Память игры&lt;/h2&gt;
-        &lt;div class=&quot;bow-saves&quot;&gt;
-          &lt;button class=&quot;bow-btn bow-btn-sm&quot; id=&quot;bow-btn-save&quot;&gt;Выгрузить сохранение&lt;/button&gt;
-          &lt;button class=&quot;bow-btn bow-btn-sm&quot; id=&quot;bow-btn-load&quot;&gt;Загрузить файл&lt;/button&gt;
-          &lt;button class=&quot;bow-btn bow-btn-sm&quot; id=&quot;bow-btn-continue&quot; disabled&gt;Продолжить с автосейва&lt;/button&gt;
-          &lt;button class=&quot;bow-btn bow-btn-sm bow-btn-danger&quot; id=&quot;bow-btn-restart&quot;&gt;Начать заново&lt;/button&gt;
-        &lt;/div&gt;
-        &lt;p class=&quot;bow-note&quot;&gt;
-          Игра сохраняется в браузере после каждого действия. Чтобы перенести
-          прогресс на другое устройство — выгрузите файл.
-        &lt;/p&gt;
-      &lt;/section&gt;
-
-    &lt;/div&gt;
-  &lt;/div&gt;
-
-  &lt;!-- Затемнение под выдвижной панелью --&gt;
-  &lt;div class=&quot;bow-scrim&quot; id=&quot;bow-scrim&quot;&gt;&lt;/div&gt;
-
-  &lt;!-- ============================================================
-       ОСНОВНОЕ ПОЛЕ: рельса значков + сцена
-       ============================================================ --&gt;
-  &lt;div class=&quot;bow-body&quot;&gt;
+  &lt;div class=&quot;bow-body&quot; id=&quot;bow-body&quot;&gt;
 
     &lt;nav class=&quot;bow-rail&quot; id=&quot;bow-rail&quot; aria-label=&quot;Разделы&quot;&gt;
       &lt;button class=&quot;bow-rail-btn&quot; data-act=&quot;panel&quot; data-panel=&quot;state&quot; title=&quot;Состояние&quot;&gt;
@@ -3670,6 +4121,50 @@ body {
       &lt;/button&gt;
     &lt;/nav&gt;
 
+    &lt;!-- ВЫДВИЖНАЯ ПАНЕЛЬ --&gt;
+    &lt;aside class=&quot;bow-drawer&quot; id=&quot;bow-drawer&quot; aria-hidden=&quot;true&quot;&gt;
+      &lt;div class=&quot;bow-drawer-scroll&quot;&gt;
+        &lt;div class=&quot;bow-drawer-inner&quot;&gt;
+
+          &lt;section class=&quot;bow-dpanel&quot; data-section=&quot;state&quot;&gt;
+            &lt;h2 class=&quot;bow-h2&quot;&gt;Состояние&lt;/h2&gt;
+            &lt;div id=&quot;bow-needs&quot; class=&quot;bow-needs&quot;&gt;&lt;/div&gt;
+          &lt;/section&gt;
+
+          &lt;section class=&quot;bow-dpanel&quot; data-section=&quot;skills&quot;&gt;
+            &lt;h2 class=&quot;bow-h2&quot;&gt;Умения&lt;/h2&gt;
+            &lt;div id=&quot;bow-skills&quot; class=&quot;bow-skills&quot;&gt;&lt;/div&gt;
+          &lt;/section&gt;
+
+          &lt;section class=&quot;bow-dpanel&quot; data-section=&quot;inv&quot;&gt;
+            &lt;h2 class=&quot;bow-h2&quot;&gt;При себе&lt;/h2&gt;
+            &lt;div id=&quot;bow-inventory&quot; class=&quot;bow-inventory&quot;&gt;&lt;/div&gt;
+          &lt;/section&gt;
+
+          &lt;section class=&quot;bow-dpanel&quot; data-section=&quot;journal&quot;&gt;
+            &lt;h2 class=&quot;bow-h2&quot;&gt;Хроника&lt;/h2&gt;
+            &lt;div id=&quot;bow-journal&quot; class=&quot;bow-journal&quot;&gt;&lt;/div&gt;
+          &lt;/section&gt;
+
+          &lt;section class=&quot;bow-dpanel&quot; data-section=&quot;save&quot;&gt;
+            &lt;h2 class=&quot;bow-h2&quot;&gt;Память игры&lt;/h2&gt;
+            &lt;div class=&quot;bow-saves&quot;&gt;
+              &lt;button class=&quot;bow-btn bow-btn-sm&quot; id=&quot;bow-btn-save&quot;&gt;Выгрузить сохранение&lt;/button&gt;
+              &lt;button class=&quot;bow-btn bow-btn-sm&quot; id=&quot;bow-btn-load&quot;&gt;Загрузить файл&lt;/button&gt;
+              &lt;button class=&quot;bow-btn bow-btn-sm&quot; id=&quot;bow-btn-continue&quot; disabled&gt;Продолжить с автосейва&lt;/button&gt;
+              &lt;button class=&quot;bow-btn bow-btn-sm bow-btn-danger&quot; id=&quot;bow-btn-restart&quot;&gt;Начать заново&lt;/button&gt;
+            &lt;/div&gt;
+            &lt;p class=&quot;bow-note&quot;&gt;
+              Игра сохраняется в браузере после каждого действия.
+              Чтобы перенести прогресс — выгрузите файл.
+            &lt;/p&gt;
+          &lt;/section&gt;
+
+        &lt;/div&gt;
+      &lt;/div&gt;
+    &lt;/aside&gt;
+
+    &lt;!-- СЦЕНА --&gt;
     &lt;main class=&quot;bow-main&quot;&gt;
 
       &lt;section class=&quot;bow-scene&quot; id=&quot;bow-scene&quot;&gt;
@@ -3679,12 +4174,11 @@ body {
         &lt;/div&gt;
         &lt;div id=&quot;bow-loc-text&quot; class=&quot;bow-scene-text&quot;&gt;&lt;/div&gt;
         &lt;div id=&quot;bow-ambience&quot; class=&quot;bow-ambience&quot;&gt;&lt;/div&gt;
-
         &lt;div class=&quot;bow-result&quot; id=&quot;bow-last&quot; aria-live=&quot;polite&quot;&gt;&lt;/div&gt;
       &lt;/section&gt;
 
-      &lt;!-- Окно разговора: только когда разговор идёт --&gt;
-      &lt;div id=&quot;bow-dialog&quot; class=&quot;bow-dialog&quot; aria-live=&quot;polite&quot;&gt;&lt;/div&gt;
+      &lt;!-- Диалог: лента реплик и варианты ответа --&gt;
+      &lt;section id=&quot;bow-dialog&quot; class=&quot;bow-dialog&quot; aria-live=&quot;polite&quot;&gt;&lt;/section&gt;
 
       &lt;section class=&quot;bow-panel&quot;&gt;
         &lt;h2 class=&quot;bow-h2&quot;&gt;Действия&lt;/h2&gt;
@@ -3703,19 +4197,17 @@ body {
 
       &lt;section class=&quot;bow-panel&quot;&gt;
         &lt;h2 class=&quot;bow-h2&quot;&gt;Товар и снедь&lt;/h2&gt;
-        &lt;!-- #passages обязателен для SugarCube: сюда выводится пассаж
-             с виджетом торговли. --&gt;
+        &lt;!-- #passages обязателен для SugarCube --&gt;
         &lt;div id=&quot;passages&quot;&gt;&lt;/div&gt;
       &lt;/section&gt;
 
     &lt;/main&gt;
   &lt;/div&gt;
 
-  &lt;!-- Окно персонажа: оверлей, наполняется по кнопке «Осмотреть» --&gt;
   &lt;div id=&quot;bow-sheet&quot; class=&quot;bow-sheet&quot; aria-hidden=&quot;true&quot;&gt;&lt;/div&gt;
 
   &lt;footer class=&quot;bow-footer&quot;&gt;
-    &lt;span&gt;Blades Of War · прототип 0.0.3 · тестовая локация: Студёный Брод&lt;/span&gt;
+    &lt;span&gt;Blades Of War · прототип 0.0.4 · тестовая локация: Студёный Брод&lt;/span&gt;
     &lt;span class=&quot;bow-dim&quot;&gt;Текст мира — черновой, имена и место подлежат согласованию&lt;/span&gt;
   &lt;/footer&gt;
 

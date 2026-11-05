@@ -65,8 +65,17 @@
     },
     choose: function (state, index) {
       var res = Bow.dialog.choose(state, index);
-      if (res.ok && res.closed) { Bow.events.afterAction(state, rng); }
-      if (res.ok) { Bow.needs.ensure(state.player); }
+      if (!res.ok) { return res; }
+
+      /* Час за разговор уже прошёл внутри диалога; здесь — только то,
+         что следует за любым действием. */
+      Bow.needs.ensure(state.player);
+      if (res.closed) {
+        /* Итог переживает закрытие: игрок должен увидеть, чем кончилась
+           беседа, а не пустой экран. */
+        state.flags.lastDialogSummary = res.summary || null;
+        Bow.events.afterAction(state, rng);
+      }
       return res;
     },
     buy: function (state, key, qty) {

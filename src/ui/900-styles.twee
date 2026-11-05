@@ -123,6 +123,30 @@ body {
   flex-wrap: wrap;
 }
 
+/* Подсказка у логотипа: без неё неочевидно, что это кнопка панели.
+   Гаснет при наведении — она нужна один раз, а не постоянно. */
+.bow-logo-hint {
+  font-family: var(--bow-mono);
+  font-size: 0.52rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--bow-faint);
+  border: 1px solid var(--bow-line-soft);
+  border-radius: 3px;
+  padding: 2px 5px;
+  align-self: center;
+  transition: color 0.18s, border-color 0.18s, opacity 0.25s;
+}
+
+.bow-logo-btn:hover .bow-logo-hint {
+  color: var(--bow-steel);
+  border-color: var(--bow-line);
+}
+
+.bow-logo-btn[aria-expanded="true"] .bow-logo-hint { opacity: 0; }
+
+@media (max-width: 720px) { .bow-logo-hint { display: none; } }
+
 .bow-logo-btn {
   display: flex;
   align-items: center;
@@ -249,66 +273,86 @@ body {
 
 /* ============================================================
    ВЫДВИЖНАЯ ПАНЕЛЬ
-   Закрыта: сдвинута влево и скрыта. Открыта: выезжает вправо.
+
+   Схема: body — флекс-строка из трёх соседей.
+   [рельса] [панель] [сцена]
+
+   Панель анимируется по СВОЕЙ ширине: 12px → 348px. Это важно:
+   `auto` в grid-колонках браузер не интерполирует, поэтому
+   прежняя схема «grid-template-columns: auto 0 1fr» переключалась
+   рывком — панель просто появлялась. Ширина и opacity анимируются
+   везде, включая мобильные браузеры с адресной строкой.
    ============================================================ */
 
-.bow-drawer {
-  position: fixed;
-  top: 0;
-  left: 0;
-  bottom: 0;
-  width: min(340px, 88vw);
-  z-index: 60;
-  background: linear-gradient(180deg, #171c21, var(--bow-panel) 40%, #12161a);
-  border-right: 1px solid var(--bow-line);
-  box-shadow: 14px 0 40px rgba(0, 0, 0, 0.55);
-  transform: translateX(-102%);
-  transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
-  overflow-y: auto;
-  overscroll-behavior: contain;
+.bow-body {
+  --bow-drawer-w: 336px;   /* ширина панели в открытом виде */
+
+  display: flex;
+  align-items: flex-start;
+  gap: 0;
 }
 
-.bow-drawer.bow-drawer-open { transform: translateX(0); }
+/* Панель — сосед сцены во флекс-строке, а не колонка сетки.
+   Анимируется её собственная ширина: 0 → 336px. Ширину браузер
+   интерполирует плавно, а `auto` в grid-колонке — нет, из-за чего
+   панель раньше «телепортировалась» без выезда.
+   Отступ от рельсы держит сама рельса: так закрытая панель занимает
+   ровно ноль места и не оставляет пустого шва. */
+.bow-drawer {
+  flex: 0 0 auto;
+  box-sizing: border-box;
+  width: 0;
+  min-width: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: width 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+              opacity 0.26s ease 0.05s;
+}
+
+.bow-body.bow-body-open .bow-drawer {
+  width: var(--bow-drawer-w);
+  opacity: 1;
+}
+
+/* Содержимое держит постоянную ширину (336px без внутреннего отступа):
+   при выезде оно не переливается и не перестраивается, а открывается
+   вместе с панелью. */
+.bow-drawer-scroll {
+  width: var(--bow-drawer-w);
+  box-sizing: border-box;
+  padding-right: 12px;
+  max-height: calc(100vh - 130px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--bow-line) transparent;
+  padding-right: 2px;
+}
+
+.bow-drawer-scroll::-webkit-scrollbar { width: 6px; }
+.bow-drawer-scroll::-webkit-scrollbar-thumb { background: var(--bow-line); }
 
 .bow-drawer-inner {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 70px 14px 22px;
+  gap: 10px;
+  width: 100%;
 }
 
 .bow-dpanel {
-  background: rgba(255, 255, 255, 0.018);
+  background: linear-gradient(165deg, var(--bow-panel-2), var(--bow-panel) 75%);
   border: 1px solid var(--bow-line-soft);
+  border-left: 2px solid var(--bow-line);
   border-radius: var(--bow-radius);
   padding: 11px 12px;
+  transition: border-left-color 0.2s;
 }
 
-/* Затемнение под панелью */
-.bow-scrim {
-  position: fixed;
-  inset: 0;
-  background: rgba(5, 7, 9, 0.6);
-  z-index: 55;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.3s;
-}
-
-.bow-scrim.bow-scrim-on {
-  opacity: 1;
-  pointer-events: auto;
-}
+.bow-dpanel.bow-dpanel-focus { border-left-color: var(--bow-bordo); }
 
 /* ============================================================
    РЕЛЬСА ЗНАЧКОВ СЛЕВА
    ============================================================ */
-
-.bow-body {
-  display: flex;
-  gap: 12px;
-  align-items: flex-start;
-}
 
 .bow-rail {
   display: flex;
@@ -317,6 +361,7 @@ body {
   flex: 0 0 auto;
   position: sticky;
   top: 8px;
+  margin-right: 12px;
 }
 
 .bow-rail-btn {
@@ -890,7 +935,64 @@ body {
     border-bottom-color: var(--bow-bordo);
   }
 
-  .bow-body { flex-direction: column; }
+  /* На узком экране панель не может отнимать место у сцены:
+     она наезжает поверх неё и уходит по повторному нажатию. */
+  .bow-body {
+    flex-direction: column;
+    position: relative;
+  }
+
+  .bow-rail {
+    position: sticky;
+    top: 0;
+    z-index: 6;
+    background: var(--bow-bg);
+  }
+
+  /* Панель выезжает из-под горизонтальной рельсы, слева направо:
+     рельса остаётся видимой и доступной, пока панель открыта. */
+  .bow-drawer {
+    position: absolute;
+    top: 54px;
+    left: 0;
+    z-index: 5;
+    width: 0;
+    padding-right: 0;
+    max-height: 72vh;
+    border-radius: 0 var(--bow-radius) var(--bow-radius) 0;
+    background: var(--bow-panel);
+  }
+
+  .bow-body.bow-body-open .bow-drawer {
+    width: min(var(--bow-drawer-w), 90vw);
+    box-shadow: 14px 0 34px rgba(0, 0, 0, 0.55);
+    overflow-y: auto;
+  }
+
+  .bow-drawer-scroll {
+    width: auto;
+    max-width: min(var(--bow-drawer-w), 90vw);
+    padding: 8px 10px;
+  }
+
+  .bow-body.bow-body-open .bow-drawer-scroll { max-height: none; }
+
+  /* Затемнение под панелью: тап по сцене тоже закрывает её. */
+  .bow-body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 4;
+    background: rgba(6, 9, 11, 0.6);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.24s ease;
+  }
+
+  .bow-body.bow-body-open::after {
+    opacity: 1;
+    pointer-events: auto;
+  }
 
   .bow-topbar-status { margin-left: 0; width: 100%; }
 }
@@ -931,8 +1033,7 @@ body {
   .bow-scene { padding: 13px 13px 11px; }
   .bow-scene-text p { font-size: 0.92rem; }
   .bow-rail-btn { min-width: 54px; padding: 8px 2px 7px; }
-  .bow-drawer { width: min(320px, 92vw); }
-  .bow-drawer-inner { padding: 64px 11px 20px; }
+  .bow-drawer-inner { padding: 2px; }
 }
 
 /* Очень узкий экран */
@@ -943,9 +1044,252 @@ body {
   .bow-rail-btn { min-width: 44px; }
 }
 
-/* --- Уважение к настройкам доступности --- */
+/* ============================================================
+   ДИАЛОГ: лента реплик
+
+   Каждая реплика — отдельная плашка с указанием, кто говорит.
+   Реплики игрока справа с бордовой линией,
+   реплики собеседника слева со стальной.
+   Так видно и то, что сказал ГГ, и то, что ответили ему.
+   ============================================================ */
+
+.bow-dialog { display: none; }
+
+.bow-dialog.bow-dialog-open {
+  display: block;
+  border: 1px solid var(--bow-line);
+  border-radius: var(--bow-radius);
+  background: linear-gradient(170deg, #1a2027, var(--bow-panel) 80%);
+  overflow: hidden;
+}
+
+.bow-dialog-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--bow-line);
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.bow-dialog-head h3 {
+  margin: 0;
+  font-size: 0.96rem;
+  color: var(--bow-silver);
+  letter-spacing: 0.06em;
+}
+
+.bow-dialog-meta {
+  font-family: var(--bow-mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--bow-faint);
+}
+
+.bow-dialog-close {
+  background: none;
+  border: 1px solid var(--bow-line);
+  color: var(--bow-dim);
+  width: 30px;
+  height: 30px;
+  cursor: pointer;
+  border-radius: var(--bow-radius);
+  flex: 0 0 auto;
+}
+
+.bow-dialog-close:hover { color: var(--bow-crit); border-color: var(--bow-crit); }
+
+.bow-dialog-log {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 13px 14px;
+  max-height: 42vh;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--bow-line) transparent;
+}
+
+.bow-dialog-log::-webkit-scrollbar { width: 6px; }
+.bow-dialog-log::-webkit-scrollbar-thumb { background: var(--bow-line); }
+
+.bow-line {
+  max-width: 88%;
+  padding: 8px 12px 9px;
+  border-radius: var(--bow-radius);
+  font-size: 0.9rem;
+  line-height: 1.58;
+  animation: bow-line-in 0.22s ease both;
+}
+
+@keyframes bow-line-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.bow-line-npc {
+  align-self: flex-start;
+  background: #191f25;
+  border: 1px solid var(--bow-line-soft);
+  border-left: 2px solid var(--bow-steel);
+  color: var(--bow-text);
+}
+
+/* Реплика игрока — самая заметная часть разговора:
+   она сдвинута вправо и подписана «Вы», чтобы даже при беглом
+   взгляде было видно, что главный герой говорит, а не молчит. */
+.bow-line-player {
+  align-self: flex-end;
+  background: linear-gradient(200deg, #2a2431, #221d2a);
+  border: 1px solid #3d3446;
+  border-right: 3px solid var(--bow-bordo);
+  color: #d9dfe5;
+  box-shadow: -3px 3px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Ремарка: без рамки и подписи, курсивом, с тонкой линией слева.
+   Так видно, где говорят, а где просто происходит действие. */
+.bow-line-narr {
+  align-self: center;
+  max-width: 96%;
+  background: none;
+  border: 0;
+  border-left: 1px solid var(--bow-line-soft);
+  border-radius: 0;
+  padding: 2px 10px;
+  color: var(--bow-faint);
+  font-style: italic;
+  font-size: 0.84rem;
+  animation: none;
+}
+
+
+.bow-line-who {
+  display: block;
+  font-family: var(--bow-mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--bow-faint);
+  margin-bottom: 3px;
+}
+
+.bow-line-player .bow-line-who { color: #a8565f; text-align: right; }
+
+.bow-dialog-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 11px 14px 14px;
+  border-top: 1px solid var(--bow-line-soft);
+}
+
+.bow-dialog-choices-title {
+  font-family: var(--bow-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--bow-faint);
+  margin-bottom: 2px;
+}
+
+.bow-choice {
+  text-align: left;
+  cursor: pointer;
+  font-family: var(--bow-serif);
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: var(--bow-text);
+  background: #1a1f24;
+  border: 1px solid var(--bow-line-soft);
+  border-left: 2px solid var(--bow-steel);
+  border-radius: var(--bow-radius);
+  padding: 9px 12px;
+  min-height: 40px;
+  transition: border-color 0.15s, background 0.15s, color 0.15s, padding-left 0.15s;
+}
+
+.bow-choice:hover:not(:disabled) {
+  background: #212832;
+  border-left-color: var(--bow-bordo);
+  color: var(--bow-silver);
+  padding-left: 16px;
+}
+
+.bow-choice:disabled { opacity: 0.4; cursor: default; }
+
+.bow-choice-leave { border-left-color: var(--bow-line); color: var(--bow-dim); }
+
+.bow-dialog-summary {
+  padding: 12px 14px;
+  border-top: 1px solid var(--bow-line-soft);
+  font-family: var(--bow-mono);
+  font-size: 0.76rem;
+  color: var(--bow-dim);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.bow-summary-up { color: var(--bow-good); font-weight: 600; }
+.bow-summary-down { color: var(--bow-crit); font-weight: 600; }
+.bow-summary-flat { color: var(--bow-faint); }
+
+/* --- Внешность в карточке персонажа --- */
+.bow-appearance { display: grid; gap: 4px; margin: 0; }
+
+.bow-appearance-row {
+  display: grid;
+  grid-template-columns: 92px 1fr;
+  gap: 10px;
+  font-size: 0.82rem;
+  padding: 3px 0;
+  border-bottom: 1px dotted var(--bow-line-soft);
+}
+
+.bow-appearance-row dt {
+  font-family: var(--bow-mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--bow-faint);
+  padding-top: 2px;
+}
+
+.bow-appearance-row dd { margin: 0; color: var(--bow-dim); }
+
+/* --- Атмосфера сцены --- */
+.bow-ambience {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--bow-line-soft);
+  font-style: italic;
+  font-size: 0.88rem;
+  color: var(--bow-faint);
+}
+
+/* --- Уважение к настройкам доступности ---
+   Отключаем движение там, где оно и есть движение: выезд панели,
+   появление диалога, затухание сцены. Не глушим разом весь документ:
+   иначе интерфейс «дёргается» вместо того, чтобы просто не двигаться. */
 @media (prefers-reduced-motion: reduce) {
-  * { transition: none !important; animation: none !important; }
+  .bow-body,
+  .bow-drawer,
+  .bow-drawer-scroll,
+  .bow-scene,
+  .bow-scene-text p,
+  .bow-dialog,
+  .bow-line,
+  .bow-choice,
+  .bow-btn,
+  .bow-rail-btn {
+    transition-duration: 0.001s !important;
+    animation-duration: 0.001s !important;
+  }
 }
 
 @media (prefers-contrast: more) {

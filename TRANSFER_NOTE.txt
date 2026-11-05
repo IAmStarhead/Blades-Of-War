@@ -10,15 +10,19 @@
 КАК СОБИРАТЬ
 npm install
 npm run build     (.twee -> dist/BladesOfWar.html)
-npm run check     (35 автопроверок логики)
+npm run check     (68 автопроверок логики и интерфейса)
 npm run verify    (сборка + проверки)
 
 ГДЕ ЧТО МЕНЯТЬ
 Все тексты, имена, цены, локации  -> src/js/005-data.twee
-Диалоги и реплики                 -> src/js/005-data.twee (поле dialog)
+Диалоги и реплики                 -> src/js/005-data.twee (поле dialog;
+                                     say = живая реплика героя,
+                                     text = подпись на кнопке)
 Внешность персонажей              -> src/js/005-data.twee (поле appearance)
 Оформление и палитра              -> src/ui/900-styles.twee (:root)
 Логотип                           -> assets/logo-192.png, встроен в CSS
+Выдвижная панель                  -> src/ui/900-styles.twee (.bow-drawer)
+Лента диалога                     -> src/js/110-ui.twee (renderDialog)
 
 ВАЖНО
 - Поселение "Студёный Брод" придумано разработчиком как ТЕСТОВОЕ.

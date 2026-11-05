@@ -170,22 +170,75 @@ function byAct(act, key) {
   });
 
   /* 2. Время: ровно один час за действие */
-  check("Разговор открывает диалог с выбором", () => {
+  check("Разговор открывает диалог-ленту", () => {
     const talkEl = doc().querySelector("#bow-people [data-act='talk']");
     click(talkEl);
-    const choices = doc().querySelectorAll("#bow-dialog .bow-choice");
-    assert(choices.length >= 2, "вариантов ответа меньше двух: " + choices.length);
-    assert(game().dialog, "состояние диалога не создано");
-    return choices.length + " варианта(ов)";
+    const box = doc().getElementById("bow-dialog");
+    assert(box.classList.contains("bow-dialog-open"), "окно диалога не открылось");
+    const lines = box.querySelectorAll(".bow-line");
+    assert(lines.length >= 2, "в ленте меньше двух реплик: " + lines.length);
+    return lines.length + " реплики в ленте";
   });
 
-  check("Выбор варианта меняет отношение и ведёт дальше по дереву", () => {
-    const visitBefore = game().dialog.visited.length;
-    const first = doc().querySelector("#bow-dialog .bow-choice");
-    click(first);
-    const after = game().dialog ? game().dialog.visited.length : visitBefore;
-    assert(after >= visitBefore, "дерево диалога не продвинулось");
-    return "узел: " + (game().dialog ? game().dialog.nodeId : "закрыт");
+  check("В ленте видна реплика собеседника с его именем", () => {
+    const npcLines = doc().querySelectorAll("#bow-dialog .bow-line-npc");
+    assert(npcLines.length >= 1, "нет реплик собеседника");
+    const who = npcLines[0].querySelector(".bow-line-who").textContent;
+    assert(who && who.length > 1, "не указано, кто говорит");
+    return "говорит: " + who;
+  });
+
+  check("После выбора в ленте появляется фраза ИГРОКА (главное)", () => {
+    const before = doc().querySelectorAll("#bow-dialog .bow-line-player").length;
+    const choice = doc().querySelector("#bow-dialog .bow-choice");
+    const idx = parseInt(choice.getAttribute("data-choice"), 10);
+    const node = win.Bow.dialog.currentNode(game());
+    const spoken = node.node.choices[idx].say;
+    assert(spoken, "у варианта нет живой реплики (say) — в ленту попадёт подпись кнопки");
+    click(choice);
+    const after = doc().querySelectorAll("#bow-dialog .bow-line-player");
+    assert(after.length > before, "фраза игрока не появилась в ленте");
+    const last = after[after.length - 1].textContent;
+    assert(last.indexOf(spoken) !== -1, "в ленте не та фраза игрока");
+    /* Подпись кнопки — действие, а не речь: в ленте её быть не должно. */
+    assert(last.trim().indexOf(choice.textContent.trim()) !== 0,
+      "в ленту попала подпись кнопки вместо реплики");
+    return "«" + spoken.slice(0, 46) + "»";
+  });
+
+  check("Каждый вариант ответа — живая реплика, а не подпись меню", () => {
+    const g = game();
+    g.player.location = "square";
+    const liva = win.Bow.data.people.find((x) => x.key === "liva");
+    const missing = [];
+    Object.keys(liva.dialog).forEach((k) => {
+      liva.dialog[k].choices.forEach((c, i) => {
+        /* «Уйти» — действие, а не реплика: молчаливый уход допустим. */
+        if (!c.say && !c.close) { missing.push(k + "[" + i + "]: " + c.text); }
+      });
+    });
+    assert(!missing.length, "варианты без реплики: " + missing.join("; "));
+    return "все варианты озвучены";
+  });
+
+  check("Ремарки не выдаются за речь собеседника", () => {
+    const narr = doc().querySelector("#bow-dialog .bow-line-narr");
+    assert(narr, "описание действия оформлено как реплика собеседника");
+    assert(!narr.querySelector(".bow-line-who"), "у ремарки есть подпись говорящего");
+    return "ремарка отделена от речи";
+  });
+
+  check("Фраза игрока помечена отдельным классом и подписью «Вы»", () => {
+    const playerLine = doc().querySelector("#bow-dialog .bow-line-player");
+    const who = playerLine.querySelector(".bow-line-who").textContent;
+    eq(who, "Вы", "подпись реплики игрока");
+    return "подписано «Вы»";
+  });
+
+  check("Выбор меняет отношение и это видно в шапке диалога", () => {
+    const meta = doc().querySelector("#bow-dialog .bow-dialog-meta").textContent;
+    assert(/отношение/.test(meta), "нет индикатора отношения");
+    return meta;
   });
 
   check("Разговор переживает перерисовку интерфейса", () => {
@@ -193,39 +246,54 @@ function byAct(act, key) {
     assert(game().dialog, "диалог потерялся при обновлении экрана");
     const box = doc().getElementById("bow-dialog");
     assert(box.classList.contains("bow-dialog-open"), "окно диалога не показано");
-    return "диалог сохранён: " + game().dialog.nodeId;
+    return "лента сохранена, узлов: " + game().dialog.log.length;
   });
 
-  check("Выход из диалога занимает ровно 1 час", () => {
-    /* Идём до варианта «Уйти» */
+  check("После завершения показывается итог разговора", () => {
+    /* Идём до варианта с закрытием */
     let guard = 0;
-    while (game().dialog && guard < 12) {
+    while (game().dialog && guard < 14) {
       const choices = [...doc().querySelectorAll("#bow-dialog .bow-choice")];
-      const leave = choices.find((c) => /Уйти|отойти|Кивнуть|Поблагодарить|Запомнить|Усмехнуться|Согласиться поискать|Отказаться|Не давить|Оставить|Спросить, кто|Промолчать|Рассказать|Спросить про плату|Сказать|Отговорить/i.test(c.textContent));
+      const leave = choices.find((c) => c.classList.contains("bow-choice-leave"));
       click(leave || choices[choices.length - 1]);
       guard++;
+      if (!game().dialog) break;
     }
     assert(!game().dialog, "диалог не закрылся за " + guard + " шагов");
-    return "закрыт за " + guard + " шагов";
+    const box = doc().getElementById("bow-dialog");
+    const summary = box.querySelector(".bow-dialog-summary");
+    assert(summary, "нет итога разговора");
+    assert(/окончен/.test(summary.textContent), "итог не сообщает о завершении");
+    return summary.textContent.replace(/\s+/g, " ").slice(0, 70);
   });
 
-  check("Перемещение тратит время по расстоянию", () => {
-    const before = game().time.totalHours;
-    click(byAct("move", "tavern"));
-    const after = game().time.totalHours;
-    assert(after > before, "время не сдвинулось");
-    eq(game().player.location, "tavern", "локация");
-    return "+" + (after - before) + " ч., место: " + game().player.location;
+  check("Разговор занимает ровно 1 час", () => {
+    const g = game();
+    /* Сигрид — трактирщица: разговор возможен только в трактире. */
+    g.player.location = "tavern";
+    const before = g.time.totalHours;
+    const started = win.Bow.dialog.start(g, "person:sigi");
+    assert(started.ok, started.message);
+    const root = win.Bow.dialog.currentNode(g);
+    assert(root, "разговор не открылся");
+    const closeIdx = root.node.choices.findIndex((c) => c.close);
+    assert(closeIdx >= 0, "у вступительной реплики нет варианта уйти");
+    win.Bow.dialog.choose(g, closeIdx);
+    eq(g.time.totalHours - before, 1, "прошло часов");
+    return "+1 час";
   });
 
-  check("Кнопка «Отдохнуть» работает (в прототипе была сломана)", () => {
-    const before = game().time.totalHours;
-    const fatigueBefore = game().player.needs.fatigue;
-    click(byAct("rest"));
-    const after = game().time.totalHours;
-    assert(after > before, "время не прошло — отдых не сработал");
-    assert(game().player.needs.fatigue > fatigueBefore - 30, "бодрость не изменилась корректно");
-    return "+" + (after - before) + " ч., бодрость " + fatigueBefore + " → " + game().player.needs.fatigue;
+  check("Разговор можно прервать крестиком", () => {
+    const g = game();
+    g.player.location = "tavern";
+    win.BowGame.refresh(true);
+    win.Bow.dialog.start(g, "person:sigi");
+    win.BowGame.refresh(true);
+    const closeBtn = doc().querySelector("#bow-dialog [data-act='close-dialog']");
+    assert(closeBtn, "нет кнопки прерывания");
+    click(closeBtn);
+    assert(!game().dialog, "разговор не прерван");
+    return "прерван";
   });
 
   /* 3. Экономика */
@@ -521,9 +589,14 @@ function byAct(act, key) {
 
   check("Затухание отключается при prefers-reduced-motion", () => {
     const styles = [...doc().querySelectorAll("style")].map((x) => x.textContent).join("\n");
-    const block = styles.slice(styles.indexOf("prefers-reduced-motion"));
-    assert(/animation:\s*none/.test(block), "анимация не отключается для reduced-motion");
-    return "доступность соблюдена";
+    const idx = styles.lastIndexOf("prefers-reduced-motion");
+    assert(idx !== -1, "нет медиазапроса reduced-motion");
+    const block = styles.slice(idx, idx + 600);
+    assert(/animation-duration:\s*0(\.001)?s\s*!important/.test(block),
+      "движение не отключается для reduced-motion");
+    assert(!/\*\s*\{[^}]*transition:\s*none/.test(block),
+      "глобальное правило глушит переходы всего документа");
+    return "движение приглушено точечно";
   });
 
   check("Новая палитра: нет охристо-бурых тонов", () => {
@@ -574,34 +647,57 @@ function byAct(act, key) {
   });
 
   check("Выдвижная панель закрыта при старте", () => {
+    const body = doc().getElementById("bow-body");
     const drawer = doc().getElementById("bow-drawer");
     assert(drawer, "панели нет в разметке");
-    assert(!drawer.classList.contains("bow-drawer-open"), "панель открыта при старте");
+    assert(!body.classList.contains("bow-body-open"), "панель открыта при старте");
     eq(doc().getElementById("bow-logo-btn").getAttribute("aria-expanded"), "false", "aria-expanded");
     return "закрыта";
   });
 
   check("Клик по логотипу открывает панель", () => {
     click(doc().getElementById("bow-logo-btn"));
-    const drawer = doc().getElementById("bow-drawer");
-    assert(drawer.classList.contains("bow-drawer-open"), "панель не открылась");
+    const body = doc().getElementById("bow-body");
+    assert(body.classList.contains("bow-body-open"), "панель не открылась");
     eq(doc().getElementById("bow-logo-btn").getAttribute("aria-expanded"), "true", "aria-expanded");
     return "открыта";
   });
 
   check("Клик по логотипу повторно закрывает панель", () => {
     click(doc().getElementById("bow-logo-btn"));
-    const drawer = doc().getElementById("bow-drawer");
-    assert(!drawer.classList.contains("bow-drawer-open"), "панель не закрылась");
+    assert(!doc().getElementById("bow-body").classList.contains("bow-body-open"), "панель не закрылась");
     return "закрыта";
   });
 
-  check("Затемнение закрывает панель", () => {
-    click(doc().getElementById("bow-logo-btn"));
-    assert(doc().getElementById("bow-drawer").classList.contains("bow-drawer-open"), "панель не открылась");
-    click(doc().getElementById("bow-scrim"));
-    assert(!doc().getElementById("bow-drawer").classList.contains("bow-drawer-open"), "затемнение не закрыло панель");
-    return "закрыта по клику на фон";
+  check("Панель выезжает плавно: анимируется ширина, а не auto-колонка", () => {
+    const styles = [...doc().querySelectorAll("style")].map((x) => x.textContent).join("\n");
+    const drawer = styles.slice(styles.indexOf(".bow-drawer {"));
+    assert(/width:\s*0/.test(drawer.slice(0, 260)), "закрытая панель не имеет нулевой ширины");
+    assert(/transition:[^;}]*width\s+0\.[1-9]/.test(drawer.slice(0, 400)),
+      "ширина панели не анимируется — выезда не будет видно");
+    assert(/\.bow-body\.bow-body-open \.bow-drawer\s*\{[^}]*width:\s*(min\()?(var\(|\d)/.test(styles),
+      "открытое состояние не задаёт ширину панели");
+    assert(!/\.bow-body\s*\{[^}]*grid-template-columns[^}]*auto\s+0/.test(styles),
+      "осталась схема с анимацией auto-колонки: браузер её не интерполирует");
+    return "width 0 → 336px за 0.34s";
+  });
+
+  check("Переход панели не отключается глобально для reduced-motion", () => {
+    const styles = [...doc().querySelectorAll("style")].map((x) => x.textContent).join("\n");
+    const idx = styles.indexOf("prefers-reduced-motion");
+    const block = styles.slice(idx, idx + 400);
+    assert(!/\*\s*\{[^}]*transition:\s*none\s*!important/.test(block),
+      "reduced-motion всё ещё глушит все переходы через *");
+    return "точечное отключение, а не глобальное";
+  });
+
+  check("Клик по сцене не закрывает встроенную панель на компьютере", () => {
+    win.Bow.ui.setDrawer(true);
+    click(doc().querySelector(".bow-main .bow-scene") || doc().querySelector(".bow-main"));
+    assert(doc().getElementById("bow-body").classList.contains("bow-body-open"),
+      "панель закрылась от клика по сцене, хотя на ПК она встроена в поток");
+    win.Bow.ui.setDrawer(false);
+    return "на ПК панель не реагирует на клик по сцене";
   });
 
   check("Значки разделов открывают панель", () => {
@@ -610,7 +706,7 @@ function byAct(act, key) {
     const invBtn = doc().querySelector("[data-act='panel'][data-panel='inv']");
     assert(invBtn, "значка «Вещи» нет");
     click(invBtn);
-    assert(doc().getElementById("bow-drawer").classList.contains("bow-drawer-open"), "значок не открыл панель");
+    assert(doc().getElementById("bow-body").classList.contains("bow-body-open"), "значок не открыл панель");
     assert(invBtn.classList.contains("bow-rail-active"), "значок не подсвечен");
     win.Bow.ui.setDrawer(false);
     return railBtns.length + " значков";

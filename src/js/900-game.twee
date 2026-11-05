@@ -47,6 +47,7 @@
       var state = getState();
       /* Смена сцены закрывает разговор и окно персонажа. */
       if (state.dialog) { Bow.dialog.close(state); }
+      state.flags.lastDialogSummary = null;
       openSheet(null);
       return Bow.adapter.act.move(state, el.getAttribute("data-loc"));
     },
@@ -73,25 +74,35 @@
     },
     /* Значок раздела: открывает панель и прокручивает к нужному блоку. */
     panel: function (el) {
-      var map = { state: 0, skills: 1, inv: 2, journal: 3, save: 4, people: -1 };
-      var idx = map[el.getAttribute("data-panel")];
+      var key = el.getAttribute("data-panel");
 
-      if (idx === -1) {
+      if (key === "people") {
         /* «Люди» — не панель, а прокрутка к списку людей в сцене. */
         var target = document.getElementById("bow-people");
         if (target) { target.scrollIntoView({ behavior: "smooth", block: "center" }); }
         return { ok: true, message: "" };
       }
 
-      Bow.ui.setDrawer(true);
-      /* Даём панели выехать, затем прокручиваем. */
-      setTimeout(function () { Bow.ui.scrollDrawerTo(idx); }, 340);
-
       document.querySelectorAll(".bow-rail-btn").forEach(function (b) {
         b.classList.remove("bow-rail-active");
       });
       el.classList.add("bow-rail-active");
 
+      if (Bow.ui.isDrawerOpen()) {
+        /* Панель уже открыта: просто переходим к разделу. */
+        Bow.ui.scrollDrawerTo(key);
+      } else {
+        Bow.ui.setDrawer(true);
+        /* Даём колонке доехать, затем прокручиваем к нужному разделу. */
+        setTimeout(function () { Bow.ui.scrollDrawerTo(key); }, 360);
+      }
+
+      return { ok: true, message: "" };
+    },
+    "close-dialog": function () {
+      var state = getState();
+      Bow.dialog.close(state);
+      state.flags.lastDialogSummary = null;
       return { ok: true, message: "" };
     }
   };
@@ -282,6 +293,22 @@
       if (openPersonId) { openSheet(null); }
     });
 
+    /* Тап мимо панели закрывает её — но только там, где панель
+       наезжает поверх сцены (планшет и телефон). На компьютере панель
+       встроена в поток: закрывать её от случайного клика по сцене
+       было бы неожиданно. Само затемнение рисует ::after на узком
+       экране; событие всплывает от него к контейнеру. */
+    var bodyEl = document.getElementById("bow-body");
+    if (bodyEl) {
+      bodyEl.addEventListener("click", function (event) {
+        if (!Bow.ui.isDrawerOpen()) { return; }
+        if (!window.matchMedia || !window.matchMedia("(max-width: 900px)").matches) { return; }
+        /* Клик пришёл мимо панели и мимо рельсы — значит, по затемнению. */
+        if (event.target.closest("#bow-drawer") || event.target.closest("#bow-rail")) { return; }
+        Bow.ui.setDrawer(false);
+      });
+    }
+
     /* Логотип раскрывает и убирает панель. */
     var logoBtn = document.getElementById("bow-logo-btn");
     if (logoBtn) {
@@ -289,12 +316,6 @@
         event.preventDefault();
         Bow.ui.toggleDrawer();
       });
-    }
-
-    /* Клик по затемнению закрывает панель. */
-    var scrim = document.getElementById("bow-scrim");
-    if (scrim) {
-      scrim.addEventListener("click", function () { Bow.ui.setDrawer(false); });
     }
 
     var btnSave = document.getElementById("bow-btn-save");
