@@ -1,0 +1,149 @@
+:: bow-adapter [script]
+/* ============================================================
+   BOW ADAPTER — единственное место, где ядро встречается
+   с SugarCube и с DOM.
+   Всё остальное (core, state, time, needs, economy, actions)
+   о SugarCube не знает и может быть перенесено в другой движок.
+   ============================================================ */
+(function (global) {
+  "use strict";
+
+  var Bow = global.Bow = global.Bow || {};
+
+  var rng = null;
+
+  function freshState() {
+    rng = Bow.rng.make(1234567);
+    return Bow.state.create(Bow.data, 1234567);
+  }
+
+  /* ---------- Единая точка «сделать действие» ----------
+     Любое действие игрока проходит здесь: проверка → время →
+     события → перерисовка → сохранение в память SugarCube. */
+  function perform(state, actionFn) {
+    var result = actionFn(state);
+
+    if (result && result.ok) {
+      /* Причинные события после действия. */
+      if (result.__moved) {
+        Bow.events.afterMove(state, rng);
+      } else {
+        Bow.events.afterAction(state, rng);
+      }
+      Bow.needs.ensure(state.player);
+    }
+
+    return result;
+  }
+
+  /* Обёртки: действия, которым нужен rng и события. */
+  var act = {
+    move: function (state, to) {
+      var res = Bow.actions.move(state, to);
+      if (res.ok) { res.__moved = true; Bow.events.afterMove(state, rng); }
+      state.stats.actionsTaken += 0;
+      return res;
+    },
+    eat: function (state, key) {
+      var res = Bow.actions.eat(state, key);
+      if (res.ok) { Bow.events.afterAction(state, rng); }
+      return res;
+    },
+    drink: function (state, key) {
+      var res = Bow.actions.drink(state, key);
+      if (res.ok) { Bow.events.afterAction(state, rng); }
+      return res;
+    },
+    rest: function (state) {
+      var res = Bow.actions.rest(state);
+      if (res.ok) { Bow.events.afterAction(state, rng); }
+      return res;
+    },
+    talk: function (state, id) {
+      /* Разговор — это диалог с выбором; узлы дерева лежат в данных. */
+      return Bow.dialog.start(state, id);
+    },
+    choose: function (state, index) {
+      var res = Bow.dialog.choose(state, index);
+      if (!res.ok) { return res; }
+
+      /* Час за разговор уже прошёл внутри диалога; здесь — только то,
+         что следует за любым действием. */
+      Bow.needs.ensure(state.player);
+      if (res.closed) {
+        /* Итог переживает закрытие: игрок должен увидеть, чем кончилась
+           беседа, а не пустой экран. */
+        state.flags.lastDialogSummary = res.summary || null;
+        Bow.events.afterAction(state, rng);
+      }
+      return res;
+    },
+    buy: function (state, key, qty) {
+      var res = Bow.economy.buy(state, state.player.location, key, qty);
+      if (res.ok) { Bow.events.afterAction(state, rng); }
+      return res;
+    },
+    steal: function (state, personId) {
+      var res = Bow.steal.attempt(state, personId, rng);
+      if (res.ok) {
+        Bow.events.afterAction(state, rng);
+        Bow.needs.ensure(state.player);
+      }
+      return res;
+    },
+    work: function (state, jobKey) {
+      var res = Bow.work.perform(state, jobKey, rng);
+      if (res.ok) {
+        Bow.events.afterAction(state, rng);
+        Bow.needs.ensure(state.player);
+      }
+      return res;
+    },
+    sell: function (state, key, qty) {
+      var res = Bow.economy.sell(state, state.player.location, key, qty);
+      if (res.ok) { Bow.events.afterAction(state, rng); }
+      return res;
+    },
+
+    /* ---------- Бой ----------
+       Открытие окна — не игровое действие: времени не тратит.
+       А вот удар, защита и побег — тратят, поэтому проходят через
+       общий конвейер «действие → события → перерисовка». */
+    fightOpen: function (state, personId) {
+      return Bow.fight.open(state, personId);
+    },
+    fightClose: function (state) {
+      return Bow.fight.close(state);
+    },
+    fightStart: function (state, mode) {
+      var res = Bow.fight.start(state, mode, rng);
+      if (res.ok) { Bow.needs.ensure(state.player); }
+      return res;
+    },
+    fightMove: function (state, stance) {
+      var res = Bow.fight.move(state, stance, rng);
+      if (res.ok) {
+        Bow.needs.ensure(state.player);
+        /* Побег и победа — обычные действия: мир откликается. */
+        if (!Bow.fight.isActive(state)) { Bow.events.afterAction(state, rng); }
+      }
+      return res;
+    },
+    fightDecide: function (state, choice) {
+      var res = Bow.fight.decide(state, choice, rng);
+      if (res.ok) {
+        Bow.needs.ensure(state.player);
+        Bow.events.afterAction(state, rng);
+      }
+      return res;
+    }
+  };
+
+  Bow.adapter = {
+    freshState: freshState,
+    perform: perform,
+    act: act,
+    get rng() { return rng; }
+  };
+
+})(typeof window !== "undefined" ? window : this);

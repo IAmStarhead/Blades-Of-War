@@ -1,0 +1,136 @@
+:: bow-events [script]
+/* ============================================================
+   BOW EVENTS — атмосфера сцены и значимые события.
+
+   ВАЖНОЕ РАЗДЕЛЕНИЕ (исправление по замечанию владельца):
+   - АТМОСФЕРА (ambience) — бытовые зарисовки места. Идут в сцену,
+     в журнал НЕ пишутся. Иначе хроника забивается «кто-то сидит
+     за столом».
+   - СОБЫТИЕ (event) — то, что случилось ИМЕННО С ВАМИ или важно
+     для мира. Идёт в журнал, потому что это часть истории.
+   - У ГЛАВНЫХ событий есть причина. Чистый случай — только
+     для погоды и мелочей.
+   ============================================================ */
+(function (global) {
+  "use strict";
+
+  var Bow = global.Bow = global.Bow || {};
+
+  /* --- Атмосфера: не журнал, только сцена --- */
+  function ambience(state, rng) {
+    var loc = Bow.data.locations[state.player.location];
+    if (!loc || !loc.ambience || loc.ambience.length === 0) { return null; }
+
+    /* Не повторять предыдущую фразу подряд. */
+    var pool = loc.ambience.filter(function (line) { return line !== state.flags.lastAmbience; });
+    if (pool.length === 0) { pool = loc.ambience; }
+
+    var line = Bow.rng.pick(rng || Math.random, pool);
+    state.flags.lastAmbience = line;
+    return line;
+  }
+
+  /* Погода — единственное, что может быть чистым случаем.
+     Пока это описательная погода; механического влияния нет,
+     и это честно: не выдаём её за работающую систему сезонов. */
+  var WEATHER = {
+    winter: ["сухой мороз", "низкая метель", "ясно и стыло", "сырой ветер с реки"],
+    spring: ["оттепель", "мелкий дождь", "ветрено", "туман к вечеру"],
+    summer: ["тёплый день", "душно", "гроза собирается", "ягодный ветер"],
+    autumn: ["мокрая морось", "первый иней", "сильный ветер", "низкое небо"]
+  };
+
+  function weatherOf(state, rng) {
+    var season = Bow.time.seasonOf(state);
+    var key = { "Зима": "winter", "Весна": "spring", "Лето": "summer", "Осень": "autumn" }[season] || "winter";
+    return Bow.rng.pick(rng || Math.random, WEATHER[key]);
+  }
+
+  /* --- События: только то, что касается вас или мира --- */
+  var CAUSED = [
+    {
+      id: "night-forest",
+      when: function (s) { return s.player.location === "forest" && Bow.time.isNight(s); },
+      chance: 0.5,
+      text: "В темноте между стволами что-то хрустит. Не ветер: ветер здесь не идёт по кругу.",
+      kind: "danger"
+    },
+    {
+      id: "hungry",
+      when: function (s) { return s.player.needs.hunger < 20; },
+      chance: 0.55,
+      text: "Живот сводит от голода. Мысли становятся короче и злее.",
+      kind: "need"
+    },
+    {
+      id: "tired",
+      when: function (s) { return s.player.needs.fatigue < 15; },
+      chance: 0.45,
+      text: "Ноги тяжелеют. Вы ловите себя на том, что стоите и смотрите в одну точку.",
+      kind: "need"
+    },
+    {
+      id: "cold-exposed",
+      when: function (s) { return Bow.time.isNight(s) && s.player.location === "outskirts"; },
+      chance: 0.35,
+      text: "Ночью на околице холод забирается под одежду. Здесь негде согреться.",
+      kind: "environment"
+    }
+  ];
+
+  var MOOD_EFFECT = { danger: -4, need: -2, environment: -1 };
+
+  function roll(state, rng) {
+    rng = rng || Math.random;
+    var candidates = CAUSED.filter(function (e) { return e.when(state); });
+
+    for (var i = 0; i < candidates.length; i++) {
+      var c = candidates[i];
+      if (rng() < c.chance) {
+        var effect = MOOD_EFFECT[c.kind] || 0;
+        if (effect) { Bow.needs.applyChange(state.player, "mood", effect); }
+
+        Bow.journal.event(state, c.text, c.kind, { causeId: c.id });
+        Bow.journal.add(state, c.text, c.kind);
+        return c.id;
+      }
+    }
+    return null;
+  }
+
+  /* Слух: попадает в журнал, потому что это сведения, а не фон. */
+  var RUMOURS = [
+    "У колодца возчики спорят о следах за частоколом. Говорят, след слишком велик для волка.",
+    "Кто-то клянётся, что видел ночью огонь в тайге. Другой говорит, что это был месяц.",
+    "Старуха с околицы говорит: солевой обоз пропал не сам. Но кто её слушает."
+  ];
+
+  function rumour(state, rng) {
+    if (state.player.location !== "square" && state.player.location !== "tavern") { return null; }
+    if ((rng || Math.random)() > 0.35) { return null; }
+    var text = Bow.rng.pick(rng || Math.random, RUMOURS);
+    Bow.journal.add(state, "Слух: " + text, "rumour");
+    return text;
+  }
+
+  function afterAction(state, rng) {
+    return roll(state, rng);
+  }
+
+  /* После перехода: смена места — повод для слуха, но не для
+     случайного события «из воздуха». */
+  function afterMove(state, rng) {
+    rumour(state, rng);
+    return roll(state, rng);
+  }
+
+  Bow.events = {
+    afterAction: afterAction,
+    afterMove: afterMove,
+    ambience: ambience,
+    weatherOf: weatherOf,
+    rumour: rumour,
+    table: CAUSED
+  };
+
+})(typeof window !== "undefined" ? window : this);

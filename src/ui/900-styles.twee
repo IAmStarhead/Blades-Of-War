@@ -1,0 +1,1808 @@
+:: Story Stylesheet [stylesheet]
+/* ============================================================
+   BLADES OF WAR — оформление прототипа 0.0.6
+   Палитра: холодный камень, серебро, воронёная сталь, бордо.
+   Схема: верхняя палка + выдвижная панель + рельса значков.
+   Адаптив: компьютер → планшет → телефон.
+   ============================================================ */
+
+:root {
+  /* Палитра: холодный камень, серебро, воронёная сталь, бордо.
+     Никаких охристо-бурых тонов, которые читаются как «грязные». */
+
+  --bow-bg:        #0f1215;   /* почти чёрный с холодным синим */
+  --bow-bg-deep:   #0a0c0e;
+  --bow-panel:     #161a1e;   /* камень в тени */
+  --bow-panel-2:   #1d2227;   /* камень на свету */
+  --bow-line:      #333d45;   /* шов кладки */
+  --bow-line-soft: #262e35;
+
+  --bow-text:      #dbe1e6;   /* светлый холодный серый */
+  --bow-dim:       #939ca5;   /* камень светлее */
+  --bow-faint:     #68727a;   /* камень тёмнее */
+
+  --bow-silver:    #c8d2da;   /* серебро — заголовки */
+  --bow-steel:     #7f929f;   /* воронёная сталь */
+
+  --bow-gold:      #c9a961;   /* латунь как акцент, дозированно */
+  --bow-gold-dim:  #8a7440;
+
+  --bow-bordo:     #7d2b33;   /* бордо — королевский акцент */
+  --bow-bordo-dim: #561d23;
+
+  --bow-good:      #6f9478;   /* мох — хорошо */
+  --bow-ok:        #a8b0a0;
+  --bow-low:       #c08b4e;   /* тёплый янтарь — предупреждение */
+  --bow-crit:      #b04a45;   /* ржавчина — опасно */
+
+  --bow-warm:      #8fae8a;
+  --bow-cold:      #b0736a;
+
+  --bow-mono: "Courier New", "Nimbus Mono PS", monospace;
+  --bow-serif: Georgia, "Times New Roman", serif;
+
+  --bow-radius: 2px;
+
+  /* Поверхности: одна шкала глубины вместо россыпи оттенков.
+     Сцена — самая светлая, поле ввода и жёлоб полос — самые тёмные.
+     Все холодные: ни одного коричневого тона. */
+  --bow-surface-1: #131a20;   /* жёлоб, вдавленное */
+  --bow-surface-2: #171f26;   /* поле, карточка в тени */
+  --bow-surface-3: #1b242c;   /* карточка, кнопка */
+  --bow-surface-4: #202b34;   /* наведение, приподнятое */
+  --bow-surface-5: #253139;   /* активное */
+
+  /* Тени: вместо рамок там, где нужна глубина */
+  --bow-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --bow-shadow-md: 0 6px 18px rgba(0, 0, 0, 0.38);
+  --bow-shadow-lg: 0 18px 48px rgba(0, 0, 0, 0.55);
+
+  /* Шкала отступов: 4 / 6 / 8 / 12 / 16 / 22 */
+  --bow-s1: 4px;
+  --bow-s2: 6px;
+  --bow-s3: 8px;
+  --bow-s4: 12px;
+  --bow-s5: 16px;
+  --bow-s6: 22px;
+
+  /* Межстрочный интервал для чтения длинного текста */
+  --bow-leading: 1.62;
+
+  /* Логотип встроен как data URI: игра остаётся одним файлом без внешних ссылок. */
+  --bow-logo: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMAAAADACAYAAABS3GwHAABFv0lEQVR42u29eZRsWVXn/9nnTjFn5ptfzSPUAAUIgg0FCCogIKJMYutqtbsVUWkRAZVevX5/9lqtorRDq90qIAgK0iBSDAVIIVACVUWN1ASv3pTzFPOdzjm/P+6NiBuR8R50t1bxHvdbKyvzZUZk3rix99l7f/cEJUqUKFGiRIkSJUqUKFGiRIkSJUqUKFGiRIkSJUqUKFGiRIkSJUqUKFGiRIkSJUqUKFGiRIkSJUqUKFGiRIkSJUqUKFGiRIkSJUqUKFGiRIkSJUqUKFGiRIkSJUqUKFGiRIkSJUqUKFGiRIkSJUqUKFGiRIkSJUqUKFGixL8QpLwFjz5aCwukSeI1mo0nOUo14jj5iu/7/ZWVlfLmPMpQ5S149HD4yFFaCwu1SiV43tK+fX9aCSof8/3g72v1+ntFyY8fOLR/6b/+1tsJ6n55s0oLcH7A83ySJJalffuO+r7/A67nvkYp9WxHVCu7+wJYrLWhMeZ2rfXfJmn6D91u55hSTjro9cubWCrAOXZTRbDWSmtxoVUJgie5rvsSUeolSqnHK1Hu2W66xVpj7EljzKeM0R9Ok/SfNzY2N2u1qhkMBuXNLRXgOxPVao3hcCALCwtNPwiudz33BxylXqiUepKINEGKBz4WUI4DgEmTieKMHgcjq/CAsfYzWutPaqPv6HW7G67nmW67U970UgEeWzSaTaIw9Bqt5mHP9Z7gOOrZynGeo0Q9USlZEGRyh+3kk+t51JuLtJb2o5Sis7tFr71NEkWTt0QylbEjnbF2aKx92BrzJWP054yxXwuj4YndnXbf812bxGn5hpQK8K/IFiiFMUZqtVqlWq0edlz3KuWopyilni4iT1JKXaxEKlK8pTIRehFFUKnQaC7RXFgkqFQRUSPpJopCep1duu0domEfo9NcCwSY+q1Ya7XFblhrHzDWflWn+naw96VJemo4GLb7g346UbkSpQL8H8BxXLBWHM/1gyCo+4G/Xyl1oVJyteO41wtynRK5GiWHRaQqM8JJ4cAXJbieT63epNFcoFpv4LoeIplgW2Ow1iJKgbUggk5TwuGAfneXfq9LHIVYrSfyfAaFAHattaestd+w1j6ojX7AWHNMUCtxFG8lSdLXWkeu69hOp3SfznkF8Cs+j7vy8Wxsrd/gOO7TrTH9NE17jqN6juMOtNFRmqapNSYRIRXlGEFhrRFjjCtiPcfxPMdxKkmatpSoRRGOKEftB7lQRI4iHFUih0VkMRd2mXv3xu6NRSkH1/ep1BrUGy2qtTqe52enPXYs/NGwz8bqMlpr9h08RL25WPB+BKwl1SnRMKTfazPsd4nDIVqnBV2QswbTWAZA2xizAawaY1bAnjSGLRG7prXpuK7btTC01sRgtDU2xVoDokSJC7hKKVcpFSRJWjPGNjzPb4Jd1Dq9Y3V17QvNVtN2O91SAR5NNJtNdJpWFvfv+xvXcX8EMGA1SCpCYi0p1hgLCaAFTP5ylcU6gCuIIyKexfognghqdLrakR9uJzfKTsm7zT0UheN6+EGFSrVOtVYnqNRwPQ+l1OiI3iOsyye/ye7WBoJQbTS56PKrx0Hx5I2R7HnWorUmjkKGwz7Dfp9o2CdN4lwh7OQZZ1CK8TVPHCMDpECCZPeIzJKMzI0ALlmuyBER11pcwBURBxCt9e2DweBFwMbW1tY5KUfuuUw1Oq5bETiKCLnwKsADqgqw4mRntp3WdCszQmZt9j1bFH+L5A+0ZO6JiCDKwXFdPD+gUq0RVGr4QQXP91HKmVIei0VmhHJ8PTIxH5l1kKnXVjjJEcBxHapeg2q9gd1vSdOEOIqIwwFROCAKQ5I4RqfJ2LWae9TJ2IFSgJ9/5JaJzCWbUSJbvPbCr1NKHfD9oA5241yVo3NaAZQShcjUa7DWTp/WdvJ51n/J5NsiSnCUg05TEJsJuePgOC6u6+H5AV4Q4HkBrufhuR6O647dmWmhZ48gW3JLIjJWvv0HjwKCMZbF/Yfy09/ONdFW9n5zdB21egOsxRiD1ilJEpNEEXEUEschSZKg0xitNdZYrLWZh2PnRi3je7hHAUbWMOdy80c4+QelAjzarIzjIIIjIo6M2EYRqvUmruvlp2B2EtrMI85PYzV2XZTKPhzHxXHdzH93XVzPw3FclOOOHyO5wmSyYcdBKzLlgcw9xSlYhJE18itVjl50Rfa9/P/F50nBZExbr4IbIxO5dRwH5WSWiXozF/RM2LXWaJ1mH2mKTrKvjdYYo7N7ZUx+n2zxRSBI9vqVwhpDv9vGGE12GVYZk6pSAR4TC5BJs5BZAEtWdnDkwsvwg0oulXbiwliKPkBBwIrOEHsd/oIr0u926XXbVGsNmq2FybWobx1KFQVcLKRpSr/fwxqdsUOeN1GagoDPuiSj3EKm2BOXZtDv0dndJgiqtJb2IUplfwsH5Th4maezh7Ma3SEpfKOgjuODBTLW6tQjD9LvdnJXziprjVsqwGMAow0i4lisK/mprEQyV0JyQRvRjdZOC9bUmbtXSKf83dxfT5OI9eXjhIMBnh8QBI8jqNbGp+bZGJmR0BljCMMBvW7G9w+HA7CWIKhQby7QXFiiUq3huC7joGTGJZlWhuz/Rms2Vk/R73ZwHBcvCKg1WuPnn/HaLAUBLyjoHoYrs6Ii5IG9zUMIUdZmFrhUgMfCBEjGUNg9384+kiQhiob4fgXX85mfG9p73E+dxLlfby0Ykz3OWIOx088aCamITPlDxhjicMCg16XfbTMY9EjSBMfCARwUwuZwyEY4YHtrnWq1Tr3Rot5oElRr47yBzRNm2ILqjtyxkUtmx6Kauy/27ESfzKVPEbJ8xHDQx3U9KpXqRCmKgbAo13Ecr1SAxwCO65DTcc4e4RVIk4SVE99k0O9Sqda54NIrciWYPM7mbtLZTu/RG+56PgePXEivs0u10SSoVCfne+HpxhjSNCUKhwz7PYb9LmE4JE0TxFoaOFxrfG7QPtdqD8fCA07CXU7Mwzah2+/Q63dwNhwCP6Bab1CrN6nU6viej3Lc8WscRfhKORw4dCGev0WlVqdaa8yL+r9tXtwaw8bKKXa3N3FdjwsuuYJao5nRuXsfXgbBj0kQrATJ+EOHOQFkEkcM+j2sMYTDPnEUTSlA0QXKmCPZKzAybVpai/tpLe4be83WWIxJSZOMkgyHfcJwQBQOSdIEo1NcKyyiuMh4XG18rtYuR42iZmXsghzSAd+rfNaU4SEn4WFJOKlStvWA7eGA7e0NXMcj8CsE1SrVao2gWsPzfFzHQ5RQazSp1hvTvtscDRjF7mcLVrTWDHpdrNEksSYKh9TqTSalGZO3QYQyBnhMYMFaq8Ziaxn7/hbwcr960OtQazTx/UpBJgSxEzWYCP/8ogZjDEYbdBJnNGMcEcdRRjfGEXGekDLW4lpoIFyiFRebgCuNxyXGZZ91CGzmltj8GkfulQCBhUtTxaVpwHMkoCOGZaU5plKOS8JpJ6WTdBn0O2xJRtu6rofv+wRBkOUiPB83/1BOFvyqUb3ROKC1nM0zGlWptpb2s7Nl8IOAaqM1naWeeI5KZmjoUgEeRQUAVObw2j0C7DguRy+6jCSJM1pTueOMqjU257JzmtQYdE4HmhFlmGp0mpCmCWkak6YpaZrTh8YAFgfBt8ISwkHjcKFxuMi4XKhdDuSnvJMT6CanMM0cSyOA2EmOwLWW/dbhgHF4ovjEWLaVYVVpTknKaaVZUZpdHTGMhvS6E+V38kSd63g445yFh+tmVG9G7zoo5WT05ijBJzKmhgXYd/AIrcX9qDwfMkOYjS5ciSjnXK67O3dZoOymK5uXLzBVST+JExynOv73oN9ndfkERuucGs1ZeGswY948//4oqM1vko+wgKJhFIt4HLCKI9rhsFEsGcWCFYLsYjLrlAeMRkbKJkUyf1JjkdkEEFs4mGWK6vcQjmiHI9rhSeKTAH1laYthI1eGddGsk9IWwzCNiInQk/s0zidkuUNBCvkN1ET4Dxw6SnNhCbB4gT+5GpHJi5pogojg2HO4pvLczQNkllxRqF4Y0Z4TEz0RNEFIopBw0MfB4huLQuGK4NpMwAOEqhFqKOpWaKBYMEILxYJVNK2iZoSKzRxfZSfybAuyPcmWFuowrJwh4rRTFKwtXnsxTik83QMWNSzhcBkKi4e2sKZjNknpK0tPWbqSfe4rGIhhKJZILLEYUgypWDSZVdICRmA4aNFYWJyTdNkbHEmWlistwGPnBlk1Pi4t48zl9PskBSHLan6uS31+OA7wEDwE16qsKMaCa0Hl/KpiT4psYjUEjJr8bCo5K8WTXs7Mt1g7FZLLjH8xzh7DHlp28ujs9zhAHSEy0NSKIpNrRTBk1igVSBh9Hn1t+WqgedDXYzr1TIe6FAMXEBGr7DnceXBu5wFASWGyxVwmhwKBnQe+S1ZxtfbGjtPs4TwSOit7hZs8gJ16jlUzoUn+W0aXMy4GKjxxksad/O49VsIWHDtbCJpl4jqNadwsEThRHKbKKBTgWiGwo3/ZMREgYnnEMzxo5ycIJyGWnbpEm11EWQrx2Mk/Ki+lnDrxpZj9HYl/4TQVwIw8p7Fu5MyQZCzNpCa0aAGK7oqcmTIdn/5zA/eZ0tTiU+zkhC3+yE5bNTvKPUxr2JjxsbPXlPuKkzPAzlyi5FzyJC6Sua9NzpIpKRXgUVaAvKJt1jx/G9SR5Hy2mWKPRpZACqHjdOrTjm0GWDvH1SpK7qz8zxydeys89/odYtVUXc7sKymqpS3QlOPn2Ikyz3pXs7VRakrh5985mZNesPMKp0oFeFRUYOJHSFHoZO+JLQX/vSBPkrsutiiAdsQnnUH0Cif7xKrImLexlknR/6hUQYolZ5mlkZGDMzrJcxrU7pFVmepfmCr13qODe2MIscyxWhPeZvRy1Jlt2x5VkFGhoZ21YaUCPKryL1ZE5lgAO9MyaGeYlmJziJ09qsXO6QLb2+g+oi33HK5SKNEpKI2VvYyOzJ7ldkZ1pViVWWjU2es9ATKhPOfF20UVtGcIbpkk6OZzDpNao7xTzZJ1lpUK8JiQQLkHL3aaipQp0sZOmfEi/z/r30qxfHpKNG3hp3uFZsq1KToSU4Gv3RMDjF2q/AWchS8qPNrOOHOFwruRNBY7yuRbnSPyf+DN29kDxII1lCzQYyL9U2RKlgeY9mKttWdnhOYErlNuCUIqFnd0/uaFNCNSZ9QqObkQuzcQLjBFsifwtRPHWuyETRK7x40rCv2EG5KCwgm6ENNYgRSLY/NyWZlYtGkLxPyInOlDZKpC1k6ZL3Mu+0DntAXY09fyLY47sXMIjZlTWQpy2VaG/+10qaN4nPG51Hq0cFB2qoVk3Lc7J2AYuw7zz/dizb/M8dCLiiJnCfYVYkFbS6hgVWmOu5otZXh26HFEq4JbOCvmttCqKWcW/CmKeFx+ba21pQv02MbA0wfTJAawZ2Xs7LygchKmjoPCB52EdQc+q0MOpZYnS40bqHKRcfHN5Pg7k+8sZ2BTZlnSqSKzubpk9wa5CApFqixrkvJlFXGnRGz6gvZc/MSgw5lDeyYxXZg8l7tj38Lo2pmLKhXgsXOB7BmcBM4SDM769nZMlez1iSoILS3UrryM53z/87n77jv5zH338tnOJte7FW40Na7UHp4501+UKRdtrgpadcbDfrZPeJYG1gLHnYQvqpA77ZB4oco11z+dH3vmjdx15+3c9enPUmWSuCveJ1U0gTabhTJrXab+7ojMmo6prLXjp5YK8BhowLfvfo5aJJmbcJ2J7DL+PLDCPhTLacKNz7qRH3v5K1hePsVnPv0pbrnlc9yzusrTpMJL0wZLRjBTRWwzjkZxesQ0NTN1CSNdtDKnWSfXGYXQV/BJp8fnGeAc3M+NN76AF73wxVxx5VU4jsMdt3+FmoHAyhzPUGbJpzGVI/KtSNBpf8haNGVH2GPmBk0dbKNqTpGz8ylmHm0qsyUHWbnzUTzu3d5mbXWFZrPJFVdezRNveDKvevVPcNNN/8DffeBvGO50eG3apG6cM4jLnJIKe3bXTix76ohG7ZaRgr93uny+kvLCl/44r3zVT3DF5VcRRhE6ieh2djl18iRLVuHZaffpTHfG5DmUbzFtbrZ4z4BNz+Vk8Dlbx5Gn9I0tdsaOzbOaR2WM31w9nwLK/5uOKS7CI+n3OXHiOEZrtjbW2d7e4sjRi/jF17+BX/ylN3BP3eEjbp9QmfmMU6GkbtyIM1NXI7NXVPCDxKo8aSdoBTc7fT7vxrzqJ/4tv/7m3+Liiy9jc2uTKOxTrQSsrSyztbHOUePi5gG4ypVq9DEbCOvRkTAzpGva4s66/NYiGDmHedBzt5ApG/Jksq6Wogif4XjNJxqIyHj23/SMzYkI2sJEuAuNRzO1PPjA/aRpijWabnuXtZXTtNttXv7jr+Snf+Zn+ZKfcrPTJxWT+wZ7xdrO0JlztXqckLZTT8/HwPAlNeTjTp8XvOxl/Pv/+DqiKGZtdRlXQb1aRUR44IH7SfsDjmhn/p/Ym75Ay9knSNip6xtbNG2tTc9lHvQctwB5z8foe8ZOzQPacxYXLICdw7hI0TWy2bm2aBWX4vPQQw/S3t0dj1mJopCtzXV6vR4//e9+jh991au52Q25xR1iCsyKPVs0fjZPSGbIXhFud0M+pDo84/nP55d+5Y1oa1lfW6ES+DTqdUSEOI65/fbbWUxgv5ZxCfi4l2XuzKMsCJazKIDssbLZrTSWxNjSAjwmKmAFPRpV4DpOIcN7hmZwpUCElEmQSXE2m91bJhBYuMFW2Fxd5Stf/eepn6VJwtb6OnGc8Iuv/xWe/aIX8feqzxe9EHOmcoKZAGBvfGrzBKsgNp/MhnCvG/M+aXP1M57OG3/9N/B8n9Xl0/iew0KrmTE7SnH7bV/hzju/xqXGzRrvZ0q6C3TOlHSnezVv/j23U/6TFpFUpIwBHoMAWBARPWLw5g2/mkcdCpCKHVeCFgVydFLagsm31nKD9rgqFj7y4f/NHXfcPnVKxnHE+uoKiMMb3/QWbnjWM/mQdPiaE50l2j0D2S+zJRhZPuKbbsJ7ZIeD11/Lr7/1bTRbi6wsn0IJLC0tIiprZL///q/zB3/43/G3uzwhcee8uXZPxecoMZbmVkaJnEEHZEK8TayTFqVKBXjsSCBJc+uNziciW3vmdqZR83eKLZzQky0se9yTXCEWjOIVukV1u8O7/+oveeCB+8dKYIyh2+2wunKaarXBm9/yW1x6wxP5gLR5wIm/vRLtYifn+OtMGE87mveyjX/Zxbz5rf+ZI0cvZHX5FEmS0Gw1cR0HJQ4njx/n7W//bbYePsYPRgGHU7U343uGbLTJLUA2B9TZyzyJTM82nVjK2GgTZ0MCSgV4VJHGCWmSxALR6I2y1nK2qvZREJyQNcSMSgjEnomFkXHC7TLj8hqzQLy8zl++8885cfyRfEJ1dgt3d7ZZW1nm4OGj/MZv/Rcaj7uC96o2Dztxllk4q59sCnUa2XUpgTU35T2yQ+fIft705rdx9dWPZ2X5FGEUUq/VqFYqiDisr6/ze7//uxy76x5+MK5wVeJMtXTK+Ous0lXZvcF5mv/90Y6CqUra0dS5fIJG4WZFRuvEpLpUgMcICbkC5KzoWTPzozc1Fpv5vHZeKFqsdZFxcQTW8sTE5TVpk91vHued7/wL1lZXUUoRBAHGGHZ2tlhbXebyK6/mzW99G+bCw/y10+GkSpk/P3c62TVxe4Qd1/Ie1eHUUo03vPEtPOWp38vqymnC4YBKpUKr1cBzXdrtNn/4B+/gri/9M8+LfK6LnUKpw8wkCmSOpmcmNB3nAc4sEtYYTPH+WhsZnSalBXgMoLUmTZLYWDuc0Jcmn/lzJgUYWQBLOu0JF92qmSBgPJITrOVpacAr0iYn7rufd//VO9ne2UZEqNfrxHGcWYLVFZ705Kfya296C919Lf5GtdkUnTeSTIRfZG99jyAMleXDtPlG3eH1v/xGnvu8H2J9dZn+oIcfBLRaTSpBwGA45H/+zz/lC5/5LM+KfZ4Ue9mkCjm74zg7DXrkApHtXJgbN41ZLasLNVd2YIxOzuVyoHNYAVLSNIkFesUpytmbMW+acrYIQ5QizRVg2gkwM87TpECg2IaisPwbXeHFpsG9d9zB+9/3Xvr9Hkop6vU6w8GA9u4Wmxvr3Pic5/PLb/hVTrYCPqDatJWZImDsTG2NIMTKcpN0+Eqg+dl//wu85EdezubGGr1eB9/3aTab1CtVkjjl3e96Jzf9/Uf4nsjhqZGHY2UqrhmVTc92bM7aPEM2HmW0AedMMyJH+xYKf2KYpjrV+tx1gdxz2QLoVKcgveK7mpno+X2qIgoligRLUmh+kcnZPx5SNZUoyPd0jVpSXCw/kFYYiOHTX/gnarUar371a6lUAur1Or1uDyefvPbCF7+MTqfDn/7Rf+fvwh6vTpvUjUzPJs1LEFIlfNLpcbMT8aqf+ne86id+iu2tTTq727i+R6Nep1GrYozhA3/7fj74/vdx3RCeFfn5tIdiJZ1lj9zL3B430jwGEGE8YWIeaWWMmZq5KzCw1urZwLlUgEeFBVWkOk6NNT0nn2lgbDbacKo/vVC7ovLpZ1ngYGf4EZkWmNyRHvX9Ts/isVQsvDSpEWH53Kdvpl5v8LKXvRzf9zHG0Ol08u0yDq949U/S7XZ5zzv/nBZ9fiSpZzU6ozHmIlgRbnEGfEz1eOGP/jj/7ud+gU57l92tDVzPpVar0Ww0UKL4h499hHe96y+4vK/5/jCgapi5uoI6z9kVNlnZlA8SJmueEck3wcyZspetcyrEWBa0MYPBYKj37auULtCjfuGOGpVC9CYxmc126p5hoQQ5a6PJJqSdkVwtdGnN1sAX8wRVAy9PG3xP7HHTxz7KZz/zaYwxVCoVfN+n3W7T3tliMBjw0z/zH3j5K1/NLU7IF9QAI2rCNInwNRnyYdvm+573A7zu9b/KYDBkc30V5TpUajUWmhnlecstn+NP//RPOLQb8vwwoGn25hSymiN7hj1gkxk/o3+nAmm+CkkVhovtaYaxZjw3K88HdD7w8Q9q13VLBXjUYS1Peer3oJTsFNkcbfSkhdwYhoMBaZKMRycqx0GLJStYsPNIkbw/V03T51JgVgrjF1va8sqkzlUDwwf/7m+59dYvAlCtVnEch3Z7l52tdZI04T/8wi/z3Be/hI96Q/7ZDfPTH+52Iv5adrniaU/jF3/5TRhrWV89jTiKSq3KQquF73ncfvtt/MEf/D7VjV1eGFXYb86wWXJuz/OsTzMR9ASLFpvvXVNgsyz3oN/LFgfmumK0mcomiMjO2974tnN6MtC5mwdINd1ulzRNu7bQejgKyKyxbKyc4sQ3vs7p4w+TRFE2ydVxMcBwZlTJNDU+3Rc2ZhFHmdRCjb2RrObmNWmTQ52Q9/31e7jrrjvHzJC1lk67zc7GOkqE1/3Sr3Lds57JB50ut3kR93kJ75Fd9l9/Lb/6pt+k2WqxunwSK1Ct1VhstagEAQ/c/3V+7/d+l/TUKi+KKhzW6uw1mDK1F3U8PZo5hiHMp1cr5aBESJOY5eMPc/Lh+1k99UjmVpKtZh2XQ1tLkqa9JI5xPKdUgEffAFjSNAVrt4pia3Q6XvHT7exidMqw3yMc9qcUoI+ZLke2Z+DpZ3aFZTVI2UlocnfICFysHV6rWwSbbd71rr/goYceRClFo9EgTVM6nTabG2s0Gg3+0xvfwqVPuoH3qy7vZIf6lZfza7/+No4evYCV08cxRlOrVllsNqlVqpw4fpzffftvs/3wN3lBUuXi1Jleuje3b2BaaUGmJl4XE4ahZJlxx3URpQiHfQb9LlZr+t02aRJncYrR40YfARxRm0anSFJagEcdSb6VxVi7OeIrrbXoNMViUI5DrdFCKZdqrTFeaeQ6LhboYTjbWO95TZLT8aTkc0Wz49VguTp1ea1uEp9ey7LFJ0+glEOj0SCOY3rdDptrq1xw4UW88tU/Sc8V/Asv4Fd/7Te5/MqrWT59nDRNqNbrLLRa1Gs1VldX+b23/zaP3HUvPxRXuDpPdJ2pcnN2VpAtxgRzXCELDPLeBNf1QIQgqFKp1hFH0Wgu4npedm/1uGYUa61J03QrjmOW11ZLBXgMsQ3EkO3r0WmKNRmnfejIRVx8+eO44JIrstWpZKccInSUGdfAzxMfYXruj4yTQiPXaPLZyCQwfGLq8xO6xfY3jvGud/0lGxvrOE6mBGEY0u93ufOr/8wH3/8eFloL/NJ/ejPXXn8DK6eOE0ch1XqNVrNBo15ne3uLd7zj7dz95S/z/Djg2tgduzciZ64ymvb/ZTwKck/Ak8c1/XxA2EgB/KDCRZdezcVXXsPhCy8Z1wfpNKUwFjpWSu2cLXNcKsCjAMdRu9baaPTGpzoZz+9xHIdavYHvBxPe13UBoYtG2/nzO+cPwCryozP1/DYfkpwL2VO1z4+bFo/ccy/vee+76HTauK5Ls9nk9KlT/PEfvoNjx77J637513ja0/8Nq8vHGQx7VGs1Wo0mrUaDQb/Hn/yPP+LWz/0jz4qDLMtbCGrPPscz7wGYqY2a7ULI+gAs/byTzfHc8W3wgoBavZkdGLn7lKZp8c9ESsnOOT4Z8dxWgCROSOJ0t0iF6jRbdTQ6sSdNTJlwOm62VK4nliRngopisqeSwM6ZOmGnJ8hNTV/Pb+qNusJLTYN7vvJV/uZv3sdwOGQwGPDh//1BHnnkGD/3C7/Cjc/9QdZWTubLt6s0mw1arQZJnPAXf/4/ufnjH+cZkc/TIw9nyip9W1ESxX0h44bPvPxiZEE00M8toet4U0o0NULSGrSeav/tY23nXD9Az+mm+DRNEaRtsbvAhYhgdIoxGkfcuX1hrufjKod+vjGlPqd2xhZng84Z/DkOMpkdJS7jzLJn4QVJlcgaPnHL5wj8gOFgwN133clP/ezP84If/hE215dp725Tq9dpNJostFpgLH/93r/iIx/8O54betwY+5hvOX1w9ipm45VJifXMVAcSlcUASikc12PPcu1R2Xe+O20EY8xuFMe757gBOLcVII5jrLGDWrO+NWGBNKlO8aiMQ8DiuHDHyRbFDRnSE8MhnHzptZ2zhb3IBs2b31lsHpk01Y9WJ3nAi3WNXmz59Kc+gYjw46/5KV7+ytfS3t5ke2uNSq1Go1lnsdVCAR/6uw/wvvf8Fc8IFS9LGwxsQn+umM8PdgsqMF9RigNUBUIxDFW2VNB1vT05hZELqI3OGbbxZOvdJNVDJef0eoBz3AVKEobhMLTWroxPJmvQSTKz0XzyD6UUrusSCXTyYrexa2EZrz2ZnO+FOn0pdI0JZ56iLIwZoiqKC3ARa3nBi1/GT/70z9HvttlYXyGoVGg2myy2FvBch0/c9DH+/M/+jGg44CI8asi44Xk83Mp+q96CvSV9owGexk7HNEIWAMeA5/qos2R0dZJk+YDRVAtjN9uddphqXSrAYxYAuy7/5sZnaWBl/GYXgrXx9peZ0gjPC0iB7Tz4s9YWBpjMNAbL/AUVZ4eMW7u+pmJuki7PePb387P/4fXE0ZC1lVN4gU+j1WRxoUXg+3z+ls/xJ3/8R1x19eO5+trruEn1uN0Js/EpM5cyd1Lc7Ge7d/TjvGaAjrLEYnE8b9zcM9/dHJELI/dKVn77v/1OokoW6LFDOByytrqKNXZ10hNsSeJoKmadcm1EsoI1gU2ls9bIQsn0eI6/7O2Ql3H7YtauOF8n1FgB7ndS/lrtcvHTnsrrfvlNiMDy6RO4nkur1WKxtUA1qHD7bV/hD9/xeyzt288vvuFN/Ppv/X8sXH0l73O73O+m0yTVzDgTI9OzTacSZDPdbrMDfC2w61i0CL4XMBLmvRbGkiTxzJBfs/I//scf8exnP7tUgMcSURRhrTlBYTxKEkfTewGK08wEvJwW3RBNkk9hsAVKc56PM3KLFNAXw+fcAX/r9bJGl5lzWEQ4lrczNq59HK9/w5upVANOnTyG6yhaiwssLixQr9W4/+v38Y63/w6iHF7xqp8Am3L40BF+7c1vo3rpxdzkDzjlmSmWafS5pwyfDWK+FMTsKjNDVGXZXSN7MxujUEALbKtMbVzfP6tXlcTR1NwlY8zJOIr56Ec/WirAY4m8He8kMBi9/0kSZb2rReGfdDbi+QGiHHbEEIqZeMrjsoLZiW4Tv7orhvc7Hd7jdrldhnkr4UTAlAjrSvN+u4O+6Aj/8XVvoNVscOr4N1FKaC0u0mo2qddqnDj+CL//9t9hMAh55Wv+LUcvuJDhoM/J4w9z2eVX8Ktv+k3k6GE+7YdsO2a8hHv05xKB+7yET1cT/qEasaPsnkG8ewciThQhFthVBhGF5wd5jDF9aIx6gZMkpjDuPbSWkzN5gVIBHhMF0CnapKuOo3aDIEAkq2Q0Ot07WDaH5/m4rktbDJ2p9sDJDmBb3ORuR1OchVvdiC+7EVaERISHnIS2k3HuSoQdpXm/7LK2v85P/tTPcOjgQVZOn0AJLCwt4voeQRCwurrCO37vd3nooQf5wRf8MFdecRVYi9aGKAw5cewbXHPd9bzhjW+ld3CRT/khHWfC7UdKWHbsWAGPeYY7g5lGTyvjms/RXq/i5KSBZMu0HZUpwJmGihmjSeK4EFHYDtjT5/hk9CyOPOcTGa5DHEemVqu/3HHcC7XWYIXmwhKO58+154LQ6+wQJjHXWI+jxpkURp9pxn9+4n7cG3Ba6fEJ+nUn5iEnwRUhEMWHVIf7mi6v+bc/w1Of+r30um0QWNy/D8/3cRyHcDDgD9/xe9z+xS/hALE1XHnllVQqlbFV02lKv9fhmuueyOGjF/CZu77CVhJy1Losu5abqzFfDRLCfLmFzadGX5t42TzQQoxii9sxCgUeq67lTi/F9SvsO3hkaiLEaMqGiJDGMduba1kxnCisMd8Iw+Efa20Gw+GwVIDHEp7r0usNknq9/nxr7RNGJ3m92SKo1OYy6CKKQb9Lf9jnYjyuNl6+J2D+vM5RA4kgrEtKC8U+HLZFs1BLiSsxt6UpXyPimGd50Ut/lO975o10uh3AsrR/H34QoEQIBwPe+ed/xhc+8xlebOtcS8CXNk6y0+1w1VVX43lezrqkxEnM2soKl11xNZVKhc/ffyfflIS7/ZS4keJ7ljBVXJI6PC5xOWocLk6lMPt/mgqemn4kwjc8wwNeQrXeZHHfgUJL5HSVaRQOaW9vjO+i1uYrOzvb73YcR0dRdG4foOe6AqRac+311+l2u/3A6I2zxhKGIY3C6MPiRiQRIajUsAjLkma7tMaBQjH7a0EmW9VdLC+JqyAwBD7o97kt6nHD0QgWQx7aqmDjgDtu+2fu+dqXsQKvfM1Pc+HFF2GBOIr4m/e9l3/85Kd4vq7yorSKIESe4RO3f5VqtcpLX/qjBEGA53ncc/ddfPymjyACnp/93V415qr9CYLw9XWfqxLFi4YBi1qmWh2nLJ4U1x1limyADZVVxAaVKqLUXP0XhCSK8vKSUZBgH/qepz4tvv++r5/zLtA5rwDhMKTbaWO0vgfX1Yg4YInDQVYVqgq7twrMUFCpopTDqtUMxdKwak6mtbh2Nfvayzc++sArkjqRtdy3Jjzj4jbPuXTAWtdlGG2wULU8uFFndXUFpRySJOajH/4QN9/0MZ4befyoqVHJM9AvjqsYR/OpL36BWrXGD73ghwkCn42NDXTnEa49NKATKg4fFI42Nb3E59aTDS4aurww9FnUI0GXvfHuSI+nNkdaYoFNx2SHQbWGzEsc5kmvKBxgrUXltVXGmK8vnz7NbrtdBsHfCUiSFGPMQxZ2R75uHEUYo+e4AbkABxUOHjpMz3fZFl0cBDcnaTRKkU3q/y2wYBWvSptcPKxyx0qDJBUuXYq5/kjExQsJFUezvbWNtZZPf/ITfORDH+TJkeJlpkHVTupyKhZerBt8X+Jxy+c+wz994Ra0NnS7XWqe4ZKlhCceHXLN4SEauG25ytLA4UVhwJKertmZFv55Y+KzO9BTlh0xuI6bu4rzdwIYY4jCYfHnfWPtg+cDA3ReWIAsFxACnPKD4JSI7M+UIiaJ47ycd17w7GG0oaMTlsXlUntm+RmVF4uV8YygUThZIZsgvTnwuWutwRMOdXEwVH3LYjXl/nvv5mMf+TAf+Nv3c8XA8oq0SdOqyYLu3CrVrPBy3aQbd/n0J2/Cas03Hn6AAw0FSrBG0R763HaqwW7o08w3F8tYKWeu304IXKZKOjJsKUNfDJ5fw/P8+XVGImidEEdhcTTKmk71I5rzA+eFBUjjlN2d9o419r4iPRqFg/nlwzafE6oUsUk5JvGopWwi+HaOK1TcsypCqOCjXp973ZDrDw5JjMvd6006kUNnCIfrMZunH+C9734nl+4O+am4wUGtxrvEDNnuMJu7FvuM8Nq4wdW9lI9/7O/pbJ7g0gMu2jjsRj63LTdZ6wdUHM1mNeUz1YS+c8bc1dRXduY7K0qTAJVqHeW40+WjBX2Jo5A0ScYzk6zVDw0G/fU4jkoF+E6BBa686iptrbmDgr8fDvp7yoKLDeLVWhOlXI5LSl9McdjDnEhg+mS0InzeDfmsGnLxvpgbDnV5ypE2guWRToN+4qIwXLbQhzTm+3SFC4yTly7IZCx7IedmgcPW4Tm6hqM1Vx00BDJkvSPcdrpBP1Z4juG6QwP21zT3uYYvVVK0nEUJZO8uwRhYdgyIUKs159QAjWefMBz0J65kVoh3+9VXXzm0trQA3zHo9/sMhn200bdZawfjE3o4wOh5vmomMZVqDd/zWVOGNUlnboYFMeN6oPHg2LwO6EEVc5P0sI6h5mo2+4owNjx+qU+ihfs2m5xsVzhUT2nVUr7shHSUmWKjxpWa5DU9kjXq/LMa0mjA0QXDw+vCV043We36xKlw1f4Iz7VoY7hkKeIOL+ZBNzljAfQoAC4GwW1l2FQaz/Wo1Oo5QzRzfySrOh0OesVDINFaf2Vzc4tnPetlpQJ8JyGOE9I0vd8Yc2L8vSgkLhbGFYbeWsD1PCq1Gn2xPKzi6eUYxZ0BMn3DNlTKh1QX1TQ89/FCauDujQZ3rS/y1dUFtgcBzqDBQ5sL3LdZ41Bd86CX8nkvyhSIUZGajDfBKJtZlS+6EXd7CYcWFHcvO9y30qQ6qOIawXM0VS/lkS2Px+/v85SjPcTXfC5IWHH0XCWwk63u45dyytH0VHYAZHVR8wKgbDxKOBwUp8ytWWvvTbXmppv+6ryQG+d8UQBHKdq77UGz2XyGcpwbMottCKo1qtX62KxPGtuzU9FoTbfTxgJPtj7e+LzPXR0mU6VVzp78rdvjHifm6JJwaavPgaCDpwybYUB7WOFZSYWfThsc1A53x5YdrdAIJzEESjEUSxUhyDVroCzfcFPudhJucvpErmUQQ9RWPDcM+P7Io2qFYwLLfY9LWyFHGiHL3SpaAvoKNqzlUu1QsTO0byH7O8pm3xqkrDuWpX2HaLQWCgmwQt8EwqDXZXdrY8ygaa1v7XQ7f2qMScMwKhXgO8sCpFxy6SVW6/SAcpwfGaXylVI0W4tjgddaM+h3SXWK67ooR9Ht7NIzMdcYnwPWyVgVmVCnPTHc48Tc7oT8kwr5mhPzpCsCAkdz37IlSh1W+z67/YDn6QovT+rsM4pLjctR6/IQhq41xMpyn0q4x4m51vgcsAoFrCrNn7ltbnMiQrFYKzQixQuHPk+IXSpWuEA7BFZx0jGkAol1ON2p8KwrFa2ay127mg0xbDmGtjJU7UTBRgZNgE3HcmsQk7oOBw5fiOcHhOGQYb+H47oZOZBvgtzd2mDQ744Hahmj333kyJGbV9fW0FqXCvCdFgpXqhWMMYnjuq8QkbpINtC1ubCU9btay/rqKdaWT9Jt7+AHVWr1JlE4pDPo0sThGhOMT0KFZcexvNft8El3wDcqEWteSmyEmm+4pN5GjOb+rTph6POipMZLkhq10eZcgSPWYUlc7nFiUsma0K/XHjfqSs5BZ4K6qlJOqGzsiA+8IAq4JnEmM+oELtCKulU8ZGEl9LikNaTuhJxo+2wNYFCxrFU0D7iWE0pz1CgaecOA5LTrPb7m625Krd5k/8EjhMMep48/THtrgzRJaDQX8oMiZXN9OWOARGGt6aVp8l/DMHxkd7d93kiNy3mEKAzRafqw53t3KKVeCJAmMcNBjyCooI1m0OtirMYmmuGgR2txH82FJXa2N7iHmOdpwz7jYPMFxF9wQu7xY55yseHifYYk1azsGO5Z9Wh3AqwIQar40bjGjWkFF9kzca5qstihaoUnpB4/ltapmxEFmn3/x5IGroE73IRYwJkzpd2x8JTIIbABN1djlnsVNgeGdmR4ysWWyw9YMCmndy23n6rwVZPyw9ofn3JDBQ94KVaERmsJ5biE4ZAkDsFCOMwYH+U4RMMBcTgsrkq6P47ju+Qc7wE+jy1Att/qyAVHkziKDyvHecHYDRJFc2EJEYWxmjgM8YIq+w4ewfU8HOUw6HZoJyEXWZeLTRYJJAI3uwPMQsLTLzd8Y104tglHG0MqLhzbrVGLfV4VN3hmWsFB5S0zo3M7S6D5CJcahxvTCs9JKyzYUdeYGgt3zQpPMB5Xpi5HYjiSOvnM/z1LZDhoFAeMw3ErrGuXqw9qrjmY8shGysqO4YL6kH7q0hs6XJc4eGR1Po+4hq/6CU4QcPDIRZkLqDK2LKtYPUS93kRE2NlcY9jrjidhpDp9z3Of//0f+fp9DxDHcWkBvhMx6A/odrpYa292XW9NHDksIgz6XeIoJKhU2XfgMM3mIqJU3gVlcV2X1sIiK8Met8mQJxNQQWGAxFoCFwaR5v5lh3bkEeBwuJXiOoZnhlW+N828bTNVUZpP6beWBSM8zQSTnTOj5JcUMrZica1wKBUC40w2uo+7zEa52kwrrkoUbeXxyVrEwYbhxEbMnSsNtIG6E6EwpDm9is36Bu53UyKx7G8t4lcqWLKaqIsuuxpjDJ4XoFTG/mRl3BlZYKzp6VR//J9u+QK9Xu+8sgCK8wxZcVznfmPMF0fsXprE9Dq7eQJM4VeqeMVeARGai/sJ/AoPqoSHJUKsxbVQR4hSwaYJB2sR+6oxDT8hTg1YS8WQlx8X1rBPNdVnwq5H7YmSn/yFOqPRo2Nr6VnDZMlTcb3RdNu7ALV8YWOcaBxiqm7CQhDjKEs3UlQAN1/yseoYvuGmuK7H4tKBqXWsrucTBJV8P1jG/sRZeUnWWmnMnVEU3x4Oo/NNXM4/Bej1exw6ciQyRn/IYtOREHbaO5NpEblrMhYxC0FQZWFxPwMFn3eHDMTgWssh69IeWFbblkuWIq472MN1LMfbAU4qXGDdaT+l0FJprWDyTZM2d4+sqOlKi0Lh5cCameV9E2MyXZ2R/c59WqhoOLadlVdcs7/LVfsG9FKPbuyyYBSehVSEO72UrliarSUqtfp0zqv4p6yh097OGuDHu5D1Ry644OjuYDA47xTAPd9ekNFZ9aK19jOu9e4XkSdklqFPv9uhtbhv7EiM6L2RBCzuO0Bnd4v7bMi9JuL70gqXWhedONx6uoGrMjHWVkhTxbN0wFXGO+OMoKlduzI50cd/clzAny2pG442MEpxeqecoU7TcsAobog9vjSAduTiKos2QmIUWOGIUbjAI47mATfBdV0W9x9ClJpOfo0MlwiDQY/+iPoEjDUn01R/dGtrmzAcnncK4HA+wlpu/P7ndZdPnrxAKfUcyZfcGWuynIAqrAAa1+FYHNfD6JT2oEsbw3XW4wLjcFBcDlmPA9pjSXscTV2eaar8UFqjbqWw3t0ytw1dZKqZfarZPi+wi62lq1MM0+2LZzLRI507qh1aVuFpRStxOJw6XJ64PCn2uCZx0QKfrcSsOJrFfYdY2n+4sDtDxkmvUbPM1voKw16X0cQ3rfXfrCyvvNPzXBuG4XknKsJ5isNHDmONuSGoVD6mHOdCrEWUw4WXXkmjtThpDp9ZLZTGMScfeYhw0OMlaY2XxTWcfJeuJvsQwLGTFUOITHWRTU+TnvzuidDl+yZlUn3a0Sm7+WRrm9cFKXvmN2h20rMejWWE/HlZ7PHVSsongxDlB1xyxeNz92f6tY8SX+Ggx4lvPohOkzz4te0oin7McdRnT586fV7KiTpfFWA4GLC+vnGvNvojo5IAYzS72xt7GmWK8PyA/QePgnL4vBPykJNiZDJ70835+HHwOtN4Moop9lahjpztyURqsaOVRZZ4NAB3vMVxz0zq2bBgaui5g+DmW+ZHFmnTMXzVi9Ei7DtwhKBaY8+y4MnWa3a3N0nTmNE8VaPTTw0H/S+dj67Pea8AnU6Xw0cP6zRJ3mmN2RgJZ7/TZtDtTFaKzpmC1lxYZGFxH7ti+ITq05F897BV+XgUNT5BLaMRKtPDt+Y2aM2Z6p/N7bSk1pyxovNbm+npzjURRSLwZS9mQzSNxgKL+w8y0/c49czhsE9nZytTyuy+9NI0/fPWQivsdnqlApybVmDI+vrGbcboD40CUWMN21vr+baTafdkJNCiHA4cvoBKpc49bsIn3SHxpISzMEBrFKJObqPYead2lleePXptzg+lQDoz9Fa+zU0AYwVUuYXJ4l/u8lPu8hNcP+DAkYtwPXd6OPrM5LydjbVx40veCnlzGIafGw6G51Xi67sjCM4RRRFHLzhi0lQvK8d5qVKqNcoLeF5ApVrfM0V6JNiu6+O6Hp1umxMS0xSHy4w7HebODNyUM57ae1tsio+OrWWQu2VWpsPoyWqmsxkAmRp38k1P88kgZKiEQ0cuobW0f4qpnboKEfrdXTZWT08OAWPbSZq81Q+C+9dW185nETm/FWD0Ju9s76zWG419I0bIWksSh9SbC1M9wyIFNyJvnMda2v0uJ0m4yLocxpn0834LMZ+9jjM9MjaW0OrpPcQC8n/CUuSDsTYdw02VkA1lWNp/iANHLhwzOlMeEKPFFymrp45P1f1oo9/Xbu/8gbVWD4dhqQDnMuI45uChg6Q6PeY47vOVUodFGCfF6s3WnunRUiiFrtYapEnMTthnmZTLrcsCaipRNE8LZMYBms44jRraMxZoaA2hNXMcqm+jPbNw3T1luDmI+Kab0mwscOSiy/Bc9wwxSfa3tjdX2d3aLPL+p+I4+bVKpXpqY33jfBeP818BRu7u0aNHd8PhMBKlXiSiXIAkzuqD/PEEueJqoExwlaOo1hpEwwEbyZDTknI5Pgs4M2mq6T0C44G6lqnN8vMsx8BqImu/bWHf4/6I0Hcsnw1i7vUSgkqNoxdfOV4NO09PlSgG/R6rp49jjUZlGWqbpsnvrK6svN9RDuf61LdSAXKkSTIa8f2Q63nXiHKuF8nWgg6HA+r11owrNEmUWZslyKq1OsNBj3UdsiKay61Py6gJFTrqqx13ZI2W0s2ZOVrstrQwMIakEJSafAyjfAuXJ4sXhKEDtwQxX/NSXD/g6EWXU2s089ewd3mSkHXCrZ56hHDYH+8FMEZ/IYyi32g0G73tre3vBtH47lCAjOYbsri0L9ZaP+Q4zgtFyRJkyzS00dQbrbxEYL4SuK5HtVpn2O+zpiM2SLnCejSsmnEqJuMHZVwabc+0ij6rATIaXWzaPUsGeML85IVwCv4piLnNi1Gez9GLLqexsMh4Uty8OMUKm+vL7G5vZMIvYKzdTtPkV6vV6td2d9skSVIqwHkXEAtc9+QnrW6tr0ei1A9Zm1WyxdEQ1/Go1hpTrZDTQpMlySq1OsN+j2UTsiwpF+GxMBpHOypx3qMSMrXZXaZC7RkFoJAzO1MwnVOxfQduCSJucxPE9zly4WW0FvdNKdtsnKJQdDs7rC+fzK2WYC1W6/TtG1ub/0tE2c551PFVKsBMQNzvdIij6Oue512mlHrS6ISPwj5BpYbvV+YogYwb5P0goFJtMBz0WdURj6iEw7gcsE5h8sK8jb4yJ0DOsgN9o8c1QMUgeM9aoxE7JMKOY/l0JeIuN8YJgoLwT9Jps0qsRIjCIasnj5EmcZH1+VQURm+tVWu9ze+CwPe7VgEmrtBSkiTpXcpRzxKRC0a9w1E4oFZv4nreHoZlxKRYBD8IqNaaRMM+m8mQb6iYfdbhMO4kxp3i7jMXyO4JcAWDzRXgjIQSudfCaC3rumP4RBDyoJPgBxWOXnQ5zYWlPCCeZ8Gy/9I0ZeXkMYb9Xv6aBG3NI0kSv973vIdWV1a+28Thu08BsqA4Zv+BAztxFB1zHOeHRKQpIqRpQhJH1BstHMedOcct3fYOO5sb2f6BRot6o0WSxGwnAx6UGAEuxMNjdr+YjDfOWKYD3JQsCWb2BLdF5csXVijhG27Kx4OQk46hVmtmPn9zgTgK2d5YIxoO88nXqkDrCsZa1paP093ZGg/4MtZ00zR98+Ouueam48eOE38XsD6lAgBaa3Sq2d7ePlav17rKcX5ARDwRyYLiNKVeb6KUM/aTo3DI8olv0u/uEg37NFoL+JUKjcYC1hh2wwEPqoRNx3AUj6adqbkvBLhF9dC5BZi1DlamHz904NYg4bN+zI5jaS3s4+jFl1Gt1THGsLFygt3NNQa9DkGlmmW5C5Zgc+U02xurmfBnipimafrfdna2/2h7c8u0v4v8/u96BRjFA0v7lhgMBnf7nh8opZ4luXRE4RCtNbV6M1scQTZtur2zhbEGx3VZWDqA4zooR9FoLuA4HoNhjxM24pjE7LOKgziocQWO7ClpEIHEWIamsNeYQkY6d2k2HcOng5DbvJjUFfbtP8KRCy7BH212tJb2ziZRFCJK0VhcolKtje3M5voyW2unx66QBVKt3x0Oh/+lUqkMtza3vlvF4LtXASDrH242mzoMw686rntYKfU9o+aZMOxjrB1PSXAcF8fzcByHpf2HqdYa49NViVCrN6lUa8RRyEYa8oCKSbAcxqU6okplenW1WIisYWD0eCyjFHz9RIT7vJSbg5BjrsELKhw+cjH7Dx3N8hb5r1NK4fkVRClai/tZWNo/doG2NlbYXD096dURSHX68TAM/5PrOJsb32VBb6kAc4Li1uJClCTJrUqpK5VS147483DQx2hNtd5EOQ6Vap1GKz9dpxZsZ7IVBFXqzUWsMbTjLC54xElp5jvFVKGvwI62r1jD0BbWOOVU6ppr+Wwl5FY/ouMIrYUljl54Gc2FvKNt3IWWnfOe79NsLVKrNxCVva3bG6tsrJzCGjNOdqVafymJ49cFQfDI6vLKd/vbXyoAwLDfp9lq9eM4utVxnGtF1FVjSzAYkKZJHhOoqf0AkwV6Y64Hx3VoNBcJ/ApRNGRNR9zrxHTEsB+HJtMTISJrskI4RvU8ljv8lE8HQ46rFOUFHDx0AQePXoRfCXI2VWZbACYsa35dW+vLbK6eytZE5T/UWt8RR+HPB5XqvSvLpzgPtpyWCvAvhX6vz+LSYjuJ4y8ppa4XUVeM+mSj4YA4iajWGjiOW+B25vCVjIroatQbC1hr6cVDjhFxv4qwFg7g5HM7LZExxNaSCDzsaj4TRNzppQwdodnKTv2FpQMoR03+6pxmm5HwG2PYWD3F9vpKxjiN3R59d5LEP1+r1W9bX1sjidPyTS8VYIYeTRMa9cZOEsdfVI66RkRdOfpZFA6JwgGVag3X88fs0OjQ3VMZasFzPRrNBSpBlSSO2NEx96uYYxLjKGERh8gaHnRTPu9H3BokbDqWoFLl0OELOXTkIoJKZbz6UZhX1sx4okOaJKwuH2d3c22cMLOA0fprcZz8fLPZ/PLG2iaDQb98s+efXSUga6hP0/TSSqXyDsd1XzbKFkM2Se3QBRfTaCxMsrOFk9/a+U2NaRyzs73BztY6URwRAFcYD9cK31QJA7F4ns/C0gGW9h8i8IPJztPZXkmZPf2z8Yarp4/T73XG9f82o3y/FEfR66v16tfWVzcYnoezfUoL8K/gDrVarXYcx//oOM6hfLaQGiXLBt0OSmVB8YhXn3WBZqEch3q9SaOxkC3MTkLWbMKGMuC5LC4e4MgFF7O47wCu607qeWS6s2C2tlkQuu3dLMM77I+b4m02z/OmOI5/IQiC+9ZXVwnP8+aWUgH+hZWg2Wj2kij6R1HKU0o9ZZQsM0bT73XQWudL5pxvqQAjeF7mFtXrTZQoqtUah45czNKBQ/i+z3hWl8ysPy1am1wPjDFsra+xvnyCJIlz4QdjrdZa/1UURm/wPO/4xtoW58tSu1IBHk0l6Pep1qphOAw/77jOllLqe0Hqo83r4aBHNBzg+5Vs1uhZHMpRP/3IRfK8gGZrkUZrET8IJrVDhVoeEaG4mDJf3ZVnpkPWlrPsrxltcc+uq5+m6e+EYfifHcfZXFtZxZgy4C0V4P+WIh0OCSp+ur259dVarXavUurJiBwc/TyJI/rddrZxvVKb6imYF2yNanuM0fQ6u4TDAa7noxxVSILJ3udlPhjWWjq7W6yceoRBrzNVVm2tOZWm6Vu73d5/F1GDrc3N8g0sFeD/HXEUU6tV7OEjRx/qdjq3KCWXKaWulFxSjdH0ux2iOMT3K7iuN5eqnHxt2d5YZXX5OL32DsZYGs2FMXMz+8RRL0EcR6yvnmZz7TQ6TVD57rJsiJW5NUnS160ur3ykUqno9u5u+caVCvAvhyRJ2dzcpLWwsB7H0Sdz4btBRIKRyIbDAf1eBxFFEFSmrUGxAs5mMzjjcDimNltL+7K6o+LpbydUZqe9w+qp4/Q7O2PaM1M+G6Y6/Ys4jt9QqVbv7nV7hMNh+YaVCvCvg16vR7VSGYTDwecc131AkOtF5NAoF6DTlH6vQxQN8bxgTmyQRbA6TRkO+qCE1r6D1JuLM/kEyX39Aesrp9hcW86aWEYTprMg+Fiapr85HIb/TSnZWjm9jC3Tu6UC/OvHBSFKOebSKy+7b2d7+2YRaYnINYK4GS1qicOQXncXozV+UJnKIGOzHb21RovW4n5ai1nx2qQINFOQnc01Vk+fyHz9Qn+9wSZa64/GcfL6tZWVm3zfT3a2t8s35v8CZSLs/xH7DxwiTdNatRq8ynXd31BKXTPZMWwRC0G1xtLBwzQX9uWKMJqeW8hw5aXP1lh63TZb6ysM+t2RLSAvTcJYczxN9dvDKPxL13HaG2vr5ZtQWoDH0BoM+oBJXvuTr73z7rvv+pQIFRF5vCD+yJtJ05h+p0046KIchef7eblyoXfXWob9HusrJ9laXyaOo8moxozejLTWf5ckya+sLq982HPdcGd7p3wDSgvwnYOlfYukaRrUarUfdl3vLY5ynjFqshmNPVeiqDUXWNp/KCtdlqyMYWd7g157B63TceNMRm1aa4y5O03174Rh+EHHcfpbGxvlzS4V4DsTXlDhoguP0ul0Dvu+/7OO475OKbl0toRBKYdaI2u2GfS6aJ1m3WOFhxljV3Wa/nmapn/y9Kc97cTN//hZwn5Zy1MqwDmAarXGcDhQBw8dvM7z/NcrR71aKbV/dLZP7wCTcRLMYrHWdrU2H0nT5Pc77fbtfhDo9s5ueVPLGODcQZomALYSBOvDcPhJR6kvCjQRuQQRf1LaLOP6H2vt0BjzySRJ3jIchO9Qok60d3dtFJZFbKUFOMdx4OAB4iiu1uq173cc9xeUo35QREb7SiOt9S1amz+Oo+hTfuD31lZWz1BaXaJUgHM1SG4togKXNElqlUr1eY7r/gxQNUa/O46im4JqtbN5eo3ElsVrJc5zHD58lFZrMVhYWKq+5Edegut45U0pUaJEiRIlSpQoUaJEiRIlSpQoUaJEiRIlSpQoUaJEiRIlSpQoUaJEiRIlSpQoUaJEiRIlSpQoUaJEiRIlSpQoUaJEiRIlSpQoUaJEiRIlSpQoUaJEiRIlSpQoUaJEiRIlSpQoUaJEiRIlSpQoUeJ8w/8P3zV4tuSylT4AAAAASUVORK5CYII=");
+
+}
+
+/* ============================================================
+   ЗАТУХАНИЕ СЦЕНЫ
+   При смене пассажа сцена гаснет и проявляется заново.
+   Реализовано на CSS-анимации, класс вешает интерфейс.
+   ============================================================ */
+@keyframes bow-fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes bow-veil {
+  0%   { opacity: 0.85; }
+  100% { opacity: 0; }
+}
+
+.bow-scene.bow-scene-fade {
+  animation: bow-fade-in 460ms ease-out both;
+}
+
+/* Короткая «завеса» поверх сцены — как закрывающийся и открывающийся
+   взгляд в темноте. Легкая, не мешает читать. */
+.bow-veil {
+  position: fixed;
+  inset: 0;
+  background: var(--bow-bg-deep);
+  pointer-events: none;
+  z-index: 40;
+  animation: bow-veil 380ms ease-out forwards;
+}
+
+/* --- Сброс внутри оболочки SugarCube --- */
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bow-bg-deep);
+}
+
+body {
+  color: var(--bow-text);
+  font-family: var(--bow-serif);
+  font-size: 16px;
+  line-height: var(--bow-leading);
+  -webkit-text-size-adjust: 100%;
+}
+
+#story, #passages { margin: 0; padding: 0; }
+
+.passage { margin: 0; }
+
+/* --- Каркас --- */
+.bow-app {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 14px 28px;
+  background:
+    /* Свечение сверху — холодное, как отражение льда, а не лампа. */
+    radial-gradient(1100px 460px at 50% -240px, #1b2530 0%, transparent 72%),
+    var(--bow-bg);
+  min-height: 100vh;
+  box-sizing: border-box;
+}
+
+/* ============================================================
+   ВЕРХНЯЯ ПАЛКА И ЛОГОТИП-КНОПКА
+   ============================================================ */
+
+.bow-topbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 4px 10px;
+  border-bottom: 1px solid var(--bow-line);
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+/* Подсказка у логотипа: без неё неочевидно, что это кнопка панели.
+   Гаснет при наведении — она нужна один раз, а не постоянно. */
+.bow-logo-hint {
+  font-family: var(--bow-mono);
+  font-size: 0.52rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--bow-faint);
+  border: 1px solid var(--bow-line-soft);
+  border-radius: 3px;
+  padding: 2px 5px;
+  align-self: center;
+  transition: color 0.18s, border-color 0.18s, opacity 0.25s;
+}
+
+.bow-logo-btn:hover .bow-logo-hint {
+  color: var(--bow-steel);
+  border-color: var(--bow-line);
+}
+
+.bow-logo-btn[aria-expanded="true"] .bow-logo-hint { opacity: 0; }
+
+@media (max-width: 720px) { .bow-logo-hint { display: none; } }
+
+.bow-logo-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: none;
+  border: 0;
+  padding: 4px 8px 4px 4px;
+  cursor: pointer;
+  border-radius: var(--bow-radius);
+  color: inherit;
+  text-align: left;
+  transition: background 0.18s, box-shadow 0.18s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.bow-logo-btn:hover { background: rgba(200, 210, 218, 0.05); }
+
+.bow-logo-btn:focus-visible {
+  outline: 2px solid var(--bow-bordo);
+  outline-offset: 2px;
+}
+
+/* Сам щит: картинка встроена в CSS как data URI */
+.bow-logo-img {
+  display: block;
+  width: 44px;
+  height: 44px;
+  background-image: var(--bow-logo);
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.6));
+  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), filter 0.28s;
+}
+
+/* Нажали — щит «раскрывается»: лёгкий наклон и свечение */
+.bow-logo-btn[aria-expanded="true"] .bow-logo-img {
+  transform: scale(1.06) rotate(-3deg);
+  filter: drop-shadow(0 0 10px rgba(125, 43, 51, 0.75));
+}
+
+.bow-logo-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+
+.bow-logo-text b {
+  font-size: 0.92rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--bow-silver);
+  font-weight: 600;
+}
+
+.bow-logo-text i {
+  font-style: normal;
+  font-family: var(--bow-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--bow-faint);
+  margin-top: 2px;
+}
+
+.bow-topbar-info {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+  font-family: var(--bow-mono);
+  font-size: 0.76rem;
+  color: var(--bow-dim);
+}
+
+.bow-tb-time { color: var(--bow-text); }
+.bow-tb-place { color: var(--bow-silver); }
+.bow-tb-sep { color: var(--bow-line); }
+.bow-tb-money b { color: var(--bow-gold); }
+
+.bow-weather {
+  font-family: var(--bow-mono);
+  font-size: 0.7rem;
+  color: var(--bow-steel);
+  letter-spacing: 0.05em;
+  font-style: italic;
+}
+
+/* Ход времени: три кнопки в шапке */
+.bow-clock-controls {
+  display: inline-flex;
+  gap: 2px;
+  margin-left: 4px;
+}
+
+.bow-clock-btn {
+  font-family: var(--bow-mono);
+  font-size: 0.6rem;
+  line-height: 1;
+  letter-spacing: -0.05em;
+  color: var(--bow-faint);
+  background: #141a1f;
+  border: 1px solid var(--bow-line-soft);
+  border-radius: 3px;
+  padding: 4px 5px;
+  min-width: 26px;
+  min-height: 24px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.bow-clock-btn:hover { color: var(--bow-silver); border-color: var(--bow-line); }
+
+.bow-clock-btn.bow-clock-on {
+  color: var(--bow-gold);
+  border-color: var(--bow-gold-dim);
+  background: #1b2229;
+}
+
+/* Мини-полосы в шапке: видны всегда */
+.bow-topbar-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+  flex-wrap: wrap;
+}
+
+.bow-mini {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--bow-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.04em;
+  color: var(--bow-faint);
+  text-transform: uppercase;
+}
+
+.bow-mini-bar {
+  width: 54px;
+  height: 5px;
+  background: #0b0e10;
+  border: 1px solid var(--bow-line-soft);
+  overflow: hidden;
+}
+
+.bow-mini-fill {
+  display: block;
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+.bow-mini-val { color: var(--bow-dim); min-width: 22px; text-align: right; }
+
+/* ============================================================
+   ВЫДВИЖНАЯ ПАНЕЛЬ
+
+   Схема: body — флекс-строка из трёх соседей.
+   [рельса] [панель] [сцена]
+
+   Панель анимируется по СВОЕЙ ширине: 12px → 348px. Это важно:
+   `auto` в grid-колонках браузер не интерполирует, поэтому
+   прежняя схема «grid-template-columns: auto 0 1fr» переключалась
+   рывком — панель просто появлялась. Ширина и opacity анимируются
+   везде, включая мобильные браузеры с адресной строкой.
+   ============================================================ */
+
+.bow-body {
+  --bow-drawer-w: 336px;   /* ширина панели в открытом виде */
+
+  display: flex;
+  align-items: flex-start;
+  gap: 0;
+}
+
+/* Панель — сосед сцены во флекс-строке, а не колонка сетки.
+   Анимируется её собственная ширина: 0 → 336px. Ширину браузер
+   интерполирует плавно, а `auto` в grid-колонке — нет, из-за чего
+   панель раньше «телепортировалась» без выезда.
+   Отступ от рельсы держит сама рельса: так закрытая панель занимает
+   ровно ноль места и не оставляет пустого шва. */
+.bow-drawer {
+  flex: 0 0 auto;
+  box-sizing: border-box;
+  width: 0;
+  min-width: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: width 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+              opacity 0.26s ease 0.05s;
+}
+
+.bow-body.bow-body-open .bow-drawer {
+  width: var(--bow-drawer-w);
+  opacity: 1;
+}
+
+/* Содержимое держит постоянную ширину (336px без внутреннего отступа):
+   при выезде оно не переливается и не перестраивается, а открывается
+   вместе с панелью. */
+.bow-drawer-scroll {
+  width: var(--bow-drawer-w);
+  box-sizing: border-box;
+  padding-right: 12px;
+  max-height: calc(100vh - 130px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--bow-line) transparent;
+  padding-right: 2px;
+}
+
+.bow-drawer-scroll::-webkit-scrollbar { width: 6px; }
+.bow-drawer-scroll::-webkit-scrollbar-thumb { background: var(--bow-line); }
+
+.bow-drawer-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.bow-dpanel {
+  background: linear-gradient(165deg, var(--bow-panel-2), var(--bow-panel) 75%);
+  border: 1px solid var(--bow-line-soft);
+  border-left: 2px solid var(--bow-line);
+  border-radius: var(--bow-radius);
+  padding: 11px 12px;
+  transition: border-left-color 0.2s;
+}
+
+.bow-dpanel.bow-dpanel-focus { border-left-color: var(--bow-bordo); }
+
+/* ============================================================
+   РЕЛЬСА ЗНАЧКОВ СЛЕВА
+   ============================================================ */
+
+.bow-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  flex: 0 0 auto;
+  position: sticky;
+  top: 8px;
+  margin-right: 12px;
+}
+
+.bow-rail-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  width: 58px;
+  padding: 7px 2px 6px;
+  cursor: pointer;
+  background: linear-gradient(180deg, #1b2127, #151a1f);
+  border: 1px solid var(--bow-line-soft);
+  border-left: 2px solid transparent;
+  border-radius: var(--bow-radius);
+  color: var(--bow-dim);
+  transition: border-color 0.16s, color 0.16s, background 0.16s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.bow-rail-btn:hover {
+  color: var(--bow-silver);
+  background: #1f262e;
+  border-left-color: var(--bow-steel);
+}
+
+.bow-rail-btn.bow-rail-active {
+  color: var(--bow-silver);
+  border-left-color: var(--bow-bordo);
+  background: #212932;
+}
+
+.bow-rail-i { font-size: 1rem; line-height: 1; }
+
+.bow-rail-l {
+  font-family: var(--bow-mono);
+  font-size: 0.56rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.bow-main {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* --- Панели --- */
+.bow-panel {
+  background: linear-gradient(165deg, var(--bow-panel-2), var(--bow-panel) 70%);
+  border: 1px solid var(--bow-line-soft);
+  border-radius: var(--bow-radius);
+  padding: 12px 13px;
+}
+
+.bow-h2 {
+  margin: 0 0 10px;
+  font-family: var(--bow-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--bow-steel);
+  font-weight: 600;
+  border-bottom: 1px solid var(--bow-line-soft);
+  padding-bottom: 7px;
+}
+
+.bow-h2-gap { margin-top: 18px; }
+
+/* --- Складывающиеся блоки ---
+   Заголовок остаётся тем же .bow-h2, но становится кнопкой:
+   треугольник справа показывает состояние, курсивных украшений нет. */
+.bow-fold {
+  border: 0;
+  margin: 0;
+}
+
+.bow-fold > summary {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.bow-fold > summary::-webkit-details-marker { display: none; }
+
+.bow-fold > summary:hover {
+  color: var(--bow-silver);
+  border-bottom-color: var(--bow-line);
+}
+
+.bow-fold > summary:focus-visible {
+  outline: 2px solid var(--bow-steel);
+  outline-offset: 3px;
+}
+
+/* Уголок вместо треугольника: он читается как металл, а не как маркер. */
+.bow-fold-i {
+  width: 7px;
+  height: 7px;
+  border-right: 1.5px solid var(--bow-steel);
+  border-bottom: 1.5px solid var(--bow-steel);
+  transform: rotate(-45deg);
+  transition: transform 0.2s ease;
+  margin-right: 3px;
+}
+
+.bow-fold[open] > summary .bow-fold-i { transform: rotate(45deg); }
+
+.bow-fold > summary.bow-h2 { margin-bottom: 0; }
+
+.bow-fold[open] > summary.bow-h2 { margin-bottom: 10px; }
+
+.bow-fold .bow-jobs,
+.bow-fold .bow-people,
+.bow-fold #passages { margin-bottom: 6px; }
+
+.bow-dim { color: var(--bow-dim); }
+.bow-faint { color: var(--bow-faint); }
+
+.bow-empty {
+  font-family: var(--bow-mono);
+  font-size: 0.74rem;
+  color: var(--bow-faint);
+  padding: 4px 0;
+}
+
+.bow-note {
+  margin: 10px 0 0;
+  font-size: 0.72rem;
+  line-height: 1.45;
+  color: var(--bow-faint);
+}
+
+/* --- Потребности --- */
+.bow-needs { display: flex; flex-direction: column; gap: 9px; }
+
+.bow-need-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 0.76rem;
+  color: var(--bow-dim);
+  margin-bottom: 3px;
+}
+
+.bow-need-val { font-family: var(--bow-mono); font-size: 0.78rem; }
+
+.bow-bar {
+  height: 5px;
+  background: var(--bow-surface-1);
+  border: 1px solid var(--bow-line-soft);
+  overflow: hidden;
+}
+
+.bow-fill { display: block; height: 100%; transition: width 0.28s ease; }
+
+.bow-good { color: var(--bow-good); }
+.bow-fill.bow-good { background: var(--bow-good); }
+.bow-ok { color: var(--bow-ok); }
+.bow-fill.bow-ok { background: var(--bow-ok); }
+.bow-low { color: var(--bow-low); }
+.bow-fill.bow-low { background: var(--bow-low); }
+.bow-critical { color: var(--bow-crit); }
+.bow-fill.bow-critical { background: var(--bow-crit); }
+
+/* --- Умения --- */
+.bow-skills {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.bow-skill {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--bow-mono);
+  font-size: 0.72rem;
+  color: var(--bow-dim);
+  background: var(--bow-surface-2);
+  border: 1px solid var(--bow-line-soft);
+  padding: 4px 6px;
+}
+
+.bow-skill b { color: var(--bow-silver); }
+
+/* --- Инвентарь --- */
+.bow-inventory { display: flex; flex-direction: column; gap: 4px; }
+
+.bow-inv-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.78rem;
+  padding: 3px 0;
+  border-bottom: 1px dotted var(--bow-line-soft);
+}
+
+.bow-inv-row .bow-dim { font-family: var(--bow-mono); font-size: 0.68rem; }
+
+.bow-inv-total {
+  margin-top: 7px;
+  font-family: var(--bow-mono);
+  font-size: 0.7rem;
+  color: var(--bow-faint);
+  text-align: right;
+}
+
+/* --- Сцена --- */
+.bow-scene {
+  background: linear-gradient(165deg, #1e2731, var(--bow-panel) 78%);
+  border: 1px solid var(--bow-line);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035), var(--bow-shadow-md);
+  border-radius: var(--bow-radius);
+  padding: 16px 17px 14px;
+}
+
+.bow-scene-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid var(--bow-line-soft);
+  padding-bottom: 9px;
+}
+
+.bow-scene-head h2 {
+  margin: 0;
+  font-size: 1.06rem;
+  letter-spacing: 0.04em;
+  color: var(--bow-silver);
+  font-weight: 600;
+}
+
+.bow-scene-head .bow-dim {
+  font-family: var(--bow-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.bow-scene-text p {
+  margin: 0 0 10px;
+  font-size: 0.95rem;
+  line-height: var(--bow-leading);
+  color: var(--bow-text);
+  /* Длинные строки на широком экране утомляют: держим меру чтения. */
+  max-width: 74ch;
+}
+
+.bow-scene-text p:last-child { margin-bottom: 0; }
+
+/* Зачин сцены: первая строка — как открывающая фраза,
+   чуть крупнее и светлее остальных. */
+.bow-scene-text p:first-child {
+  font-size: 1.02rem;
+  color: #e4eaf0;
+}
+
+/* Первая буква зачина — буквица. Не украшение ради украшения:
+   она даёт глазу точку входа в текст. */
+.bow-scene-text p:first-child::first-letter {
+  float: left;
+  font-size: 2.5rem;
+  line-height: 0.92;
+  padding: 2px 7px 0 0;
+  color: var(--bow-gold);
+  font-family: var(--bow-serif);
+}
+
+.bow-result {
+  min-height: 1.1em;
+  margin-top: 6px;
+  padding-top: 9px;
+  border-top: 1px solid var(--bow-line-soft);
+  font-family: var(--bow-mono);
+  font-size: 0.76rem;
+  color: var(--bow-silver);
+  white-space: pre-line;
+}
+
+/* --- Кнопки --- */
+.bow-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.bow-btn {
+  appearance: none;
+  cursor: pointer;
+  font-family: var(--bow-mono);
+  font-size: 0.76rem;
+  letter-spacing: 0.03em;
+  color: var(--bow-text);
+  background: linear-gradient(180deg, var(--bow-surface-4), var(--bow-surface-3));
+  border: 1px solid var(--bow-line);
+  border-radius: var(--bow-radius);
+  padding: 9px 13px;
+  min-height: 40px;
+  /* Внутренняя световая кромка сверху: кнопка читается как
+     выточенная из камня, а не как плоский прямоугольник. */
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.045), var(--bow-shadow-sm);
+  transition: border-color 0.15s, background 0.15s, color 0.15s,
+              box-shadow 0.15s, transform 0.08s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.bow-btn:hover:not(:disabled) {
+  border-color: var(--bow-steel);
+  color: var(--bow-silver);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), var(--bow-shadow-md);
+}
+
+/* Нажатие должно быть чувствительным: кнопка уходит вниз на пиксель
+   и теряет тень. Это единственная «физика» в интерфейсе, и её хватает. */
+.bow-btn:active:not(:disabled) {
+  background: var(--bow-surface-2);
+  transform: translateY(1px);
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.45);
+}
+
+.bow-btn:focus-visible {
+  outline: 2px solid var(--bow-steel);
+  outline-offset: 2px;
+}
+
+.bow-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.bow-btn-i { color: var(--bow-silver); margin-right: 6px; }
+
+.bow-btn-sm {
+  display: block;
+  width: 100%;
+  text-align: left;
+  font-size: 0.72rem;
+  padding: 8px 10px;
+  margin-bottom: 6px;
+  min-height: 38px;
+}
+
+.bow-btn-danger { border-color: #4a2f2a; color: #c08a80; }
+.bow-btn-danger:hover:not(:disabled) { border-color: var(--bow-crit); color: var(--bow-crit); }
+
+.bow-saves { display: flex; flex-direction: column; }
+
+/* --- Люди рядом --- */
+.bow-people { display: flex; flex-direction: column; gap: 5px; }
+
+.bow-person {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 10px;
+  align-items: center;
+  padding: 8px 9px;
+  background: var(--bow-surface-2);
+  border: 1px solid var(--bow-line-soft);
+  border-left: 2px solid var(--bow-steel);
+  border-radius: var(--bow-radius);
+  cursor: pointer;
+  box-shadow: var(--bow-shadow-sm);
+  /* Переход обязателен: без него подъём карточки при наведении
+     происходит рывком и выглядит как дрожание. */
+  transition: border-color 0.15s, background 0.15s, transform 0.12s, box-shadow 0.15s;
+}
+
+.bow-person:hover {
+  background: var(--bow-surface-3);
+  transform: translateY(-1px);
+  box-shadow: var(--bow-shadow-md);
+  border-color: var(--bow-line);
+  border-left-color: var(--bow-silver);
+}
+
+.bow-person-name { font-size: 0.86rem; color: var(--bow-text); }
+
+.bow-person .bow-dim {
+  grid-column: 1;
+  font-family: var(--bow-mono);
+  font-size: 0.66rem;
+  color: var(--bow-faint);
+}
+
+.bow-tone {
+  grid-row: 1 / span 2;
+  grid-column: 2;
+  font-family: var(--bow-mono);
+  font-size: 0.74rem;
+}
+
+.bow-warm { color: var(--bow-warm); }
+.bow-neutral { color: var(--bow-dim); }
+.bow-cold { color: var(--bow-cold); }
+
+/* --- Карточка человека --- */
+.bow-person {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.bow-person-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.bow-person-acts {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.bow-person-acts .bow-trade-btn { flex: 1; }
+
+/* --- Окно персонажа --- */
+.bow-sheet {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(8, 7, 5, 0.78);
+  padding: 18px;
+  overflow-y: auto;
+}
+
+.bow-sheet-open { display: block; }
+
+.bow-sheet-card {
+  max-width: 560px;
+  margin: 4vh auto;
+  background: linear-gradient(170deg, #1d2731, #151c22 82%);
+  border: 1px solid var(--bow-line);
+  border-radius: var(--bow-radius);
+  padding: 18px 20px 16px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.6);
+}
+
+.bow-sheet-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px solid var(--bow-line-soft);
+  padding-bottom: 10px;
+}
+
+.bow-sheet-head h3 {
+  margin: 0;
+  font-size: 1.15rem;
+  color: var(--bow-silver);
+  letter-spacing: 0.04em;
+}
+
+.bow-sheet-close {
+  background: none;
+  border: 1px solid var(--bow-line);
+  color: var(--bow-dim);
+  font-size: 0.9rem;
+  width: 34px;
+  height: 34px;
+  cursor: pointer;
+  border-radius: var(--bow-radius);
+}
+
+.bow-sheet-close:hover { color: var(--bow-crit); border-color: var(--bow-crit); }
+
+.bow-sheet-sub {
+  font-family: var(--bow-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--bow-faint);
+  margin: 9px 0 10px;
+}
+
+.bow-sheet-about {
+  font-size: 0.92rem;
+  line-height: 1.6;
+  color: var(--bow-text);
+  margin: 0 0 14px;
+}
+
+.bow-sheet-block { margin-bottom: 14px; }
+
+.bow-sheet-block h4 {
+  margin: 0 0 6px;
+  font-family: var(--bow-mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--bow-steel);
+}
+
+.bow-tag {
+  display: inline-block;
+  font-family: var(--bow-mono);
+  font-size: 0.68rem;
+  color: var(--bow-dim);
+  background: var(--bow-surface-2);
+  border: 1px solid var(--bow-line-soft);
+  padding: 3px 8px;
+  margin: 0 5px 5px 0;
+  border-radius: var(--bow-radius);
+}
+
+.bow-mem {
+  font-size: 0.78rem;
+  color: var(--bow-dim);
+  padding: 4px 0;
+  border-bottom: 1px dotted var(--bow-line-soft);
+}
+
+.bow-sheet-acts {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+  padding-top: 12px;
+  border-top: 1px solid var(--bow-line-soft);
+}
+
+.bow-sheet-acts .bow-btn { flex: 1; }
+
+/* --- Торговля --- */
+.bow-trade { display: flex; flex-direction: column; gap: 9px; }
+
+.bow-trade-group-title {
+  font-family: var(--bow-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--bow-faint);
+  margin-bottom: 2px;
+}
+
+.bow-trade-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px dotted var(--bow-line-soft);
+}
+
+.bow-trade-name { font-size: 0.8rem; }
+
+.bow-trade-price {
+  font-family: var(--bow-mono);
+  font-size: 0.74rem;
+  color: var(--bow-silver);
+  white-space: nowrap;
+}
+
+.bow-trade-btn {
+  font-family: var(--bow-mono);
+  font-size: 0.7rem;
+  color: var(--bow-text);
+  background: var(--bow-surface-3);
+  border: 1px solid var(--bow-line);
+  border-radius: var(--bow-radius);
+  padding: 6px 10px;
+  min-width: 40px;
+  min-height: 34px;
+  cursor: pointer;
+}
+
+.bow-trade-btn:hover:not(:disabled) { border-color: var(--bow-steel); color: var(--bow-silver); }
+
+/* Цена, на которую не хватает монет, — приглушённо-ржавая:
+   видно, почему кнопка неактивна, без отдельной подписи. */
+.bow-trade-short { color: var(--bow-crit); }
+.bow-trade-btn:disabled { opacity: 0.4; cursor: default; }
+
+/* --- Журнал --- */
+.bow-journal {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 46vh;
+  overflow-y: auto;
+  padding-right: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--bow-line) transparent;
+}
+
+.bow-journal::-webkit-scrollbar { width: 6px; }
+.bow-journal::-webkit-scrollbar-thumb { background: var(--bow-line); }
+
+.bow-jrow {
+  display: grid;
+  grid-template-columns: 42px 1fr;
+  gap: 8px;
+  font-size: 0.76rem;
+  line-height: 1.45;
+  padding-bottom: 5px;
+  border-bottom: 1px dotted var(--bow-line-soft);
+}
+
+.bow-jtime {
+  font-family: var(--bow-mono);
+  font-size: 0.66rem;
+  color: var(--bow-faint);
+  padding-top: 2px;
+}
+
+.bow-jtext { color: var(--bow-dim); }
+
+.bow-kind-danger .bow-jtext { color: #c08a80; }
+.bow-kind-need .bow-jtext { color: var(--bow-low); }
+.bow-kind-trade .bow-jtext { color: var(--bow-silver); }
+.bow-kind-talk .bow-jtext { color: #b6b09c; }
+.bow-kind-move .bow-jtext { color: var(--bow-faint); }
+.bow-kind-rumour .bow-jtext { color: #a9a084; font-style: italic; }
+.bow-kind-system .bow-jtext { color: var(--bow-silver); }
+
+/* --- Заработок --- */
+.bow-jobs {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bow-job {
+  border: 1px solid var(--bow-line-soft);
+  border-left: 2px solid var(--bow-steel);
+  border-radius: var(--bow-radius);
+  background: linear-gradient(170deg, #191f25, #14181d 80%);
+  padding: 10px 12px;
+}
+
+.bow-job-locked {
+  border-left-color: var(--bow-line);
+  opacity: 0.72;
+}
+
+.bow-job-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.bow-job-head b { color: var(--bow-silver); font-weight: 600; }
+
+.bow-job-pay {
+  font-family: var(--bow-mono);
+  font-size: 0.7rem;
+  color: var(--bow-gold);
+  white-space: nowrap;
+}
+
+.bow-job-note {
+  font-size: 0.84rem;
+  color: var(--bow-dim);
+  line-height: 1.5;
+  margin-bottom: 7px;
+}
+
+.bow-job-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-family: var(--bow-mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.05em;
+  color: var(--bow-faint);
+  margin-bottom: 8px;
+}
+
+.bow-job-safe { color: var(--bow-good); }
+.bow-job-risky { color: var(--bow-crit); }
+
+.bow-job .bow-btn { width: 100%; }
+
+/* --- Общины --- */
+.bow-orgs {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.bow-org {
+  border: 1px solid var(--bow-line-soft);
+  border-radius: var(--bow-radius);
+  padding: 9px 11px;
+  background: rgba(0, 0, 0, 0.16);
+}
+
+.bow-org-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.bow-org-head b { color: var(--bow-silver); font-size: 0.88rem; }
+
+.bow-org-word {
+  font-family: var(--bow-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--bow-faint);
+  margin: 2px 0 7px;
+}
+
+/* Шкала отношения: нуль посередине, влево — вражда, вправо — уважение. */
+.bow-org-track {
+  position: relative;
+  height: 6px;
+  background: var(--bow-surface-1);
+  border: 1px solid var(--bow-line-soft);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.bow-org-mid {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--bow-line);
+}
+
+.bow-org-fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  transition: left 0.3s ease, width 0.3s ease;
+}
+
+.bow-org-fill-warm { background: var(--bow-good); }
+.bow-org-fill-cold { background: var(--bow-crit); }
+
+.bow-org-legend {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--bow-mono);
+  font-size: 0.54rem;
+  letter-spacing: 0.06em;
+  color: var(--bow-faint);
+  margin-top: 3px;
+}
+
+.bow-org-stats {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--bow-line-soft);
+  font-family: var(--bow-mono);
+  font-size: 0.58rem;
+  color: var(--bow-faint);
+}
+
+.bow-org-stats b { color: var(--bow-dim); font-weight: 600; }
+
+/* Розыск: единственная шкала, которая появляется только по делу. */
+.bow-org-heat {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  font-family: var(--bow-mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.05em;
+  color: var(--bow-crit);
+}
+
+.bow-org-heat-bar {
+  flex: 1 1 auto;
+  height: 4px;
+  background: var(--bow-surface-1);
+  border: 1px solid #4a2f2a;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.bow-org-heat-bar i {
+  display: block;
+  height: 100%;
+  background: var(--bow-crit);
+  transition: width 0.3s ease;
+}
+
+/* Кнопка кражи: отдельный, тихий вид. Это не обычное действие. */
+.bow-steal-btn {
+  border-color: #4a2f2a;
+  color: #c08a80;
+  font-size: 0.66rem;
+}
+
+.bow-steal-btn:hover:not(:disabled) {
+  border-color: var(--bow-crit);
+  color: var(--bow-crit);
+}
+
+.bow-steal-risky { opacity: 0.75; }
+
+/* ============================================================
+   БОЙ (0.0.6)
+   Окно боя — не всплывающая карточка, а блок в потоке сцены:
+   на телефоне ничего не перекрывается, а на компьютере он
+   встаёт между сценой и действиями.
+   ============================================================ */
+.bow-fight { display: none; }
+
+.bow-fight.bow-fight-open { display: block; }
+
+.bow-fight-card {
+  border: 1px solid #43302c;
+  border-left: 3px solid var(--bow-crit);
+  border-radius: var(--bow-radius);
+  background: linear-gradient(170deg, #1c1a19, var(--bow-panel) 70%);
+  padding: var(--bow-s3) var(--bow-s4);
+}
+
+.bow-fight-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: var(--bow-s2);
+}
+
+.bow-fight-head b { font-size: 0.95rem; color: var(--bow-silver); }
+
+.bow-fight-head span {
+  font-family: var(--bow-mono);
+  font-size: 0.68rem;
+  color: var(--bow-faint);
+}
+
+.bow-fight-odds {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--bow-s4);
+  font-family: var(--bow-mono);
+  font-size: 0.68rem;
+  color: var(--bow-dim);
+  padding: var(--bow-s2) 0;
+  border-top: 1px dotted var(--bow-line-soft);
+  border-bottom: 1px dotted var(--bow-line-soft);
+}
+
+.bow-fight-odds b { color: var(--bow-text); font-weight: 600; }
+
+.bow-fight-rows { display: flex; flex-direction: column; gap: 5px; margin: var(--bow-s2) 0; }
+
+.bow-fight-row {
+  display: grid;
+  grid-template-columns: 68px 1fr;
+  align-items: center;
+  gap: var(--bow-s3);
+  font-size: 0.72rem;
+  color: var(--bow-dim);
+}
+
+.bow-fight-bar {
+  display: block;
+  height: 7px;
+  background: var(--bow-surface-1);
+  border: 1px solid var(--bow-line-soft);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.bow-fight-log {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: var(--bow-s3) 0;
+  font-size: 0.76rem;
+  color: var(--bow-dim);
+}
+
+.bow-fight-line { padding-left: 8px; border-left: 2px solid var(--bow-line-soft); }
+.bow-fight-you { border-left-color: var(--bow-steel); color: var(--bow-text); }
+.bow-fight-them { border-left-color: #4a2f2a; }
+.bow-fight-narr { border-left-color: transparent; color: var(--bow-faint); font-style: italic; }
+
+.bow-fight-note { font-size: 0.72rem; color: var(--bow-faint); }
+
+.bow-fight-warn {
+  margin-top: var(--bow-s2);
+  font-family: var(--bow-mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.04em;
+  color: var(--bow-crit);
+}
+
+.bow-fight-acts { display: flex; flex-wrap: wrap; gap: var(--bow-s2); margin-top: var(--bow-s3); }
+
+.bow-fight-danger { border-color: #4a2f2a; color: #c08a80; }
+.bow-fight-danger:hover:not(:disabled) { border-color: var(--bow-crit); color: var(--bow-crit); }
+
+.bow-fight-summary { border-left-color: var(--bow-steel); border-color: var(--bow-line); }
+
+/* Кнопка боя в карточке жителя — тихая, но заметная. */
+.bow-fight-btn { border-color: #3a3130; }
+.bow-fight-btn:hover:not(:disabled) { border-color: var(--bow-crit); color: #c08a80; }
+
+/* Снаряжение: видно, что в руке, а что в запасе. */
+.bow-equip-tag {
+  margin-left: 6px;
+  font-family: var(--bow-mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.05em;
+  color: var(--bow-gold-dim);
+}
+
+.bow-loadout {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: var(--bow-s2);
+  padding-top: var(--bow-s2);
+  border-top: 1px dotted var(--bow-line-soft);
+  font-family: var(--bow-mono);
+  font-size: 0.66rem;
+  color: var(--bow-faint);
+}
+
+.bow-loadout b { color: var(--bow-dim); font-weight: 600; }
+
+/* --- Подвал --- */
+.bow-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: space-between;
+  margin-top: 20px;
+  padding-top: 12px;
+  border-top: 1px solid var(--bow-line-soft);
+  font-family: var(--bow-mono);
+  font-size: 0.66rem;
+  color: var(--bow-faint);
+}
+
+/* ============================================================
+   Адаптив
+   ============================================================ */
+
+/* Планшет: рельса становится горизонтальной строкой сверху */
+@media (max-width: 900px) {
+  .bow-rail {
+    flex-direction: row;
+    position: static;
+    width: 100%;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    scrollbar-width: thin;
+  }
+
+  .bow-rail-btn {
+    flex: 1 1 0;
+    min-width: 62px;
+    border-left: 1px solid var(--bow-line-soft);
+    border-bottom: 2px solid transparent;
+  }
+
+  .bow-rail-btn:hover,
+  .bow-rail-btn.bow-rail-active {
+    border-left-color: var(--bow-line-soft);
+    border-bottom-color: var(--bow-bordo);
+  }
+
+  /* На узком экране панель не может отнимать место у сцены:
+     она наезжает поверх неё и уходит по повторному нажатию. */
+  .bow-body {
+    flex-direction: column;
+    position: relative;
+  }
+
+  .bow-rail {
+    position: sticky;
+    top: 0;
+    z-index: 6;
+    background: var(--bow-bg);
+  }
+
+  /* Панель выезжает из-под горизонтальной рельсы, слева направо:
+     рельса остаётся видимой и доступной, пока панель открыта. */
+  .bow-drawer {
+    position: absolute;
+    top: 54px;
+    left: 0;
+    z-index: 5;
+    width: 0;
+    padding-right: 0;
+    max-height: 72vh;
+    border-radius: 0 var(--bow-radius) var(--bow-radius) 0;
+    background: var(--bow-panel);
+  }
+
+  .bow-body.bow-body-open .bow-drawer {
+    width: min(var(--bow-drawer-w), 90vw);
+    box-shadow: 14px 0 34px rgba(0, 0, 0, 0.55);
+    overflow-y: auto;
+  }
+
+  .bow-drawer-scroll {
+    width: auto;
+    max-width: min(var(--bow-drawer-w), 90vw);
+    padding: 8px 10px;
+  }
+
+  .bow-body.bow-body-open .bow-drawer-scroll { max-height: none; }
+
+  /* Затемнение под панелью: тап по сцене тоже закрывает её. */
+  .bow-body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 4;
+    background: rgba(6, 9, 11, 0.6);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.24s ease;
+  }
+
+  .bow-body.bow-body-open::after {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .bow-topbar-status { margin-left: 0; width: 100%; }
+}
+
+/* Телефон: компактная шапка, крупные тач-цели */
+@media (max-width: 720px) {
+  body { font-size: 15px; }
+
+  .bow-app { padding: 0 10px 22px; }
+
+  /* На телефоне шапка была в три этажа и уезжала при прокрутке:
+     деньги и состояние исчезали из виду ровно тогда, когда нужны.
+     Теперь это одна липкая строка: щит, время, место, деньги. */
+  .bow-topbar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 0;
+    margin-bottom: 8px;
+    background: rgba(15, 18, 21, 0.94);
+    backdrop-filter: blur(6px);
+    border-bottom: 1px solid var(--bow-line-soft);
+  }
+
+  .bow-logo-img { width: 34px; height: 34px; }
+
+  /* Название игры на телефоне не нужно: щит его заменяет. */
+  .bow-logo-text { display: none; }
+
+  .bow-topbar-info {
+    font-size: 0.66rem;
+    gap: 4px;
+    width: auto;
+    order: 0;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+
+  /* Погода — самая длинная часть сводки, на телефоне уступает место. */
+  .bow-weather { display: none; }
+
+  .bow-clock-controls { margin-left: 0; }
+
+  .bow-topbar-status {
+    gap: 6px;
+    margin-left: 0;
+    width: auto;
+    flex-wrap: nowrap;
+    order: 0;
+  }
+
+  .bow-mini-bar { width: 30px; }
+  .bow-mini { font-size: 0.56rem; gap: 3px; }
+
+  /* Подписи к мини-полосам на телефоне съедают ширину:
+     остаются сами полосы и числа. */
+  .bow-mini > span:first-child { display: none; }
+
+  /* Кнопки крупнее: палец, а не курсор */
+  .bow-btn { flex: 1 1 calc(50% - 7px); font-size: 0.8rem; min-height: 46px; }
+  .bow-btn-sm { flex: none; width: 100%; min-height: 44px; }
+  .bow-trade-btn { min-height: 40px; min-width: 46px; }
+
+  .bow-person { padding: 10px; }
+  .bow-journal { max-height: 300px; }
+  .bow-scene { padding: 13px 13px 11px; }
+  .bow-scene-text p { font-size: 0.92rem; }
+  .bow-rail-btn { min-width: 54px; padding: 8px 2px 7px; }
+  .bow-drawer-inner { padding: 2px; }
+}
+
+/* Очень узкий экран */
+@media (max-width: 380px) {
+  .bow-btn { flex: 1 1 100%; }
+  .bow-trade-row { grid-template-columns: 1fr auto; }
+  .bow-rail-l { display: none; }
+  .bow-rail-btn { min-width: 44px; }
+}
+
+/* ============================================================
+   ДИАЛОГ: лента реплик
+
+   Каждая реплика — отдельная плашка с указанием, кто говорит.
+   Реплики игрока справа с бордовой линией,
+   реплики собеседника слева со стальной.
+   Так видно и то, что сказал ГГ, и то, что ответили ему.
+   ============================================================ */
+
+.bow-dialog { display: none; }
+
+.bow-dialog.bow-dialog-open {
+  display: block;
+  border: 1px solid var(--bow-line);
+  border-radius: var(--bow-radius);
+  background: linear-gradient(170deg, #1a2027, var(--bow-panel) 80%);
+  overflow: hidden;
+}
+
+.bow-dialog-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--bow-line);
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.bow-dialog-head h3 {
+  margin: 0;
+  font-size: 0.96rem;
+  color: var(--bow-silver);
+  letter-spacing: 0.06em;
+}
+
+.bow-dialog-meta {
+  font-family: var(--bow-mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--bow-faint);
+}
+
+.bow-dialog-close {
+  background: none;
+  border: 1px solid var(--bow-line);
+  color: var(--bow-dim);
+  width: 30px;
+  height: 30px;
+  cursor: pointer;
+  border-radius: var(--bow-radius);
+  flex: 0 0 auto;
+}
+
+.bow-dialog-close:hover { color: var(--bow-crit); border-color: var(--bow-crit); }
+
+.bow-dialog-log {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 13px 14px;
+  max-height: 42vh;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--bow-line) transparent;
+}
+
+.bow-dialog-log::-webkit-scrollbar { width: 6px; }
+.bow-dialog-log::-webkit-scrollbar-thumb { background: var(--bow-line); }
+
+.bow-line {
+  max-width: 88%;
+  padding: 8px 12px 9px;
+  border-radius: var(--bow-radius);
+  font-size: 0.9rem;
+  line-height: 1.58;
+  animation: bow-line-in 0.22s ease both;
+}
+
+@keyframes bow-line-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.bow-line-npc {
+  align-self: flex-start;
+  background: #191f25;
+  border: 1px solid var(--bow-line-soft);
+  border-left: 2px solid var(--bow-steel);
+  color: var(--bow-text);
+}
+
+/* Реплика игрока — самая заметная часть разговора:
+   она сдвинута вправо и подписана «Вы», чтобы даже при беглом
+   взгляде было видно, что главный герой говорит, а не молчит. */
+.bow-line-player {
+  align-self: flex-end;
+  background: linear-gradient(200deg, #242c35, #1b222a);
+  border: 1px solid var(--bow-line);
+  border-right: 3px solid var(--bow-bordo);
+  color: #d9dfe5;
+  box-shadow: -3px 3px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Ремарка: без рамки и подписи, курсивом, с тонкой линией слева.
+   Так видно, где говорят, а где просто происходит действие. */
+.bow-line-narr {
+  align-self: center;
+  max-width: 96%;
+  background: none;
+  border: 0;
+  border-left: 1px solid var(--bow-line-soft);
+  border-radius: 0;
+  padding: 2px 10px;
+  color: var(--bow-faint);
+  font-style: italic;
+  font-size: 0.84rem;
+  animation: none;
+}
+
+
+.bow-line-who {
+  display: block;
+  font-family: var(--bow-mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--bow-faint);
+  margin-bottom: 3px;
+}
+
+.bow-line-player .bow-line-who { color: #a8565f; text-align: right; }
+
+.bow-dialog-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 11px 14px 14px;
+  border-top: 1px solid var(--bow-line-soft);
+}
+
+.bow-dialog-choices-title {
+  font-family: var(--bow-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--bow-faint);
+  margin-bottom: 2px;
+}
+
+.bow-choice {
+  text-align: left;
+  cursor: pointer;
+  font-family: var(--bow-serif);
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: var(--bow-text);
+  background: #1a1f24;
+  border: 1px solid var(--bow-line-soft);
+  border-left: 2px solid var(--bow-steel);
+  border-radius: var(--bow-radius);
+  padding: 9px 12px;
+  min-height: 40px;
+  transition: border-color 0.15s, background 0.15s, color 0.15s, padding-left 0.15s;
+}
+
+.bow-choice:hover:not(:disabled) {
+  background: #212832;
+  border-left-color: var(--bow-bordo);
+  color: var(--bow-silver);
+  padding-left: 16px;
+}
+
+.bow-choice:disabled { opacity: 0.4; cursor: default; }
+
+.bow-choice-leave { border-left-color: var(--bow-line); color: var(--bow-dim); }
+
+.bow-dialog-summary {
+  padding: 12px 14px;
+  border-top: 1px solid var(--bow-line-soft);
+  font-family: var(--bow-mono);
+  font-size: 0.76rem;
+  color: var(--bow-dim);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.bow-summary-up { color: var(--bow-good); font-weight: 600; }
+.bow-summary-down { color: var(--bow-crit); font-weight: 600; }
+.bow-summary-flat { color: var(--bow-faint); }
+
+/* --- Внешность в карточке персонажа --- */
+.bow-appearance { display: grid; gap: 4px; margin: 0; }
+
+.bow-appearance-row {
+  display: grid;
+  grid-template-columns: 92px 1fr;
+  gap: 10px;
+  font-size: 0.82rem;
+  padding: 3px 0;
+  border-bottom: 1px dotted var(--bow-line-soft);
+}
+
+.bow-appearance-row dt {
+  font-family: var(--bow-mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--bow-faint);
+  padding-top: 2px;
+}
+
+.bow-appearance-row dd { margin: 0; color: var(--bow-dim); }
+
+/* --- Атмосфера сцены --- */
+.bow-ambience {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--bow-line-soft);
+  font-style: italic;
+  font-size: 0.88rem;
+  color: var(--bow-faint);
+}
+
+/* --- Уважение к настройкам доступности ---
+   Отключаем движение там, где оно и есть движение: выезд панели,
+   появление диалога, затухание сцены. Не глушим разом весь документ:
+   иначе интерфейс «дёргается» вместо того, чтобы просто не двигаться. */
+@media (prefers-reduced-motion: reduce) {
+  .bow-body,
+  .bow-drawer,
+  .bow-drawer-scroll,
+  .bow-scene,
+  .bow-scene-text p,
+  .bow-dialog,
+  .bow-line,
+  .bow-choice,
+  .bow-btn,
+  .bow-rail-btn {
+    transition-duration: 0.001s !important;
+    animation-duration: 0.001s !important;
+  }
+}
+
+@media (prefers-contrast: more) {
+  :root {
+    --bow-text: #f0ead9;
+    --bow-dim: #c2b9a3;
+    --bow-line: #5a5142;
+  }
+}
+
+/* Печать не нужна, но пусть не ломается */
+@media print {
+  .bow-actions, .bow-saves, .bow-footer { display: none; }
+}
+
+.bow-fight-blocked { color: var(--bow-low); }

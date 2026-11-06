@@ -1,0 +1,12 @@
+:: StoryTitle
+Blades Of War
+
+:: StoryData
+{
+  "ifid": "A7C4E1B9-3D62-4F18-9B04-6E2D8C5A1F37",
+  "format": "SugarCube",
+  "format-version": "2.37.3",
+  "start": "Start",
+  "tag-colors": {},
+  "zoom": 1
+}
