@@ -1,6 +1,6 @@
 :: Story Stylesheet [stylesheet]
 /* ============================================================
-   BLADES OF WAR — оформление прототипа 0.0.3
+   BLADES OF WAR — оформление прототипа 0.0.6
    Палитра: холодный камень, серебро, воронёная сталь, бордо.
    Схема: верхняя палка + выдвижная панель + рельса значков.
    Адаптив: компьютер → планшет → телефон.
@@ -1234,6 +1234,132 @@ body {
 
 .bow-steal-risky { opacity: 0.75; }
 
+/* ============================================================
+   БОЙ (0.0.6)
+   Окно боя — не всплывающая карточка, а блок в потоке сцены:
+   на телефоне ничего не перекрывается, а на компьютере он
+   встаёт между сценой и действиями.
+   ============================================================ */
+.bow-fight { display: none; }
+
+.bow-fight.bow-fight-open { display: block; }
+
+.bow-fight-card {
+  border: 1px solid #43302c;
+  border-left: 3px solid var(--bow-crit);
+  border-radius: var(--bow-radius);
+  background: linear-gradient(170deg, #1c1a19, var(--bow-panel) 70%);
+  padding: var(--bow-s3) var(--bow-s4);
+}
+
+.bow-fight-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: var(--bow-s2);
+}
+
+.bow-fight-head b { font-size: 0.95rem; color: var(--bow-silver); }
+
+.bow-fight-head span {
+  font-family: var(--bow-mono);
+  font-size: 0.68rem;
+  color: var(--bow-faint);
+}
+
+.bow-fight-odds {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--bow-s4);
+  font-family: var(--bow-mono);
+  font-size: 0.68rem;
+  color: var(--bow-dim);
+  padding: var(--bow-s2) 0;
+  border-top: 1px dotted var(--bow-line-soft);
+  border-bottom: 1px dotted var(--bow-line-soft);
+}
+
+.bow-fight-odds b { color: var(--bow-text); font-weight: 600; }
+
+.bow-fight-rows { display: flex; flex-direction: column; gap: 5px; margin: var(--bow-s2) 0; }
+
+.bow-fight-row {
+  display: grid;
+  grid-template-columns: 68px 1fr;
+  align-items: center;
+  gap: var(--bow-s3);
+  font-size: 0.72rem;
+  color: var(--bow-dim);
+}
+
+.bow-fight-bar {
+  display: block;
+  height: 7px;
+  background: var(--bow-surface-1);
+  border: 1px solid var(--bow-line-soft);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.bow-fight-log {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: var(--bow-s3) 0;
+  font-size: 0.76rem;
+  color: var(--bow-dim);
+}
+
+.bow-fight-line { padding-left: 8px; border-left: 2px solid var(--bow-line-soft); }
+.bow-fight-you { border-left-color: var(--bow-steel); color: var(--bow-text); }
+.bow-fight-them { border-left-color: #4a2f2a; }
+.bow-fight-narr { border-left-color: transparent; color: var(--bow-faint); font-style: italic; }
+
+.bow-fight-note { font-size: 0.72rem; color: var(--bow-faint); }
+
+.bow-fight-warn {
+  margin-top: var(--bow-s2);
+  font-family: var(--bow-mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.04em;
+  color: var(--bow-crit);
+}
+
+.bow-fight-acts { display: flex; flex-wrap: wrap; gap: var(--bow-s2); margin-top: var(--bow-s3); }
+
+.bow-fight-danger { border-color: #4a2f2a; color: #c08a80; }
+.bow-fight-danger:hover:not(:disabled) { border-color: var(--bow-crit); color: var(--bow-crit); }
+
+.bow-fight-summary { border-left-color: var(--bow-steel); border-color: var(--bow-line); }
+
+/* Кнопка боя в карточке жителя — тихая, но заметная. */
+.bow-fight-btn { border-color: #3a3130; }
+.bow-fight-btn:hover:not(:disabled) { border-color: var(--bow-crit); color: #c08a80; }
+
+/* Снаряжение: видно, что в руке, а что в запасе. */
+.bow-equip-tag {
+  margin-left: 6px;
+  font-family: var(--bow-mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.05em;
+  color: var(--bow-gold-dim);
+}
+
+.bow-loadout {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: var(--bow-s2);
+  padding-top: var(--bow-s2);
+  border-top: 1px dotted var(--bow-line-soft);
+  font-family: var(--bow-mono);
+  font-size: 0.66rem;
+  color: var(--bow-faint);
+}
+
+.bow-loadout b { color: var(--bow-dim); font-weight: 600; }
+
 /* --- Подвал --- */
 .bow-footer {
   display: flex;
@@ -1678,3 +1804,5 @@ body {
 @media print {
   .bow-actions, .bow-saves, .bow-footer { display: none; }
 }
+
+.bow-fight-blocked { color: var(--bow-low); }

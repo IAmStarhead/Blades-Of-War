@@ -86,6 +86,36 @@
 
       state.version = "0.0.5";
       return state;
+    },
+
+    /* 0.0.5 → 0.0.6: бой, оружие и снаряжение жителей.
+       Старое сохранение получает пустой слот боя и снаряжение из
+       данных: оружие — часть мира, а не награда за новую игру. */
+    "0.0.5": function (state) {
+      if (!("fight" in state)) { state.fight = null; }
+      if (!Bow.util.isPlainObject(state.flags)) { state.flags = {}; }
+      if (!("lastFight" in state.flags)) { state.flags.lastFight = null; }
+      if (!Array.isArray(state.player.conditions)) { state.player.conditions = []; }
+
+      var fresh = Bow.state.create(Bow.data, state.seed || 1);
+      Object.keys(state.people || {}).forEach(function (id) {
+        var p = state.people[id];
+        var f = fresh.people[id];
+        if (!p.skills) { p.skills = {}; }
+        if (typeof p.skills.combat !== "number") {
+          p.skills.combat = f && f.skills ? f.skills.combat : 10;
+        }
+        if (!("weapon" in p)) { p.weapon = f ? f.weapon : null; }
+        if (!("armor" in p)) { p.armor = f ? f.armor : null; }
+      });
+
+      if (!Bow.util.isPlainObject(state.stats)) { state.stats = {}; }
+      if (typeof state.stats.fightsWon !== "number") { state.stats.fightsWon = 0; }
+      if (typeof state.stats.fightsLost !== "number") { state.stats.fightsLost = 0; }
+      if (typeof state.stats.sparsMade !== "number") { state.stats.sparsMade = 0; }
+
+      state.version = "0.0.6";
+      return state;
     }
   };
 
@@ -135,6 +165,8 @@
       flags: {},
       /* Текущий разговор: { personId, nodeId, visited[], startedAt } */
       dialog: null,
+      /* Текущий бой: { personId, mode, phase, round, log[], witnesses[] } */
+      fight: null,
       /* Счётчик визитов в локации — для сюжетных условий */
       visits: {},
 
@@ -142,7 +174,10 @@
         hoursPlayed: 0,
         actionsTaken: 0,
         tradesMade: 0,
-        talksMade: 0
+        talksMade: 0,
+        fightsWon: 0,
+        fightsLost: 0,
+        sparsMade: 0
       }
     };
 
@@ -172,6 +207,10 @@
         attitude: 0,
         /* Кошель: из него платят и его же можно лишиться. */
         money: typeof p.money === "number" ? p.money : 0,
+        /* Оружие и броня берутся из данных и остаются на нём:
+           отобрали топор — он и в бою стал слабее. */
+        weapon: (p.gear && p.gear.weapon) || null,
+        armor: (p.gear && p.gear.armor) || null,
         talkedToday: 0
       };
     });
@@ -244,6 +283,8 @@
     }
 
     need(state.dialog === null || Bow.util.isPlainObject(state.dialog), "поле dialog повреждено");
+    need(state.fight === null || state.fight === undefined || Bow.util.isPlainObject(state.fight),
+      "поле fight повреждено");
     need(Bow.util.isPlainObject(state.reputation || {}), "поле reputation не объект");
     if (Bow.util.isPlainObject(state.reputation)) {
       Object.keys(state.reputation).forEach(function (id) {

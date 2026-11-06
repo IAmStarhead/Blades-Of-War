@@ -1,0 +1,599 @@
+:: bow-fight [script]
+/* ============================================================
+   BOW FIGHT — бой как продолжение мира, а не отдельная мини-игра.
+
+   Зачем: навык «бой» до этого только показывался в панели.
+   По ТЗ это запрещённая фиктивная механика. Теперь он решает,
+   попадёте ли вы, сколько снимете и устоите ли.
+
+   Как устроено:
+     • оружие и броня — обычные предметы из инвентаря; лучшее
+       берётся в руки само, и его видно в панели «При себе»;
+     • обмен ударами — одно действие игрока; противник отвечает
+       по своему состоянию: давит, закрывается или сдаётся;
+     • усталость тратится за каждый обмен, здоровье — настоящее
+       (то же, что в панели потребностей);
+     • бой заканчивается сдачей, а не смертью: добить — отдельный
+       выбор и отдельная цена;
+     • нападение на человека — преступление: розыск, отношение
+       общины, память жертвы и свидетелей. Кулачный бой — нет;
+     • в драке время не идёт, час берётся на весь бой сразу.
+
+   Модуль чистый: не знает ни про SugarCube, ни про DOM.
+   ============================================================ */
+(function (global) {
+  "use strict";
+
+  var Bow = global.Bow = global.Bow || {};
+
+  function rules() { return Bow.data.fightRules; }
+  function clamp(value, min, max) { return Bow.util.clamp(value, min, max); }
+  function rollOf(rng) { return (rng || Math.random)(); }
+
+  /* Род — из данных персонажа, а не «он по умолчанию». */
+  function he(p) { return p && p.pron === "f" ? "она" : "он"; }
+  function He(p) { return p && p.pron === "f" ? "Она" : "Он"; }
+  function his(p) { return p && p.pron === "f" ? "её" : "его"; }
+
+  /* ---------- Снаряжение ----------
+     Лучшее оружие и лучшая броня берутся сами. Игрок не должен
+     помнить про «слоты»: купил топор — он и в руке. */
+  function itemValue(def) {
+    if (!def) { return 0; }
+    return (def.attack || 0) + (def.defense || 0);
+  }
+
+  function bestEquip(person, slot) {
+    var best = null;
+    (person.inventory || []).forEach(function (entry) {
+      var def = Bow.economy.findItemDef(entry.itemId);
+      if (!def || def.equip !== slot) { return; }
+      if (!best || itemValue(def) > itemValue(best)) { best = def; }
+    });
+    return best;
+  }
+
+  function weaponOf(person) {
+    if (person.inventory) { return bestEquip(person, "weapon"); }
+    if (person.weapon) { return Bow.economy.findItemDef(person.weapon); }
+    return null;
+  }
+
+  function armorOf(person) {
+    if (person.inventory) { return bestEquip(person, "armor"); }
+    if (person.armor) { return Bow.economy.findItemDef(person.armor); }
+    return null;
+  }
+
+  /* ---------- Сила ----------
+     В кулачном бою оружие не считается: спарринг — не резня. */
+  function attackPower(person, mode) {
+    var weapon = mode === "spar" ? null : weaponOf(person);
+    var skill = (person.skills && person.skills.combat) || 0;
+    return 12 + skill / 5.5 + (weapon ? (weapon.attack || 0) * 1.6 : 0);
+  }
+
+  function defenseOf(person, mode) {
+    var armor = mode === "spar" ? null : armorOf(person);
+    var skill = (person.skills && person.skills.combat) || 0;
+    return skill / 28 + (armor ? (armor.defense || 0) * 1.1 : 0);
+  }
+
+  /* Шанс попасть. Считается честно и показывается игроку до удара:
+     он должен видеть, на что идёт, а не узнавать после. */
+  function hitChance(attacker, defender, stance) {
+    var a = (attacker.skills && attacker.skills.combat) || 0;
+    var d = (defender.skills && defender.skills.combat) || 0;
+    var chance = 0.55 + (a - d) / 220;
+    var n = attacker.needs;
+    if (n.fatigue < 30) { chance -= 0.10; }
+    if (n.health < 35) { chance -= 0.08; }
+    if (stance === "guard") { chance *= 0.65; }
+    if (stance === "press") { chance += 0.03; }
+    return clamp(chance, 0.18, 0.92);
+  }
+
+  function damageRoll(attacker, defender, mode, defenderStance, rng) {
+    var raw = attackPower(attacker, mode) - defenseOf(defender, mode) * 0.7 + (rollOf(rng) * 4 - 1.5);
+    var damage = Math.max(2, Math.round(raw));
+    if (defenderStance === "guard") { damage = Math.max(1, Math.round(damage * 0.5)); }
+    if (mode === "spar") { damage = Math.max(1, Math.round(damage * 0.7)); }
+    return damage;
+  }
+
+  /* ---------- Свидетели ----------
+     Снимок делается в начале: кто видел начало драки. Прибежавшие
+     позже сюда не попадут — время боя идёт отдельно от часов. */
+  function witnessIds(state, exceptId) {
+    return Bow.steal.witnessesAt(state, state.player.location)
+      .filter(function (p) { return p.id !== exceptId; })
+      .map(function (p) { return p.id; });
+  }
+
+  function witnessNames(state) {
+    var f = state.fight;
+    if (!f || !f.witnesses) { return []; }
+    return f.witnesses.map(function (id) {
+      var p = state.people[id];
+      return p ? p.name : null;
+    }).filter(Boolean);
+  }
+
+  /* ---------- Сколько стоит нападение ----------
+     Показывает интерфейс до начала: шансы и последствия. */
+  function odds(state, personId, mode) {
+    var person = state.people[personId];
+    if (!person) { return null; }
+    var R = rules();
+    var witnesses = witnessIds(state, personId).length;
+    return {
+      name: person.name,
+      role: person.role,
+      yourHit: hitChance(state.player, person, "press"),
+      theirHit: hitChance(person, state.player, "press"),
+      yourPower: Math.round(attackPower(state.player, mode)),
+      theirPower: Math.round(attackPower(person, mode)),
+      purse: typeof person.money === "number" ? person.money : 0,
+      witnesses: witnesses,
+      heat: R.crimeHeat + witnesses * R.witnessHeat,
+      rep: R.crimeRep,
+      canSpar: person.attitude >= R.sparMinAttitude
+    };
+  }
+
+  /* ---------- Начало: окно выбора ---------- */
+  function open(state, personId) {
+    var person = state.people[personId];
+    if (!person || !person.alive) { return { ok: false, message: "Здесь никого нет." }; }
+    if (person.location !== state.player.location) {
+      return { ok: false, message: person.name + " не здесь." };
+    }
+    state.fight = {
+      personId: personId,
+      mode: null,
+      phase: "choose",
+      round: 0,
+      log: [],
+      witnesses: witnessIds(state, personId)
+    };
+    return { ok: true, message: "" };
+  }
+
+  function close(state) {
+    state.fight = null;
+    return { ok: true, message: "" };
+  }
+
+  /* ---------- Начать бой ---------- */
+  function start(state, mode, rng) {
+    var f = state.fight;
+    if (!f || f.phase !== "choose") { return { ok: false, message: "Бой уже идёт." }; }
+
+    var person = state.people[f.personId];
+    if (!person || !person.alive) { return { ok: false, message: "Противник исчез." }; }
+    if (person.location !== state.player.location) {
+      return { ok: false, message: person.name + " уже не здесь." };
+    }
+
+    var R = rules();
+    var n = state.player.needs;
+    if (n.fatigue < 12) { return { ok: false, message: "Вы едва стоите. Сначала отдых." }; }
+    if (n.health < 25) { return { ok: false, message: "Вы слишком плохи, чтобы драться." }; }
+
+    if (mode === "spar" && person.attitude < R.sparMinAttitude) {
+      return { ok: false, message: person.name + " не станет с вами бороться." };
+    }
+    if (mode !== "spar" && mode !== "crime") { return { ok: false, message: "Так не дерутся." }; }
+
+    f.mode = mode;
+    f.phase = "exchange";
+    f.round = 0;
+    f.heat = 0;
+    f.rep = 0;
+    f.heatTotal = 0;
+
+    /* Час на весь бой: подход, первый удар и развязка. Внутри боя
+       время отдельно не двигается — иначе одна драка съедала бы сутки. */
+    Bow.time.advance(state, R.hours);
+    Bow.needs.applyChange(state.player, "fatigue", -2);
+
+    if (mode === "crime") {
+      /* Нападение — преступление сразу, а не по итогу боя. */
+      var heat = R.crimeHeat + f.witnesses.length * R.witnessHeat;
+      f.heat = Bow.steal.addHeat(state, person.org, heat);
+      f.rep = Bow.work.addReputation(state, person.org, R.crimeRep);
+      f.heatTotal = f.heat;
+
+      person.memory.push({
+        kind: "attacked",
+        text: state.player.name + " напал на меня без повода.",
+        weight: 9,
+        totalHours: state.time.totalHours
+      });
+      Bow.util.trim(person.memory, 40);
+      person.attitude = clamp(person.attitude - 30, -100, 100);
+
+      f.witnesses.forEach(function (id) {
+        var w = state.people[id];
+        if (!w || !w.alive) { return; }
+        w.memory.push({
+          kind: "witness",
+          text: "Видел, как " + state.player.name + " напал на " + person.name + ".",
+          weight: 8,
+          totalHours: state.time.totalHours
+        });
+        Bow.util.trim(w.memory, 40);
+        w.attitude = clamp(w.attitude - 8, -100, 100);
+      });
+
+      Bow.journal.add(state,
+        "Вы напали первым. " +
+        (f.witnesses.length
+          ? "Видели: " + witnessNames(state).join(", ") + "."
+          : "Свидетелей не было.") +
+        " Община " + Bow.work.orgName(state, person.org) + " узнает.",
+        "crime");
+
+      f.log.push({ who: "narr", text: "Вы бьёте первым, без слова. " + person.name + " успевает отшатнуться." });
+      return { ok: true, message: "Драка началась. " + person.name + " — не мальчик для битья." };
+    }
+
+    f.log.push({ who: "narr", text: person.name + " скидывает куртку и встаёт напротив. Без злобы — проверяет, чего вы стоите." });
+    Bow.journal.add(state, "Кулачный бой с " + person.name + ".", "fight");
+    return { ok: true, message: "Кулачный бой начался." };
+  }
+
+  /* ---------- Ответ противника ----------
+     Он не «глупый бот»: закрывается, если ему больно и он слабее,
+     и давит, если чувствует перевес. */
+  function chooseNpcStance(npc, player) {
+    var R = rules();
+    var mine = (npc.skills && npc.skills.combat) || 0;
+    var yours = (player.skills && player.skills.combat) || 0;
+
+    if (npc.needs.health <= R.yieldAt.npc) { return "yield"; }
+    if (npc.needs.fatigue < 25) { return "guard"; }
+    if (npc.needs.health < 40 && mine <= yours + 12) { return "guard"; }
+    if (mine < yours - 20) { return "guard"; }
+    return "press";
+  }
+
+  /* ---------- Обмен ударами ---------- */
+  function move(state, stance, rng) {
+    var f = state.fight;
+    if (!f || f.phase !== "exchange") { return { ok: false, message: "Сейчас не бой." }; }
+
+    var npc = state.people[f.personId];
+    if (!npc || !npc.alive) { close(state); return { ok: false, message: "Противника больше нет." }; }
+
+    if (stance === "flee") { return flee(state, rng); }
+    if (stance !== "press" && stance !== "guard") { return { ok: false, message: "Так не дерутся." }; }
+
+    var R = rules();
+    var player = state.player;
+    var npcStance = chooseNpcStance(npc, player);
+    var finished = false;
+
+    /* Инициатива у того, кто опытнее: это может решить исход
+       ровно в тот момент, когда у обоих мало здоровья. */
+    var order = ((npc.skills.combat || 0) > (player.skills.combat || 0)) ? [npc, player] : [player, npc];
+
+    for (var i = 0; i < order.length && !finished; i++) {
+      var attacker = order[i];
+      var defender = attacker === player ? npc : player;
+
+      /* Сдача проверяется до удара: тот, кто уже не держится,
+         не бьёт в ответ. */
+      if (attacker === npc && npc.needs.health <= R.yieldAt.npc) {
+        npcYields(state);
+        finished = true;
+        break;
+      }
+      if (attacker === player && player.needs.health <= R.yieldAt.player) {
+        playerDown(state, rng);
+        finished = true;
+        break;
+      }
+
+      var atkStance = attacker === player ? stance : npcStance;
+      var defStance = attacker === player ? npcStance : stance;
+      var hit = rollOf(rng) < hitChance(attacker, defender, atkStance);
+
+      /* Усталость тратится и на удар, и на глухую защиту. */
+      var cost = atkStance === "guard" ? R.guardFatigue : R.fatiguePerExchange;
+      Bow.needs.applyChange(attacker, "fatigue", -cost);
+
+      if (!hit) {
+        f.log.push({
+          who: attacker === player ? "you" : "them",
+          text: attacker === player
+            ? "Вы бьёте — и не достаёте."
+            : npc.name + " бьёт — вы успеваете уйти."
+        });
+        continue;
+      }
+
+      var damage = damageRoll(attacker, defender, f.mode, defStance, rng);
+
+      /* Порог сдачи — не украшение: удар не проваливает здоровье
+         ниже него. Человек садится в снег, а не лежит при смерти.
+         Иначе после кулачного боя нельзя было бы даже начать
+         следующий разговор: здоровье 0 закрывает всё. */
+      var floorAt = defender === npc ? R.yieldAt.npc : R.yieldAt.player;
+      if (defender.needs.health - damage <= floorAt) {
+        damage = Math.max(1, Math.round(defender.needs.health - floorAt));
+      }
+      Bow.needs.applyChange(defender, "health", -damage);
+
+      f.log.push({
+        who: attacker === player ? "you" : "them",
+        text: (attacker === player ? "Вы бьёте: " : npc.name + " бьёт: ") + damage +
+          (defStance === "guard" ? " (в защиту)." : ".")
+      });
+
+      /* Ответная проверка сразу: бой может кончиться этим ударом. */
+      if (defender === npc && npc.needs.health <= R.yieldAt.npc) {
+        npcYields(state);
+        finished = true;
+      } else if (defender === player && player.needs.health <= R.yieldAt.player) {
+        playerDown(state, rng);
+        finished = true;
+      }
+    }
+
+    if (!finished) { f.round += 1; }
+
+    return {
+      ok: true,
+      message: finished ? "" : "Обмен: " + (stance === "guard" ? "вы держите защиту." : "вы идёте вперёд.")
+    };
+  }
+
+  /* Противник сдаётся: бой переходит к развязке.
+     В кулачном бою развязки нет — бой окончен победой. */
+  function npcYields(state) {
+    var f = state.fight;
+    var npc = state.people[f.personId];
+    f.log.push({ who: "narr", text: npc.name + " опускает руки и садится в снег. " + He(npc) + " больше не бьётся." });
+
+    if (f.mode === "spar") {
+      finish(state, "win", { note: "Он признал удар." });
+      return;
+    }
+    f.phase = "aftermath";
+  }
+
+  /* Игрок на земле. Это поражение, но не смерть. */
+  function playerDown(state, rng) {
+    var f = state.fight;
+    var npc = state.people[f.personId];
+    var lost = 0;
+
+    if (f.mode === "crime" && state.player.money > 0) {
+      lost = Math.max(1, Math.round(state.player.money * (0.25 + rollOf(rng) * 0.3)));
+      state.player.money -= lost;
+      npc.money += lost;
+    }
+
+    Bow.needs.applyChange(state.player, "mood", -12);
+    f.log.push({
+      who: "narr",
+      text: npc.name + " останавливается, когда вы падаете. " +
+        (lost ? "Из кошеля пропало " + lost + " м." : He(npc) + " не трогает ваш кошель.")
+    });
+
+    finish(state, "loss", { lost: lost });
+  }
+
+  /* ---------- Отступление ---------- */
+  function fleeChance(state) {
+    var f = state.fight;
+    if (!f) { return 0; }
+    var npc = state.people[f.personId];
+    var chance = 0.45 + ((state.player.skills.survival || 0) / 250);
+    if (npc && npc.needs.fatigue < 30) { chance += 0.12; }
+    if (npc) { chance -= ((npc.skills.combat || 0) / 500); }
+    return clamp(chance, 0.12, 0.9);
+  }
+
+  function flee(state, rng) {
+    var f = state.fight;
+    var npc = state.people[f.personId];
+    var R = rules();
+
+    Bow.needs.applyChange(state.player, "fatigue", -2);
+
+    if (rollOf(rng) < fleeChance(state)) {
+      f.log.push({ who: "narr", text: "Вы разрываете дистанцию и уходите. " + npc.name + " не гонится." });
+      finish(state, "fled", {});
+      return { ok: true, fled: true, message: "Вы ушли от драки. Не доблесть — зато целы." };
+    }
+
+    var damage = Math.round(damageRoll(npc, state.player, f.mode, "press", rng) * 1.3);
+    Bow.needs.applyChange(state.player, "health", -damage);
+    f.log.push({ who: "them", text: npc.name + " достаёт вас на отходе: " + damage + "." });
+
+    if (state.player.needs.health <= R.yieldAt.player) {
+      playerDown(state, rng);
+    }
+    return { ok: true, fled: false, message: "Уйти не вышло — " + damage + " урона." };
+  }
+
+  /* ---------- Развязка после победы ----------
+     Отпустить, обобрать или добить. Каждый выбор — своя цена. */
+  function decide(state, choice, rng) {
+    var f = state.fight;
+    if (!f || f.phase !== "aftermath") { return { ok: false, message: "Сейчас решать нечего." }; }
+
+    var npc = state.people[f.personId];
+    var player = state.player;
+    if (!npc || !npc.alive) { close(state); return { ok: false, message: "Он уже не встанет." }; }
+
+    var R = rules();
+    var heat = 0;
+    var rep = 0;
+    var message = "";
+
+    if (choice === "spare") {
+      heat = Bow.steal.addHeat(state, npc.org, R.spareHeat);
+      rep = Bow.work.addReputation(state, npc.org, R.spareRep);
+      npc.attitude = clamp(npc.attitude - 20, -100, 100);
+      npc.memory.push({
+        kind: "beaten",
+        text: player.name + " сбил меня с ног, но отпустил.",
+        weight: 7,
+        totalHours: state.time.totalHours
+      });
+      Bow.util.trim(npc.memory, 40);
+      f.log.push({ who: "narr", text: "Вы отходите на шаг. " + npc.name + " поднимается, держась за бок." });
+      message = "Вы отпустили " + (npc.pron === "f" ? "её" : "его") +
+        ". " + npc.name + " этого не забудет.";
+    } else if (choice === "rob") {
+      var take = Math.max(1, Math.round(npc.money * (0.6 + rollOf(rng) * 0.35)));
+      take = Math.min(take, npc.money);
+      npc.money -= take;
+      player.money += take;
+      heat = Bow.steal.addHeat(state, npc.org, R.robHeat);
+      rep = Bow.work.addReputation(state, npc.org, R.robRep);
+      npc.attitude = clamp(npc.attitude - 35, -100, 100);
+      npc.memory.push({
+        kind: "robbed",
+        text: player.name + " избил меня и выгреб из кошеля " + take + " м.",
+        weight: 9,
+        totalHours: state.time.totalHours
+      });
+      Bow.util.trim(npc.memory, 40);
+      f.log.push({ who: "narr", text: "Вы вытряхиваете из " + his(npc) +
+        " кошеля " + take + " м. " + npc.name + " смотрит и молчит." });
+      message = "Обирание: " + npc.name + ", взято " + take + " м.";
+    } else if (choice === "kill") {
+      npc.alive = false;
+      npc.needs.health = 0;
+      heat = Bow.steal.addHeat(state, npc.org, R.killHeat);
+      rep = Bow.work.addReputation(state, npc.org, R.killRep);
+      if (state.orgs[npc.org]) {
+        state.orgs[npc.org].unrest = clamp((state.orgs[npc.org].unrest || 0) + 6, 0, 100);
+      }
+      f.log.push({ who: "narr", text: "Вы делаете то, после чего в Броде не отмываются. " + npc.name + " больше не встанет." });
+      message = "Убийство: " + npc.name + ". Об этом узнают.";
+    } else {
+      return { ok: false, message: "Так нельзя." };
+    }
+
+    f.heat = (f.heat || 0) + heat;
+    f.rep = (f.rep || 0) + rep;
+    f.heatTotal = (f.heatTotal || 0) + heat;
+
+    Bow.journal.add(state, message, "crime");
+    finish(state, choice === "kill" ? "killed" : "win", { heat: heat, rep: rep, message: message });
+    return { ok: true, message: message, heat: heat, reputation: rep };
+  }
+
+  /* ---------- Завершение ---------- */
+  function sparGain(player, npc) {
+    var mine = (player.skills && player.skills.combat) || 0;
+    var theirs = (npc && npc.skills && npc.skills.combat) || 0;
+    /* Слабый противник ничему не учит: чтобы расти, нужен тот,
+       кто умеет больше. Иначе спарринг с Левой стал бы станком. */
+    return clamp((theirs - mine + 12) / 12, 0.2, 1.5);
+  }
+
+  function finish(state, outcome, extra) {
+    var f = state.fight;
+    if (!f) { return null; }
+
+    var npc = state.people[f.personId];
+    var player = state.player;
+    var extraData = extra || {};
+    var spar = f.mode === "spar";
+    var note = extraData.note || "";
+    var before = player.skills.combat || 0;
+    var gained = 0;
+
+    if (outcome === "win" || outcome === "loss" || outcome === "fled") {
+      if (spar) {
+        /* Спарринг: навык растёт от того, кто умеет больше. Слабый
+           противник ничему не учит — иначе Лева стал бы станком. */
+        if (outcome !== "fled") { gained = sparGain(player, npc); }
+        state.stats.sparsMade = (state.stats.sparsMade || 0) + 1;
+        if (npc && outcome !== "fled") {
+          npc.skills.combat = Math.min(100, Math.round(((npc.skills.combat || 0) + 0.3) * 10) / 10);
+          npc.attitude = clamp(npc.attitude + 2, -100, 100);
+        }
+      } else {
+        /* Настоящая драка: опыт дороже, и он считается в статистике. */
+        gained = outcome === "win" ? 0.6 : 0.3;
+        if (outcome === "win") { state.stats.fightsWon = (state.stats.fightsWon || 0) + 1; }
+        else if (outcome === "loss") { state.stats.fightsLost = (state.stats.fightsLost || 0) + 1; }
+      }
+
+      if (gained > 0) {
+        player.skills.combat = Math.min(100, Math.round((before + gained) * 10) / 10);
+        note = "Бой +" + (player.skills.combat - before).toFixed(1);
+      }
+
+      /* В журнал — только то, что ещё не записано развязкой:
+         иначе один бой давал бы две записи подряд. */
+      if (spar || outcome === "loss" || outcome === "fled") {
+        Bow.journal.add(state,
+          (spar ? "Кулачный бой: " : "Драка: ") + (npc ? npc.name : "противник") + " — " +
+          ({ win: "вы взяли верх", loss: "он взял верх", fled: "вы ушли" }[outcome] || outcome) +
+          (note ? " (" + note + ")." : "."),
+          "fight");
+      }
+    }
+
+    var summary = {
+      name: npc ? npc.name : "—",
+      mode: f.mode,
+      outcome: outcome,
+      rounds: f.round,
+      heat: f.heatTotal || 0,
+      rep: extraData.rep || f.rep || 0,
+      note: note,
+      log: f.log.slice(-8)
+    };
+
+    state.flags.lastFight = summary;
+    state.fight = null;
+    return summary;
+  }
+
+  function isActive(state) {
+    return !!(state && state.fight);
+  }
+
+  /* ---------- Мир после боя ----------
+     Избитые не лежат калекой вечно: за сутки они отходят.
+     Это не лечение — лечение будет отдельным слоем. */
+  Bow.bus.on("tick:day", function (state) {
+    Object.keys(state.people || {}).forEach(function (id) {
+      var p = state.people[id];
+      if (!p.alive) { return; }
+      if (typeof p.needs.health === "number" && p.needs.health < 100) {
+        p.needs.health = clamp(Math.round(p.needs.health + 8), 0, 100);
+      }
+    });
+  });
+
+  Bow.fight = {
+    open: open,
+    close: close,
+    start: start,
+    move: move,
+    decide: decide,
+    finish: finish,
+    odds: odds,
+    isActive: isActive,
+    weaponOf: weaponOf,
+    armorOf: armorOf,
+    attackPower: attackPower,
+    defenseOf: defenseOf,
+    hitChance: hitChance,
+    damage: damageRoll,
+    fleeChance: fleeChance,
+    chooseNpcStance: chooseNpcStance,
+    witnessNames: witnessNames
+  };
+
+})(typeof window !== "undefined" ? window : this);

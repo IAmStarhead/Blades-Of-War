@@ -45,7 +45,9 @@
   var handlers = {
     move: function (el) {
       var state = getState();
-      /* Смена сцены закрывает разговор и окно персонажа. */
+      /* Смена сцены закрывает разговор и окно персонажа.
+         Посреди боя уйти нельзя: это было бы бесплатным побегом. */
+      if (state.fight) { return { ok: false, message: "Сначала закончите бой." }; }
       if (state.dialog) { Bow.dialog.close(state); }
       state.flags.lastDialogSummary = null;
       openSheet(null);
@@ -65,6 +67,34 @@
     },
     steal: function (el) {
       return Bow.adapter.act.steal(getState(), el.getAttribute("data-person"));
+    },
+
+    /* ---------- Бой ----------
+       Окно боя — не панель и не карточка: оно поверх сцены и
+       переживает перерисовку, потому что живёт в состоянии. */
+    "fight-open": function (el) {
+      var state = getState();
+      if (state.dialog) { Bow.dialog.close(state); }
+      return Bow.adapter.act.fightOpen(state, el.getAttribute("data-person"));
+    },
+    "fight-close": function () {
+      var state = getState();
+      var res = Bow.adapter.act.fightClose(state);
+      state.flags.lastFight = null;
+      return res;
+    },
+    "fight-start": function (el) {
+      return Bow.adapter.act.fightStart(getState(), el.getAttribute("data-mode"));
+    },
+    "fight-move": function (el) {
+      var state = getState();
+      if (Bow.fight.isActive(state) && state.fight.phase === "aftermath") {
+        return { ok: false, message: "Он больше не бьётся. Решайте, что с ним делать." };
+      }
+      return Bow.adapter.act.fightMove(state, el.getAttribute("data-stance"));
+    },
+    "fight-decide": function (el) {
+      return Bow.adapter.act.fightDecide(getState(), el.getAttribute("data-choice"));
     },
     work: function (el) {
       return Bow.adapter.act.work(getState(), el.getAttribute("data-job"));
@@ -130,6 +160,21 @@
     Bow.ui.renderPersonSheet(person || null);
   }
 
+  /* Во время боя сцена занята: работать, торговать или уходить
+     посреди драки нельзя. Запрет стоит в одном месте, а не в
+     каждом обработчике. */
+  var DURING_FIGHT_ALLOWED = {
+    "fight-start": true,
+    "fight-move": true,
+    "fight-decide": true,
+    "fight-close": true,
+    "panel": true,
+    "inspect": true,
+    "close-sheet": true,
+    "close-dialog": true,
+    "clock": true
+  };
+
   function onClick(event) {
     var el = event.target.closest("[data-act]");
     if (!el) { return; }
@@ -137,6 +182,13 @@
     var act = el.getAttribute("data-act");
     var fn = handlers[act];
     if (!fn) { return; }
+
+    if (getState().fight && !DURING_FIGHT_ALLOWED[act]) {
+      event.preventDefault();
+      Bow.ui.setMessage("Сначала закончите бой.");
+      refresh(true);
+      return;
+    }
 
     event.preventDefault();
 
@@ -181,6 +233,8 @@
     if (!state || !state.time) { return false; }
     if (state.time.scale === "paused") { return false; }
     if (state.dialog) { return false; }
+    /* Бой — пошаговый: часы не должны тикать между ударами. */
+    if (state.fight) { return false; }
     if (Bow.ui.isDrawerOpen()) { return false; }
     if (openPersonId) { return false; }
     return true;

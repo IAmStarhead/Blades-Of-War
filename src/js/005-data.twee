@@ -16,7 +16,7 @@
   Bow.data = {
 
     meta: {
-      version: "0.0.5",
+      version: "0.0.6",
       title: "Blades Of War",
       worldName: "Эдем · Королевство Хладных Ветров",
       /* ВНИМАНИЕ: поселение ниже — тестовое, придумано разработчиком
@@ -147,7 +147,7 @@
             desc: "Работа для тех, кто уже понимает, где у клинка край.",
             hours: 3, pay: [7, 14], fatigue: 10, hunger: 6, rep: 2, minRep: 25 }
         ],
-        trades: ["knife", "rope", "tool"],
+        trades: ["knife", "axe", "padded", "rope", "tool"],
         people: ["tarn"]
       },
       outskirts: {
@@ -210,6 +210,8 @@
       fur:    { id: "item:fur",    name: "Шкура",           weight: 1.6, base: 14, desc: "Выделанная лисья шкура. Тепло и цена." },
       rope:   { id: "item:rope",   name: "Верёвка",         weight: 1.2, base: 5,  desc: "Пеньковая, сажени три." },
       knife:  { id: "item:knife",  name: "Нож",             weight: 0.3, equip: "weapon", attack: 4, base: 15, desc: "Простой кованый нож в деревянных ножнах." },
+      axe:    { id: "item:axe",    name: "Топор",           weight: 2.4, equip: "weapon", attack: 10, base: 34, desc: "Плотницкий топор с коротким топорищем. Тяжёлый, зато не подводит." },
+      padded: { id: "item:padded", name: "Стёганка",        weight: 2.2, equip: "armor", defense: 4, base: 26, desc: "Прошитая в несколько слоёв куртка. От ножа держит, от топора — не очень." },
       tool:   { id: "item:tool",   name: "Инструмент",      weight: 1.8, base: 22, desc: "Клещи и молоток кузнечной работы." }
     },
 
@@ -223,6 +225,9 @@
         money: 46,
         role: "трактирщица", location: "tavern", org: "org:brod",
         skills: { combat: 8, trade: 52, survival: 30, medicine: 18, leadership: 34, stealth: 12 },
+        /* gear — id предметов (item:…), а не ключи товаров:
+           мы ищем их тем же findItemDef, что и инвентарь игрока. */
+        gear: { weapon: "item:knife" },
         needs: { health: 82, hunger: 68, fatigue: 55, mood: 61 },
         traits: ["практичная", "памятливая", "не любит долгов"],
         about: "Держит трактир «Хромой олень» уже девятнадцать лет. Знает, кто в округе чем дышит, и помнит каждую неоплаченную кружку пива.",
@@ -282,6 +287,7 @@
         money: 62,
         role: "кузнец", location: "smithy", org: "org:brod",
         skills: { combat: 44, trade: 26, survival: 35, medicine: 6, leadership: 12, stealth: 18 },
+        gear: { weapon: "item:axe", armor: "item:padded" },
         needs: { health: 88, hunger: 62, fatigue: 48, mood: 44 },
         traits: ["молчаливый", "упрямый", "честный в работе"],
         about: "Пришёл в Брод десять лет назад с войны и остался. Кует всё, от гвоздей до наконечников, и не любит разговаривать о прошлом.",
@@ -340,6 +346,7 @@
         money: 14,
         role: "дочь торговца", location: "square", org: "org:brod",
         skills: { combat: 5, trade: 31, survival: 12, medicine: 14, leadership: 9, stealth: 22 },
+        gear: {},
         needs: { health: 94, hunger: 76, fatigue: 39, mood: 72 },
         traits: ["любопытная", "доверчивая", "хочет уехать на юг"],
         about: "Дочь торговца припасами. Считает, что жизнь в Броде слишком мала для неё, и говорит об этом вслух.",
@@ -385,6 +392,7 @@
         money: 28,
         role: "охотник", location: "outskirts", org: "org:brod",
         skills: { combat: 41, trade: 15, survival: 64, medicine: 22, leadership: 8, stealth: 46 },
+        gear: { weapon: "item:axe" },
         needs: { health: 66, hunger: 58, fatigue: 62, mood: 37 },
         traits: ["нелюдимый", "осторожный", "знает тайгу"],
         about: "Живёт на околице, промышляет охотой. В поселение заходит редко и разговаривает ещё реже.",
@@ -466,6 +474,29 @@
       moodPenaltyHunger: -0.8,
       rest: { fatigue: 34, health: 4, mood: 6 },
       sleepHours: 7
+    },
+
+    /* ---------- Правила боя ----------
+       Все числа в одном месте: их видно и можно менять, не трогая код.
+       Порог сдачи — не «здоровье 0»: люди в Броде не дерутся насмерть
+       без особой причины. */
+    fightRules: {
+      hours: 1,                  // час на весь бой, а не на каждый удар
+      fatiguePerExchange: 3,
+      guardFatigue: 2,
+      yieldAt: { npc: 18, player: 12 },
+      sparMinAttitude: -20,      // ниже — с вами просто не станут бороться
+      /* Цена нападения: платится в начале, до исхода. */
+      crimeHeat: 26,
+      witnessHeat: 6,            // за каждого, кто видел начало
+      crimeRep: -14,
+      /* Развязка. Прибавка к уже уплаченному за нападение. */
+      spareHeat: 10,
+      spareRep: -6,
+      robHeat: 22,
+      robRep: -14,
+      killHeat: 60,
+      killRep: -45
     }
   };
 
