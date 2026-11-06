@@ -63,6 +63,9 @@
       return { ok: true, message: scale === "paused" ? "Время остановлено." :
         scale === "1x" ? "Время идёт." : "Время идёт быстрее." };
     },
+    steal: function (el) {
+      return Bow.adapter.act.steal(getState(), el.getAttribute("data-person"));
+    },
     work: function (el) {
       return Bow.adapter.act.work(getState(), el.getAttribute("data-job"));
     },

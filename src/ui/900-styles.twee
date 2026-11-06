@@ -1192,6 +1192,48 @@ body {
 
 .bow-org-stats b { color: var(--bow-dim); font-weight: 600; }
 
+/* Розыск: единственная шкала, которая появляется только по делу. */
+.bow-org-heat {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  font-family: var(--bow-mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.05em;
+  color: var(--bow-crit);
+}
+
+.bow-org-heat-bar {
+  flex: 1 1 auto;
+  height: 4px;
+  background: var(--bow-surface-1);
+  border: 1px solid #4a2f2a;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.bow-org-heat-bar i {
+  display: block;
+  height: 100%;
+  background: var(--bow-crit);
+  transition: width 0.3s ease;
+}
+
+/* Кнопка кражи: отдельный, тихий вид. Это не обычное действие. */
+.bow-steal-btn {
+  border-color: #4a2f2a;
+  color: #c08a80;
+  font-size: 0.66rem;
+}
+
+.bow-steal-btn:hover:not(:disabled) {
+  border-color: var(--bow-crit);
+  color: var(--bow-crit);
+}
+
+.bow-steal-risky { opacity: 0.75; }
+
 /* --- Подвал --- */
 .bow-footer {
   display: flex;

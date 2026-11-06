@@ -55,6 +55,37 @@
 
       state.version = "0.0.4";
       return state;
+    },
+
+    /* 0.0.4 → 0.0.5: кражи, свидетели, розыск и кошели жителей.
+       Старое сохранение получает чистый розыск: игрок ещё ничего
+       не совершил в терминах новой системы. */
+    "0.0.4": function (state) {
+      if (!Bow.util.isPlainObject(state.heat)) { state.heat = {}; }
+      Object.keys(state.orgs || {}).forEach(function (id) {
+        if (typeof state.heat[id] !== "number") { state.heat[id] = 0; }
+      });
+
+      var fresh = Bow.state.create(Bow.data, state.seed || 1);
+      Object.keys(state.people || {}).forEach(function (id) {
+        var p = state.people[id];
+        var f = fresh.people[id];
+        if (typeof p.money !== "number") { p.money = f ? f.money : 0; }
+        if (!p.skills) { p.skills = {}; }
+        if (typeof p.skills.stealth !== "number") {
+          p.skills.stealth = f && f.skills ? f.skills.stealth : 10;
+        }
+      });
+      if (state.player && state.player.skills && typeof state.player.skills.stealth !== "number") {
+        state.player.skills.stealth = fresh.player.skills.stealth;
+      }
+
+      if (!Bow.util.isPlainObject(state.stats)) { state.stats = {}; }
+      if (typeof state.stats.stealsMade !== "number") { state.stats.stealsMade = 0; }
+      if (typeof state.stats.moneyStolen !== "number") { state.stats.moneyStolen = 0; }
+
+      state.version = "0.0.5";
+      return state;
     }
   };
 
@@ -97,6 +128,8 @@
       orgs: Bow.util.clone(data.orgs),
       /* Отношение каждой общины к игроку: { "org:brod": 0 }. */
       reputation: {},
+      /* Розыск по общинам: насколько ищут виновника. */
+      heat: {},
       journal: [],
       events: [],
       flags: {},
@@ -137,12 +170,17 @@
         memory: [],
         /* Личное отношение к игроку, -100..100 */
         attitude: 0,
+        /* Кошель: из него платят и его же можно лишиться. */
+        money: typeof p.money === "number" ? p.money : 0,
         talkedToday: 0
       };
     });
 
-    /* Все общины начинают с нейтрального отношения. */
-    Object.keys(state.orgs).forEach(function (id) { state.reputation[id] = 0; });
+    /* Все общины начинают с нейтрального отношения, розыска нет. */
+    Object.keys(state.orgs).forEach(function (id) {
+      state.reputation[id] = 0;
+      state.heat[id] = 0;
+    });
 
     /* Отмечаем, что игрок уже здесь (для затухания и условий). */
     state.visits[data.meta.startLocation] = 1;

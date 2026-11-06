@@ -83,6 +83,14 @@
       if (res.ok) { Bow.events.afterAction(state, rng); }
       return res;
     },
+    steal: function (state, personId) {
+      var res = Bow.steal.attempt(state, personId, rng);
+      if (res.ok) {
+        Bow.events.afterAction(state, rng);
+        Bow.needs.ensure(state.player);
+      }
+      return res;
+    },
     work: function (state, jobKey) {
       var res = Bow.work.perform(state, jobKey, rng);
       if (res.ok) {

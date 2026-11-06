@@ -480,6 +480,99 @@ function byAct(act, key) {
     return "пауза, диалог и панель останавливают часы";
   });
 
+  /* 8з. Кражи, свидетели и розыск (0.0.5) */
+  check("У жителей есть кошель, и кража берёт деньги у него, а не из воздуха", () => {
+    const g = game();
+    g.player.location = "square";
+    const liva = g.people["person:liva"];
+    assert(typeof liva.money === "number" && liva.money > 0, "у Ливы нет кошеля");
+    const mine0 = g.player.money;
+    const hers0 = liva.money;
+
+    const seq = (v) => { let i = 0; return () => v[Math.min(i++, v.length - 1)]; };
+    const res = win.Bow.steal.attempt(g, "person:liva", seq([0, 0.5]));
+    assert(res.success, "кража не удалась при удачном броске");
+    eq(g.player.money - mine0, res.taken, "игроку добавилось не столько, сколько взято");
+    eq(hers0 - liva.money, res.taken, "у жителя убыло не столько, сколько взято");
+    return "взято " + res.taken + " м., у Ливы осталось " + liva.money;
+  });
+
+  check("Провал кражи: свидетель, розыск и падение отношения", () => {
+    const g = JSON.parse(JSON.stringify(game()));
+    g.player.location = "square";
+    g.heat["org:brod"] = 0;
+    g.reputation["org:brod"] = 0;
+
+    let i = 0;
+    const seq = () => (i++ === 0 ? 0.99 : 0);
+    const res = win.Bow.steal.attempt(g, "person:liva", seq);
+
+    assert(res.caught, "провал не заметили");
+    assert(win.Bow.steal.heatOf(g, "org:brod") > 0, "розыск не вырос");
+    assert(win.Bow.work.reputation(g, "org:brod") < 0, "отношение общины не упало");
+    assert(g.people["person:liva"].memory.some((m) => m.kind === "witness"),
+      "свидетель ничего не запомнил");
+    return "заметил " + res.caughtBy + ", розыск " + win.Bow.steal.heatOf(g, "org:brod");
+  });
+
+  check("Навык скрытности повышает шанс, свидетели — понижают", () => {
+    const g = game();
+    g.player.location = "square";
+    const liva = g.people["person:liva"];
+
+    const low = { ...g, player: { ...g.player, skills: { ...g.player.skills, stealth: 5 } } };
+    const high = { ...g, player: { ...g.player, skills: { ...g.player.skills, stealth: 80 } } };
+    assert(win.Bow.steal.successChance(high, liva) > win.Bow.steal.successChance(low, liva),
+      "навык не влияет на шанс кражи");
+
+    /* Ставим свидетеля рядом с целью — шанс должен упасть. */
+    const before = win.Bow.steal.successChance(g, liva);
+    const g2 = JSON.parse(JSON.stringify(g));
+    g2.people["person:sigi"].location = "square";
+    const after = win.Bow.steal.successChance(g2, g2.people["person:liva"]);
+    assert(after < before, "свидетель не мешает краже");
+    return "навык 5 → " + Math.round(win.Bow.steal.successChance(low, liva) * 100) +
+      "%, навык 80 → " + Math.round(win.Bow.steal.successChance(high, liva) * 100) + "%";
+  });
+
+  check("Кража ночью легче, чем днём", () => {
+    const g = game();
+    g.player.location = "square";
+    const liva = g.people["person:liva"];
+    g.time.hour = 12;
+    const day = win.Bow.steal.successChance(g, liva);
+    g.time.hour = 23;
+    const night = win.Bow.steal.successChance(g, liva);
+    assert(night > day, "ночь не помогает");
+    return "день " + Math.round(day * 100) + "%, ночь " + Math.round(night * 100) + "%";
+  });
+
+  check("Розыск спадает со временем и попадает в сохранение", () => {
+    const g = JSON.parse(JSON.stringify(game()));
+    g.heat["org:brod"] = 60;
+    const text = win.Bow.save.serialize(g, 1);
+    const back = win.Bow.save.deserialize(text);
+    eq(back.state.heat["org:brod"], 60, "розыск после круга сохранения");
+
+    win.Bow.steal.addHeat(back.state, "org:brod", -100);
+    eq(win.Bow.steal.heatOf(back.state, "org:brod"), 0, "розыск не обнуляется");
+
+    g.heat["org:brod"] = 60;
+    win.Bow.bus.emit("tick:day", g);
+    assert(win.Bow.steal.heatOf(g, "org:brod") < 60, "розыск не спадает за сутки");
+    return "60 → сохранение → 60 → " + win.Bow.steal.heatOf(g, "org:brod") + " за сутки";
+  });
+
+  check("В карточке жителя видна кнопка кражи с его кошелём", () => {
+    const g = game();
+    g.player.location = "square";
+    win.BowGame.refresh(true);
+    const btn = doc().querySelector("#bow-people [data-act='steal']");
+    assert(btn, "нет кнопки кражи");
+    assert(/м\./.test(btn.textContent), "в кнопке не видно, сколько в кошеле");
+    return btn.textContent.trim();
+  });
+
   check("Хороший разговор доходит до общины как молва", () => {
     const g = game();
     g.player.location = "tavern";

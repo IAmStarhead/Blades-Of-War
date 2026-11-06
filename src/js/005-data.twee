@@ -16,7 +16,7 @@
   Bow.data = {
 
     meta: {
-      version: "0.0.4",
+      version: "0.0.5",
       title: "Blades Of War",
       worldName: "Эдем · Королевство Хладных Ветров",
       /* ВНИМАНИЕ: поселение ниже — тестовое, придумано разработчиком
@@ -220,8 +220,9 @@
     people: [
       {
         key: "sigi", id: "person:sigi", name: "Сигрид", age: 46, pron: "f",
+        money: 46,
         role: "трактирщица", location: "tavern", org: "org:brod",
-        skills: { combat: 8, trade: 52, survival: 30, medicine: 18, leadership: 34 },
+        skills: { combat: 8, trade: 52, survival: 30, medicine: 18, leadership: 34, stealth: 12 },
         needs: { health: 82, hunger: 68, fatigue: 55, mood: 61 },
         traits: ["практичная", "памятливая", "не любит долгов"],
         about: "Держит трактир «Хромой олень» уже девятнадцать лет. Знает, кто в округе чем дышит, и помнит каждую неоплаченную кружку пива.",
@@ -278,8 +279,9 @@
       },
       {
         key: "tarn", id: "person:tarn", name: "Тарн", age: 38, pron: "m",
+        money: 62,
         role: "кузнец", location: "smithy", org: "org:brod",
-        skills: { combat: 44, trade: 26, survival: 35, medicine: 6, leadership: 12 },
+        skills: { combat: 44, trade: 26, survival: 35, medicine: 6, leadership: 12, stealth: 18 },
         needs: { health: 88, hunger: 62, fatigue: 48, mood: 44 },
         traits: ["молчаливый", "упрямый", "честный в работе"],
         about: "Пришёл в Брод десять лет назад с войны и остался. Кует всё, от гвоздей до наконечников, и не любит разговаривать о прошлом.",
@@ -335,8 +337,9 @@
       },
       {
         key: "liva", id: "person:liva", name: "Лива", age: 19, pron: "f",
+        money: 14,
         role: "дочь торговца", location: "square", org: "org:brod",
-        skills: { combat: 5, trade: 31, survival: 12, medicine: 14, leadership: 9 },
+        skills: { combat: 5, trade: 31, survival: 12, medicine: 14, leadership: 9, stealth: 22 },
         needs: { health: 94, hunger: 76, fatigue: 39, mood: 72 },
         traits: ["любопытная", "доверчивая", "хочет уехать на юг"],
         about: "Дочь торговца припасами. Считает, что жизнь в Броде слишком мала для неё, и говорит об этом вслух.",
@@ -379,8 +382,9 @@
       },
       {
         key: "bror", id: "person:bror", name: "Брор", age: 57, pron: "m",
+        money: 28,
         role: "охотник", location: "outskirts", org: "org:brod",
-        skills: { combat: 41, trade: 15, survival: 64, medicine: 22, leadership: 8 },
+        skills: { combat: 41, trade: 15, survival: 64, medicine: 22, leadership: 8, stealth: 46 },
         needs: { health: 66, hunger: 58, fatigue: 62, mood: 37 },
         traits: ["нелюдимый", "осторожный", "знает тайгу"],
         about: "Живёт на околице, промышляет охотой. В поселение заходит редко и разговаривает ещё реже.",
@@ -444,7 +448,7 @@
       pron: "m",
       role: "странник",
       status: "free",
-      skills: { combat: 15, trade: 20, survival: 25, medicine: 10, leadership: 5 },
+      skills: { combat: 15, trade: 20, survival: 25, medicine: 10, leadership: 5, stealth: 10 },
       needs: { health: 85, hunger: 70, fatigue: 60, mood: 65 },
       money: 18,
       inventory: [

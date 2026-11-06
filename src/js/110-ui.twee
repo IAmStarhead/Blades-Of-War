@@ -136,6 +136,19 @@
 
     box.innerHTML = people.map(function (p) {
       var tone = p.attitude >= 20 ? "warm" : p.attitude <= -20 ? "cold" : "neutral";
+
+      /* Кража показывается только там, где есть что взять, и всегда
+         с ценой риска: игрок должен видеть, на что идёт. */
+      var purse = typeof p.money === "number" ? p.money : 0;
+      var stealBtn = "";
+      if (purse > 0) {
+        var chance = Math.round(Bow.steal.successChance(state, p) * 100);
+        var risky = chance < 35 ? " bow-steal-risky" : "";
+        stealBtn = '<button class="bow-trade-btn bow-steal-btn' + risky + '" ' +
+          'data-act="steal" data-person="' + esc(p.id) + '" ' +
+          'title="Шанс удачи: ' + chance + '%">Срезать кошель · ' + purse + ' м.</button>';
+      }
+
       return '<div class="bow-person">' +
         '<div class="bow-person-head">' +
           '<span class="bow-person-name">' + esc(p.name) + '</span>' +
@@ -145,6 +158,7 @@
         '<div class="bow-person-acts">' +
           '<button class="bow-trade-btn" data-act="talk" data-person="' + esc(p.id) + '">Говорить</button>' +
           '<button class="bow-trade-btn" data-act="inspect" data-person="' + esc(p.id) + '">Осмотреть</button>' +
+          stealBtn +
         '</div>' +
       '</div>';
     }).join("");
@@ -201,6 +215,7 @@
     box.innerHTML = ids.map(function (id) {
       var org = state.orgs[id];
       var rep = Bow.work.reputation(state, id);
+      var heat = Bow.steal.heatOf(state, id);
       var tone = rep >= 25 ? "warm" : rep <= -25 ? "cold" : "neutral";
       var sign = rep > 0 ? "+" : "";
 
@@ -225,6 +240,14 @@
           '<span title="Достаток общины">достаток <b>' + Math.round(org.wealth || 0) + '</b></span>' +
           '<span title="Недовольство в общине">недовольство <b>' + Math.round(org.unrest || 0) + '</b></span>' +
         '</div>' +
+        /* Розыск показываем только когда он есть: чистый человек
+           не должен читать про себя «вас ищут». */
+        (heat > 0
+          ? '<div class="bow-org-heat">' +
+              '<span>розыск: ' + esc(Bow.steal.heatWord(heat)) + '</span>' +
+              '<span class="bow-org-heat-bar"><i style="width:' + heat + '%"></i></span>' +
+            '</div>'
+          : "") +
       '</div>';
     }).join("");
   }
