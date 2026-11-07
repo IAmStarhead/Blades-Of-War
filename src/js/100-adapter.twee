@@ -31,6 +31,8 @@
         Bow.events.afterAction(state, rng);
       }
       Bow.needs.ensure(state.player);
+      /* Стража приходит по часам, но час мог пройти внутри действия. */
+      if (!state.guard && !state.fight) { Bow.guard.checkArrival(state); }
     }
 
     return result;
@@ -40,8 +42,15 @@
   var act = {
     move: function (state, to) {
       var res = Bow.actions.move(state, to);
-      if (res.ok) { res.__moved = true; Bow.events.afterMove(state, rng); }
-      state.stats.actionsTaken += 0;
+      if (res.ok) {
+        res.__moved = true;
+        Bow.events.afterMove(state, rng);
+        /* Каждый переход — это шанс встретить стражу или грабителя.
+           Проверки живут здесь, а не в интерфейсе: иначе тот же путь
+           через другой интерфейс не давал бы событий. */
+        if (!state.fight && !state.guard) { Bow.guard.onMove(state, rng); }
+        if (!state.fight && !state.guard && !state.encounter) { Bow.street.maybeRob(state, rng); }
+      }
       return res;
     },
     eat: function (state, key) {
@@ -91,6 +100,35 @@
       }
       return res;
     },
+    stealLook: function (state, personId) {
+      var res = Bow.steal.study(state, personId);
+      if (res.ok) { Bow.needs.ensure(state.player); }
+      return res;
+    },
+    stealDistract: function (state, personId) {
+      var res = Bow.steal.distract(state, personId, rng);
+      if (res.ok) {
+        Bow.needs.ensure(state.player);
+        Bow.events.afterAction(state, rng);
+      }
+      return res;
+    },
+    stealPocket: function (state, personId) {
+      var res = Bow.steal.pockets(state, personId, rng);
+      if (res.ok) {
+        Bow.events.afterAction(state, rng);
+        Bow.needs.ensure(state.player);
+      }
+      return res;
+    },
+    treat: function (state) {
+      var res = Bow.needs.treat(state, rng);
+      if (res.ok) {
+        Bow.needs.ensure(state.player);
+        Bow.events.afterAction(state, rng);
+      }
+      return res;
+    },
     work: function (state, jobKey) {
       var res = Bow.work.perform(state, jobKey, rng);
       if (res.ok) {
@@ -120,8 +158,8 @@
       if (res.ok) { Bow.needs.ensure(state.player); }
       return res;
     },
-    fightMove: function (state, stance) {
-      var res = Bow.fight.move(state, stance, rng);
+    fightMove: function (state, stance, target, aim) {
+      var res = Bow.fight.move(state, stance, rng, target, aim);
       if (res.ok) {
         Bow.needs.ensure(state.player);
         /* Побег и победа — обычные действия: мир откликается. */
@@ -129,12 +167,69 @@
       }
       return res;
     },
+    fightTarget: function (state, key) {
+      return Bow.fight.setTarget(state, key);
+    },
     fightDecide: function (state, choice) {
       var res = Bow.fight.decide(state, choice, rng);
       if (res.ok) {
         Bow.needs.ensure(state.player);
         Bow.events.afterAction(state, rng);
       }
+      return res;
+    },
+    fightAlly: function (state, personId) {
+      return Bow.fight.toggleAlly(state, personId);
+    },
+
+    /* ---------- Стража ----------
+       Приход проверяется и здесь: не только по часам, но и после
+       любого действия, иначе стража «замечала» бы убийство лишь
+       к следующему тику. */
+    guardSurrender: function (state) {
+      return Bow.guard.surrender(state);
+    },
+    guardBribe: function (state) {
+      return Bow.guard.bribe(state);
+    },
+    guardFlee: function (state) {
+      var res = Bow.guard.flee(state, rng);
+      if (res.ok) { Bow.needs.ensure(state.player); }
+      return res;
+    },
+    guardInsult: function (state) {
+      return Bow.guard.insultKing(state);
+    },
+    guardFight: function (state) {
+      return Bow.guard.fight(state);
+    },
+    jailServe: function (state) {
+      var res = Bow.guard.serve(state, 4);
+      if (res.ok) { Bow.needs.ensure(state.player); }
+      return res;
+    },
+    jailEscape: function (state) {
+      var res = Bow.guard.escapeJail(state, rng);
+      if (res.ok) { Bow.needs.ensure(state.player); }
+      return res;
+    },
+    jailBribe: function (state) {
+      return Bow.guard.bribeJail(state);
+    },
+
+    /* ---------- Улица ---------- */
+    streetPay: function (state) {
+      return Bow.street.pay(state);
+    },
+    streetScare: function (state) {
+      return Bow.street.scare(state, rng);
+    },
+    streetFight: function (state) {
+      return Bow.street.fight(state);
+    },
+    streetFlee: function (state) {
+      var res = Bow.street.flee(state, rng);
+      if (res.ok) { Bow.needs.ensure(state.player); }
       return res;
     }
   };

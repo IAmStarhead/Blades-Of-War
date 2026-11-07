@@ -68,6 +68,18 @@
     steal: function (el) {
       return Bow.adapter.act.steal(getState(), el.getAttribute("data-person"));
     },
+    "steal-look": function (el) {
+      return Bow.adapter.act.stealLook(getState(), el.getAttribute("data-person"));
+    },
+    "steal-distract": function (el) {
+      return Bow.adapter.act.stealDistract(getState(), el.getAttribute("data-person"));
+    },
+    "steal-pocket": function (el) {
+      return Bow.adapter.act.stealPocket(getState(), el.getAttribute("data-person"));
+    },
+    treat: function () {
+      return Bow.adapter.act.treat(getState());
+    },
 
     /* ---------- Бой ----------
        Окно боя — не панель и не карточка: оно поверх сцены и
@@ -91,10 +103,40 @@
       if (Bow.fight.isActive(state) && state.fight.phase === "aftermath") {
         return { ok: false, message: "Он больше не бьётся. Решайте, что с ним делать." };
       }
-      return Bow.adapter.act.fightMove(state, el.getAttribute("data-stance"));
+      return Bow.adapter.act.fightMove(state, el.getAttribute("data-stance"),
+        el.getAttribute("data-target"), el.getAttribute("data-aim"));
+    },
+    "fight-target": function (el) {
+      return Bow.adapter.act.fightTarget(getState(), el.getAttribute("data-target"));
     },
     "fight-decide": function (el) {
       return Bow.adapter.act.fightDecide(getState(), el.getAttribute("data-choice"));
+    },
+    "fight-ally": function (el) {
+      return Bow.adapter.act.fightAlly(getState(), el.getAttribute("data-person"));
+    },
+
+    /* ---------- Стража ---------- */
+    "guard-surrender": function () { return Bow.adapter.act.guardSurrender(getState()); },
+    "guard-bribe": function () { return Bow.adapter.act.guardBribe(getState()); },
+    "guard-flee": function () { return Bow.adapter.act.guardFlee(getState()); },
+    "guard-insult": function () { return Bow.adapter.act.guardInsult(getState()); },
+    "guard-fight": function () { return Bow.adapter.act.guardFight(getState()); },
+
+    /* ---------- Клетка ---------- */
+    "jail-serve": function () { return Bow.adapter.act.jailServe(getState()); },
+    "jail-escape": function () { return Bow.adapter.act.jailEscape(getState()); },
+    "jail-bribe": function () { return Bow.adapter.act.jailBribe(getState()); },
+
+    /* ---------- Улица ---------- */
+    "street-pay": function () { return Bow.adapter.act.streetPay(getState()); },
+    "street-scare": function () { return Bow.adapter.act.streetScare(getState()); },
+    "street-fight": function () { return Bow.adapter.act.streetFight(getState()); },
+    "street-flee": function () { return Bow.adapter.act.streetFlee(getState()); },
+
+    "death-restart": function () {
+      restart();
+      return { ok: true, message: "" };
     },
     work: function (el) {
       return Bow.adapter.act.work(getState(), el.getAttribute("data-job"));
@@ -166,14 +208,65 @@
   var DURING_FIGHT_ALLOWED = {
     "fight-start": true,
     "fight-move": true,
+    "fight-target": true,
     "fight-decide": true,
     "fight-close": true,
+    "fight-ally": true,
     "panel": true,
     "inspect": true,
     "close-sheet": true,
     "close-dialog": true,
     "clock": true
   };
+
+  /* Пока стража стоит рядом, из города не уйдёшь. */
+  var DURING_GUARD_ALLOWED = {
+    "guard-surrender": true,
+    "guard-bribe": true,
+    "guard-flee": true,
+    "guard-insult": true,
+    "guard-fight": true,
+    "fight-start": true,
+    "fight-move": true,
+    "fight-target": true,
+    "fight-decide": true,
+    "fight-close": true,
+    "panel": true,
+    "clock": true
+  };
+
+  /* В клетке доступно только то, что доступно в клетке. */
+  var IN_JAIL_ALLOWED = {
+    "jail-serve": true,
+    "jail-escape": true,
+    "jail-bribe": true,
+    "panel": true,
+    "clock": true
+  };
+
+  /* На улице, когда к вам подошли, тоже не до торговли. */
+  var IN_ENCOUNTER_ALLOWED = {
+    "street-pay": true,
+    "street-scare": true,
+    "street-fight": true,
+    "street-flee": true,
+    "fight-start": true,
+    "fight-move": true,
+    "fight-target": true,
+    "fight-decide": true,
+    "fight-close": true,
+    "panel": true,
+    "clock": true
+  };
+
+  function blockedBy(state, act) {
+    if (state.dead) { return act === "death-restart" || act === "panel" ? null : "Всё кончено. Начните заново."; }
+    if (state.jail && !IN_JAIL_ALLOWED[act]) { return "Вы в клетке. Отсюда не выйти по своей воле."; }
+    if (state.guard && !DURING_GUARD_ALLOWED[act]) { return "Сначала решите со стражей."; }
+    if (state.encounter && !IN_ENCOUNTER_ALLOWED[act]) { return "Сначала решите с грабителем."; }
+    if (state.fight && !DURING_FIGHT_ALLOWED[act]) { return "Сначала закончите бой."; }
+    return null;
+  }
 
   function onClick(event) {
     var el = event.target.closest("[data-act]");
@@ -183,9 +276,10 @@
     var fn = handlers[act];
     if (!fn) { return; }
 
-    if (getState().fight && !DURING_FIGHT_ALLOWED[act]) {
+    var why = blockedBy(getState(), act);
+    if (why) {
       event.preventDefault();
-      Bow.ui.setMessage("Сначала закончите бой.");
+      Bow.ui.setMessage(why);
       refresh(true);
       return;
     }
@@ -235,6 +329,9 @@
     if (state.dialog) { return false; }
     /* Бой — пошаговый: часы не должны тикать между ударами. */
     if (state.fight) { return false; }
+    /* Стража и грабитель ждут ответа, а не хода времени. */
+    if (state.guard || state.encounter) { return false; }
+    if (state.dead) { return false; }
     if (Bow.ui.isDrawerOpen()) { return false; }
     if (openPersonId) { return false; }
     return true;

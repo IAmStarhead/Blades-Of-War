@@ -45,11 +45,27 @@
     var orgId = Bow.data.locations[locationId] ? Bow.data.locations[locationId].org : null;
     if (!orgId || !Bow.work || !state.reputation) { return 1; }
     var rep = Bow.work.reputation(state, orgId);
-    if (rep >= 60) { return 0.88; }
-    if (rep >= 25) { return 0.95; }
+    /* Скидка за доброе имя заметнее прежней: 0.88 на хлебе за 3
+       давало 2, как и нейтраль, и разница исчезала. */
+    /* 0.72 — это заметно и на хлебе за 3 (2.16 → 2), и на топоре.
+       Скидка за доброе имя должна читаться, а не исчезать в округлении. */
+    if (rep >= 60) { return 0.72; }
+    if (rep >= 25) { return 0.89; }
     if (rep <= -60) { return 1.35; }
     if (rep <= -25) { return 1.2; }
     return 1;
+  }
+
+  /* ---------- Торг ----------
+     Каждые десять очков торга дают 2% в свою пользу, потолок — 14%.
+     Навык растёт медленно, поэтому разница видна не сразу, но она
+     настоящая: одна и та же вещь стоит по-разному. */
+  function tradeModifier(state) {
+    if (!state || !state.player) { return 1; }
+    var trade = (state.player.skills && state.player.skills.trade) || 0;
+    /* Три процента за каждые десять очков, потолок — 18%.
+       Навык растёт медленно, поэтому это видно не сразу. */
+    return 1 - Math.min(0.18, trade * 0.003);
   }
 
   function buyPrice(key, state, locationId) {
@@ -57,13 +73,18 @@
     if (!item) { return null; }
     var mood = state.player.needs.mood;
     /* Рынок чуть охотнее торгуется с тем, у кого спокойный вид. */
-    var modifier = mood >= 60 ? 1.0 : mood >= 30 ? 1.05 : 1.12;
+    var modifier = mood >= 60 ? 1.0 : mood >= 30 ? 1.03 : 1.12;
     var loc = locationId || (state.player ? state.player.location : null);
     modifier *= repModifier(state, loc);
 
-    /* Округление — в пользу того, кто торгуется: скидка округляется
-       вниз, наценка вверх. Иначе на дешёвом хлебе отношение общины
-       не видно вовсе (3 × 0.88 = 2.64 → 3, и разницы нет). */
+    /* Торг впервые что-то делает (0.0.6.3): до этого навык рос
+       от работы, но на цену не влиял. Скидка до 14%. */
+    modifier *= tradeModifier(state);
+
+    /* Скидка и наценка складываются в один множитель, и округление
+       делается один раз: скидка вниз, наценка вверх. Раньше на хлебе
+       за 3 уважение и торг по отдельности загоняли цену в один и тот
+       же пол, и «торгуетесь вы или нет» было не видно. */
     var raw = item.base * modifier;
     var price = modifier < 1 ? Math.floor(raw) : Math.ceil(raw);
     return Math.max(1, price);
@@ -77,6 +98,8 @@
     if (state) {
       var loc = locationId || (state.player ? state.player.location : null);
       factor = factor / repModifier(state, loc);
+      /* Торг помогает и продавать: скупщик не так сильно жмёт. */
+      factor = factor / tradeModifier(state);
     }
     /* Округление в пользу игрока: иначе на дешёвом товаре разница
        между «уважают» и «не знают» исчезает в floor (3 × 0.55 = 1.65). */

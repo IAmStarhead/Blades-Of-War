@@ -55,6 +55,11 @@
           n.health += rules.healthPenalty.hunger;
         } else if (tired) {
           n.health += rules.healthPenalty.fatigue;
+        } else if (n.health < 100) {
+          /* Сытый и отдохнувший затягивает раны сам. До 0.0.6.3
+             здоровье только падало: подняться было нечем, и любая
+             драка оставляла игрока калекой до конца игры. */
+          n.health += healRate(person);
         }
         if (hungry) {
           n.mood += rules.moodPenaltyHunger;
@@ -68,6 +73,15 @@
     });
   }
 
+  /* Скорость естественного заживления за час. Лечение (навык)
+     ускоряет его втрое: это первая механика, которая вообще
+     опирается на «Лечение». */
+  function healRate(person) {
+    var base = (Bow.data.needsRules && Bow.data.needsRules.healPerHour) || 0.4;
+    var medicine = (person.skills && person.skills.medicine) || 0;
+    return base * (1 + medicine / 50);
+  }
+
   /* Сколько дней продержится персонаж при текущем голоде — для подсказки в UI.
      Это оценка, а не точная механика. */
   function estimateDaysOfHunger(person) {
@@ -75,6 +89,56 @@
     var perHour = Math.abs(rules.perHour.hunger);
     var hoursLeft = person.needs.hunger / perHour;
     return Math.max(0, Math.round((hoursLeft / 24) * 10) / 10);
+  }
+
+  /* ---------- Лечение (0.0.6.3) ----------
+     Отдых лечит медленно. Осмотр и перевязка — быстрее и сразу,
+     но стоят часа и усталости, и делать их можно не бесконечно:
+     рана за сутки перевязывается один раз, а не десять.
+
+     Навык лечения решает, сколько вернётся. Без навыка почти
+     ничего: «полежать» умеют все, «перевязать» — нет. */
+  function treat(state, rng) {
+    var p = state.player;
+    var n = p.needs;
+    if (n.health >= 100) { return { ok: false, message: "Вы целы. Лечить нечего." }; }
+    if (n.fatigue < 8) { return { ok: false, message: "Руки не держат бинт. Нужен отдых." }; }
+
+    /* lastTreat = 0 значит «ещё не лечили», а не «лечили в нулевой
+       час». Иначе первая же перевязка недоступна всю первую смену. */
+    var last = p.lastTreat || 0;
+    var everTreated = !!p.lastTreat;
+    if (everTreated && state.time.totalHours - last < 24) {
+      var left = 24 - (state.time.totalHours - last);
+      return { ok: false, message: "Раны только начали схватываться. Через " + Math.ceil(left) + " ч." };
+    }
+
+    var medicine = p.skills.medicine || 0;
+    /* Без навыка — 4, с сотней навыка — 22. Разница в пять раз. */
+    var gain = Math.round(4 + medicine * 0.18 + (rng ? rng() : Math.random()) * 3);
+    /* Больше, чем не хватает, не вернёшь, и потолок — 30 за раз. */
+    gain = Math.max(1, Math.min(gain, 30, 100 - n.health));
+
+    Bow.time.advance(state, 1);
+    Bow.needs.applyChange(p, "fatigue", -3);
+    Bow.needs.applyChange(p, "health", gain);
+    p.lastTreat = Math.max(1, state.time.totalHours);
+
+    /* Навык растёт от дела, а не от чтения. */
+    var before = medicine;
+    p.skills.medicine = Math.min(100, Math.round((medicine + (medicine < 40 ? 1.2 : 0.6)) * 10) / 10);
+
+    state.stats.treats = (state.stats.treats || 0) + 1;
+    Bow.journal.add(state, "Перевязка: +" + gain + " здор. (Лечение " +
+      p.skills.medicine + ")", "heal");
+
+    return {
+      ok: true,
+      healed: gain,
+      medicine: p.skills.medicine,
+      message: "Вы промыли и перевязали: +" + gain + " здор. Лечение " +
+        before.toFixed(1) + " → " + p.skills.medicine + "."
+    };
   }
 
   function applyChange(person, key, delta) {
@@ -96,6 +160,8 @@
   }
 
   Bow.needs = {
+    treat: treat,
+    healRate: healRate,
     KEYS: KEYS,
     hourly: hourly,
     ensure: ensure,

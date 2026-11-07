@@ -116,6 +116,93 @@
 
       state.version = "0.0.6";
       return state;
+    },
+
+    /* 0.0.6 → 0.0.6.1: поле боя, стража, клетка, уличные встречи
+       и постоянные травмы. Старое сохранение не теряет ничего:
+       недостающие поля создаются пустыми. */
+    "0.0.6": function (state) {
+      if (!("jail" in state)) { state.jail = null; }
+      if (!("guard" in state)) { state.guard = null; }
+      if (!("encounter" in state)) { state.encounter = null; }
+      if (!("dead" in state)) { state.dead = null; }
+      if (!Bow.util.isPlainObject(state.flags)) { state.flags = {}; }
+      if (!("guardAt" in state.flags)) { state.flags.guardAt = null; }
+      if (!("hunted" in state.flags)) { state.flags.hunted = false; }
+
+      if (!Array.isArray(state.player.injuries)) { state.player.injuries = []; }
+      Object.keys(state.people || {}).forEach(function (id) {
+        var p = state.people[id];
+        if (!Array.isArray(p.injuries)) { p.injuries = []; }
+      });
+
+      if (!Bow.util.isPlainObject(state.heat)) { state.heat = {}; }
+      if (typeof state.heat["org:guard"] !== "number") { state.heat["org:guard"] = 0; }
+      if (!Bow.util.isPlainObject(state.orgs) || !state.orgs["org:guard"]) {
+        var fresh = Bow.state.create(Bow.data, state.seed || 1);
+        state.orgs["org:guard"] = fresh.orgs["org:guard"];
+        state.reputation["org:guard"] = 0;
+      }
+      if (!Bow.util.isPlainObject(state.reputation)) { state.reputation = {}; }
+      if (typeof state.reputation["org:guard"] !== "number") { state.reputation["org:guard"] = 0; }
+
+      state.version = "0.0.6.1";
+      return state;
+    },
+
+    /* 0.0.6.1 → 0.0.6.2: цель удара, розыск с опознанием, увечья
+       от тяжёлых ударов. Новых обязательных полей нет — только
+       флаги, которые читаются как «не задано». */
+    "0.0.6.1": function (state) {
+      if (!Bow.util.isPlainObject(state.flags)) { state.flags = {}; }
+      if (!("huntedUntil" in state.flags)) { state.flags.huntedUntil = null; }
+      if (!("huntedHeat" in state.flags)) { state.flags.huntedHeat = null; }
+
+      /* Стражу, заставшую игрока по старому сохранению, считаем
+         пришедшей: иначе после обновления нельзя ни сдаться, ни
+         откупиться, и сохранение застревает в тупике. */
+      if (state.guard && state.guard.phase === "demand" && !state.guard.arrived) {
+        state.guard.arrived = true;
+      }
+
+      state.version = "0.0.6.2";
+      return state;
+    },
+
+    /* 0.0.6.2 → 0.0.6.3: подготовка кражи, карманы, перевязка ран,
+       доверие отряда и все шесть навыков в расчётах. Старые сейвы
+       получают чистую подготовку и доступную перевязку. */
+    "0.0.6.2": function (state) {
+      if (!Bow.util.isPlainObject(state.steal)) { state.steal = {}; }
+      if (state.player && !("lastTreat" in state.player)) { state.player.lastTreat = null; }
+
+      var skillKeys = ["combat", "survival", "stealth", "leadership", "trade", "medicine"];
+      var fresh = Bow.state.create(Bow.data, state.seed || 1);
+      if (state.player) {
+        if (!Bow.util.isPlainObject(state.player.skills)) { state.player.skills = {}; }
+        skillKeys.forEach(function (k) {
+          if (typeof state.player.skills[k] !== "number") {
+            state.player.skills[k] = fresh.player.skills[k] || 10;
+          }
+        });
+      }
+      Object.keys(state.people || {}).forEach(function (id) {
+        var p = state.people[id];
+        var f = fresh.people[id];
+        if (!Bow.util.isPlainObject(p.skills)) { p.skills = {}; }
+        skillKeys.forEach(function (k) {
+          if (typeof p.skills[k] !== "number") {
+            p.skills[k] = (f && f.skills && typeof f.skills[k] === "number") ? f.skills[k] : 10;
+          }
+        });
+      });
+
+      if (!Bow.util.isPlainObject(state.stats)) { state.stats = {}; }
+      if (typeof state.stats.pocketsPicked !== "number") { state.stats.pocketsPicked = 0; }
+      if (typeof state.stats.treats !== "number") { state.stats.treats = 0; }
+
+      state.version = "0.0.6.3";
+      return state;
     }
   };
 
@@ -151,6 +238,13 @@
         money: data.player.money,
         inventory: Bow.util.clone(data.player.inventory),
         conditions: [],
+        /* Статус жизни явный: бой и события проверяют его напрямую,
+           и «поля нет» не должно означать «мёртв». */
+        alive: true,
+        /* Постоянные травмы: [{ key, at }]. Навсегда, с последствиями. */
+        injuries: [],
+        /* Час последней перевязки (null — ещё ни разу не лечили). */
+        lastTreat: null,
         memory: []
       },
 
@@ -160,13 +254,23 @@
       reputation: {},
       /* Розыск по общинам: насколько ищут виновника. */
       heat: {},
+      /* Подготовка к краже по целям: { "person:liva": { study, distract } }. */
+      steal: {},
       journal: [],
       events: [],
       flags: {},
       /* Текущий разговор: { personId, nodeId, visited[], startedAt } */
       dialog: null,
-      /* Текущий бой: { personId, mode, phase, round, log[], witnesses[] } */
+      /* Текущий бой: { personId, mode, phase, round, log[], witnesses[], units[] } */
       fight: null,
+      /* Тюрьма: { hoursLeft, reason, since } — пока не null, игрок в клетке. */
+      jail: null,
+      /* Стража на улице: { phase, squad[], heatAt } */
+      guard: null,
+      /* Уличная встреча: { kind, robber, phase } */
+      encounter: null,
+      /* Смерть: { cause, text, hours }. Игра после неё не продолжается. */
+      dead: null,
       /* Счётчик визитов в локации — для сюжетных условий */
       visits: {},
 
@@ -177,7 +281,9 @@
         talksMade: 0,
         fightsWon: 0,
         fightsLost: 0,
-        sparsMade: 0
+        sparsMade: 0,
+        pocketsPicked: 0,
+        treats: 0
       }
     };
 
@@ -205,6 +311,8 @@
         memory: [],
         /* Личное отношение к игроку, -100..100 */
         attitude: 0,
+        /* Постоянные травмы жителя: тоже навсегда. */
+        injuries: [],
         /* Кошель: из него платят и его же можно лишиться. */
         money: typeof p.money === "number" ? p.money : 0,
         /* Оружие и броня берутся из данных и остаются на нём:
@@ -285,6 +393,9 @@
     need(state.dialog === null || Bow.util.isPlainObject(state.dialog), "поле dialog повреждено");
     need(state.fight === null || state.fight === undefined || Bow.util.isPlainObject(state.fight),
       "поле fight повреждено");
+    need(state.jail === null || state.jail === undefined || Bow.util.isPlainObject(state.jail),
+      "поле jail повреждено");
+    need(Array.isArray(state.player.injuries), "player.injuries не массив");
     need(Bow.util.isPlainObject(state.reputation || {}), "поле reputation не объект");
     if (Bow.util.isPlainObject(state.reputation)) {
       Object.keys(state.reputation).forEach(function (id) {

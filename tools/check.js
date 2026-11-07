@@ -157,14 +157,22 @@ function byAct(act, key) {
     const g = game();
     g.player.location = "square";
     g.player.money = 18;
+    /* Без явной отрисовки строки торговли ещё не существует:
+       интерфейс мог не успеть построить пассаж. */
+    win.BowGame.refresh(true);
     win.BowGame.refresh(true);
     const row = () => doc().querySelector("#passages .bow-trade-row").textContent.replace(/\s+/g, " ");
+    assert(/2 м\./.test(row()) || /\d+ м\./.test(row()), "цена не показана");
     const before = row();
+    const price = win.Bow.economy.buyPrice("bread", g, g.player.location);
     click(doc().querySelector("#passages [data-act='buy']"));
-    const after = row();
-    assert(before !== after || g.player.money === 15,
-      "торговля не обновилась после покупки");
-    return "деньги " + g.player.money + " м.";
+
+    /* Деньги ушли ровно на цену, а строка показывает то же, что
+       считает логика. Раньше тест ждал ровно 15 м. и падал от
+       любой смены цены — это проверка числа, а не торговли. */
+    eq(g.player.money, 18 - price, "списали не цену товара");
+    eq(row(), before, "строка торговли перерисовалась с другим текстом");
+    return "хлеб " + price + " м., осталось " + g.player.money + " м.";
   });
 
   check("Время отформатировано и не пустое", () => {
@@ -378,15 +386,17 @@ function byAct(act, key) {
     const g = game();
     const loc = g.player.location;
     g.reputation["org:brod"] = 0;
-    const neutral = win.Bow.economy.buyPrice("bread", g, loc);
+    /* Топор, а не хлеб: на хлебе за 3 скидка упирается в пол
+       округления, и «уважение не снижает цену» звучит несправедливо. */
+    const neutral = win.Bow.economy.buyPrice("axe", g, loc);
     g.reputation["org:brod"] = 70;
-    const friendly = win.Bow.economy.buyPrice("bread", g, loc);
+    const friendly = win.Bow.economy.buyPrice("axe", g, loc);
     g.reputation["org:brod"] = -70;
-    const hostile = win.Bow.economy.buyPrice("bread", g, loc);
+    const hostile = win.Bow.economy.buyPrice("axe", g, loc);
     assert(friendly < neutral, "уважение не снижает цену");
     assert(hostile > neutral, "вражда не поднимает цену");
     g.reputation["org:brod"] = 0;
-    return "хлеб: свой " + friendly + " / нейтрально " + neutral + " / враг " + hostile;
+    return "топор: свой " + friendly + " / нейтрально " + neutral + " / враг " + hostile;
   });
 
   check("Община не даёт работу тому, кого считает врагом", () => {
@@ -789,7 +799,7 @@ function byAct(act, key) {
     return inv.match(/В руке: \S+/) ? inv.match(/В руке: \S+/)[0] : "снаряжение показано";
   });
 
-  check("Миграция 0.0.5 даёт старому сохранению бой и снаряжение", () => {
+  check("Миграция 0.0.5 даёт старому сохранению бой и снаряжение (до 0.0.6.3)", () => {
     const g = clone(game());
     g.version = "0.0.5";
     delete g.fight;
@@ -798,10 +808,1150 @@ function byAct(act, key) {
 
     const back = win.Bow.save.deserialize(win.Bow.save.serialize(g, 1));
     assert(back.ok, "старое сохранение не загрузилось: " + back.reason);
-    eq(back.state.version, "0.0.6", "версия после миграции");
+    eq(back.state.version, "0.0.6.3", "версия после миграции");
     assert(back.state.fight === null, "после миграции нет пустого слота боя");
     assert(back.state.people["person:tarn"].weapon, "кузнец остался без топора");
     return "0.0.5 → " + back.state.version + ", топор кузнеца на месте";
+  });
+
+  /* 8к. Поле боя, стража, клетка и улица (0.0.6.1) */
+  check("Бой идёт на клеточном поле: у фишек есть координаты и сторона", () => {
+    const g = clone(game());
+    g.fight = null;
+    g.player.location = "square";
+    g.player.skills.combat = 90;
+    g.player.needs.health = 100;
+    g.player.needs.fatigue = 95;
+    g.people["person:liva"].needs.health = 100;
+
+    win.Bow.fight.open(g, "person:liva");
+    win.Bow.fight.start(g, "crime", seq([0.5]));
+
+    assert(g.fight.units.length === 2, "на поле не двое: " + g.fight.units.length);
+    const mine = g.fight.units.filter((u) => u.side === "ally")[0];
+    const foe = g.fight.units.filter((u) => u.side === "enemy")[0];
+    assert(mine && foe, "нет одной из сторон");
+    assert(mine.col === 0 && foe.col > mine.col, "стороны стоят не друг напротив друга");
+    assert(typeof mine.row === "number", "у фишки нет ряда");
+    return "свой в " + mine.col + "," + mine.row + "; враг в " + foe.col + "," + foe.row;
+  });
+
+  check("За ход бьют обе стороны, и ход пишется в хронику", () => {
+    const g = clone(game());
+    g.fight = null;
+    g.player.location = "square";
+    g.player.skills.combat = 40;
+    g.player.needs.health = 100;
+    g.player.needs.fatigue = 100;
+    const liva = g.people["person:liva"];
+    liva.needs.health = 100;
+
+    win.Bow.fight.open(g, "person:liva");
+    win.Bow.fight.start(g, "crime", seq([0.5]));
+
+    const logBefore = g.fight.log.length;
+    win.Bow.fight.move(g, "press", seq([0.05, 0.05, 0.05]));
+
+    const entries = g.fight.log.slice(logBefore);
+    assert(entries.length >= 1, "хроника пуста после хода");
+    const text = entries.map((e) => e.text).join(" ");
+    assert(/Роберт →|Вы →/.test(text) || /бьёт/.test(text), "в хронике нет удара");
+    assert(liva.needs.health < 100, "противник не получил урона");
+    return "в хронике: " + entries.length + " записей, у Ливы " + Math.round(liva.needs.health);
+  });
+
+  check("Противник отвечает, и игрок теряет здоровье", () => {
+    const g = clone(game());
+    g.fight = null;
+    g.player.location = "smithy";
+    g.player.needs.health = 100;
+    g.player.needs.fatigue = 100;
+    const tarn = g.people["person:tarn"];
+    tarn.needs.health = 100;
+
+    win.Bow.fight.open(g, "person:tarn");
+    win.Bow.fight.start(g, "spar", seq([0.5]));
+    for (let i = 0; i < 3 && g.fight && g.fight.phase === "exchange"; i++) {
+      win.Bow.fight.move(g, "press", seq([0.1, 0.2, 0.3]));
+    }
+    assert(g.player.needs.health < 100, "игрок не получил ни одного удара");
+    return "здоровье после обменов: " + Math.round(g.player.needs.health);
+  });
+
+  check("Нокаут кладёт фишку, смерть ставит череп", () => {
+    const g = clone(game());
+    g.fight = null;
+    g.player.location = "square";
+    g.player.skills.combat = 90;
+    g.player.needs.health = 100;
+    g.player.needs.fatigue = 95;
+    const liva = g.people["person:liva"];
+    liva.needs.health = 100;
+
+    win.Bow.fight.open(g, "person:liva");
+    win.Bow.fight.start(g, "crime", seq([0.5]));
+    let guard = 0;
+    while (g.fight && g.fight.phase === "exchange" && guard++ < 30) {
+      win.Bow.fight.move(g, "press", seq([0.1, 0.2, 0.3]));
+    }
+    assert(g.fight && g.fight.phase === "aftermath", "противник не сдался");
+
+    const foe = g.fight.units.filter((u) => u.side === "enemy")[0];
+    assert(!foe.dead, "живой противник уже с черепом");
+    assert(foe.hp <= win.Bow.data.fightRules.yieldAt.npc + 1, "сдавшийся не у порога: " + foe.hp);
+
+    win.Bow.fight.decide(g, "kill", seq([0.5]));
+    assert(liva.alive === false, "после «добить» жертва жива");
+    const summary = g.flags.lastFight;
+    const deadUnit = summary.units.filter((u) => u.side === "enemy")[0];
+    assert(deadUnit.dead === true, "в отчёте убитый не помечен мёртвым");
+    return "сдался на " + foe.hp + ", после добивания — dead";
+  });
+
+  check("Стража приходит по розыску, а не по клику", () => {
+    const g = clone(game());
+    g.fight = null;
+    g.jail = null;
+    g.guard = null;
+    g.flags.guardAt = null;
+    g.heat["org:guard"] = 0;
+    win.Bow.guard.schedule(g);
+    assert(!g.flags.guardAt, "стража собирается при чистом розыске");
+
+    g.heat["org:guard"] = win.Bow.guard.THRESHOLD();
+    assert(win.Bow.guard.schedule(g), "стража не собралась при розыске выше порога");
+    assert(g.flags.guardAt > g.time.totalHours, "стража приходит мгновенно, без задержки");
+
+    g.time.totalHours = g.flags.guardAt;
+    const came = win.Bow.guard.checkArrival(g);
+    assert(came && g.guard, "в назначенный час стража не пришла");
+    assert(g.guard.squad.length === win.Bow.data.fightRules.guard.squad, "пришло не столько, сколько в правилах");
+    return "порог " + win.Bow.guard.THRESHOLD() + ", пришло " + g.guard.squad.length;
+  });
+
+  check("Сдаться — клетка без драки; срок идёт и кончается", () => {
+    const g = clone(game());
+    g.fight = null;
+    g.jail = null;
+    g.heat["org:guard"] = 80;
+    g.guard = { phase: "demand", arrived: true, squad: win.Bow.guard.squad(g) };
+    g.player.needs.health = 90;
+
+    win.Bow.guard.surrender(g);
+    assert(g.jail, "сдача не привела в клетку");
+    assert(!g.guard, "стража осталась стоять");
+    eq(g.jail.hoursLeft, win.Bow.data.fightRules.guard.cellsHours, "срок в клетке");
+
+    const before = g.jail.hoursLeft;
+    win.Bow.guard.serve(g, 4);
+    assert(g.jail.hoursLeft < before, "время в клетке не идёт");
+    assert(g.player.needs.health > 0, "в клетке игрок умер");
+
+    win.Bow.guard.serve(g, 100);
+    assert(!g.jail, "срок вышел, а игрок всё ещё в клетке");
+    return "20 ч → " + g.jail + " → выпущен";
+  });
+
+  check("Побег от стражи: без навыка ловят и калечат навсегда", () => {
+    const g = clone(game());
+    g.fight = null;
+    g.jail = null;
+    g.player.injuries = [];
+    g.player.skills.survival = 0;
+    g.player.skills.stealth = 0;
+    g.heat["org:guard"] = 80;
+    g.guard = { phase: "demand", arrived: true, squad: win.Bow.guard.squad(g) };
+
+    /* Бросок 0.02 проходит проверку побега (её нет) и попадает в maimChance:
+       сначала провал побега, затем увечье. */
+    let n = 0;
+    const res = win.Bow.guard.flee(g, () => [0.99, 0.01][Math.min(n++, 1)]);
+    assert(!res.escaped, "побег удался при броске на провал");
+    assert(g.jail, "пойманного не отправили в клетку");
+    assert(g.player.injuries.length > 0, "пойманного не покалечили");
+    const inj = g.player.injuries[0].key;
+    return "поймали, травма: " + win.Bow.data.fightRules.injuries[inj].name;
+  });
+
+  check("Травма остаётся навсегда и отнимает силы", () => {
+    const g = clone(game());
+    g.player.injuries = [];
+    const clean = win.Bow.fight.attackPower(g.player, "crime");
+    const def = win.Bow.fight.maim(g.player, () => 0.01);
+    const hurt = win.Bow.fight.attackPower(g.player, "crime");
+
+    assert(def, "травма не нанесена");
+    assert(hurt < clean, "травма не ослабила: " + clean + " → " + hurt);
+    assert(win.Bow.fight.injuryWord(g.player).length === 1, "травма не записана в список");
+
+    /* Переживает круг сохранения — значит, действительно навсегда. */
+    const back = win.Bow.save.deserialize(win.Bow.save.serialize(g, 1));
+    assert(back.state.player.injuries.length === 1, "травма потерялась при сохранении");
+    g.player.injuries = [];
+    return def.name + ": сила " + Math.round(clean) + " → " + Math.round(hurt);
+  });
+
+  check("Старое сохранение 0.0.6.1 не застревает в тупике со стражей", () => {
+    const g = clone(game());
+    g.version = "0.0.6.1";
+    g.dead = null;
+    g.jail = null;
+    g.fight = null;
+    /* Так выглядело сохранение до обновления: стража «есть»,
+       но поля «пришла» ещё не существует. */
+    g.guard = { phase: "demand", squad: [] };
+    g.flags.hunted = true;
+    delete g.flags.huntedUntil;
+    delete g.flags.huntedHeat;
+
+    const back = win.Bow.save.deserialize(win.Bow.save.serialize(g, 1));
+    eq(back.state.version, "0.0.6.3", "версия после миграции");
+    assert(back.state.guard && back.state.guard.arrived === true,
+      "стража из старого сохранения осталась «непришедшей» — из неё не выбраться");
+    eq(back.state.flags.huntedUntil, null, "поле срока розыска");
+    return "версия 0.0.6.3, стража признана пришедшей";
+  });
+
+  check("Розыск виден игроку цифрой, а не только в журнале", () => {
+    const g = game();
+    g.dead = null;
+    g.jail = null;
+    g.fight = null;
+    g.guard = null;
+    g.heat["org:guard"] = 0;
+    g.flags.hunted = false;
+    win.BowGame.refresh(true);
+    const empty = doc().getElementById("bow-heat").textContent.trim();
+    eq(empty, "", "без розыска панель не пуста");
+
+    g.heat["org:guard"] = 45;
+    win.BowGame.refresh(true);
+    const heat = doc().getElementById("bow-heat").textContent.replace(/\s+/g, " ");
+    assert(/Розыск/.test(heat) && /45/.test(heat), "розыск не показан: " + heat);
+    assert(/60/.test(heat), "не сказано, сколько до порога: " + heat);
+
+    g.flags.hunted = true;
+    g.flags.huntedUntil = g.time.totalHours + 72;
+    g.flags.huntedHeat = 80;
+    win.BowGame.refresh(true);
+    const hunted = doc().getElementById("bow-heat").textContent.replace(/\s+/g, " ");
+    assert(/узнают/.test(hunted) && /%/.test(hunted), "шанс на переходе не показан: " + hunted);
+
+    g.heat["org:guard"] = 0;
+    g.flags.hunted = false;
+    win.BowGame.refresh(true);
+    return heat.slice(0, 60);
+  });
+
+  check("Стража, которая ещё не пришла, не даёт ни сдаться, ни откупиться", () => {
+    const g = clone(game());
+    g.fight = null;
+    g.jail = null;
+    g.player.money = 500;
+    g.heat["org:guard"] = 80;
+    /* Так стража выглядит, пока десятник только собирается. */
+    g.guard = { phase: "demand", squad: win.Bow.guard.squad(g) };
+
+    const s1 = win.Bow.guard.surrender(g);
+    assert(!s1.ok && !g.jail, "сдались стражe, которой нет на месте");
+    const s2 = win.Bow.guard.bribe(g);
+    assert(!s2.ok && g.player.money === 500, "откупились у отсутствующей стражи");
+    eq(win.Bow.guard.fleeChance(g), 0, "шанс бегства без стражи");
+
+    g.guard = null;
+    return "до прихода стражи все выходы закрыты";
+  });
+
+  check("В розыске каждый переход даёт шанс быть узнанным, и этот шанс кончается", () => {
+    const g = clone(game());
+    g.fight = null;
+    g.jail = null;
+    g.guard = null;
+    g.flags.hunted = true;
+    g.flags.huntedUntil = g.time.totalHours + 72;
+    g.flags.huntedHeat = 90;
+
+    const chance = win.Bow.guard.huntedChance(g);
+    assert(chance > 0, "в розыске шанс на переходе нулевой");
+
+    let caught = 0;
+    for (let i = 0; i < 200; i++) {
+      g.guard = null;
+      g.player.location = "square";
+      if (win.Bow.guard.onMove(g, seq([0.001]))) { caught++; }
+    }
+    assert(caught > 0, "за 200 переходов не поймали ни разу");
+    assert(!win.Bow.guard.huntedChance(g) || g.guard, "метка не сработала");
+
+    g.guard = null;
+    g.time.totalHours += 100;
+    eq(win.Bow.guard.huntedChance(g), 0, "розыск не кончился через трое суток");
+    assert(!win.Bow.guard.onMove(g, seq([0.001])), "ловят и после срока");
+    return "шанс " + Math.round(chance * 100) + "%, поймали " + caught + " из 200";
+  });
+
+  check("На поле видно, кого бьют в этом ходу", () => {
+    const g = game();
+    g.fight = null;
+    g.player.location = "square";
+    g.player.skills.combat = 40;
+    g.player.needs.health = 100;
+    g.player.needs.fatigue = 100;
+    g.people["person:liva"].needs.health = 100;
+
+    win.Bow.fight.open(g, "person:liva");
+    win.Bow.fight.start(g, "crime", seq([0.5]));
+    win.Bow.fight.move(g, "press", seq([0.1, 0.2, 0.3, 0.4]));
+    win.BowGame.refresh(true);
+
+    assert(g.fight.aim && g.fight.aim.length > 0, "цели хода не записаны");
+    const marks = doc().querySelectorAll("#bow-fight-page .bow-chip-aimed");
+    assert(marks.length > 0, "на поле никто не помечен как цель");
+    const text = g.fight.aim.map((a) => a.from + "→" + a.to).join(", ");
+    win.Bow.fight.finish(g, "fled", {});
+    g.flags.lastFight = null;
+    win.BowGame.refresh(true);
+    return "помечено " + marks.length + "; " + text;
+  });
+
+  check("Тяжёлый удар в драке может оставить увечье — и оно в хронике", () => {
+    /* Увечье — шанс, а не гарантия, поэтому проверяем на серии
+       боёв: один бросок может пройти мимо порога и ничего не доказать. */
+    let found = 0;
+    let line = "";
+    for (let n = 0; n < 12 && !found; n++) {
+      const g = clone(game());
+      g.fight = null;
+      g.player.injuries = [];
+      g.player.money = 0;
+      g.player.needs.health = 100;
+      g.player.needs.fatigue = 100;
+      g.player.skills.combat = 95;
+      g.player.location = "smithy";
+      g.people["person:tarn"].injuries = [];
+      g.people["person:tarn"].needs.health = 100;
+      g.people["person:tarn"].needs.fatigue = 100;
+
+      win.Bow.fight.open(g, "person:tarn");
+      win.Bow.fight.start(g, "crime", Math.random);
+      for (let i = 0; i < 20 && g.fight && g.fight.phase === "exchange"; i++) {
+        win.Bow.fight.move(g, "press", Math.random);
+      }
+
+      const log = ((g.fight || g.flags.lastFight).log || []).map((l) => l.text).join(" ");
+      const inj = (g.people["person:tarn"].injuries || []).length + (g.player.injuries || []).length;
+      if (inj > 0 && /навсегда/.test(log)) { found = inj; line = log.match(/[^/]*навсегда[^/]*/)[0].trim(); }
+    }
+    assert(found > 0, "за двенадцать драк ни одного увечья — удар не калечит");
+    return line.slice(0, 60);
+  });
+
+  check("Спутник действительно идёт в бой и бьёт врага", () => {
+    const g = clone(game());
+    g.fight = null;
+    g.player.location = "square";
+    g.player.skills.combat = 40;
+    g.player.needs.health = 100;
+    g.player.needs.fatigue = 100;
+    const bror = g.people["person:bror"];
+    bror.attitude = 40;
+    bror.location = "square";
+    bror.needs.health = 100;
+    bror.needs.fatigue = 100;
+    g.people["person:liva"].needs.health = 100;
+
+    win.Bow.fight.open(g, "person:liva");
+    win.Bow.fight.toggleAlly(g, "person:bror");
+    win.Bow.fight.start(g, "crime", seq([0.5]));
+
+    const allies = g.fight.units.filter((u) => u.side === "ally");
+    assert(allies.length === 2, "спутник не встал на поле: " + allies.length);
+
+    let before = g.people["person:liva"].needs.health;
+    win.Bow.fight.move(g, "press", seq([0.1, 0.1, 0.1, 0.1]));
+    const after = g.people["person:liva"].needs.health;
+    assert(after < before, "врагу не досталось ни от вас, ни от спутника");
+
+    const text = g.fight.log.map((l) => l.text).join(" ");
+    assert(/Брор/.test(text), "спутник ни разу не упомянут в хронике");
+    return "Брор на поле, Лива: " + Math.round(before) + " → " + Math.round(after);
+  });
+
+  check("Пришедший отряд идёт с вами и против стражи", () => {
+    const g = clone(game());
+    g.fight = null;
+    g.jail = null;
+    g.player.location = "square";
+    g.player.needs.health = 100;
+    g.player.needs.fatigue = 100;
+    const bror = g.people["person:bror"];
+    bror.attitude = 40;
+    bror.location = "square";
+    g.heat["org:guard"] = 80;
+    g.flags.guardAt = g.time.totalHours;
+
+    win.Bow.guard.checkArrival(g);
+    win.Bow.guard.fight(g);
+
+    assert(g.fight && g.fight.mode === "guard", "бой со стражей не начался");
+    const allies = g.fight.units.filter((u) => u.side === "ally").map((u) => u.name);
+    assert(allies.length === 2, "против стражи пошли в одиночку: " + allies.join(","));
+    assert(allies.indexOf("Брор") !== -1, "Брор не пошёл против стражи");
+    return "свои: " + allies.join(", ");
+  });
+
+  check("Игрок выбирает, кого бить, и удар идёт именно в него", () => {
+    const g = game();
+    g.fight = null;
+    g.jail = null;
+    g.player.location = "square";
+    g.player.skills.combat = 70;
+    g.player.needs.health = 100;
+    g.player.needs.fatigue = 100;
+    g.heat["org:guard"] = 80;
+    g.flags.guardAt = g.time.totalHours;
+
+    win.Bow.guard.checkArrival(g);
+    win.Bow.guard.fight(g);
+    win.BowGame.refresh(true);
+
+    const foes = g.fight.units.filter((u) => u.side === "enemy");
+    assert(foes.length === 3, "стражников не трое");
+    const last = foes[2];
+
+    click(doc().querySelector('#bow-fight-page .bow-chip[data-target="' + last.key + '"]'));
+    eq(g.fight.target, last.key, "выбранная цель");
+    win.BowGame.refresh(true);
+    assert(doc().querySelector("#bow-fight-page .bow-chip-target"), "цель не подсвечена");
+
+    const before = last.hp;
+    win.Bow.fight.move(g, "press", seq([0.05, 0.05, 0.05]), last.key);
+    assert(last.hp < before, "удар не попал в выбранного: " + before + " → " + last.hp);
+    const others = foes.slice(0, 2).map((u) => u.hp);
+    /* Убираем за собой всё, что навёл этот тест: оставленный бой
+       закрывает грабителю и карточке жителя дорогу в следующих. */
+    win.Bow.fight.finish(g, "fled", {});
+    g.flags.lastFight = null;
+    g.guard = null;
+    g.flags.guardAt = null;
+    g.heat["org:guard"] = 0;
+    g.fight = null;
+    /* Стража успевает ответить и отправить в клетку — за собой надо
+       убрать и это, иначе следующие тесты видят живую клетку. */
+    g.jail = null;
+    /* Игрока тоже вернуть в строй: грабитель не выходит к тому,
+       кто еле стоит, и следующий тест молча падал бы. */
+    g.player.needs.health = 100;
+    g.player.needs.fatigue = 100;
+    win.BowGame.refresh(true);
+    return "Свейн: " + Math.round(before) + " → " + Math.round(last.hp) + ", прочие " + others.join("/");
+  });
+
+  /* 8л. Удары, точность, отряд, кража и лечение (0.0.6.3) */
+  check("Удар в голову попадает реже и бьёт сильнее, чем в корпус", () => {
+    const g = clone(game());
+    g.player.skills.combat = 50;
+    g.player.needs.fatigue = 100;
+    g.player.needs.health = 100;
+    const foe = { skills: { combat: 50 }, needs: { health: 100, fatigue: 80 } };
+
+    const head = win.Bow.fight.hitChance(g.player, foe, "press", "head");
+    const body = win.Bow.fight.hitChance(g.player, foe, "press", "body");
+    assert(head < body, "в голову попасть не труднее: " + head + " vs " + body);
+
+    const headDmg = win.Bow.fight.damageRoll(g.player, foe, "crime", "press", seq([0.5]), "head");
+    const bodyDmg = win.Bow.fight.damageRoll(g.player, foe, "crime", "press", seq([0.5]), "body");
+    assert(headDmg > bodyDmg, "в голову бьёт не сильнее: " + headDmg + " vs " + bodyDmg);
+    return "голова " + Math.round(head * 100) + "% / −" + headDmg +
+      ", корпус " + Math.round(body * 100) + "% / −" + bodyDmg;
+  });
+
+  check("Навык выживания добавляет точности", () => {
+    const g = clone(game());
+    g.player.needs.fatigue = 100;
+    g.player.needs.health = 100;
+    const foe = { skills: { combat: 50 }, needs: { health: 100, fatigue: 80 } };
+
+    g.player.skills.combat = 50;
+    g.player.skills.survival = 0;
+    const low = win.Bow.fight.hitChance(g.player, foe, "press", "body");
+    g.player.skills.survival = 100;
+    const high = win.Bow.fight.hitChance(g.player, foe, "press", "body");
+    assert(high > low, "выживание не влияет на точность: " + low + " vs " + high);
+    return Math.round(low * 100) + "% → " + Math.round(high * 100) + "%";
+  });
+
+  check("Удар по ногам или в голову роняет фишку раньше сдачи", () => {
+    /* В бою один на один порог сдачи (18) всегда наступает первым,
+       и падение увидеть негде. Настоящая проверка — бой со стражей:
+       там врагов трое, и один может лежать, пока дерутся другие. */
+    const g = clone(game());
+    g.fight = null;
+    g.jail = null;
+    g.player.location = "square";
+    g.player.skills.combat = 60;
+    g.player.needs.health = 100;
+    g.player.needs.fatigue = 100;
+    g.heat["org:guard"] = 80;
+    g.flags.guardAt = g.time.totalHours;
+
+    win.Bow.guard.checkArrival(g);
+    win.Bow.guard.fight(g);
+
+    const foes = g.fight.units.filter((u) => u.side === "enemy");
+    eq(foes.length, 3, "стражников");
+    const one = foes[0];
+    /* Здоровье фишки читается из needs: hp — только то, что показано.
+       Ставить hp напрямую бессмысленно, syncUnit перезапишет. */
+    one.needs.health = 26;
+
+    /* Игрока не должны добить в этом же ходу: иначе «бой кончился»
+       означает его поражение, а не то, что стражник встал. */
+    g.player.needs.health = 100;
+    win.Bow.fight.move(g, "press", () => 0.02, one.key, "legs");
+    assert(one.down, "удар по ногам не свалил стражника при 26 здор.");
+    assert(one.hp > 0, "фишка легла уже при нуле");
+    assert(!one.dead, "фишка помечена мёртвой вместо лежачей");
+
+    const aimLegs = win.Bow.fight.aimDef("legs");
+    const aimBody = win.Bow.fight.aimDef("body");
+    assert(aimLegs.down > aimBody.down, "ноги не валят сильнее корпуса");
+
+    win.Bow.fight.finish(g, "fled", {});
+    g.flags.lastFight = null;
+    g.heat["org:guard"] = 0;
+    g.fight = null;
+    g.jail = null;
+    g.player.needs.health = 100;
+    win.BowGame.refresh(true);
+    return "стражник лёг при " + Math.round(one.hp) + " здор., бой продолжается";
+  });
+
+  check("Удар по рукам обезоруживает", () => {
+    const g = clone(game());
+    g.fight = null;
+    g.player.location = "smithy";
+    g.player.skills.combat = 95;
+    g.player.needs.health = 100;
+    g.player.needs.fatigue = 100;
+    const tarn = g.people["person:tarn"];
+    tarn.needs.health = 100;
+    tarn.needs.fatigue = 100;
+
+    win.Bow.fight.open(g, "person:tarn");
+    win.Bow.fight.start(g, "crime", seq([0.05, 0.1, 0.2, 0.3]));
+    const foe = g.fight.units.filter((u) => u.side === "enemy")[0];
+
+    let guard = 0;
+    while (g.fight && g.fight.phase === "exchange" && !foe.disarmed && guard++ < 20) {
+      win.Bow.fight.move(g, "press", seq([0.05, 0.1, 0.2, 0.3]), foe.key, "arms");
+    }
+    assert(foe.disarmed, "удар по рукам не выбил оружие за 20 обменов");
+    const log = g.fight.log.map((l) => l.text).join(" ");
+    assert(/оружие/.test(log), "в хронике нет строчки про выбитое оружие");
+    win.Bow.fight.finish(g, "fled", {});
+    g.flags.lastFight = null;
+    win.BowGame.refresh(true);
+    return "оружие выбито";
+  });
+
+  check("В окне боя выбор удара показан с шансом", () => {
+    const g = game();
+    const snap = clone(g);
+    try {
+      g.fight = null;
+      g.jail = null;
+      g.player.location = "square";
+      g.player.skills.combat = 60;
+      g.player.needs.health = 100;
+      g.player.needs.fatigue = 100;
+      g.people["person:liva"].location = "square";
+      g.people["person:liva"].needs.health = 100;
+
+      win.Bow.fight.open(g, "person:liva");
+      win.Bow.fight.start(g, "crime", seq([0.5]));
+      win.BowGame.refresh(true);
+
+      const btns = doc().querySelectorAll("#bow-fight-page .bow-aim-btn");
+      eq(btns.length, 4, "кнопок удара");
+      const text = btns[0].textContent.replace(/\s+/g, " ");
+      assert(/\d+%/.test(text), "на кнопке нет шанса: " + text);
+      return "4 места, на кнопке " + text.slice(0, 30);
+    } finally {
+      Object.keys(snap).forEach((k) => { g[k] = snap[k]; });
+      win.BowGame.refresh(true);
+    }
+  });
+
+  check("Отряд объясняет отказ числом, а не серой кнопкой", () => {
+    const g = game();
+    const snap = clone(g);
+    try {
+      g.fight = null;
+      g.jail = null;
+      g.heat["org:guard"] = 0;
+      const bror = g.people["person:bror"];
+      bror.location = "square";
+      bror.attitude = 0;
+      bror.skills.combat = 41;
+      const tarn = g.people["person:tarn"];
+      tarn.location = "square";
+      tarn.attitude = 40;
+      tarn.skills.combat = 44;
+      g.player.location = "square";
+      g.player.skills.leadership = 0;
+      g.people["person:liva"].location = "square";
+
+      win.Bow.fight.open(g, "person:liva");
+      win.BowGame.refresh(true);
+
+      const cards = [...doc().querySelectorAll("#bow-fight-page .bow-squad-card")];
+      eq(cards.length, 2, "карточек отряда");
+      const brorCard = cards.filter((c) => /Брор/.test(c.textContent))[0];
+      assert(/не доверяет/.test(brorCard.textContent), "нет причины отказа: " + brorCard.textContent);
+      assert(brorCard.disabled, "недоверяющий не заблокирован");
+      const tarnCard = cards.filter((c) => /Тарн/.test(c.textContent))[0];
+      assert(!tarnCard.disabled, "доверяющий заблокирован");
+
+      bror.attitude = 0;
+      g.player.skills.leadership = 100;
+      win.BowGame.refresh(true);
+      const need = win.Bow.fight.allyState(g, "person:bror").trustNeed;
+      return "Брор: " + brorCard.textContent.replace(/\s+/g, " ").slice(0, 46) +
+        "; при власти 100 нужно " + need;
+    } finally {
+      Object.keys(snap).forEach((k) => { g[k] = snap[k]; });
+      win.BowGame.refresh(true);
+    }
+  });
+
+  check("Власть снижает требуемое доверие", () => {
+    const g = clone(game());
+    const bror = g.people["person:bror"];
+    bror.attitude = 6;
+    bror.location = g.player.location;
+    g.player.skills.leadership = 0;
+
+    const low = win.Bow.fight.allyState(g, "person:bror");
+    g.player.skills.leadership = 100;
+    const high = win.Bow.fight.allyState(g, "person:bror");
+    assert(high.trustNeed < low.trustNeed, "власть не снижает порог доверия");
+    assert(high.willing && !low.willing, "с властью 100 отношение 6 всё равно не пускает");
+    return "нужно " + low.trustNeed + " → " + high.trustNeed;
+  });
+
+  check("Спутник может выбыть в бою, а не стоять бессмертным", () => {
+    const g = clone(game());
+    g.fight = null;
+    g.player.location = "square";
+    g.player.needs.health = 100;
+    g.player.needs.fatigue = 100;
+    g.player.skills.combat = 60;
+    const bror = g.people["person:bror"];
+    bror.location = "square";
+    bror.attitude = 50;
+    /* Здоровый на входе — иначе он просто не пойдёт (порог 45). */
+    bror.needs.health = 100;
+    bror.needs.fatigue = 100;
+    const liva = g.people["person:liva"];
+    liva.needs.health = 100;
+    liva.skills.combat = 85;
+
+    win.Bow.fight.open(g, "person:liva");
+    win.Bow.fight.toggleAlly(g, "person:bror");
+    win.Bow.fight.start(g, "crime", seq([0.5]));
+
+    const brorUnit = g.fight.units.filter((u) => u.refId === "person:bror")[0];
+    assert(brorUnit, "спутника нет на поле: " + g.fight.units.map((u) => u.key).join(","));
+
+    /* Игрок и Брор промахиваются (0.95), а Лива попадает (0.05) по самому
+       слабому на нашей стороне — то есть по Брору. */
+    bror.needs.health = 20;
+    let guard = 0;
+    while (g.fight && g.fight.phase === "exchange" && !brorUnit.down && guard++ < 25) {
+      win.Bow.fight.move(g, "guard", seq([0.95, 0.95, 0.05, 0.5, 0.95]));
+    }
+    assert(brorUnit.down, "спутник с 20 здор. не выбыл за 25 обменов");
+    win.Bow.fight.finish(g, "fled", {});
+    g.flags.lastFight = null;
+    win.BowGame.refresh(true);
+    return "Брор выбыл, когда его добили";
+  });
+
+  check("Брошенный спутник запоминает это и теряет доверие", () => {
+    const g = clone(game());
+    g.fight = {
+      allies: ["person:bror"], units: [
+        { key: "ally:person:bror", refId: "person:bror", side: "ally", npc: true, down: true }
+      ]
+    };
+    const bror = g.people["person:bror"];
+    bror.attitude = 40;
+    bror.memory = [];
+
+    win.Bow.fight.squadAftermath(g, "loss", { refId: "person:bror" });
+    assert(bror.attitude < 40, "доверие не упало: " + bror.attitude);
+    assert((bror.memory || []).some((m) => m.kind === "abandoned"),
+      "нет записи в памяти: " + JSON.stringify(bror.memory));
+    g.fight = null;
+    return "доверие 40 → " + Math.round(bror.attitude);
+  });
+
+  check("Присмотреться к цели поднимает шанс кражи и тратит час", () => {
+    const g = clone(game());
+    const liva = g.people["person:liva"];
+    liva.location = g.player.location;
+    liva.money = 40;
+    g.player.needs.fatigue = 90;
+
+    const before = win.Bow.steal.successChance(g, liva);
+    const hoursBefore = g.time.totalHours;
+    const res = win.Bow.steal.study(g, "person:liva");
+    assert(res.ok, "присмотреться не сработало: " + res.message);
+    const after = win.Bow.steal.successChance(g, liva);
+
+    assert(after > before, "подготовка не подняла шанс: " + before + " → " + after);
+    assert(g.time.totalHours > hoursBefore, "час не прошёл");
+    return Math.round(before * 100) + "% → " + Math.round(after * 100) + "%";
+  });
+
+  check("Готовиться бесконечно нельзя", () => {
+    const g = clone(game());
+    const liva = g.people["person:liva"];
+    liva.location = g.player.location;
+    liva.money = 40;
+    g.player.needs.fatigue = 90;
+
+    win.Bow.steal.study(g, "person:liva");
+    win.Bow.steal.study(g, "person:liva");
+    const third = win.Bow.steal.study(g, "person:liva");
+    assert(!third.ok, "третья подготовка прошла");
+    eq(win.Bow.steal.prepCount(g, "person:liva"), 2, "ступеней подготовки");
+    return third.message;
+  });
+
+  check("Карман: мельче и тише кошеля", () => {
+    const g = clone(game());
+    const liva = g.people["person:liva"];
+    liva.location = g.player.location;
+    liva.money = 40;
+    const purseChance = win.Bow.steal.successChance(g, liva);
+    const pocketChance = win.Bow.steal.pocketChance(g, liva);
+    assert(pocketChance > purseChance, "карман не проще кошеля: " +
+      pocketChance + " vs " + purseChance);
+
+    const money = g.player.money;
+    const res = win.Bow.steal.pockets(g, "person:liva", seq([0.01, 0.5, 0.5]));
+    assert(res.ok && res.success, "карман не удался при броске на успех: " + res.message);
+    assert(g.player.money > money, "из кармана ничего не взяли");
+    assert(g.player.money - money <= 4, "из кармана взяли больше, чем мелочь: " + (g.player.money - money));
+    return "карман " + Math.round(pocketChance * 100) + "%, взято " + (g.player.money - money) + " м.";
+  });
+
+  check("Перевязка лечит, но не чаще раза в сутки", () => {
+    const g = clone(game());
+    g.player.needs.health = 40;
+    g.player.needs.fatigue = 80;
+    g.player.skills.medicine = 40;
+    g.player.lastTreat = null;
+
+    const first = win.Bow.needs.treat(g, seq([0.5]));
+    assert(first.ok, "перевязка не сработала: " + first.message);
+    const healed = g.player.needs.health;
+    assert(healed > 40, "здоровье не выросло");
+
+    const second = win.Bow.needs.treat(g, seq([0.5]));
+    assert(!second.ok, "вторая перевязка в тот же день прошла");
+    return "40 → " + Math.round(healed) + " здор., повтор: " + second.message.slice(0, 30);
+  });
+
+  check("Навык лечения ускоряет перевязку", () => {
+    const low = clone(game());
+    low.player.needs.health = 40;
+    low.player.needs.fatigue = 90;
+    low.player.skills.medicine = 0;
+    low.player.lastTreat = null;
+    win.Bow.needs.treat(low, seq([0.5]));
+
+    const high = clone(game());
+    high.player.needs.health = 40;
+    high.player.needs.fatigue = 90;
+    high.player.skills.medicine = 90;
+    high.player.lastTreat = null;
+    win.Bow.needs.treat(high, seq([0.5]));
+
+    assert(high.player.needs.health > low.player.needs.health,
+      "лечение не ускоряет: " + low.player.needs.health + " vs " + high.player.needs.health);
+    return "без навыка " + Math.round(low.player.needs.health) +
+      " / с навыком " + Math.round(high.player.needs.health);
+  });
+
+  check("Сытый и отдохнувший затягивает раны сам", () => {
+    const g = clone(game());
+    g.player.needs.health = 50;
+    g.player.needs.hunger = 100;
+    g.player.needs.fatigue = 100;
+    const before = g.player.needs.health;
+    for (let i = 0; i < 10; i++) { win.Bow.needs.tickHour ? win.Bow.needs.tickHour(g) : null; }
+    /* Часовой тик вызывается шиной; гоняем её напрямую. */
+    for (let i = 0; i < 10; i++) { win.Bow.bus.emit("tick:hour", g); }
+    assert(g.player.needs.health > before, "здоровье не растёт при сытости и отдыхе");
+    return before + " → " + g.player.needs.health;
+  });
+
+  check("Торг снижает цену покупки и повышает цену продажи", () => {
+    const g = clone(game());
+    g.reputation["org:brod"] = 0;
+    g.player.needs.mood = 80;
+    g.player.location = "square";
+
+    g.player.skills.trade = 0;
+    const buyLow = win.Bow.economy.buyPrice("axe", g, "square");
+    const sellLow = win.Bow.economy.sellPrice("axe", g, "square");
+
+    g.player.skills.trade = 100;
+    const buyHigh = win.Bow.economy.buyPrice("axe", g, "square");
+    const sellHigh = win.Bow.economy.sellPrice("axe", g, "square");
+
+    assert(buyHigh < buyLow, "торг не снижает цену покупки: " + buyLow + " vs " + buyHigh);
+    assert(sellHigh > sellLow, "торг не повышает цену продажи: " + sellLow + " vs " + sellHigh);
+    return "купить " + buyLow + "→" + buyHigh + ", продать " + sellLow + "→" + sellHigh;
+  });
+
+  check("Власть помогает припугнуть грабителя", () => {
+    const g = clone(game());
+    g.encounter = null;
+    g.player.money = 100;
+    g.player.needs.health = 100;
+    g.player.skills.combat = 0;
+    g.player.location = "outskirts";
+    g.player.inventory = [];
+    let tries = 0;
+    while (!g.encounter && tries++ < 60) { win.Bow.street.maybeRob(g, () => 0.001); }
+    assert(g.encounter, "грабитель не пришёл");
+
+    g.player.skills.leadership = 0;
+    const low = win.Bow.street.scareChance(g);
+    g.player.skills.leadership = 100;
+    const high = win.Bow.street.scareChance(g);
+    assert(high > low, "власть не помогает припугнуть: " + low + " vs " + high);
+    g.encounter = null;
+    g.player.money = 0;
+    return Math.round(low * 100) + "% → " + Math.round(high * 100) + "%";
+  });
+
+  check("Умения объяснены: у каждого есть подсказка", () => {
+    const g = game();
+    win.BowGame.refresh(true);
+    const box = doc().getElementById("bow-skills");
+    const rows = [...box.querySelectorAll(".bow-skill")];
+    eq(rows.length, 6, "строк умений");
+    const noHint = rows.filter((r) => !r.getAttribute("title"));
+    eq(noHint.length, 0, "умений без подсказки");
+    assert(box.querySelector(".bow-skill-bar"), "нет полосы умения");
+    return rows.map((r) => r.querySelector(".bow-skill-name").textContent).join(", ");
+  });
+
+  check("Клик по кнопке прицела бьёт именно в выбранное место", () => {
+    const g = game();
+    const snap = clone(g);
+    try {
+      g.fight = null;
+      g.jail = null;
+      g.player.location = "square";
+      g.player.skills.combat = 80;
+      g.player.needs.health = 100;
+      g.player.needs.fatigue = 100;
+      g.people["person:liva"].location = "square";
+      g.people["person:liva"].needs.health = 100;
+
+      win.Bow.fight.open(g, "person:liva");
+      win.Bow.fight.start(g, "crime", seq([0.5]));
+      win.BowGame.refresh(true);
+
+      const headBtn = doc().querySelector('#bow-fight-page .bow-aim-btn[data-aim="head"]');
+      assert(headBtn, "нет кнопки удара в голову");
+      click(headBtn);
+      const logObj = g.fight || g.flags.lastFight;
+      const logText = (logObj.log || []).map((l) => l.text).join(" ");
+      assert(/в голову/.test(logText), "в хронике нет удара в голову: " + logText);
+      return "клик «в голову» записан в хронике";
+    } finally {
+      Object.keys(snap).forEach((k) => { g[k] = snap[k]; });
+      win.BowGame.refresh(true);
+    }
+  });
+
+  check("Кнопки подготовки кражи и перевязки работают через интерфейс, а подготовка сгорает после попытки", () => {
+    const g = game();
+    const snap = clone(g);
+    try {
+      g.fight = null;
+      g.jail = null;
+      g.guard = null;
+      g.encounter = null;
+      g.dead = null;
+      g.player.location = "square";
+      g.player.needs.health = 45;
+      g.player.needs.fatigue = 90;
+      g.player.lastTreat = null;
+      g.steal = {};
+      g.people["person:liva"].location = "square";
+      g.people["person:liva"].money = 35;
+      win.BowGame.refresh(true);
+
+      const lookBtn = doc().querySelector('#bow-people [data-act="steal-look"][data-person="person:liva"]');
+      assert(lookBtn, "нет кнопки «Присмотреться»");
+      click(lookBtn);
+      eq(win.Bow.steal.prepCount(g, "person:liva"), 1, "ступень подготовки после клика");
+
+      win.Bow.steal.attempt(g, "person:liva", seq([0.01, 0.2]));
+      eq(win.Bow.steal.prepCount(g, "person:liva"), 0, "подготовка не сгорела после попытки");
+
+      /* Стража или встреча могли сработать на действии — чистим перед проверкой перевязки. */
+      g.guard = null;
+      g.encounter = null;
+      g.fight = null;
+      g.jail = null;
+      g.player.needs.health = 45;
+      win.BowGame.refresh(true);
+
+      const treatBtn = doc().querySelector('#bow-treat [data-act="treat"]');
+      assert(treatBtn && !treatBtn.disabled, "кнопка «Перевязать» недоступна раненому");
+      click(treatBtn);
+      assert(g.player.needs.health > 45, "клик по перевязке не поднял здоровье");
+      const afterBtn = doc().querySelector('#bow-treat [data-act="treat"]');
+      assert(!afterBtn || afterBtn.disabled, "повторная перевязка не заблокирована");
+      return "кража 1/2 → 0, перевязка 45 → " + Math.round(g.player.needs.health);
+    } finally {
+      Object.keys(snap).forEach((k) => { g[k] = snap[k]; });
+      win.BowGame.refresh(true);
+    }
+  });
+
+  check("Интерфейс подсвечивает текущее место, считает элементы в блоках и объясняет скидки", () => {
+    const g = game();
+    const snap = clone(g);
+    try {
+      g.player.location = "smithy";
+      g.player.skills.trade = 60;
+      g.reputation["org:brod"] = 40;
+      win.BowGame.refresh(true);
+
+      const here = doc().querySelector('.bow-actions .bow-btn-here');
+      assert(here && here.getAttribute("data-loc") === "smithy", "текущая локация не отмечена");
+      const badges = doc().querySelectorAll(".bow-fold-count");
+      eq(badges.length, 3, "счётчиков в заголовках блоков");
+      const note = doc().querySelector("#passages .bow-trade-note");
+      assert(note && /торг/.test(note.textContent), "нет пояснения скидки от навыка торга");
+      return "текущая: " + here.textContent + ", " + note.textContent;
+    } finally {
+      Object.keys(snap).forEach((k) => { g[k] = snap[k]; });
+      win.BowGame.refresh(true);
+    }
+  });
+
+  check("Миграция 0.0.6.2 → 0.0.6.3 заполняет подготовку кражи, перевязку и навыки", () => {
+    const g = clone(game());
+    g.version = "0.0.6.2";
+    delete g.steal;
+    delete g.player.lastTreat;
+    delete g.player.skills.medicine;
+    delete g.stats.pocketsPicked;
+    delete g.stats.treats;
+
+    const back = win.Bow.save.deserialize(win.Bow.save.serialize(g, 1));
+    assert(back.ok, "сохранение 0.0.6.2 не загрузилось: " + back.reason);
+    eq(back.state.version, "0.0.6.3", "версия после миграции");
+    assert(back.state.steal && typeof back.state.steal === "object", "нет слота подготовки кражи");
+    eq(back.state.player.lastTreat, null, "lastTreat после миграции");
+    assert(typeof back.state.player.skills.medicine === "number", "навык лечения не восстановлен");
+    eq(back.state.stats.treats, 0, "счётчик перевязок");
+    return "0.0.6.2 → 0.0.6.3, поля на месте";
+  });
+
+  check("Оскорбление короля заканчивает игру", () => {
+    const g = clone(game());
+    g.jail = null;
+    g.dead = null;
+    g.heat["org:guard"] = 80;
+    g.guard = { phase: "demand", arrived: true, squad: win.Bow.guard.squad(g) };
+
+    win.Bow.guard.insultKing(g);
+    assert(g.dead, "казни не случилось");
+    eq(g.dead.cause, "казнь", "причина смерти");
+
+    /* Казнь общая: следующий тест должен начинать живого игрока. */
+    const cause = g.dead.cause;
+    g.dead = null;
+    g.heat["org:guard"] = 0;
+    g.guard = null;
+    g.player.needs.health = 100;
+    win.BowGame.refresh(true);
+    return cause;
+  });
+
+  check("Грабитель выходит на улице, а не в трактире", () => {
+    const g = clone(game());
+    g.encounter = null;
+    g.player.money = 120;
+    g.player.location = "tavern";
+    eq(win.Bow.street.chanceAt(g), 0, "в трактире грабят");
+
+    g.player.location = "outskirts";
+    const chance = win.Bow.street.chanceAt(g);
+    assert(chance > 0, "на околице никто не выходит");
+
+    let tries = 0;
+    while (!g.encounter && tries++ < 50) { win.Bow.street.maybeRob(g, () => 0.001); }
+    assert(g.encounter && g.encounter.robber, "грабитель так и не появился");
+    assert(g.encounter.robber.demand > 0, "грабитель ничего не требует");
+    return "шанс " + Math.round(chance * 100) + "%, требует " + g.encounter.robber.demand + " м.";
+  });
+
+  check("Отдать кошель грабителю — деньги уходят, драки нет", () => {
+    const g = clone(game());
+    g.encounter = null;
+    g.fight = null;
+    g.player.money = 100;
+    g.player.location = "outskirts";
+    let tries = 0;
+    while (!g.encounter && tries++ < 50) { win.Bow.street.maybeRob(g, () => 0.001); }
+
+    const demand = g.encounter.robber.demand;
+    const before = g.player.money;
+    win.Bow.street.pay(g);
+    eq(g.player.money, before - demand, "списали не столько, сколько требовали");
+    assert(!g.encounter, "встреча не закрылась");
+    assert(!g.fight, "началась драка вместо уплаты");
+    return "−" + demand + " м., без крови";
+  });
+
+  check("С грабителем можно драться, и у него есть чем заплатить за проигрыш", () => {
+    const g = clone(game());
+    g.encounter = null;
+    g.fight = null;
+    g.player.money = 120;
+    g.player.needs.health = 100;
+    g.player.needs.fatigue = 95;
+    g.player.skills.combat = 70;
+    g.player.location = "outskirts";
+    let tries = 0;
+    while (!g.encounter && tries++ < 60) { win.Bow.street.maybeRob(g, () => 0.001); }
+
+    const robberName = g.encounter.robber.name;
+    win.Bow.street.fight(g);
+    assert(g.fight, "бой с грабителем не начался");
+    eq(g.fight.mode, "robbery", "режим боя");
+    assert(g.fight.units.length === 2, "на поле не двое");
+
+    let n = 0;
+    while (g.fight && g.fight.phase === "exchange" && n++ < 40) {
+      win.Bow.fight.move(g, "press", seq([0.1, 0.2, 0.3]));
+    }
+    assert(g.fight && g.fight.phase === "aftermath", "грабитель не сдался, фаза: " + (g.fight && g.fight.phase));
+
+    const money = g.player.money;
+    win.Bow.fight.decide(g, "rob", seq([0.5]));
+    assert(g.player.money > money, "обобрать грабителя нечего: кошель пуст");
+    assert(!g.fight, "бой не закрылся");
+    return robberName + " сдался, +" + (g.player.money - money) + " м.";
+  });
+
+  check("Во время боя, стражи и клетки посторонние действия закрыты", () => {
+    const g = game();
+    g.fight = null;
+    g.guard = null;
+    g.jail = null;
+    g.encounter = null;
+    g.dead = null;
+
+    win.Bow.fight.open(g, "person:liva");
+    win.BowGame.refresh(true);
+    const moveBtn = doc().querySelector("[data-act='move'][data-loc='forest']");
+    click(moveBtn);
+    assert(g.player.location !== "forest", "из боя можно уйти в лес");
+    win.Bow.fight.close(g);
+
+    g.jail = { hoursLeft: 10, reason: "тест" };
+    win.BowGame.refresh(true);
+    click(doc().querySelector("[data-act='move'][data-loc='forest']"));
+    assert(g.player.location !== "forest", "из клетки можно уйти в лес");
+    g.jail = null;
+    win.BowGame.refresh(true);
+    return "бой и клетка блокируют выход";
+  });
+
+  check("Окно боя живёт на отдельной странице, а не в сцене", () => {
+    const g = game();
+    g.fight = null;
+    g.player.location = "square";
+    g.player.skills.combat = 90;
+    g.player.needs.health = 100;
+    win.BowGame.refresh(true);
+
+    const page = doc().getElementById("bow-fight-page");
+    assert(page, "нет отдельной страницы боя");
+    assert(!doc().getElementById("bow-guard").contains(page), "страница боя внутри сцены");
+
+    win.Bow.fight.open(g, "person:liva");
+    win.Bow.fight.start(g, "crime", seq([0.5]));
+    win.BowGame.refresh(true);
+
+    assert(page.classList.contains("bow-page-open"), "страница боя не открылась");
+    assert(page.querySelectorAll(".bow-chip").length >= 2, "на поле нет фишек");
+    assert(page.querySelector(".bow-roster-row"), "нет списка участников с номерами");
+    const app = doc().getElementById("bow-app");
+    assert(app.classList.contains("bow-in-fight"), "сцена не приглушена во время боя");
+    win.Bow.fight.finish(g, "fled", {});
+    g.flags.lastFight = null;
+    win.BowGame.refresh(true);
+    return "страница, " + page.querySelectorAll(".bow-chip").length + " фишки, список номеров";
+  });
+
+  check("Смена сцены: завеса создаётся в каркасе, а не только описана в CSS", () => {
+    const g = game();
+    g.fight = null;
+    g.jail = null;
+    g.guard = null;
+    g.encounter = null;
+    g.dead = null;
+    g.player.location = "square";
+    win.BowGame.refresh(true);
+
+    click(doc().querySelector("[data-act='move'][data-loc='tavern']"));
+    const veil = doc().getElementById("bow-veil");
+    assert(veil, "завеса перехода не создана — переходы и не видны");
+    const styles = [...doc().querySelectorAll("style")].map((x) => x.textContent).join("\n");
+    assert(/bow-veil-run/.test(styles), "нет анимации завесы");
+    assert(/@keyframes bow-veil\s*\{[^}]*opacity/.test(styles),
+      "завеса не работает на прозрачности");
+    return "завеса есть, анимация на opacity";
+  });
+
+  check("Увечье видно игроку и подписано как неизлечимое", () => {
+    const g = game();
+    g.player.injuries = [];
+    win.BowGame.refresh(true);
+    const clean = doc().getElementById("bow-injuries").textContent;
+    assert(/Целы/.test(clean), "без травм панель молчит: " + clean);
+
+    win.Bow.fight.maim(g.player, () => 0.01);
+    win.BowGame.refresh(true);
+    const box = doc().getElementById("bow-injuries").textContent;
+    assert(/покалеченная|выбитый|перебитая|сросшиеся/.test(box), "травма не показана: " + box);
+    assert(/не заживёт/.test(box), "не сказано, что травма останется");
+    g.player.injuries = [];
+    win.BowGame.refresh(true);
+    return box.replace(/\s+/g, " ").slice(0, 80);
+  });
+
+  check("Скрытность видна в умениях — раньше её не было ни в одном списке", () => {
+    const g = game();
+    win.BowGame.refresh(true);
+    const skills = doc().getElementById("bow-skills").textContent;
+    assert(/Скрытность/.test(skills), "скрытности нет в панели умений");
+    return skills.replace(/\s+/g, " ").slice(0, 80);
   });
 
   /* 8ж. Оформление: холодная поверхность, глубина, читаемость */

@@ -1,6 +1,6 @@
 :: Story Stylesheet [stylesheet]
 /* ============================================================
-   BLADES OF WAR — оформление прототипа 0.0.6
+   BLADES OF WAR — оформление прототипа 0.0.6.3
    Палитра: холодный камень, серебро, воронёная сталь, бордо.
    Схема: верхняя палка + выдвижная панель + рельса значков.
    Адаптив: компьютер → планшет → телефон.
@@ -79,8 +79,8 @@
    Реализовано на CSS-анимации, класс вешает интерфейс.
    ============================================================ */
 @keyframes bow-fade-in {
-  from { opacity: 0; transform: translateY(6px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 
 @keyframes bow-veil {
@@ -88,8 +88,18 @@
   100% { opacity: 0; }
 }
 
+/* Смена сцены: короткая тень поверх, затем проявление.
+   Только прозрачность — она не вызывает морской болезни и
+   не глушится настройкой «уменьшить движение» у большинства людей. */
 .bow-scene.bow-scene-fade {
-  animation: bow-fade-in 460ms ease-out both;
+  animation: bow-fade-in 320ms ease-out both;
+}
+
+/* Завеса живёт в каркасе, а не в разметке пассажа: раньше она была
+   описана в CSS, но ни разу не создавалась в DOM — потому переходы
+   и «не работали». */
+.bow-veil-run {
+  animation: bow-veil 320ms ease-out forwards;
 }
 
 /* Короткая «завеса» поверх сцены — как закрывающийся и открывающийся
@@ -100,7 +110,7 @@
   background: var(--bow-bg-deep);
   pointer-events: none;
   z-index: 40;
-  animation: bow-veil 380ms ease-out forwards;
+  opacity: 0;
 }
 
 /* --- Сброс внутри оболочки SugarCube --- */
@@ -600,9 +610,34 @@ body {
   gap: 5px;
 }
 
+.bow-skill-name { color: var(--bow-text); }
+
+/* Полоса умения: видно, далеко ли до сотни, не читая число. */
+.bow-skill-bar {
+  display: block;
+  height: 4px;
+  background: var(--bow-surface-1);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.bow-skill-bar i {
+  display: block;
+  height: 100%;
+  background: var(--bow-steel);
+  transition: width 200ms ease;
+}
+
+.bow-skill-low .bow-skill-bar i { background: var(--bow-faint); }
+.bow-skill-mid .bow-skill-bar i { background: var(--bow-steel); }
+.bow-skill-high .bow-skill-bar i { background: var(--bow-good); }
+.bow-skill b { text-align: right; color: var(--bow-silver); font-variant-numeric: tabular-nums; }
+
 .bow-skill {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: 1fr 52px 34px;
+  align-items: center;
+  gap: 8px;
   font-family: var(--bow-mono);
   font-size: 0.72rem;
   color: var(--bow-dim);
@@ -612,6 +647,109 @@ body {
 }
 
 .bow-skill b { color: var(--bow-silver); }
+
+/* --- Розыск в верхней палке ---
+   Пусто, пока за игроком не идут: лишних строк в мирное время нет. */
+.bow-heat { display: none; }
+.bow-heat.bow-heat-on {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  padding: 5px 14px;
+  font-size: 0.7rem;
+  color: var(--bow-dim);
+  border-top: 1px solid var(--bow-line-soft);
+  background: var(--bow-surface-1);
+}
+
+.bow-heat-line b { color: var(--bow-silver); font-weight: 600; }
+.bow-heat-hunted { color: var(--bow-crit); }
+.bow-heat-hunted b { color: var(--bow-crit); }
+
+/* --- Тело: постоянные увечья ---
+   Тихая, но заметная строка: игрок должен понимать, что это навсегда. */
+.bow-injuries { display: flex; flex-direction: column; gap: 4px; }
+
+.bow-injury {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 5px 8px;
+  border-left: 2px solid var(--bow-crit);
+  background: var(--bow-surface-2);
+}
+
+.bow-injury-name {
+  font-size: 0.78rem;
+  color: var(--bow-text);
+  letter-spacing: 0.02em;
+}
+
+.bow-injury-effect {
+  font-size: 0.68rem;
+  color: var(--bow-dim);
+}
+
+.bow-injury-note {
+  margin-top: 4px;
+  font-size: 0.66rem;
+  color: var(--bow-faint);
+  font-style: italic;
+}
+
+/* --- Кража: подготовка и карманы ---
+   Три ступени в одном блоке: приглядеться, отвлечь, взять.
+   Раньше была одна кнопка, и выбора не было вовсе. */
+.bow-steal-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--bow-line-soft);
+  width: 100%;
+}
+
+.bow-steal-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 0.72rem;
+  color: var(--bow-dim);
+}
+.bow-steal-head b { color: var(--bow-good); font-variant-numeric: tabular-nums; }
+.bow-crit-text { color: var(--bow-crit) !important; }
+
+.bow-steal-acts { display: flex; gap: 6px; flex-wrap: wrap; }
+.bow-steal-acts .bow-trade-btn { flex: 1 1 auto; min-width: 96px; }
+
+.bow-steal-prep {
+  font-size: 0.64rem;
+  color: var(--bow-faint);
+}
+.bow-steal-prep b { color: var(--bow-silver); }
+
+/* --- Лечение --- */
+.bow-treat { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; }
+
+.bow-treat-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.bow-treat-gain {
+  font-size: 0.8rem;
+  color: var(--bow-good);
+  font-variant-numeric: tabular-nums;
+}
+
+.bow-treat-note {
+  font-size: 0.64rem;
+  color: var(--bow-faint);
+  line-height: 1.35;
+}
 
 /* --- Инвентарь --- */
 .bow-inventory { display: flex; flex-direction: column; gap: 4px; }
@@ -1360,6 +1498,310 @@ body {
 
 .bow-loadout b { color: var(--bow-dim); font-weight: 600; }
 
+/* ============================================================
+   БОЙ НА ОТДЕЛЬНОЙ СТРАНИЦЕ (0.0.6.1)
+   Поле — простая сетка, фишки — прямоугольники с номером.
+   Стиль намеренно грубый, как в тактических играх прошлого:
+   читается с одного взгляда, ничего лишнего.
+   ============================================================ */
+.bow-fight-page {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  overflow-y: auto;
+  background: radial-gradient(120% 90% at 50% 0%, #1b2530 0%, var(--bow-bg) 60%, var(--bow-bg-deep) 100%);
+  padding: var(--bow-s5) var(--bow-s4) var(--bow-s6);
+}
+
+.bow-fight-page.bow-page-open { display: block; }
+
+.bow-fight-page-inner {
+  max-width: 980px;
+  margin: 0 auto;
+}
+
+/* Сцена под боем гаснет: внимание одно. */
+.bow-app.bow-in-fight .bow-main { filter: brightness(0.5) saturate(0.7); pointer-events: none; }
+
+/* --- Поле --- */
+.bow-arena-wrap {
+  display: grid;
+  grid-template-columns: 1fr 210px;
+  gap: var(--bow-s4);
+  margin: var(--bow-s3) 0;
+}
+
+.bow-arena {
+  display: grid;
+  grid-template-columns: repeat(var(--cols, 7), 1fr);
+  grid-template-rows: repeat(var(--rows, 3), 1fr);
+  gap: 3px;
+  padding: 6px;
+  background: #0d1216;
+  border: 1px solid var(--bow-line);
+  border-radius: var(--bow-radius);
+  aspect-ratio: 7 / 3;
+}
+
+/* Клетки: две тени снега, без картинок и текстур. */
+.bow-arena > span {
+  border-radius: 1px;
+  background: #182027;
+}
+.bow-arena > span.bow-cell-b { background: #1b242c; }
+
+/* --- Фишка --- */
+.bow-chip {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  border-radius: 2px;
+  font-family: var(--bow-mono);
+  transition: opacity 0.15s;
+}
+
+.bow-chip-ally { background: #24333d; border: 1px solid #46606f; }
+.bow-chip-enemy { background: #38262a; border: 1px solid #6d4148; }
+
+/* --- Отряд: карточки с причинами ---
+   Не просто список имён: видно, почему человек идёт или нет. */
+.bow-squad-title {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--bow-faint);
+  margin: 10px 0 6px;
+}
+
+.bow-squad {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 6px;
+}
+
+.bow-squad-card {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 8px 9px;
+  border: 1px solid var(--bow-line);
+  border-radius: var(--bow-radius);
+  background: var(--bow-surface-2);
+  color: var(--bow-text);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 120ms ease, background 120ms ease;
+}
+
+.bow-squad-card:hover:not(:disabled) { border-color: var(--bow-steel); background: var(--bow-surface-3); }
+.bow-squad-on { border-color: var(--bow-gold-dim); background: var(--bow-surface-3); }
+.bow-squad-no { cursor: not-allowed; opacity: 0.62; }
+
+.bow-squad-name { font-size: 0.8rem; color: var(--bow-silver); }
+.bow-squad-role { font-size: 0.64rem; color: var(--bow-faint); }
+
+.bow-squad-stats {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 0.64rem;
+  color: var(--bow-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.bow-squad-why { font-size: 0.62rem; color: var(--bow-faint); line-height: 1.3; }
+.bow-good-text { color: var(--bow-good); }
+
+/* --- Куда бить ---
+   Четыре кнопки в ряд. Цифры на них — настоящие шансы из расчёта,
+   а не украшение: игрок должен выбирать с открытыми глазами. */
+.bow-aim-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin: 10px 0 4px;
+}
+
+.bow-aim-btn {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 6px;
+  border: 1px solid var(--bow-line);
+  border-radius: var(--bow-radius);
+  background: var(--bow-surface-3);
+  color: var(--bow-text);
+  font-family: inherit;
+  font-size: 0.72rem;
+  cursor: pointer;
+  text-align: center;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+
+.bow-aim-btn:hover {
+  background: var(--bow-surface-4);
+  border-color: var(--bow-steel);
+}
+
+.bow-aim-btn:active { background: var(--bow-surface-5); }
+
+.bow-aim-name { font-size: 0.76rem; color: var(--bow-silver); }
+.bow-aim-hit { color: var(--bow-good); font-variant-numeric: tabular-nums; }
+.bow-aim-hurt { color: var(--bow-faint); font-size: 0.62rem; }
+.bow-aim-risky .bow-aim-hit { color: var(--bow-crit); }
+
+.bow-aim-legend {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  font-size: 0.64rem;
+  color: var(--bow-faint);
+  margin-bottom: 10px;
+}
+.bow-aim-legend b { color: var(--bow-silver); }
+
+@media (max-width: 720px) {
+  .bow-aim-row { grid-template-columns: repeat(2, 1fr); }
+  .bow-aim-btn { padding: 10px 6px; }
+}
+
+/* Ваша цель: золотая кайма — единственный тёплый акцент,
+   и только на враге, которого вы выбрали сами. */
+.bow-chip-target {
+  border-color: var(--bow-gold);
+  box-shadow: 0 0 0 1px var(--bow-gold-dim) inset;
+}
+
+.bow-chip[data-act="fight-target"] { cursor: pointer; }
+.bow-chip[data-act="fight-target"]:hover { filter: brightness(1.18); }
+
+/* Кого бьют в этом ходу: тонкая рамка и слабый свет.
+   Не мигает и не двигается — только заметно. */
+.bow-chip-aimed {
+  outline: 1px solid var(--bow-crit);
+  outline-offset: 2px;
+  box-shadow: 0 0 10px rgba(176, 74, 69, 0.35);
+}
+
+.bow-chip-body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  font-size: 0.78rem;
+  color: var(--bow-text);
+}
+
+.bow-chip-ally .bow-chip-body { background: #2f4552; border: 1px solid #5b7d90; }
+.bow-chip-enemy .bow-chip-body { background: #4a2f34; border: 1px solid #8a5158; }
+
+.bow-chip-hp {
+  position: absolute;
+  top: -1px;
+  right: 1px;
+  font-size: 0.6rem;
+  color: var(--bow-dim);
+}
+
+.bow-chip-name {
+  font-size: 0.56rem;
+  letter-spacing: 0.02em;
+  color: var(--bow-faint);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Нокаут: фишка лежит, над ней звёздочки. */
+.bow-chip-down {
+  opacity: 0.55;
+  transform: rotate(90deg);
+}
+
+.bow-chip-down .bow-chip-mark,
+.bow-chip-dead .bow-chip-mark {
+  position: absolute;
+  transform: rotate(-90deg);
+  font-size: 0.7rem;
+  color: var(--bow-low);
+}
+
+.bow-chip-dead { opacity: 0.35; filter: grayscale(1); }
+.bow-chip-dead .bow-chip-mark { color: var(--bow-crit); font-size: 0.9rem; }
+
+/* --- Список участников --- */
+.bow-roster {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-family: var(--bow-mono);
+  font-size: 0.66rem;
+}
+
+.bow-roster-row {
+  display: grid;
+  grid-template-columns: 18px 1fr auto auto;
+  gap: 6px;
+  align-items: baseline;
+  padding: 3px 6px;
+  border-left: 2px solid var(--bow-line);
+  background: var(--bow-surface-2);
+}
+
+.bow-roster-ally { border-left-color: #5b7d90; }
+.bow-roster-enemy { border-left-color: #8a5158; }
+.bow-roster-hp { color: var(--bow-dim); }
+.bow-roster-side { color: var(--bow-faint); font-size: 0.56rem; }
+
+/* --- Окна стражи, клетки, улицы --- */
+.bow-guard-card { border-left-color: var(--bow-gold); }
+.bow-guard-acts { display: grid; grid-template-columns: 1fr 1fr; gap: var(--bow-s2); }
+.bow-jail-card { border-left-color: var(--bow-steel); }
+.bow-encounter-card { border-left-color: var(--bow-crit); }
+
+/* --- Смерть --- */
+.bow-app.bow-dead .bow-main,
+.bow-app.bow-dead .bow-body { filter: grayscale(0.8) brightness(0.5); }
+
+.bow-death {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(6, 8, 10, 0.92);
+  padding: var(--bow-s5);
+}
+
+.bow-death-inner { max-width: 46ch; text-align: center; }
+.bow-death-inner h2 {
+  font-size: 1.6rem;
+  letter-spacing: 0.3em;
+  color: var(--bow-crit);
+  margin: 0 0 var(--bow-s4);
+}
+.bow-death-inner p { line-height: var(--bow-leading); color: var(--bow-text); }
+
+/* Кнопка-переключатель спутника */
+.bow-btn-on { border-color: var(--bow-good); color: var(--bow-good); }
+
+@media (max-width: 720px) {
+  .bow-arena-wrap { grid-template-columns: 1fr; }
+  .bow-arena { aspect-ratio: 7 / 4; }
+  .bow-chip-body { width: 20px; height: 20px; font-size: 0.66rem; }
+  .bow-chip-name { display: none; }
+  .bow-guard-acts { grid-template-columns: 1fr; }
+}
+
 /* --- Подвал --- */
 .bow-footer {
   display: flex;
@@ -1806,3 +2248,31 @@ body {
 }
 
 .bow-fight-blocked { color: var(--bow-low); }
+
+/* Текущая локация, счётчики блоков и пояснение цен (0.0.6.3) */
+.bow-btn.bow-btn-here {
+  border-color: var(--bow-bordo);
+  background: rgba(139, 50, 62, 0.16);
+  color: var(--bow-silver);
+}
+.bow-btn.bow-btn-here::before {
+  content: "• ";
+  color: #c96a75;
+}
+.bow-fold-count {
+  margin-left: auto;
+  margin-right: 8px;
+  font-family: var(--bow-mono);
+  font-size: 0.66rem;
+  font-weight: 500;
+  color: var(--bow-dim);
+  padding: 1px 6px;
+  border: 1px solid var(--bow-line-soft);
+  border-radius: var(--bow-radius);
+}
+.bow-trade-note {
+  font-family: var(--bow-mono);
+  font-size: 0.68rem;
+  color: var(--bow-dim);
+  margin: -2px 0 6px;
+}

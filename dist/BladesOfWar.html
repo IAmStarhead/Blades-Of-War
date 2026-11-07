@@ -106,7 +106,7 @@ var LZString=function(){var r=String.fromCharCode,o="ABCDEFGHIJKLMNOPQRSTUVWXYZa
 	</div>
 	<tw-storydata name="Blades Of War" ifid="A7C4E1B9-3D62-4F18-9B04-6E2D8C5A1F37" startnode="4" creator="extwee" creator-version="2.3.18" format="SugarCube" format-version="2.37.3" options hidden>
 	<style role="stylesheet" id="twine-user-stylesheet" type="text/twine-css">/* ============================================================
-   BLADES OF WAR — оформление прототипа 0.0.6
+   BLADES OF WAR — оформление прототипа 0.0.6.3
    Палитра: холодный камень, серебро, воронёная сталь, бордо.
    Схема: верхняя палка + выдвижная панель + рельса значков.
    Адаптив: компьютер → планшет → телефон.
@@ -185,8 +185,8 @@ var LZString=function(){var r=String.fromCharCode,o="ABCDEFGHIJKLMNOPQRSTUVWXYZa
    Реализовано на CSS-анимации, класс вешает интерфейс.
    ============================================================ */
 @keyframes bow-fade-in {
-  from { opacity: 0; transform: translateY(6px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 
 @keyframes bow-veil {
@@ -194,8 +194,18 @@ var LZString=function(){var r=String.fromCharCode,o="ABCDEFGHIJKLMNOPQRSTUVWXYZa
   100% { opacity: 0; }
 }
 
+/* Смена сцены: короткая тень поверх, затем проявление.
+   Только прозрачность — она не вызывает морской болезни и
+   не глушится настройкой «уменьшить движение» у большинства людей. */
 .bow-scene.bow-scene-fade {
-  animation: bow-fade-in 460ms ease-out both;
+  animation: bow-fade-in 320ms ease-out both;
+}
+
+/* Завеса живёт в каркасе, а не в разметке пассажа: раньше она была
+   описана в CSS, но ни разу не создавалась в DOM — потому переходы
+   и «не работали». */
+.bow-veil-run {
+  animation: bow-veil 320ms ease-out forwards;
 }
 
 /* Короткая «завеса» поверх сцены — как закрывающийся и открывающийся
@@ -206,7 +216,7 @@ var LZString=function(){var r=String.fromCharCode,o="ABCDEFGHIJKLMNOPQRSTUVWXYZa
   background: var(--bow-bg-deep);
   pointer-events: none;
   z-index: 40;
-  animation: bow-veil 380ms ease-out forwards;
+  opacity: 0;
 }
 
 /* --- Сброс внутри оболочки SugarCube --- */
@@ -706,9 +716,34 @@ body {
   gap: 5px;
 }
 
+.bow-skill-name { color: var(--bow-text); }
+
+/* Полоса умения: видно, далеко ли до сотни, не читая число. */
+.bow-skill-bar {
+  display: block;
+  height: 4px;
+  background: var(--bow-surface-1);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.bow-skill-bar i {
+  display: block;
+  height: 100%;
+  background: var(--bow-steel);
+  transition: width 200ms ease;
+}
+
+.bow-skill-low .bow-skill-bar i { background: var(--bow-faint); }
+.bow-skill-mid .bow-skill-bar i { background: var(--bow-steel); }
+.bow-skill-high .bow-skill-bar i { background: var(--bow-good); }
+.bow-skill b { text-align: right; color: var(--bow-silver); font-variant-numeric: tabular-nums; }
+
 .bow-skill {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: 1fr 52px 34px;
+  align-items: center;
+  gap: 8px;
   font-family: var(--bow-mono);
   font-size: 0.72rem;
   color: var(--bow-dim);
@@ -718,6 +753,109 @@ body {
 }
 
 .bow-skill b { color: var(--bow-silver); }
+
+/* --- Розыск в верхней палке ---
+   Пусто, пока за игроком не идут: лишних строк в мирное время нет. */
+.bow-heat { display: none; }
+.bow-heat.bow-heat-on {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  padding: 5px 14px;
+  font-size: 0.7rem;
+  color: var(--bow-dim);
+  border-top: 1px solid var(--bow-line-soft);
+  background: var(--bow-surface-1);
+}
+
+.bow-heat-line b { color: var(--bow-silver); font-weight: 600; }
+.bow-heat-hunted { color: var(--bow-crit); }
+.bow-heat-hunted b { color: var(--bow-crit); }
+
+/* --- Тело: постоянные увечья ---
+   Тихая, но заметная строка: игрок должен понимать, что это навсегда. */
+.bow-injuries { display: flex; flex-direction: column; gap: 4px; }
+
+.bow-injury {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 5px 8px;
+  border-left: 2px solid var(--bow-crit);
+  background: var(--bow-surface-2);
+}
+
+.bow-injury-name {
+  font-size: 0.78rem;
+  color: var(--bow-text);
+  letter-spacing: 0.02em;
+}
+
+.bow-injury-effect {
+  font-size: 0.68rem;
+  color: var(--bow-dim);
+}
+
+.bow-injury-note {
+  margin-top: 4px;
+  font-size: 0.66rem;
+  color: var(--bow-faint);
+  font-style: italic;
+}
+
+/* --- Кража: подготовка и карманы ---
+   Три ступени в одном блоке: приглядеться, отвлечь, взять.
+   Раньше была одна кнопка, и выбора не было вовсе. */
+.bow-steal-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--bow-line-soft);
+  width: 100%;
+}
+
+.bow-steal-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 0.72rem;
+  color: var(--bow-dim);
+}
+.bow-steal-head b { color: var(--bow-good); font-variant-numeric: tabular-nums; }
+.bow-crit-text { color: var(--bow-crit) !important; }
+
+.bow-steal-acts { display: flex; gap: 6px; flex-wrap: wrap; }
+.bow-steal-acts .bow-trade-btn { flex: 1 1 auto; min-width: 96px; }
+
+.bow-steal-prep {
+  font-size: 0.64rem;
+  color: var(--bow-faint);
+}
+.bow-steal-prep b { color: var(--bow-silver); }
+
+/* --- Лечение --- */
+.bow-treat { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; }
+
+.bow-treat-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.bow-treat-gain {
+  font-size: 0.8rem;
+  color: var(--bow-good);
+  font-variant-numeric: tabular-nums;
+}
+
+.bow-treat-note {
+  font-size: 0.64rem;
+  color: var(--bow-faint);
+  line-height: 1.35;
+}
 
 /* --- Инвентарь --- */
 .bow-inventory { display: flex; flex-direction: column; gap: 4px; }
@@ -1466,6 +1604,310 @@ body {
 
 .bow-loadout b { color: var(--bow-dim); font-weight: 600; }
 
+/* ============================================================
+   БОЙ НА ОТДЕЛЬНОЙ СТРАНИЦЕ (0.0.6.1)
+   Поле — простая сетка, фишки — прямоугольники с номером.
+   Стиль намеренно грубый, как в тактических играх прошлого:
+   читается с одного взгляда, ничего лишнего.
+   ============================================================ */
+.bow-fight-page {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  overflow-y: auto;
+  background: radial-gradient(120% 90% at 50% 0%, #1b2530 0%, var(--bow-bg) 60%, var(--bow-bg-deep) 100%);
+  padding: var(--bow-s5) var(--bow-s4) var(--bow-s6);
+}
+
+.bow-fight-page.bow-page-open { display: block; }
+
+.bow-fight-page-inner {
+  max-width: 980px;
+  margin: 0 auto;
+}
+
+/* Сцена под боем гаснет: внимание одно. */
+.bow-app.bow-in-fight .bow-main { filter: brightness(0.5) saturate(0.7); pointer-events: none; }
+
+/* --- Поле --- */
+.bow-arena-wrap {
+  display: grid;
+  grid-template-columns: 1fr 210px;
+  gap: var(--bow-s4);
+  margin: var(--bow-s3) 0;
+}
+
+.bow-arena {
+  display: grid;
+  grid-template-columns: repeat(var(--cols, 7), 1fr);
+  grid-template-rows: repeat(var(--rows, 3), 1fr);
+  gap: 3px;
+  padding: 6px;
+  background: #0d1216;
+  border: 1px solid var(--bow-line);
+  border-radius: var(--bow-radius);
+  aspect-ratio: 7 / 3;
+}
+
+/* Клетки: две тени снега, без картинок и текстур. */
+.bow-arena > span {
+  border-radius: 1px;
+  background: #182027;
+}
+.bow-arena > span.bow-cell-b { background: #1b242c; }
+
+/* --- Фишка --- */
+.bow-chip {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  border-radius: 2px;
+  font-family: var(--bow-mono);
+  transition: opacity 0.15s;
+}
+
+.bow-chip-ally { background: #24333d; border: 1px solid #46606f; }
+.bow-chip-enemy { background: #38262a; border: 1px solid #6d4148; }
+
+/* --- Отряд: карточки с причинами ---
+   Не просто список имён: видно, почему человек идёт или нет. */
+.bow-squad-title {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--bow-faint);
+  margin: 10px 0 6px;
+}
+
+.bow-squad {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 6px;
+}
+
+.bow-squad-card {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 8px 9px;
+  border: 1px solid var(--bow-line);
+  border-radius: var(--bow-radius);
+  background: var(--bow-surface-2);
+  color: var(--bow-text);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 120ms ease, background 120ms ease;
+}
+
+.bow-squad-card:hover:not(:disabled) { border-color: var(--bow-steel); background: var(--bow-surface-3); }
+.bow-squad-on { border-color: var(--bow-gold-dim); background: var(--bow-surface-3); }
+.bow-squad-no { cursor: not-allowed; opacity: 0.62; }
+
+.bow-squad-name { font-size: 0.8rem; color: var(--bow-silver); }
+.bow-squad-role { font-size: 0.64rem; color: var(--bow-faint); }
+
+.bow-squad-stats {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 0.64rem;
+  color: var(--bow-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.bow-squad-why { font-size: 0.62rem; color: var(--bow-faint); line-height: 1.3; }
+.bow-good-text { color: var(--bow-good); }
+
+/* --- Куда бить ---
+   Четыре кнопки в ряд. Цифры на них — настоящие шансы из расчёта,
+   а не украшение: игрок должен выбирать с открытыми глазами. */
+.bow-aim-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin: 10px 0 4px;
+}
+
+.bow-aim-btn {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 6px;
+  border: 1px solid var(--bow-line);
+  border-radius: var(--bow-radius);
+  background: var(--bow-surface-3);
+  color: var(--bow-text);
+  font-family: inherit;
+  font-size: 0.72rem;
+  cursor: pointer;
+  text-align: center;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+
+.bow-aim-btn:hover {
+  background: var(--bow-surface-4);
+  border-color: var(--bow-steel);
+}
+
+.bow-aim-btn:active { background: var(--bow-surface-5); }
+
+.bow-aim-name { font-size: 0.76rem; color: var(--bow-silver); }
+.bow-aim-hit { color: var(--bow-good); font-variant-numeric: tabular-nums; }
+.bow-aim-hurt { color: var(--bow-faint); font-size: 0.62rem; }
+.bow-aim-risky .bow-aim-hit { color: var(--bow-crit); }
+
+.bow-aim-legend {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  font-size: 0.64rem;
+  color: var(--bow-faint);
+  margin-bottom: 10px;
+}
+.bow-aim-legend b { color: var(--bow-silver); }
+
+@media (max-width: 720px) {
+  .bow-aim-row { grid-template-columns: repeat(2, 1fr); }
+  .bow-aim-btn { padding: 10px 6px; }
+}
+
+/* Ваша цель: золотая кайма — единственный тёплый акцент,
+   и только на враге, которого вы выбрали сами. */
+.bow-chip-target {
+  border-color: var(--bow-gold);
+  box-shadow: 0 0 0 1px var(--bow-gold-dim) inset;
+}
+
+.bow-chip[data-act="fight-target"] { cursor: pointer; }
+.bow-chip[data-act="fight-target"]:hover { filter: brightness(1.18); }
+
+/* Кого бьют в этом ходу: тонкая рамка и слабый свет.
+   Не мигает и не двигается — только заметно. */
+.bow-chip-aimed {
+  outline: 1px solid var(--bow-crit);
+  outline-offset: 2px;
+  box-shadow: 0 0 10px rgba(176, 74, 69, 0.35);
+}
+
+.bow-chip-body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  font-size: 0.78rem;
+  color: var(--bow-text);
+}
+
+.bow-chip-ally .bow-chip-body { background: #2f4552; border: 1px solid #5b7d90; }
+.bow-chip-enemy .bow-chip-body { background: #4a2f34; border: 1px solid #8a5158; }
+
+.bow-chip-hp {
+  position: absolute;
+  top: -1px;
+  right: 1px;
+  font-size: 0.6rem;
+  color: var(--bow-dim);
+}
+
+.bow-chip-name {
+  font-size: 0.56rem;
+  letter-spacing: 0.02em;
+  color: var(--bow-faint);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Нокаут: фишка лежит, над ней звёздочки. */
+.bow-chip-down {
+  opacity: 0.55;
+  transform: rotate(90deg);
+}
+
+.bow-chip-down .bow-chip-mark,
+.bow-chip-dead .bow-chip-mark {
+  position: absolute;
+  transform: rotate(-90deg);
+  font-size: 0.7rem;
+  color: var(--bow-low);
+}
+
+.bow-chip-dead { opacity: 0.35; filter: grayscale(1); }
+.bow-chip-dead .bow-chip-mark { color: var(--bow-crit); font-size: 0.9rem; }
+
+/* --- Список участников --- */
+.bow-roster {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-family: var(--bow-mono);
+  font-size: 0.66rem;
+}
+
+.bow-roster-row {
+  display: grid;
+  grid-template-columns: 18px 1fr auto auto;
+  gap: 6px;
+  align-items: baseline;
+  padding: 3px 6px;
+  border-left: 2px solid var(--bow-line);
+  background: var(--bow-surface-2);
+}
+
+.bow-roster-ally { border-left-color: #5b7d90; }
+.bow-roster-enemy { border-left-color: #8a5158; }
+.bow-roster-hp { color: var(--bow-dim); }
+.bow-roster-side { color: var(--bow-faint); font-size: 0.56rem; }
+
+/* --- Окна стражи, клетки, улицы --- */
+.bow-guard-card { border-left-color: var(--bow-gold); }
+.bow-guard-acts { display: grid; grid-template-columns: 1fr 1fr; gap: var(--bow-s2); }
+.bow-jail-card { border-left-color: var(--bow-steel); }
+.bow-encounter-card { border-left-color: var(--bow-crit); }
+
+/* --- Смерть --- */
+.bow-app.bow-dead .bow-main,
+.bow-app.bow-dead .bow-body { filter: grayscale(0.8) brightness(0.5); }
+
+.bow-death {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(6, 8, 10, 0.92);
+  padding: var(--bow-s5);
+}
+
+.bow-death-inner { max-width: 46ch; text-align: center; }
+.bow-death-inner h2 {
+  font-size: 1.6rem;
+  letter-spacing: 0.3em;
+  color: var(--bow-crit);
+  margin: 0 0 var(--bow-s4);
+}
+.bow-death-inner p { line-height: var(--bow-leading); color: var(--bow-text); }
+
+/* Кнопка-переключатель спутника */
+.bow-btn-on { border-color: var(--bow-good); color: var(--bow-good); }
+
+@media (max-width: 720px) {
+  .bow-arena-wrap { grid-template-columns: 1fr; }
+  .bow-arena { aspect-ratio: 7 / 4; }
+  .bow-chip-body { width: 20px; height: 20px; font-size: 0.66rem; }
+  .bow-chip-name { display: none; }
+  .bow-guard-acts { grid-template-columns: 1fr; }
+}
+
 /* --- Подвал --- */
 .bow-footer {
   display: flex;
@@ -1911,7 +2353,35 @@ body {
   .bow-actions, .bow-saves, .bow-footer { display: none; }
 }
 
-.bow-fight-blocked { color: var(--bow-low); }</style>
+.bow-fight-blocked { color: var(--bow-low); }
+
+/* Текущая локация, счётчики блоков и пояснение цен (0.0.6.3) */
+.bow-btn.bow-btn-here {
+  border-color: var(--bow-bordo);
+  background: rgba(139, 50, 62, 0.16);
+  color: var(--bow-silver);
+}
+.bow-btn.bow-btn-here::before {
+  content: "• ";
+  color: #c96a75;
+}
+.bow-fold-count {
+  margin-left: auto;
+  margin-right: 8px;
+  font-family: var(--bow-mono);
+  font-size: 0.66rem;
+  font-weight: 500;
+  color: var(--bow-dim);
+  padding: 1px 6px;
+  border: 1px solid var(--bow-line-soft);
+  border-radius: var(--bow-radius);
+}
+.bow-trade-note {
+  font-family: var(--bow-mono);
+  font-size: 0.68rem;
+  color: var(--bow-dim);
+  margin: -2px 0 6px;
+}</style>
 	<script role="script" id="twine-user-script" type="text/twine-javascript">/* ============================================================
    BOW CORE — базовые утилиты, ГПСЧ, шина событий.
    ВАЖНО: этот модуль ничего не знает про SugarCube и про DOM.
@@ -2022,7 +2492,7 @@ body {
   Bow.data = {
 
     meta: {
-      version: "0.0.6",
+      version: "0.0.6.3",
       title: "Blades Of War",
       worldName: "Эдем · Королевство Хладных Ветров",
       /* ВНИМАНИЕ: поселение ниже — тестовое, придумано разработчиком
@@ -2060,6 +2530,20 @@ body {
           { key: "heresy", label: "Ересь", value: "не преследуется" },
           { key: "violence", label: "Насилие", value: "наказуемо" },
           { key: "oath", label: "Клятва вождю", value: "нерушима" }
+        ]
+      },
+      "org:guard": {
+        id: "org:guard",
+        name: "Городская стража Брода",
+        type: "guard",
+        short: "Стража",
+        ruler: "десятник Хаген",
+        desc: "Восемь человек с топорами и стёганками. Держат частокол, разбирают драки и ищут тех, за кем числится.",
+        wealth: 30,
+        unrest: 10,
+        laws: [
+          { key: "theft", label: "Кража", value: "клетка" },
+          { key: "murder", label: "Убийство", value: "петля" }
         ]
       },
       "org:brod": {
@@ -2473,6 +2957,9 @@ body {
 
     /* ---------- Правила потребностей ---------- */
     needsRules: {
+      /* Естественное заживление за час: сытый и отдохнувший
+         затягивает раны сам. Лечение ускоряет это втрое. */
+      healPerHour: 0.4,
       perHour: { hunger: -1.6, fatigue: -1.1, mood: -0.3 },
       hungerLow: 20,
       fatigueLow: 15,
@@ -2502,7 +2989,147 @@ body {
       robHeat: 22,
       robRep: -14,
       killHeat: 60,
-      killRep: -45
+      killRep: -45,
+
+      /* ---------- Поле боя (0.0.6.1) ----------
+         Простая сетка, как в старых пошаговых играх: каждая фишка
+         стоит в своей клетке, ходить в этом прототипе нельзя.
+         Позиция — только чтобы бой читался глазами. */
+      arena: {
+        cols: 7,
+        rows: 3,
+        spawn: {
+          ally:  [[0, 0], [0, 1], [0, 2]],
+          enemy: [[6, 0], [6, 1], [6, 2]]
+        },
+        /* Запасные места, если союзников или врагов больше трёх. */
+        extra: { ally: [[1, 0], [1, 1], [1, 2]], enemy: [[5, 0], [5, 1], [5, 2]] },
+        stunAt: 8,        // нокаут: фишка ложится, над ней звёздочки
+        allySpawns: ["bror", "tarn"]
+      },
+
+      /* ---------- Отряд (0.0.6.3) ----------
+         Спутник — не «плюс одна фишка». Он решает сам, идти ли,
+         держится, пока видит смысл, и уходит, если его бросили
+         на растерзание. Всё, что видно в интерфейсе, посчитано здесь. */
+      squad: {
+        /* С какого отношения человек вообще готов идти за вами. */
+        willingAt: 15,
+        /* И с каким боевым навыком от него есть польза. */
+        minCombat: 30,
+        /* Власть: каждый её десяток снижает требуемое отношение. */
+        perLead: 6,
+        /* Доверие падает, если спутника бьют, а вы не помогаете. */
+        failDrop: 14,
+        /* И растёт, если бой выигран вместе. */
+        winGain: 5,
+        /* Раненый спутник не пойдёт: ниже этого здоровья — отказ. */
+        minHealth: 45,
+        /* Разброс позиции: спутник встаёт рядом, но не вплотную. */
+        rowSpread: 1
+      },
+
+      /* ---------- Кража (0.0.6.3) ----------
+         До этого кража была одна кнопка «срезать кошель» и один бросок.
+         Теперь у неё есть подход: приглядеться, отвлечь, взять.
+         Каждая ступень тратит время и делает улицу внимательнее. */
+      steal: {
+        /* Приглядеться: сколько даёт к следующему броску и сколько стоит. */
+        studyHours: 1,
+        studyBonus: 0.18,
+        studyFatigue: 2,
+        /* Отвлечь: сбивает внимание, но заметнее и дольше. */
+        distractHours: 1,
+        distractBonus: 0.14,
+        distractFatigue: 4,
+        distractWitness: 0.10,
+        /* Предел подготовки: больше двух приёмов подряд не помогают. */
+        maxPrep: 2,
+        /* Сколько берём из кошеля и с какого момента начинают искать. */
+        takeMin: 0.35,
+        takeMax: 0.75,
+        /* Цена провала. */
+        caughtHeat: 22,
+        caughtRep: -10,
+        /* Мелочь из карманов: не кошель, а платок, огниво, грош. */
+        pocketChance: 0.5
+      },
+
+      /* ---------- Постоянные травмы ----------
+         Последствия, которые остаются навсегда: рука, глаз, нога.
+         Каждая что-то отнимает — иначе это была бы декорация. */
+      injuries: {
+        arm: {
+          key: "arm", name: "покалеченная рука", short: "рука",
+          hit: -0.10, power: 0.08, label: "бьёт слабее и реже попадает"
+        },
+        eye: {
+          key: "eye", name: "выбитый глаз", short: "глаз",
+          hit: -0.12, power: 0, label: "хуже видит удар"
+        },
+        leg: {
+          key: "leg", name: "перебитая нога", short: "нога",
+          hit: -0.05, power: 0, flee: -0.20, travel: 1.5,
+          label: "медленно ходит и плохо бегает"
+        },
+        ribs: {
+          key: "ribs", name: "сросшиеся рёбра", short: "рёбра",
+          hit: -0.04, power: 0.08, fatigue: 1.3, label: "быстрее выматывается"
+        }
+      },
+      /* ---------- Куда бить (0.0.6.3) ----------
+         Один общий удар без выбора — это не тактика. Каждое место
+         стоит по-своему: голова калечит и валит, корпус бьёт больно
+         и надёжно, ноги замедляют и сбивают, руки лишают оружия.
+         Точность каждого задана здесь, чтобы её правили данными. */
+      aim: {
+        head: {
+          name: "голова", short: "в голову",
+          hit: 0.62, hurt: 1.35, maim: 1.8,
+          /* down — во сколько раз раньше порога сдачи лежит фишка.
+             При stunAt 8 и множителе 3.2 фишка ложится с 25 здор.,
+             то есть удар в голову валит раньше, чем человек сдастся. */
+          down: 3.2,
+          note: "труднее всего попасть, но валит и калечит"
+        },
+        body: {
+          name: "корпус", short: "в корпус",
+          hit: 1.00, hurt: 1.00, down: 1.0, maim: 0.7,
+          note: "надёжно: попасть проще всего"
+        },
+        legs: {
+          name: "ноги", short: "по ногам",
+          hit: 0.86, hurt: 0.72, maim: 0.9, down: 2.6,
+          note: "сбивает с ног и мешает уйти"
+        },
+        arms: {
+          name: "руки", short: "по рукам",
+          hit: 0.80, hurt: 0.62, down: 0.8, maim: 1.2,
+          note: "слабый урон, зато цель роняет оружие"
+        }
+      },
+
+      /* Шанс покалечить, когда бьют лежачего или добивают. */
+      maimChance: 0.25,
+      /* С какого урона удар способен оставить след навсегда.
+         Порог высокий намеренно: увечье — не каждый второй удар. */
+      maimAt: 26,
+
+      /* ---------- Стража ----------
+         Порог розыска, при котором за игроком приходят. */
+      guard: {
+        threshold: 60,
+        arriveHours: 2,
+        cellsHours: 20,          // срок в клетке
+        bribeBase: 40,           // откуп: базовая цена
+        fineRep: -25,
+        /* Сколько стражников приходит и насколько они крепки.
+           Трое — это уже не драка, а избиение: шансы честно видны. */
+        squad: 3,
+        skills: { combat: 48, survival: 40, leadership: 20 },
+        gear: { weapon: "item:axe", armor: "item:padded" },
+        names: ["Хаген", "Ульв", "Свейн", "Торд"]
+      }
     }
   };
 
@@ -2623,6 +3250,93 @@ body {
 
       state.version = "0.0.6";
       return state;
+    },
+
+    /* 0.0.6 → 0.0.6.1: поле боя, стража, клетка, уличные встречи
+       и постоянные травмы. Старое сохранение не теряет ничего:
+       недостающие поля создаются пустыми. */
+    "0.0.6": function (state) {
+      if (!("jail" in state)) { state.jail = null; }
+      if (!("guard" in state)) { state.guard = null; }
+      if (!("encounter" in state)) { state.encounter = null; }
+      if (!("dead" in state)) { state.dead = null; }
+      if (!Bow.util.isPlainObject(state.flags)) { state.flags = {}; }
+      if (!("guardAt" in state.flags)) { state.flags.guardAt = null; }
+      if (!("hunted" in state.flags)) { state.flags.hunted = false; }
+
+      if (!Array.isArray(state.player.injuries)) { state.player.injuries = []; }
+      Object.keys(state.people || {}).forEach(function (id) {
+        var p = state.people[id];
+        if (!Array.isArray(p.injuries)) { p.injuries = []; }
+      });
+
+      if (!Bow.util.isPlainObject(state.heat)) { state.heat = {}; }
+      if (typeof state.heat["org:guard"] !== "number") { state.heat["org:guard"] = 0; }
+      if (!Bow.util.isPlainObject(state.orgs) || !state.orgs["org:guard"]) {
+        var fresh = Bow.state.create(Bow.data, state.seed || 1);
+        state.orgs["org:guard"] = fresh.orgs["org:guard"];
+        state.reputation["org:guard"] = 0;
+      }
+      if (!Bow.util.isPlainObject(state.reputation)) { state.reputation = {}; }
+      if (typeof state.reputation["org:guard"] !== "number") { state.reputation["org:guard"] = 0; }
+
+      state.version = "0.0.6.1";
+      return state;
+    },
+
+    /* 0.0.6.1 → 0.0.6.2: цель удара, розыск с опознанием, увечья
+       от тяжёлых ударов. Новых обязательных полей нет — только
+       флаги, которые читаются как «не задано». */
+    "0.0.6.1": function (state) {
+      if (!Bow.util.isPlainObject(state.flags)) { state.flags = {}; }
+      if (!("huntedUntil" in state.flags)) { state.flags.huntedUntil = null; }
+      if (!("huntedHeat" in state.flags)) { state.flags.huntedHeat = null; }
+
+      /* Стражу, заставшую игрока по старому сохранению, считаем
+         пришедшей: иначе после обновления нельзя ни сдаться, ни
+         откупиться, и сохранение застревает в тупике. */
+      if (state.guard && state.guard.phase === "demand" && !state.guard.arrived) {
+        state.guard.arrived = true;
+      }
+
+      state.version = "0.0.6.2";
+      return state;
+    },
+
+    /* 0.0.6.2 → 0.0.6.3: подготовка кражи, карманы, перевязка ран,
+       доверие отряда и все шесть навыков в расчётах. Старые сейвы
+       получают чистую подготовку и доступную перевязку. */
+    "0.0.6.2": function (state) {
+      if (!Bow.util.isPlainObject(state.steal)) { state.steal = {}; }
+      if (state.player && !("lastTreat" in state.player)) { state.player.lastTreat = null; }
+
+      var skillKeys = ["combat", "survival", "stealth", "leadership", "trade", "medicine"];
+      var fresh = Bow.state.create(Bow.data, state.seed || 1);
+      if (state.player) {
+        if (!Bow.util.isPlainObject(state.player.skills)) { state.player.skills = {}; }
+        skillKeys.forEach(function (k) {
+          if (typeof state.player.skills[k] !== "number") {
+            state.player.skills[k] = fresh.player.skills[k] || 10;
+          }
+        });
+      }
+      Object.keys(state.people || {}).forEach(function (id) {
+        var p = state.people[id];
+        var f = fresh.people[id];
+        if (!Bow.util.isPlainObject(p.skills)) { p.skills = {}; }
+        skillKeys.forEach(function (k) {
+          if (typeof p.skills[k] !== "number") {
+            p.skills[k] = (f && f.skills && typeof f.skills[k] === "number") ? f.skills[k] : 10;
+          }
+        });
+      });
+
+      if (!Bow.util.isPlainObject(state.stats)) { state.stats = {}; }
+      if (typeof state.stats.pocketsPicked !== "number") { state.stats.pocketsPicked = 0; }
+      if (typeof state.stats.treats !== "number") { state.stats.treats = 0; }
+
+      state.version = "0.0.6.3";
+      return state;
     }
   };
 
@@ -2658,6 +3372,13 @@ body {
         money: data.player.money,
         inventory: Bow.util.clone(data.player.inventory),
         conditions: [],
+        /* Статус жизни явный: бой и события проверяют его напрямую,
+           и «поля нет» не должно означать «мёртв». */
+        alive: true,
+        /* Постоянные травмы: [{ key, at }]. Навсегда, с последствиями. */
+        injuries: [],
+        /* Час последней перевязки (null — ещё ни разу не лечили). */
+        lastTreat: null,
         memory: []
       },
 
@@ -2667,13 +3388,23 @@ body {
       reputation: {},
       /* Розыск по общинам: насколько ищут виновника. */
       heat: {},
+      /* Подготовка к краже по целям: { "person:liva": { study, distract } }. */
+      steal: {},
       journal: [],
       events: [],
       flags: {},
       /* Текущий разговор: { personId, nodeId, visited[], startedAt } */
       dialog: null,
-      /* Текущий бой: { personId, mode, phase, round, log[], witnesses[] } */
+      /* Текущий бой: { personId, mode, phase, round, log[], witnesses[], units[] } */
       fight: null,
+      /* Тюрьма: { hoursLeft, reason, since } — пока не null, игрок в клетке. */
+      jail: null,
+      /* Стража на улице: { phase, squad[], heatAt } */
+      guard: null,
+      /* Уличная встреча: { kind, robber, phase } */
+      encounter: null,
+      /* Смерть: { cause, text, hours }. Игра после неё не продолжается. */
+      dead: null,
       /* Счётчик визитов в локации — для сюжетных условий */
       visits: {},
 
@@ -2684,7 +3415,9 @@ body {
         talksMade: 0,
         fightsWon: 0,
         fightsLost: 0,
-        sparsMade: 0
+        sparsMade: 0,
+        pocketsPicked: 0,
+        treats: 0
       }
     };
 
@@ -2712,6 +3445,8 @@ body {
         memory: [],
         /* Личное отношение к игроку, -100..100 */
         attitude: 0,
+        /* Постоянные травмы жителя: тоже навсегда. */
+        injuries: [],
         /* Кошель: из него платят и его же можно лишиться. */
         money: typeof p.money === "number" ? p.money : 0,
         /* Оружие и броня берутся из данных и остаются на нём:
@@ -2792,6 +3527,9 @@ body {
     need(state.dialog === null || Bow.util.isPlainObject(state.dialog), "поле dialog повреждено");
     need(state.fight === null || state.fight === undefined || Bow.util.isPlainObject(state.fight),
       "поле fight повреждено");
+    need(state.jail === null || state.jail === undefined || Bow.util.isPlainObject(state.jail),
+      "поле jail повреждено");
+    need(Array.isArray(state.player.injuries), "player.injuries не массив");
     need(Bow.util.isPlainObject(state.reputation || {}), "поле reputation не объект");
     if (Bow.util.isPlainObject(state.reputation)) {
       Object.keys(state.reputation).forEach(function (id) {
@@ -3032,6 +3770,11 @@ body {
           n.health += rules.healthPenalty.hunger;
         } else if (tired) {
           n.health += rules.healthPenalty.fatigue;
+        } else if (n.health < 100) {
+          /* Сытый и отдохнувший затягивает раны сам. До 0.0.6.3
+             здоровье только падало: подняться было нечем, и любая
+             драка оставляла игрока калекой до конца игры. */
+          n.health += healRate(person);
         }
         if (hungry) {
           n.mood += rules.moodPenaltyHunger;
@@ -3045,6 +3788,15 @@ body {
     });
   }
 
+  /* Скорость естественного заживления за час. Лечение (навык)
+     ускоряет его втрое: это первая механика, которая вообще
+     опирается на «Лечение». */
+  function healRate(person) {
+    var base = (Bow.data.needsRules && Bow.data.needsRules.healPerHour) || 0.4;
+    var medicine = (person.skills && person.skills.medicine) || 0;
+    return base * (1 + medicine / 50);
+  }
+
   /* Сколько дней продержится персонаж при текущем голоде — для подсказки в UI.
      Это оценка, а не точная механика. */
   function estimateDaysOfHunger(person) {
@@ -3052,6 +3804,56 @@ body {
     var perHour = Math.abs(rules.perHour.hunger);
     var hoursLeft = person.needs.hunger / perHour;
     return Math.max(0, Math.round((hoursLeft / 24) * 10) / 10);
+  }
+
+  /* ---------- Лечение (0.0.6.3) ----------
+     Отдых лечит медленно. Осмотр и перевязка — быстрее и сразу,
+     но стоят часа и усталости, и делать их можно не бесконечно:
+     рана за сутки перевязывается один раз, а не десять.
+
+     Навык лечения решает, сколько вернётся. Без навыка почти
+     ничего: «полежать» умеют все, «перевязать» — нет. */
+  function treat(state, rng) {
+    var p = state.player;
+    var n = p.needs;
+    if (n.health >= 100) { return { ok: false, message: "Вы целы. Лечить нечего." }; }
+    if (n.fatigue < 8) { return { ok: false, message: "Руки не держат бинт. Нужен отдых." }; }
+
+    /* lastTreat = 0 значит «ещё не лечили», а не «лечили в нулевой
+       час». Иначе первая же перевязка недоступна всю первую смену. */
+    var last = p.lastTreat || 0;
+    var everTreated = !!p.lastTreat;
+    if (everTreated && state.time.totalHours - last < 24) {
+      var left = 24 - (state.time.totalHours - last);
+      return { ok: false, message: "Раны только начали схватываться. Через " + Math.ceil(left) + " ч." };
+    }
+
+    var medicine = p.skills.medicine || 0;
+    /* Без навыка — 4, с сотней навыка — 22. Разница в пять раз. */
+    var gain = Math.round(4 + medicine * 0.18 + (rng ? rng() : Math.random()) * 3);
+    /* Больше, чем не хватает, не вернёшь, и потолок — 30 за раз. */
+    gain = Math.max(1, Math.min(gain, 30, 100 - n.health));
+
+    Bow.time.advance(state, 1);
+    Bow.needs.applyChange(p, "fatigue", -3);
+    Bow.needs.applyChange(p, "health", gain);
+    p.lastTreat = Math.max(1, state.time.totalHours);
+
+    /* Навык растёт от дела, а не от чтения. */
+    var before = medicine;
+    p.skills.medicine = Math.min(100, Math.round((medicine + (medicine < 40 ? 1.2 : 0.6)) * 10) / 10);
+
+    state.stats.treats = (state.stats.treats || 0) + 1;
+    Bow.journal.add(state, "Перевязка: +" + gain + " здор. (Лечение " +
+      p.skills.medicine + ")", "heal");
+
+    return {
+      ok: true,
+      healed: gain,
+      medicine: p.skills.medicine,
+      message: "Вы промыли и перевязали: +" + gain + " здор. Лечение " +
+        before.toFixed(1) + " → " + p.skills.medicine + "."
+    };
   }
 
   function applyChange(person, key, delta) {
@@ -3073,6 +3875,8 @@ body {
   }
 
   Bow.needs = {
+    treat: treat,
+    healRate: healRate,
     KEYS: KEYS,
     hourly: hourly,
     ensure: ensure,
@@ -3131,11 +3935,27 @@ body {
     var orgId = Bow.data.locations[locationId] ? Bow.data.locations[locationId].org : null;
     if (!orgId || !Bow.work || !state.reputation) { return 1; }
     var rep = Bow.work.reputation(state, orgId);
-    if (rep >= 60) { return 0.88; }
-    if (rep >= 25) { return 0.95; }
+    /* Скидка за доброе имя заметнее прежней: 0.88 на хлебе за 3
+       давало 2, как и нейтраль, и разница исчезала. */
+    /* 0.72 — это заметно и на хлебе за 3 (2.16 → 2), и на топоре.
+       Скидка за доброе имя должна читаться, а не исчезать в округлении. */
+    if (rep >= 60) { return 0.72; }
+    if (rep >= 25) { return 0.89; }
     if (rep <= -60) { return 1.35; }
     if (rep <= -25) { return 1.2; }
     return 1;
+  }
+
+  /* ---------- Торг ----------
+     Каждые десять очков торга дают 2% в свою пользу, потолок — 14%.
+     Навык растёт медленно, поэтому разница видна не сразу, но она
+     настоящая: одна и та же вещь стоит по-разному. */
+  function tradeModifier(state) {
+    if (!state || !state.player) { return 1; }
+    var trade = (state.player.skills && state.player.skills.trade) || 0;
+    /* Три процента за каждые десять очков, потолок — 18%.
+       Навык растёт медленно, поэтому это видно не сразу. */
+    return 1 - Math.min(0.18, trade * 0.003);
   }
 
   function buyPrice(key, state, locationId) {
@@ -3143,13 +3963,18 @@ body {
     if (!item) { return null; }
     var mood = state.player.needs.mood;
     /* Рынок чуть охотнее торгуется с тем, у кого спокойный вид. */
-    var modifier = mood >= 60 ? 1.0 : mood >= 30 ? 1.05 : 1.12;
+    var modifier = mood >= 60 ? 1.0 : mood >= 30 ? 1.03 : 1.12;
     var loc = locationId || (state.player ? state.player.location : null);
     modifier *= repModifier(state, loc);
 
-    /* Округление — в пользу того, кто торгуется: скидка округляется
-       вниз, наценка вверх. Иначе на дешёвом хлебе отношение общины
-       не видно вовсе (3 × 0.88 = 2.64 → 3, и разницы нет). */
+    /* Торг впервые что-то делает (0.0.6.3): до этого навык рос
+       от работы, но на цену не влиял. Скидка до 14%. */
+    modifier *= tradeModifier(state);
+
+    /* Скидка и наценка складываются в один множитель, и округление
+       делается один раз: скидка вниз, наценка вверх. Раньше на хлебе
+       за 3 уважение и торг по отдельности загоняли цену в один и тот
+       же пол, и «торгуетесь вы или нет» было не видно. */
     var raw = item.base * modifier;
     var price = modifier < 1 ? Math.floor(raw) : Math.ceil(raw);
     return Math.max(1, price);
@@ -3163,6 +3988,8 @@ body {
     if (state) {
       var loc = locationId || (state.player ? state.player.location : null);
       factor = factor / repModifier(state, loc);
+      /* Торг помогает и продавать: скупщик не так сильно жмёт. */
+      factor = factor / tradeModifier(state);
     }
     /* Округление в пользу игрока: иначе на дешёвом товаре разница
        между «уважают» и «не знают» исчезает в floor (3 × 0.55 = 1.65). */
@@ -3605,6 +4432,12 @@ body {
 
   var HEAT_LIMIT = 100;
 
+  function cfg() { return Bow.data.fightRules.steal || {}; }
+
+  function personById(state, id) {
+    return state.people[id] || null;
+  }
+
   /* ---------- Розыск ----------
      heat[orgId] — насколько община хочет найти виновника.
      Это отдельная шкала от отношения: одно дело «не любят»,
@@ -3669,7 +4502,111 @@ body {
     var org = person.org;
     if (org) { chance -= heatOf(state, org) / 400; }
 
-    return Bow.util.clamp(chance, 0.03, 0.9);
+    /* Подготовка: присмотреться и отвлечь. */
+    chance += prepBonus(state, person.id);
+
+    return Bow.util.clamp(chance, 0.03, 0.94);
+  }
+
+  /* ---------- Подготовка (0.0.6.3) ----------
+     До этого кража была одним броском: нажал — узнал. Теперь есть
+     две ступени перед ней, и обе стоят времени:
+       • присмотреться — увидеть, где кошель и как его носят;
+       • отвлечь — толкнуть, заговорить, уронить, чтобы руки
+         перестали следить за сумкой.
+     Каждая ступень делает следующий бросок легче, но и делает
+     улицу внимательнее. Больше двух приёмов подряд не помогают:
+     бесконечно готовиться нельзя. */
+  function prep(state, personId) {
+    if (!state.steal) { state.steal = {}; }
+    var entry = state.steal[personId];
+    if (!entry) { entry = state.steal[personId] = { study: 0, distract: 0 }; }
+    return entry;
+  }
+
+  function prepBonus(state, personId) {
+    var e = state.steal && state.steal[personId];
+    if (!e) { return 0; }
+    var c = cfg();
+    return e.study * (c.studyBonus || 0.18) + e.distract * (c.distractBonus || 0.14);
+  }
+
+  function prepCount(state, personId) {
+    var e = state.steal && state.steal[personId];
+    if (!e) { return 0; }
+    return e.study + e.distract;
+  }
+
+  function studyCost() {
+    return { hours: cfg().studyHours || 1, fatigue: cfg().studyFatigue || 2 };
+  }
+
+  function study(state, personId) {
+    var person = personById(state, personId);
+    if (!person || !person.alive) { return { ok: false, message: "Здесь никого нет." }; }
+    if (person.location !== state.player.location) {
+      return { ok: false, message: person.name + " не здесь." };
+    }
+    if (prepCount(state, personId) >= (cfg().maxPrep || 2)) {
+      return { ok: false, message: "Больше смотреть некуда — вы и так всё видели." };
+    }
+
+    var e = prep(state, personId);
+    var cost = studyCost();
+    Bow.time.advance(state, cost.hours);
+    Bow.needs.applyChange(state.player, "fatigue", -cost.fatigue);
+    e.study += 1;
+
+    var now = Math.round(successChance(state, person) * 100);
+    return {
+      ok: true,
+      chance: now,
+      message: "Вы пригляделись: кошель на правом боку, завязка слабая. Шанс " + now + "%."
+    };
+  }
+
+  function distract(state, personId, rng) {
+    var person = personById(state, personId);
+    if (!person || !person.alive) { return { ok: false, message: "Здесь никого нет." }; }
+    if (person.location !== state.player.location) {
+      return { ok: false, message: person.name + " не здесь." };
+    }
+    if (prepCount(state, personId) >= (cfg().maxPrep || 2)) {
+      return { ok: false, message: "Ещё одно движение, и это заметят." };
+    }
+
+    /* Кто отвлекает: ваш Торг или Власть — что выше. Власть работает
+       на людях, торг — на тех, кто считает монету. */
+    var trade = state.player.skills.trade || 0;
+    var lead = state.player.skills.leadership || 0;
+    var skill = Math.max(trade, lead);
+    var odds = Bow.util.clamp(0.45 + skill / 200, 0.2, 0.92);
+
+    var e = prep(state, personId);
+    var c = cfg();
+    Bow.time.advance(state, c.distractHours || 1);
+    Bow.needs.applyChange(state.player, "fatigue", -(c.distractFatigue || 4));
+
+    if ((rng || Math.random)() >= odds) {
+      /* Отвлечь не вышло — и это заметили. */
+      var heat = addHeat(state, person.org, 8);
+      person.attitude = Bow.util.clamp(person.attitude - 4, -100, 100);
+      return {
+        ok: true,
+        distracted: false,
+        heat: heat,
+        message: "Вы начали разговор не с того, и " + person.name + " насторожился."
+      };
+    }
+
+    e.distract += 1;
+    var now = Math.round(successChance(state, person) * 100);
+    return {
+      ok: true,
+      distracted: true,
+      chance: now,
+      message: person.name + " отвернулся. Руки свободны. Шанс " + now + "%."
+    };
   }
 
   /* Кого можно обокрасть здесь и сейчас. */
@@ -3681,13 +4618,11 @@ body {
         role: p.role,
         money: typeof p.money === "number" ? p.money : 0,
         chance: successChance(state, p),
-        watch: (p.skills && p.skills.stealth) || 10
+        watch: (p.skills && p.skills.stealth) || 10,
+        prep: prepCount(state, p.id),
+        prepMax: cfg().maxPrep || 2
       };
     }).filter(function (t) { return t.money > 0; });
-  }
-
-  function personById(state, id) {
-    return state.people[id] || null;
   }
 
   /* ---------- Сама кража ----------
@@ -3710,6 +4645,10 @@ body {
     var chance = successChance(state, person);
     var roll = (rng || Math.random)();
     var success = roll < chance;
+
+    /* Подготовка расходуется на саму попытку: второй раз на том же
+       наблюдении не выедешь. */
+    if (state.steal) { delete state.steal[personId]; }
 
     /* Время: подход и отход — дело не мгновенное. */
     Bow.time.advance(state, 1);
@@ -3799,6 +4738,76 @@ body {
     };
   }
 
+  /* ---------- Карманы (0.0.6.3) ----------
+     Не каждый кошель стоит резать. Мелочь из кармана — платок,
+     огниво, медяк — берут иначе: без разреза и почти без риска,
+     но и взять там нечего. Это второй способ, а не тот же самый. */
+  function pocketChance(state, person) {
+    var skill = state.player.skills.stealth || 0;
+    var chance = 0.35 + skill / 200;
+    if (Bow.time.isNight(state)) { chance += 0.10; }
+    var seen = witnessesAt(state, state.player.location).filter(function (p) {
+      return p.id !== person.id;
+    }).length;
+    chance -= seen * 0.08;
+    return Bow.util.clamp(chance, 0.05, 0.92);
+  }
+
+  function pockets(state, personId, rng) {
+    var person = personById(state, personId);
+    if (!person || !person.alive) { return { ok: false, message: "Здесь никого нет." }; }
+    if (person.location !== state.player.location) {
+      return { ok: false, message: person.name + " не здесь." };
+    }
+
+    var roll = (rng || Math.random)();
+    Bow.time.advance(state, 1);
+    Bow.needs.applyChange(state.player, "fatigue", -1);
+
+    if (roll < pocketChance(state, person)) {
+      var c = cfg();
+      var small = Math.min(person.money, 1 + Math.round((rng ? rng() : Math.random()) * 3));
+      person.money = Math.max(0, person.money - small);
+      state.player.money += small;
+
+      /* Иногда попадается не монета, а вещь. */
+      var loot = null;
+      if ((rng ? rng() : Math.random()) < (c.pocketChance || 0.5)) {
+        loot = ["tool", "rope", "fur"][Math.floor((rng ? rng() : Math.random()) * 3) % 3];
+        Bow.economy.addItem(state.player, loot, 1);
+      }
+
+      state.stats.pocketsPicked = (state.stats.pocketsPicked || 0) + 1;
+      var before = state.player.skills.stealth || 0;
+      state.player.skills.stealth = Math.min(100, Math.round((before + 0.4) * 10) / 10);
+
+      Bow.journal.add(state, "Карман " + person.name + ": " + small + " м." +
+        (loot ? " и " + Bow.economy.findItemDef(loot).name : "") + ".", "crime");
+
+      return {
+        ok: true,
+        success: true,
+        taken: small,
+        item: loot,
+        message: "В кармане нашлось " + small + " м." +
+          (loot ? " и " + Bow.economy.findItemDef(loot).name : "") + "."
+      };
+    }
+
+    /* Провал кармана тише, чем провал кошеля: заметили, но не поймали
+       за руку — отношение падает, розыск растёт меньше. */
+    var heat = addHeat(state, person.org, Math.round((cfg().caughtHeat || 22) / 2));
+    person.attitude = Bow.util.clamp(person.attitude - 8, -100, 100);
+    person.memory.push({
+      kind: "stolen",
+      text: "Крутился рядом и лез в карман.",
+      weight: 5,
+      totalHours: state.time.totalHours
+    });
+    Bow.util.trim(person.memory, 40);
+    return { ok: true, success: false, heat: heat, message: "Пусто. И он это заметил." };
+  }
+
   /* ---------- Мир ----------
      Розыск спадает, если человек ведёт себя тихо. Но не забывается
      до конца: серьёзный след остаётся. */
@@ -3819,6 +4828,12 @@ body {
 
   Bow.steal = {
     attempt: attempt,
+    study: study,
+    distract: distract,
+    pockets: pockets,
+    pocketChance: pocketChance,
+    prepCount: prepCount,
+    prepBonus: prepBonus,
     targetsAt: targetsAt,
     successChance: successChance,
     witnessesAt: witnessesAt,
@@ -3835,24 +4850,24 @@ body {
   });
 
 })(typeof window !== "undefined" ? window : this);/* ============================================================
-   BOW FIGHT — бой как продолжение мира, а не отдельная мини-игра.
+   BOW FIGHT — бой на простом клеточном поле.
 
-   Зачем: навык «бой» до этого только показывался в панели.
-   По ТЗ это запрещённая фиктивная механика. Теперь он решает,
-   попадёте ли вы, сколько снимете и устоите ли.
+   Зачем переписано в 0.0.6.1: прежний бой был списком реплик.
+   Владелец просил видеть, кто где стоит, кого снесли, кто лежит
+   со звёздочками, а кто уже мёртв. Пока бой был текстом, нельзя
+   было ни понять, сколько врагов, ни оценить, стоит ли ввязываться.
 
    Как устроено:
-     • оружие и броня — обычные предметы из инвентаря; лучшее
-       берётся в руки само, и его видно в панели «При себе»;
-     • обмен ударами — одно действие игрока; противник отвечает
-       по своему состоянию: давит, закрывается или сдаётся;
-     • усталость тратится за каждый обмен, здоровье — настоящее
-       (то же, что в панели потребностей);
-     • бой заканчивается сдачей, а не смертью: добить — отдельный
-       выбор и отдельная цена;
-     • нападение на человека — преступление: розыск, отношение
-       общины, память жертвы и свидетелей. Кулачный бой — нет;
-     • в драке время не идёт, час берётся на весь бой сразу.
+     • у каждого участника клетка (col,row) на сетке 7×3 — как на
+       маленьком тактическом поле; ходить пока нельзя;
+     • свои идут слева, противник справа; у каждого номер и цвет;
+     • здоровье видно прямо над фишкой;
+     • нокаут — фишка ложится, над ней звёздочки;
+     • смерть — череп, фишка больше не поднимается;
+     • у противника может быть несколько бойцов: стража приходит
+       втроём, и это честно видно до начала;
+     • постоянные травмы (рука, глаз, нога, рёбра) остаются навсегда
+       и отнимают своё — иначе это была бы картинка.
 
    Модуль чистый: не знает ни про SugarCube, ни про DOM.
    ============================================================ */
@@ -3862,17 +4877,17 @@ body {
   var Bow = global.Bow = global.Bow || {};
 
   function rules() { return Bow.data.fightRules; }
-  function clamp(value, min, max) { return Bow.util.clamp(value, min, max); }
+  function clamp(v, a, b) { return Bow.util.clamp(v, a, b); }
   function rollOf(rng) { return (rng || Math.random)(); }
+  function round1(v) { return Math.round(v * 10) / 10; }
 
   /* Род — из данных персонажа, а не «он по умолчанию». */
-  function he(p) { return p && p.pron === "f" ? "она" : "он"; }
   function He(p) { return p && p.pron === "f" ? "Она" : "Он"; }
   function his(p) { return p && p.pron === "f" ? "её" : "его"; }
 
   /* ---------- Снаряжение ----------
-     Лучшее оружие и лучшая броня берутся сами. Игрок не должен
-     помнить про «слоты»: купил топор — он и в руке. */
+     Лучшее оружие и лучшая броня берутся сами: игрок не должен
+     помнить про «слоты». Купил топор — он и в руке. */
   function itemValue(def) {
     if (!def) { return 0; }
     return (def.attack || 0) + (def.defense || 0);
@@ -3889,6 +4904,9 @@ body {
   }
 
   function weaponOf(person) {
+    /* Обезоруженный не бьёт тем, что уронил. Флаг ставится на фишке
+       и живёт до конца боя: поднять оружие в этом прототипе нельзя. */
+    if (person.disarmed) { return null; }
     if (person.inventory) { return bestEquip(person, "weapon"); }
     if (person.weapon) { return Bow.economy.findItemDef(person.weapon); }
     return null;
@@ -3900,12 +4918,48 @@ body {
     return null;
   }
 
-  /* ---------- Сила ----------
-     В кулачном бою оружие не считается: спарринг — не резня. */
+  /* ---------- Постоянные травмы ----------
+     Остаются навсегда и отнимают своё. Список — в данных. */
+  function injuryDefs() { return Bow.data.fightRules.injuries; }
+
+  function hasInjury(person, key) {
+    return (person.injuries || []).some(function (i) { return i.key === key; });
+  }
+
+  function injuryPenalty(person, field) {
+    var total = 0;
+    (person.injuries || []).forEach(function (i) {
+      var def = injuryDefs()[i.key];
+      if (def && typeof def[field] === "number") { total += def[field]; }
+    });
+    return total;
+  }
+
+  function injuryWord(person) {
+    return (person.injuries || []).map(function (i) {
+      var def = injuryDefs()[i.key];
+      return def ? def.name : i.key;
+    });
+  }
+
+  /* Нанести постоянную травму. Возвращает описание или null. */
+  function maim(person, rng) {
+    var keys = Object.keys(injuryDefs());
+    var free = keys.filter(function (k) { return !hasInjury(person, k); });
+    if (!free.length) { return null; }
+    var key = free[Math.floor(rollOf(rng) * free.length) % free.length];
+    var def = injuryDefs()[key];
+    person.injuries = person.injuries || [];
+    person.injuries.push({ key: key, at: null });
+    return def;
+  }
+
+  /* ---------- Сила ---------- */
   function attackPower(person, mode) {
     var weapon = mode === "spar" ? null : weaponOf(person);
     var skill = (person.skills && person.skills.combat) || 0;
-    return 12 + skill / 5.5 + (weapon ? (weapon.attack || 0) * 1.6 : 0);
+    var raw = 12 + skill / 5.5 + (weapon ? (weapon.attack || 0) * 1.6 : 0);
+    return raw * (1 - injuryPenalty(person, "power"));
   }
 
   function defenseOf(person, mode) {
@@ -3914,22 +4968,44 @@ body {
     return skill / 28 + (armor ? (armor.defense || 0) * 1.1 : 0);
   }
 
-  /* Шанс попасть. Считается честно и показывается игроку до удара:
-     он должен видеть, на что идёт, а не узнавать после. */
-  function hitChance(attacker, defender, stance) {
+  function aimDef(key) {
+    var all = rules().aim || {};
+    return all[key] || all.body || { hit: 1, hurt: 1, down: 1, maim: 1, name: "корпус" };
+  }
+
+  /* ---------- Точность ----------
+     Попасть — это не только «кто сильнее». Три вещи решают:
+       • бой — насколько вы вообще умеете бить;
+       • выживание — читать движение тела и не мазать в спешке;
+       • куда бьёте — в голову попасть труднее всего.
+     До 0.0.6.3 всё сводилось к разнице навыков боя. */
+  function hitChance(attacker, defender, stance, aimKey) {
     var a = (attacker.skills && attacker.skills.combat) || 0;
     var d = (defender.skills && defender.skills.combat) || 0;
+    var survival = (attacker.skills && attacker.skills.survival) || 0;
+
     var chance = 0.55 + (a - d) / 220;
+    /* Навык выживания — это умение читать чужое движение. */
+    chance += Math.min(0.10, survival / 900);
+    chance += injuryPenalty(attacker, "hit");
+
+    /* Точность места удара: голова — 0.62, корпус — 1.0. */
+    var aim = aimDef(aimKey);
+    chance *= aim.hit;
+
     var n = attacker.needs;
     if (n.fatigue < 30) { chance -= 0.10; }
+    if (n.fatigue < 12) { chance -= 0.08; }
     if (n.health < 35) { chance -= 0.08; }
     if (stance === "guard") { chance *= 0.65; }
     if (stance === "press") { chance += 0.03; }
-    return clamp(chance, 0.18, 0.92);
+    return clamp(chance, 0.10, 0.92);
   }
 
-  function damageRoll(attacker, defender, mode, defenderStance, rng) {
+  function damageRoll(attacker, defender, mode, defenderStance, rng, aimKey) {
+    var aim = aimDef(aimKey);
     var raw = attackPower(attacker, mode) - defenseOf(defender, mode) * 0.7 + (rollOf(rng) * 4 - 1.5);
+    raw *= aim.hurt;
     var damage = Math.max(2, Math.round(raw));
     if (defenderStance === "guard") { damage = Math.max(1, Math.round(damage * 0.5)); }
     if (mode === "spar") { damage = Math.max(1, Math.round(damage * 0.7)); }
@@ -3937,8 +5013,7 @@ body {
   }
 
   /* ---------- Свидетели ----------
-     Снимок делается в начале: кто видел начало драки. Прибежавшие
-     позже сюда не попадут — время боя идёт отдельно от часов. */
+     Снимок делается в начале: кто видел начало драки. */
   function witnessIds(state, exceptId) {
     return Bow.steal.witnessesAt(state, state.player.location)
       .filter(function (p) { return p.id !== exceptId; })
@@ -3952,6 +5027,156 @@ body {
       var p = state.people[id];
       return p ? p.name : null;
     }).filter(Boolean);
+  }
+
+  /* ---------- Кого можно позвать ----------
+     Пока один спутник, но список — сразу: отряд будет расти. */
+  /* ---------- Отряд ----------
+     Спутник идёт не «потому что он в списке», а по трём вещам:
+     насколько он к вам расположен, умеет ли драться и в каком он
+     состоянии. Каждый отказ объяснён — игрок видит причину числом,
+     а не гадает, почему кнопка серая.
+
+     Власть работает здесь впервые: с высоким навыком люди идут
+     за вами при меньшем отношении. */
+  function allyState(state, personId) {
+    var cfg = rules().squad || {};
+    var p = state.people[personId];
+    if (!p || !p.alive) { return null; }
+
+    var need = Math.max(0,
+      (cfg.willingAt === undefined ? 15 : cfg.willingAt) -
+      Math.floor(((state.player.skills.leadership || 0) / 10) * (cfg.perLead || 6)));
+    var combatNeed = cfg.minCombat === undefined ? 30 : cfg.minCombat;
+    var minHealth = cfg.minHealth === undefined ? 45 : cfg.minHealth;
+
+    var why = null;
+    if (p.location !== state.player.location) { why = "не здесь"; }
+    else if (p.attitude < need) { why = "не доверяет: " + Math.round(p.attitude) + " из " + need; }
+    else if ((p.skills.combat || 0) < combatNeed) { why = "не боец: бой " + (p.skills.combat || 0); }
+    else if (p.needs.health < minHealth) { why = "ранен: " + Math.round(p.needs.health) + " здор."; }
+
+    return {
+      id: p.id,
+      name: p.name,
+      role: p.role,
+      attitude: p.attitude,
+      trustNeed: need,
+      health: p.needs.health,
+      combat: p.skills.combat || 0,
+      willing: !why,
+      why: why
+    };
+  }
+
+  function alliesAvailable(state) {
+    var names = rules().arena.allySpawns || [];
+    return names.map(function (key) {
+      return allyState(state, "person:" + key);
+    }).filter(Boolean);
+  }
+
+  /* Доверие после боя: выиграли вместе — стал ближе; его избили,
+     пока вы не помогли, — запомнил. */
+  function squadAftermath(state, outcome, lostAlly) {
+    var cfg = rules().squad || {};
+    (state.fight.allies || []).forEach(function (id) {
+      var p = state.people[id];
+      if (!p || !p.alive) { return; }
+      if (lostAlly && lostAlly.refId === id) {
+        p.attitude = clamp(p.attitude - (cfg.failDrop || 14), -100, 100);
+        p.memory.push({
+          kind: "abandoned",
+          text: "Меня сбили, а " + state.player.name + " не помог.",
+          weight: 8,
+          totalHours: state.time.totalHours
+        });
+      } else if (outcome === "win") {
+        p.attitude = clamp(p.attitude + (cfg.winGain || 5), -100, 100);
+        p.memory.push({
+          kind: "fought",
+          text: "Мы держались вместе, и взяли верх.",
+          weight: 5,
+          totalHours: state.time.totalHours
+        });
+      }
+      Bow.util.trim(p.memory, 40);
+    });
+  }
+
+  /* ---------- Расстановка на поле ----------
+     Свои слева, противник справа. Занятые клетки не повторяются. */
+  function spawnUnits(state) {
+    var A = rules().arena;
+    var units = [];
+    var taken = {};
+
+    function free(cell) {
+      var key = cell[0] + "," + cell[1];
+      if (taken[key]) { return false; }
+      taken[key] = true;
+      return true;
+    }
+
+    function place(side, index) {
+      var list = A.spawn[side];
+      if (index < list.length) { return list[index].slice(); }
+      var extra = A.extra[side];
+      return extra[(index - list.length) % extra.length].slice();
+    }
+
+    function put(side, unit, index) {
+      var cell = place(side, index);
+      var guard = 0;
+      while (!free(cell) && guard++ < 30) {
+        cell = [cell[0], (cell[1] + 1) % A.rows];
+      }
+      unit.col = cell[0];
+      unit.row = cell[1];
+      unit.maxHp = 100;
+      unit.stance = "press";
+      unit.down = false;
+      unit.dead = false;
+      units.push(unit);
+    }
+
+    /* Игрок всегда первый слева. */
+    put("ally", {
+      key: "player", refId: state.player.id, side: "ally",
+      name: state.player.name, npc: false, hp: state.player.needs.health
+    }, 0);
+
+    (state.fight.allies || []).forEach(function (id, i) {
+      var p = state.people[id];
+      if (!p || !p.alive) { return; }
+      /* Тяжело раненный в прошлом бою встаёт не сразу: это видно
+         в списке отряда числом, а не выясняется отказом на кнопке. */
+      put("ally", {
+        key: "ally:" + id, refId: id, side: "ally",
+        name: p.name, npc: true, hp: p.needs.health
+      }, i + 1);
+    });
+
+    (state.fight.enemies || []).forEach(function (enemy, i) {
+      put("enemy", enemy, i);
+    });
+
+    return units;
+  }
+
+  /* Живой человек превращается в бойца на поле. */
+  function enemyUnit(state, personId) {
+    var p = state.people[personId];
+    if (!p) { return null; }
+    return {
+      key: "enemy:" + personId,
+      refId: personId,
+      side: "enemy",
+      name: p.name,
+      npc: true,
+      person: true,
+      hp: p.needs.health
+    };
   }
 
   /* ---------- Сколько стоит нападение ----------
@@ -3976,7 +5201,7 @@ body {
     };
   }
 
-  /* ---------- Начало: окно выбора ---------- */
+  /* ---------- Окно выбора ---------- */
   function open(state, personId) {
     var person = state.people[personId];
     if (!person || !person.alive) { return { ok: false, message: "Здесь никого нет." }; }
@@ -3989,7 +5214,12 @@ body {
       phase: "choose",
       round: 0,
       log: [],
-      witnesses: witnessIds(state, personId)
+      witnesses: witnessIds(state, personId),
+      allies: [],
+      enemies: [],
+      units: [],
+      heatTotal: 0,
+      repTotal: 0
     };
     return { ok: true, message: "" };
   }
@@ -3999,45 +5229,92 @@ body {
     return { ok: true, message: "" };
   }
 
+  function toggleAlly(state, personId) {
+    var f = state.fight;
+    if (!f || f.phase !== "choose") { return { ok: false, message: "Уже не время." }; }
+    var who = alliesAvailable(state).filter(function (a) {
+      return a.id === personId && a.willing;
+    })[0];
+    if (!who) { return { ok: false, message: "Он не пойдёт за вас." }; }
+
+    var idx = f.allies.indexOf(personId);
+    if (idx === -1) {
+      f.allies.push(personId);
+      return { ok: true, message: who.name + " идёт с вами." };
+    }
+    f.allies.splice(idx, 1);
+    return { ok: true, message: who.name + " остаётся." };
+  }
+
   /* ---------- Начать бой ---------- */
   function start(state, mode, rng) {
     var f = state.fight;
     if (!f || f.phase !== "choose") { return { ok: false, message: "Бой уже идёт." }; }
-
-    var person = state.people[f.personId];
-    if (!person || !person.alive) { return { ok: false, message: "Противник исчез." }; }
-    if (person.location !== state.player.location) {
-      return { ok: false, message: person.name + " уже не здесь." };
-    }
 
     var R = rules();
     var n = state.player.needs;
     if (n.fatigue < 12) { return { ok: false, message: "Вы едва стоите. Сначала отдых." }; }
     if (n.health < 25) { return { ok: false, message: "Вы слишком плохи, чтобы драться." }; }
 
-    if (mode === "spar" && person.attitude < R.sparMinAttitude) {
-      return { ok: false, message: person.name + " не станет с вами бороться." };
+    if (["spar", "crime", "guard", "robbery"].indexOf(mode) === -1) {
+      return { ok: false, message: "Так не дерутся." };
     }
-    if (mode !== "spar" && mode !== "crime") { return { ok: false, message: "Так не дерутся." }; }
+
+    var person = state.people[f.personId];
+
+    /* У грабителя нет записи в людях — он приходит из встречи.
+       Его противник уже лежит в f.enemies и ждёт только старта. */
+    if (mode === "robbery") {
+      f.mode = mode;
+      f.phase = "exchange";
+      f.round = 0;
+      f.heatTotal = 0;
+      f.repTotal = 0;
+      f.units = spawnUnits(state);
+      Bow.time.advance(state, R.hours);
+      Bow.needs.applyChange(state.player, "fatigue", -2);
+      log(f, "narr", f.enemies[0].name + " выходит на свет с ножом. Разговор кончился.");
+      Bow.journal.add(state, "Грабитель ударил первым.", "danger");
+      return { ok: true, message: "Драка на улице. Противник: " + f.enemies[0].name + "." };
+    }
+
+    if (mode !== "guard") {
+      if (!person || !person.alive) { return { ok: false, message: "Противник исчез." }; }
+      if (person.location !== state.player.location) {
+        return { ok: false, message: person.name + " уже не здесь." };
+      }
+      if (mode === "spar" && person.attitude < R.sparMinAttitude) {
+        return { ok: false, message: person.name + " не станет с вами бороться." };
+      }
+    }
 
     f.mode = mode;
     f.phase = "exchange";
     f.round = 0;
-    f.heat = 0;
-    f.rep = 0;
     f.heatTotal = 0;
+    f.repTotal = 0;
 
-    /* Час на весь бой: подход, первый удар и развязка. Внутри боя
-       время отдельно не двигается — иначе одна драка съедала бы сутки. */
+    /* Кто против нас. */
+    if (mode === "guard") {
+      f.enemies = (f.guardSquad || []).slice();
+    } else {
+      var unit = enemyUnit(state, f.personId);
+      if (!unit) { return { ok: false, message: "Противник исчез." }; }
+      f.enemies = [unit];
+    }
+
+    f.units = spawnUnits(state);
+
+    /* Час на весь бой: подход, первый удар и развязка. */
     Bow.time.advance(state, R.hours);
     Bow.needs.applyChange(state.player, "fatigue", -2);
 
     if (mode === "crime") {
       /* Нападение — преступление сразу, а не по итогу боя. */
       var heat = R.crimeHeat + f.witnesses.length * R.witnessHeat;
-      f.heat = Bow.steal.addHeat(state, person.org, heat);
-      f.rep = Bow.work.addReputation(state, person.org, R.crimeRep);
-      f.heatTotal = f.heat;
+      f.heatTotal += Bow.steal.addHeat(state, person.org, heat);
+      f.repTotal += Bow.work.addReputation(state, person.org, R.crimeRep);
+      Bow.steal.addHeat(state, "org:guard", Math.round(heat * 0.5));
 
       person.memory.push({
         kind: "attacked",
@@ -4061,162 +5338,408 @@ body {
         w.attitude = clamp(w.attitude - 8, -100, 100);
       });
 
-      Bow.journal.add(state,
-        "Вы напали первым. " +
+      log(f, "narr", "Вы бьёте первым, без слова. " +
         (f.witnesses.length
           ? "Видели: " + witnessNames(state).join(", ") + "."
-          : "Свидетелей не было.") +
+          : "Свидетелей не было."));
+
+      Bow.journal.add(state,
+        "Вы напали первым. " +
+        (f.witnesses.length ? "Видели: " + witnessNames(state).join(", ") + "." : "Свидетелей не было.") +
         " Община " + Bow.work.orgName(state, person.org) + " узнает.",
         "crime");
 
-      f.log.push({ who: "narr", text: "Вы бьёте первым, без слова. " + person.name + " успевает отшатнуться." });
-      return { ok: true, message: "Драка началась. " + person.name + " — не мальчик для битья." };
+      return { ok: true, message: "Драка началась. Противников: " + f.enemies.length + "." };
     }
 
-    f.log.push({ who: "narr", text: person.name + " скидывает куртку и встаёт напротив. Без злобы — проверяет, чего вы стоите." });
+    if (mode === "guard") {
+      log(f, "narr", "Стража перекрывает вам дорогу. Их несколько, и они умеют этим заниматься.");
+      Bow.journal.add(state, "Стража Брода пришла за вами.", "guard");
+      return { ok: true, message: "Стража здесь. Разговор будет коротким." };
+    }
+
+    log(f, "narr", person.name + " скидывает куртку и встаёт напротив. Без злобы — проверяет, чего вы стоите.");
     Bow.journal.add(state, "Кулачный бой с " + person.name + ".", "fight");
     return { ok: true, message: "Кулачный бой начался." };
   }
 
-  /* ---------- Ответ противника ----------
-     Он не «глупый бот»: закрывается, если ему больно и он слабее,
-     и давит, если чувствует перевес. */
-  function chooseNpcStance(npc, player) {
-    var R = rules();
-    var mine = (npc.skills && npc.skills.combat) || 0;
-    var yours = (player.skills && player.skills.combat) || 0;
-
-    if (npc.needs.health <= R.yieldAt.npc) { return "yield"; }
-    if (npc.needs.fatigue < 25) { return "guard"; }
-    if (npc.needs.health < 40 && mine <= yours + 12) { return "guard"; }
-    if (mine < yours - 20) { return "guard"; }
-    return "press";
-  }
-
-  /* ---------- Обмен ударами ---------- */
-  function move(state, stance, rng) {
+  /* Выбрать цель до удара. Ход не тратится: это прицеливание,
+     а не действие. */
+  function setTarget(state, key) {
     var f = state.fight;
     if (!f || f.phase !== "exchange") { return { ok: false, message: "Сейчас не бой." }; }
+    var foe = aliveUnits(f, "enemy").filter(function (u) { return u.key === key; })[0];
+    if (!foe) { return { ok: false, message: "Этого противника уже нет." }; }
+    f.target = key;
+    return { ok: true, message: "Цель — " + foe.name + "." };
+  }
 
-    var npc = state.people[f.personId];
-    if (!npc || !npc.alive) { close(state); return { ok: false, message: "Противника больше нет." }; }
+  function log(f, who, text, extra) {
+    var entry = { who: who, text: text, round: (f.round || 0) + 1 };
+    if (extra) {
+      if (extra.amount) { entry.amount = extra.amount; }
+      if (extra.injury) { entry.injury = extra.injury; }
+    }
+    f.log.push(entry);
+    Bow.util.trim(f.log, 60);
+    return entry;
+  }
+
+  /* ---------- Кто на поле ---------- */
+  function unitByKey(f, key) {
+    for (var i = 0; i < f.units.length; i++) {
+      if (f.units[i].key === key) { return f.units[i]; }
+    }
+    return null;
+  }
+
+  function aliveUnits(f, side) {
+    return f.units.filter(function (u) {
+      return u.side === side && !u.down && !u.dead;
+    });
+  }
+
+  /* Боец на поле может быть трёх родов: сам игрок, житель из
+     state.people и «безликий» противник (стражник, грабитель),
+     у которого счёт идёт прямо в фишке. Без этого стражники
+     не получали ни урона, ни хода: их просто не находили. */
+  function personOf(state, unit) {
+    if (unit.key === "player") { return state.player; }
+    if (unit.refId) { return state.people[unit.refId] || null; }
+    return unit;
+  }
+
+  /* Фишка получает состояние по здоровью: стоит, лежит или мертва. */
+  function syncUnit(state, unit) {
+    var p = personOf(state, unit);
+    if (!p || !p.needs) { return; }
+    unit.hp = p.needs.health;
+
+    /* У игрока поля alive может не быть вовсе — тогда он жив.
+       Из-за обратного «!p.alive» фишка игрока считалась мёртвой
+       с первого же удара, и бой кончался «поражением» на ровном месте. */
+    if (p.alive === false) { unit.dead = true; unit.down = false; return; }
+
+    /* Вниз фишка уходит только при настоящем нокауте, и сдача —
+       состояние фазы боя, а не положение фишки. Здесь только
+       одно правило: очнувшийся боец снова встаёт.
+
+       До 0.0.6.3 здесь стоял порог stunAt (8), и он сбрасывал
+       падение, поставленное тяжёлым ударом в голову: фишка ложилась,
+       а через строку вставала обратно, потому что здоровья 25 > 8. */
+    if (unit.down && !unit.dead && p.needs.health > rules().yieldAt.npc) {
+      unit.down = false;
+    }
+  }
+
+  /* ---------- Один ход ----------
+     Сначала бьют свои, потом отвечает противник. Противник выбирает
+     самого слабого — так поступает и толпа. */
+  function move(state, stance, rng, targetKey, aimKey) {
+    var f = state.fight;
+    var R = rules();
+    if (!f || f.phase !== "exchange") { return { ok: false, message: "Сейчас не бой." }; }
 
     if (stance === "flee") { return flee(state, rng); }
     if (stance !== "press" && stance !== "guard") { return { ok: false, message: "Так не дерутся." }; }
 
-    var R = rules();
-    var player = state.player;
-    var npcStance = chooseNpcStance(npc, player);
-    var finished = false;
+    var playerUnit = unitByKey(f, "player");
+    if (!playerUnit) { return { ok: false, message: "Вас нет на поле." }; }
 
-    /* Инициатива у того, кто опытнее: это может решить исход
-       ровно в тот момент, когда у обоих мало здоровья. */
-    var order = ((npc.skills.combat || 0) > (player.skills.combat || 0)) ? [npc, player] : [player, npc];
+    f.round += 1;
 
-    for (var i = 0; i < order.length && !finished; i++) {
-      var attacker = order[i];
-      var defender = attacker === player ? npc : player;
-
-      /* Сдача проверяется до удара: тот, кто уже не держится,
-         не бьёт в ответ. */
-      if (attacker === npc && npc.needs.health <= R.yieldAt.npc) {
-        npcYields(state);
-        finished = true;
-        break;
-      }
-      if (attacker === player && player.needs.health <= R.yieldAt.player) {
-        playerDown(state, rng);
-        finished = true;
-        break;
-      }
-
-      var atkStance = attacker === player ? stance : npcStance;
-      var defStance = attacker === player ? npcStance : stance;
-      var hit = rollOf(rng) < hitChance(attacker, defender, atkStance);
-
-      /* Усталость тратится и на удар, и на глухую защиту. */
-      var cost = atkStance === "guard" ? R.guardFatigue : R.fatiguePerExchange;
-      Bow.needs.applyChange(attacker, "fatigue", -cost);
-
-      if (!hit) {
-        f.log.push({
-          who: attacker === player ? "you" : "them",
-          text: attacker === player
-            ? "Вы бьёте — и не достаёте."
-            : npc.name + " бьёт — вы успеваете уйти."
-        });
-        continue;
-      }
-
-      var damage = damageRoll(attacker, defender, f.mode, defStance, rng);
-
-      /* Порог сдачи — не украшение: удар не проваливает здоровье
-         ниже него. Человек садится в снег, а не лежит при смерти.
-         Иначе после кулачного боя нельзя было бы даже начать
-         следующий разговор: здоровье 0 закрывает всё. */
-      var floorAt = defender === npc ? R.yieldAt.npc : R.yieldAt.player;
-      if (defender.needs.health - damage <= floorAt) {
-        damage = Math.max(1, Math.round(defender.needs.health - floorAt));
-      }
-      Bow.needs.applyChange(defender, "health", -damage);
-
-      f.log.push({
-        who: attacker === player ? "you" : "them",
-        text: (attacker === player ? "Вы бьёте: " : npc.name + " бьёт: ") + damage +
-          (defStance === "guard" ? " (в защиту)." : ".")
-      });
-
-      /* Ответная проверка сразу: бой может кончиться этим ударом. */
-      if (defender === npc && npc.needs.health <= R.yieldAt.npc) {
-        npcYields(state);
-        finished = true;
-      } else if (defender === player && player.needs.health <= R.yieldAt.player) {
-        playerDown(state, rng);
-        finished = true;
-      }
+    if (state.player.needs.health <= R.yieldAt.player) {
+      endBySide(state, "enemy");
+      return { ok: true, message: "" };
     }
 
-    if (!finished) { f.round += 1; }
+    /* --- 1. Свои бьют ---
+       Цель выбирается игроком. Раньше удар всегда уходил в первого
+       по списку, и «бить того, кто держится крепче» было невозможно. */
+    var foes = aliveUnits(f, "enemy");
+    if (!foes.length) { endBySide(state, "ally"); return { ok: true, message: "" }; }
 
-    return {
-      ok: true,
-      message: finished ? "" : "Обмен: " + (stance === "guard" ? "вы держите защиту." : "вы идёте вперёд.")
-    };
+    var want = targetKey || f.target || null;
+    var foe = foes[0];
+    if (want) {
+      var picked = foes.filter(function (u) { return u.key === want; })[0];
+      if (picked) { foe = picked; }
+    }
+    f.target = foe.key;
+
+    /* Цели текущего хода: поле должно показать, кто кого бьёт,
+       а не заставлять игрока дочитывать хронику. */
+    f.aim = [];
+
+    if (!playerUnit.down) {
+      /* Бьёте тем местом, какое выбрали. По умолчанию — корпус:
+         без выбора всегда был только один «удар вообще». */
+      strike(state, playerUnit, foe, stance, rng, aimKey || "body");
+      syncUnit(state, playerUnit);
+      syncUnit(state, foe);
+      f.aim.push({ from: playerUnit.key, to: foe.key });
+    }
+
+    /* Союзники бьют того же, кого и вы: поле маленькое, на большее
+       не рассчитано. Но цель перепроверяется после каждого удара —
+       иначе сносили бы уже лежачего. */
+    aliveUnits(f, "ally").forEach(function (u) {
+      if (u.key === "player") { return; }
+      var live = aliveUnits(f, "enemy");
+      if (!live.length) { return; }
+      var prey = live[0];
+      strike(state, u, prey, "press", rng, "body");
+      syncUnit(state, u);
+      syncUnit(state, prey);
+      f.aim.push({ from: u.key, to: prey.key });
+    });
+
+    if (!aliveUnits(f, "enemy").length) { endBySide(state, "ally"); return { ok: true, message: "" }; }
+
+    /* Противник мог сдаться уже от нашего удара. */
+    if (enemyGivesUp(f)) { endBySide(state, "ally"); return { ok: true, message: "" }; }
+
+    /* --- 2. Противник отвечает --- */
+    aliveUnits(f, "enemy").forEach(function (foe) {
+      var ours = aliveUnits(f, "ally");
+      if (!ours.length) { return; }
+      ours.sort(function (a, b) { return a.hp - b.hp; });
+      var victim = ours[0];
+      var foeStance = chooseStance(foe);
+      if (foeStance === "yield") { return; }
+      strike(state, foe, victim, foeStance, rng, chooseAim(foe, state));
+      syncUnit(state, victim);
+      f.aim.push({ from: foe.key, to: victim.key });
+    });
+
+    /* Игрок на нуле — бой кончен, даже если фишка ещё «стоит»:
+       у него иные пороги, чем у фишек-жителей. */
+    if (state.player.needs.health <= R.yieldAt.player) {
+      endBySide(state, "enemy");
+      return { ok: true, message: "" };
+    }
+    if (!aliveUnits(f, "ally").length) { endBySide(state, "enemy"); return { ok: true, message: "" }; }
+    return { ok: true, message: "" };
   }
 
-  /* Противник сдаётся: бой переходит к развязке.
-     В кулачном бою развязки нет — бой окончен победой. */
-  function npcYields(state) {
-    var f = state.fight;
-    var npc = state.people[f.personId];
-    f.log.push({ who: "narr", text: npc.name + " опускает руки и садится в снег. " + He(npc) + " больше не бьётся." });
+  /* Сдаётся ли противник: здоровье у порога и он не может больше
+     держаться. Это не то же самое, что нокаут. */
+  function enemyGivesUp(f) {
+    var R = rules();
+    var foes = f.units.filter(function (u) { return u.side === "enemy" && !u.dead; });
+    if (!foes.length) { return true; }
+    return foes.every(function (u) {
+      var p = personOf({ people: {} }, u);
+      return u.hp <= R.yieldAt.npc;
+    });
+  }
 
-    if (f.mode === "spar") {
-      finish(state, "win", { note: "Он признал удар." });
+  /* Боец не «глупый бот»: закрывается, если ему больно, давит,
+     если чувствует перевес. */
+  /* Противник не бьёт вслепую: тот, кто сильнее, метит в голову,
+     слабый и осторожный — в корпус. Это видно в хронике. */
+  function chooseAim(foe, state) {
+    var p = state ? personOf(state, foe) : foe;
+    var combat = (p && p.skills && p.skills.combat) || 0;
+    if (foe.hp < 35) { return "legs"; }
+    if (combat >= 45) { return "head"; }
+    if (combat >= 30) { return "body"; }
+    return "body";
+  }
+
+  function chooseStance(foe) {
+    var R = rules();
+    if (foe.hp <= R.yieldAt.npc) { return "yield"; }
+    if (foe.hp < 40) { return "guard"; }
+    return "press";
+  }
+
+  /* ---------- Удар ----------
+     Вся арифметика здесь, чтобы хроника и поле говорили одно и то же. */
+  function strike(state, attacker, defender, stance, rng, aimKey) {
+    var f = state.fight;
+    var R = rules();
+    var aP = personOf(state, attacker);
+    var dP = personOf(state, defender);
+    if (!aP || !dP) { return; }
+
+    var mode = f.mode;
+    var aim = aimDef(aimKey);
+    var hit = rollOf(rng) < hitChance(aP, dP, stance, aimKey);
+
+    /* Усталость тратится и на удар, и на глухую защиту. */
+    var cost = stance === "guard" ? R.guardFatigue : R.fatiguePerExchange;
+    Bow.needs.applyChange(aP, "fatigue", -cost);
+
+    var who = attacker.side === "ally" ? "you" : "them";
+
+    if (!hit) {
+      log(f, who, sideName(attacker) + " " + (attacker.key === "player" ? "бьёте" : "бьёт") +
+        " " + aim.short + " — мимо.");
       return;
     }
-    f.phase = "aftermath";
+
+    var damage = damageRoll(aP, dP, mode, stance === "guard" ? "guard" : defender.stance || "press", rng, aimKey);
+
+    /* Урон НЕ ограничивается порогом сдачи. В 0.0.6 ограничение
+       было, и получалась нелепость: противника нельзя было довести
+       до порога, значит он никогда не сдавался, а бой заканчивался
+       «победой» над стоящим на ногах человеком. */
+    if (mode === "spar") {
+      /* В спарринге бьют вполсилы: до порога, но не ниже. */
+      var sparFloor = (defender.side === "ally" && !defender.npc) ? R.yieldAt.player : R.yieldAt.npc;
+      if (dP.needs.health - damage < sparFloor) {
+        damage = Math.max(1, Math.round(dP.needs.health - sparFloor));
+      }
+    }
+
+    /* Тяжёлый удар может оставить след навсегда. Только по-настоящему:
+       в спарринге не калечат, а удар должен быть весомым. До 0.0.6.2
+       этого не было, хотя хроника обещала «кому оторвало конечность». */
+    var maimed = null;
+    if (mode !== "spar" && damage >= R.maimAt) {
+      /* Шанс растёт с силой удара и с тем, куда бьёте: в голову
+         калечит чаще, по рукам — реже. Остаётся шансом. */
+      var injuryRoll = Math.min(0.34, (0.06 + (damage - R.maimAt) * 0.008) * aim.maim);
+      if (rollOf(rng) < injuryRoll) { maimed = maim(dP, rng); }
+    }
+
+    /* Сбить с ног можно и не убивая: удар в голову или по ногам
+       валит фишку раньше, чем кончится здоровье. Но не раньше,
+       чем урон упирается в порог: иначе фишка ложится, а здоровье
+       остаётся выше порога — и «нокаут» перестаёт значить «выдохся». */
+    var stunLine = R.arena.stunAt * aim.down;
+
+    /* Спутник и чужие бойцы выбывают по здоровью, а не по красоте.
+       У игрока в спарринге порог = порог сдачи: его роняют ровно
+       тогда, когда бой и так кончен. */
+    var floorForDefender = defender.side === "ally" && !defender.npc
+      ? R.yieldAt.player
+      : R.yieldAt.npc;
+
+    if (dP.needs.health - damage <= stunLine && dP.needs.health - damage <= floorForDefender) {
+      defender.down = true;
+      if (defender.side === "ally" && defender.npc) {
+        log(f, "narr", dP.name + " падает и больше не встаёт. Бой продолжается без него.");
+      }
+    }
+    if (defender.side === "ally" && !defender.npc && dP.needs.health - damage <= R.yieldAt.player) {
+      /* Игрока не убивают на улице: его доводят до земли.
+         Не ниже порога. Раньше стоял Math.round, и удар, который
+         должен был остановиться на 12, заканчивался на 11.5 —
+         тест ловил это как «провалился ниже порога». */
+      var room = dP.needs.health - R.yieldAt.player;
+      damage = Math.max(0, Math.min(damage, Math.floor(room)));
+    }
+    if (defender.side === "ally" && defender.npc && mode === "spar" &&
+        dP.needs.health - damage <= R.yieldAt.npc) {
+      /* В спарринге спутника тоже не калечат до нуля. */
+      damage = Math.max(1, Math.round(dP.needs.health - R.yieldAt.npc));
+    }
+
+    Bow.needs.applyChange(dP, "health", -damage);
+    defender.hp = dP.needs.health;
+
+    /* Куда пришёлся удар — видно в каждой строке: без этого выбор
+       «в голову или в корпус» ничем не отличался бы в хронике. */
+    var where = aimKey && aimKey !== "body" ? " (" + aim.short + ")" : "";
+    log(f, who,
+      sideName(attacker) + " → " + (defender.key === "player" ? "вы" : defender.name) +
+        ": −" + damage + " здор." + where,
+      { amount: damage });
+
+    if (maimed) {
+      log(f, "narr",
+        (defender.key === "player" ? "Вы" : defender.name) + ": " + maimed.name +
+          " — навсегда.", { injury: maimed.key });
+    }
+
+    /* Удар по рукам роняет оружие — это делает такой удар осмысленным,
+       хотя урон у него самый низкий. В спарринге оружия нет. */
+    if (aimKey === "arms" && mode !== "spar" && !defender.disarmed && weaponOf(dP)) {
+      defender.disarmed = true;
+      log(f, "narr", (defender.key === "player" ? "Вы" : defender.name) +
+        " роняет оружие. Дальше — голыми руками.");
+    }
   }
 
-  /* Игрок на земле. Это поражение, но не смерть. */
+  /* «Вы», а не «Роберт»: игрок смотрит на себя изнутри. */
+  function sideName(unit) {
+    return unit.key === "player" ? "Вы" : unit.name;
+  }
+
+  /* ---------- Итог ---------- */
+  function endBySide(state, side) {
+    var f = state.fight;
+    var R = rules();
+
+    if (side === "ally") {
+      if (f.mode === "spar") { finish(state, "win", {}); return; }
+      squadAftermath(state, "win", null);
+
+      /* Победа над человеком даёт выбор, что с ним делать. */
+      var first = f.enemies[0];
+      if (f.mode === "robbery") {
+        first.hp = Math.max(R.yieldAt.npc, first.hp);
+        first.down = false;
+        f.phase = "aftermath";
+        log(f, "narr", first.name + " садится в снег и держит руку на боку. Он больше не полезет.");
+        return;
+      }
+      if (f.mode === "crime" && first && first.person) {
+        var p = state.people[first.refId];
+        if (p) { p.needs.health = Math.max(R.yieldAt.npc, p.needs.health); }
+        /* Фишка должна показать то же, что в состоянии: иначе
+           «сдался» и «0 здоровья» — разные истории про одно. */
+        first.hp = p ? p.needs.health : first.hp;
+        first.down = false;
+        f.phase = "aftermath";
+        log(f, "narr", (p ? p.name : "Противник") + " опускается на снег и больше не бьётся.");
+        return;
+      }
+      finish(state, "win", {});
+      return;
+    }
+
+    /* Наши все лежат. */
+    if (f.mode === "guard") {
+      playerDown(state, null);
+      return;
+    }
+    playerDown(state, null);
+  }
+
   function playerDown(state, rng) {
     var f = state.fight;
-    var npc = state.people[f.personId];
+    var R = rules();
     var lost = 0;
+    var person = state.people[f.personId];
+    var lostAlly = f.units.filter(function (u) {
+      return u.side === "ally" && u.npc && u.down;
+    })[0] || null;
 
-    if (f.mode === "crime" && state.player.money > 0) {
+    if ((f.mode === "crime" || f.mode === "guard" || f.mode === "robbery") && state.player.money > 0) {
       lost = Math.max(1, Math.round(state.player.money * (0.25 + rollOf(rng) * 0.3)));
       state.player.money -= lost;
-      npc.money += lost;
+      if (person) { person.money += lost; }
     }
 
     Bow.needs.applyChange(state.player, "mood", -12);
-    f.log.push({
-      who: "narr",
-      text: npc.name + " останавливается, когда вы падаете. " +
-        (lost ? "Из кошеля пропало " + lost + " м." : He(npc) + " не трогает ваш кошель.")
-    });
 
+    if (f.mode === "guard") {
+      log(f, "narr", "Вас бьют, пока вы не перестаёте подниматься. Дальше — клетка.");
+      var hadMoney = state.player.money + lost;
+      finish(state, "caught", { lost: lost });
+      /* Пойманный игрок не остаётся на улице: его ведут в клетку.
+         Это делает итог боя со стражей настоящим, а не записью. */
+      state.player.money = hadMoney - lost;
+      Bow.guard.toJail(state, "сопротивлялся");
+      return;
+    }
+
+    log(f, "narr", (person ? person.name : "Противник") + " останавливается, когда вы падаете. " +
+      (lost ? "Из кошеля пропало " + lost + " м." : "Ваш кошель не тронут."));
+    squadAftermath(state, "loss", lostAlly);
     finish(state, "loss", { lost: lost });
   }
 
@@ -4224,44 +5747,78 @@ body {
   function fleeChance(state) {
     var f = state.fight;
     if (!f) { return 0; }
-    var npc = state.people[f.personId];
-    var chance = 0.45 + ((state.player.skills.survival || 0) / 250);
-    if (npc && npc.needs.fatigue < 30) { chance += 0.12; }
-    if (npc) { chance -= ((npc.skills.combat || 0) / 500); }
-    return clamp(chance, 0.12, 0.9);
+    var base = 0.45 + ((state.player.skills.survival || 0) / 250);
+    base += injuryPenalty(state.player, "flee");
+    var foes = aliveUnits(f, "enemy");
+    if (foes.length > 1) { base -= (foes.length - 1) * 0.12; }
+    foes.forEach(function (foe) {
+      var p = personOf(state, foe);
+      if (!p) { return; }
+      if (p.needs.fatigue < 30) { base += 0.12; }
+      base -= ((p.skills.combat || 0) / 500);
+    });
+    return clamp(base, 0.10, 0.9);
   }
 
   function flee(state, rng) {
     var f = state.fight;
-    var npc = state.people[f.personId];
     var R = rules();
-
     Bow.needs.applyChange(state.player, "fatigue", -2);
 
     if (rollOf(rng) < fleeChance(state)) {
-      f.log.push({ who: "narr", text: "Вы разрываете дистанцию и уходите. " + npc.name + " не гонится." });
+      log(f, "narr", "Вы разрываете дистанцию и уходите. За вами не гонятся.");
       finish(state, "fled", {});
-      return { ok: true, fled: true, message: "Вы ушли от драки. Не доблесть — зато целы." };
+      return { ok: true, fled: true, message: "Вы ушли. Не доблесть — зато целы." };
     }
 
-    var damage = Math.round(damageRoll(npc, state.player, f.mode, "press", rng) * 1.3);
+    var foes = aliveUnits(f, "enemy");
+    var foe = foes[0];
+    var p = foe ? personOf(state, foe) : null;
+    var damage = p ? Math.round(damageRoll(p, state.player, f.mode, "press", rng) * 1.3) : 6;
+    var floorAt = R.yieldAt.player;
+    if (state.player.needs.health - damage <= floorAt) {
+      damage = Math.max(1, Math.round(state.player.needs.health - floorAt));
+    }
     Bow.needs.applyChange(state.player, "health", -damage);
-    f.log.push({ who: "them", text: npc.name + " достаёт вас на отходе: " + damage + "." });
+    log(f, "them", "Уйти не вышло: −" + damage + " здор.", { amount: damage });
 
-    if (state.player.needs.health <= R.yieldAt.player) {
-      playerDown(state, rng);
-    }
+    if (state.player.needs.health <= floorAt) { playerDown(state, rng); }
     return { ok: true, fled: false, message: "Уйти не вышло — " + damage + " урона." };
   }
 
-  /* ---------- Развязка после победы ----------
-     Отпустить, обобрать или добить. Каждый выбор — своя цена. */
+  /* ---------- Развязка после победы ---------- */
   function decide(state, choice, rng) {
     var f = state.fight;
     if (!f || f.phase !== "aftermath") { return { ok: false, message: "Сейчас решать нечего." }; }
 
     var npc = state.people[f.personId];
     var player = state.player;
+
+    /* Грабитель — безликий: записи в людях у него нет. Его кошель
+       и память живут в фишке боя, поэтому развязка идёт по ней. */
+    var faceless = !npc && f.mode === "robbery" ? f.enemies[0] : null;
+    if (faceless) {
+      var loot = Math.max(0, Math.round(faceless.money || 0));
+      if (choice === "spare") {
+        finish(state, "win", {});
+        Bow.journal.add(state, "Вы оставили грабителя в снегу и ушли.", "danger");
+        return { ok: true, message: faceless.name + " остался сидеть в снегу." };
+      }
+      if (choice === "rob") {
+        player.money += loot;
+        finish(state, "win", {});
+        Bow.journal.add(state, "Вы обобрали грабителя: +" + loot + " м.", "crime");
+        return { ok: true, message: "В кошеле грабителя — " + loot + " м." };
+      }
+      if (choice === "kill") {
+        Bow.steal.addHeat(state, "org:guard", 12);
+        finish(state, "killed", {});
+        Bow.journal.add(state, "Вы добили грабителя на улице. Кто-нибудь найдёт тело.", "crime");
+        return { ok: true, message: "Он больше не встанет." };
+      }
+      return { ok: false, message: "Так нельзя." };
+    }
+
     if (!npc || !npc.alive) { close(state); return { ok: false, message: "Он уже не встанет." }; }
 
     var R = rules();
@@ -4280,12 +5837,10 @@ body {
         totalHours: state.time.totalHours
       });
       Bow.util.trim(npc.memory, 40);
-      f.log.push({ who: "narr", text: "Вы отходите на шаг. " + npc.name + " поднимается, держась за бок." });
-      message = "Вы отпустили " + (npc.pron === "f" ? "её" : "его") +
-        ". " + npc.name + " этого не забудет.";
+      log(f, "narr", "Вы отходите на шаг. " + npc.name + " поднимается, держась за бок.");
+      message = "Вы отпустили " + (npc.pron === "f" ? "её" : "его") + ". " + npc.name + " этого не забудет.";
     } else if (choice === "rob") {
-      var take = Math.max(1, Math.round(npc.money * (0.6 + rollOf(rng) * 0.35)));
-      take = Math.min(take, npc.money);
+      var take = Math.min(npc.money, Math.max(1, Math.round(npc.money * (0.6 + rollOf(rng) * 0.35))));
       npc.money -= take;
       player.money += take;
       heat = Bow.steal.addHeat(state, npc.org, R.robHeat);
@@ -4298,38 +5853,41 @@ body {
         totalHours: state.time.totalHours
       });
       Bow.util.trim(npc.memory, 40);
-      f.log.push({ who: "narr", text: "Вы вытряхиваете из " + his(npc) +
-        " кошеля " + take + " м. " + npc.name + " смотрит и молчит." });
+      log(f, "narr", "Вы вытряхиваете из " + his(npc) + " кошеля " + take + " м.");
       message = "Обирание: " + npc.name + ", взято " + take + " м.";
     } else if (choice === "kill") {
       npc.alive = false;
       npc.needs.health = 0;
+      /* Фишка на поле и в отчёте должна стать черепом, а не просто
+         исчезнуть: игрок только что видел, кого убил. */
+      (f.units || []).forEach(function (u) {
+        if (u.side === "enemy" && u.refId === npc.id) { u.dead = true; u.down = false; u.hp = 0; }
+      });
       heat = Bow.steal.addHeat(state, npc.org, R.killHeat);
       rep = Bow.work.addReputation(state, npc.org, R.killRep);
       if (state.orgs[npc.org]) {
         state.orgs[npc.org].unrest = clamp((state.orgs[npc.org].unrest || 0) + 6, 0, 100);
       }
-      f.log.push({ who: "narr", text: "Вы делаете то, после чего в Броде не отмываются. " + npc.name + " больше не встанет." });
+      /* Убийство — прямой вызов страже. */
+      Bow.steal.addHeat(state, "org:guard", Math.round(R.killHeat * 0.8));
+      log(f, "narr", "Вы делаете то, после чего в Броде не отмываются. " + npc.name + " больше не встанет.");
       message = "Убийство: " + npc.name + ". Об этом узнают.";
     } else {
       return { ok: false, message: "Так нельзя." };
     }
 
-    f.heat = (f.heat || 0) + heat;
-    f.rep = (f.rep || 0) + rep;
-    f.heatTotal = (f.heatTotal || 0) + heat;
+    f.heatTotal += heat;
+    f.repTotal += rep;
 
     Bow.journal.add(state, message, "crime");
     finish(state, choice === "kill" ? "killed" : "win", { heat: heat, rep: rep, message: message });
     return { ok: true, message: message, heat: heat, reputation: rep };
   }
 
-  /* ---------- Завершение ---------- */
+  /* ---------- Итог боя ---------- */
   function sparGain(player, npc) {
     var mine = (player.skills && player.skills.combat) || 0;
     var theirs = (npc && npc.skills && npc.skills.combat) || 0;
-    /* Слабый противник ничему не учит: чтобы расти, нужен тот,
-       кто умеет больше. Иначе спарринг с Левой стал бы станком. */
     return clamp((theirs - mine + 12) / 12, 0.2, 1.5);
   }
 
@@ -4345,48 +5903,50 @@ body {
     var before = player.skills.combat || 0;
     var gained = 0;
 
-    if (outcome === "win" || outcome === "loss" || outcome === "fled") {
+    if (["win", "loss", "fled", "caught"].indexOf(outcome) !== -1) {
       if (spar) {
-        /* Спарринг: навык растёт от того, кто умеет больше. Слабый
-           противник ничему не учит — иначе Лева стал бы станком. */
         if (outcome !== "fled") { gained = sparGain(player, npc); }
         state.stats.sparsMade = (state.stats.sparsMade || 0) + 1;
         if (npc && outcome !== "fled") {
-          npc.skills.combat = Math.min(100, Math.round(((npc.skills.combat || 0) + 0.3) * 10) / 10);
+          npc.skills.combat = Math.min(100, round1((npc.skills.combat || 0) + 0.3));
           npc.attitude = clamp(npc.attitude + 2, -100, 100);
         }
-      } else {
-        /* Настоящая драка: опыт дороже, и он считается в статистике. */
+      } else if (f.mode === "crime" || f.mode === "robbery") {
         gained = outcome === "win" ? 0.6 : 0.3;
         if (outcome === "win") { state.stats.fightsWon = (state.stats.fightsWon || 0) + 1; }
         else if (outcome === "loss") { state.stats.fightsLost = (state.stats.fightsLost || 0) + 1; }
       }
 
       if (gained > 0) {
-        player.skills.combat = Math.min(100, Math.round((before + gained) * 10) / 10);
+        player.skills.combat = Math.min(100, round1(before + gained));
         note = "Бой +" + (player.skills.combat - before).toFixed(1);
       }
 
-      /* В журнал — только то, что ещё не записано развязкой:
-         иначе один бой давал бы две записи подряд. */
       if (spar || outcome === "loss" || outcome === "fled") {
         Bow.journal.add(state,
-          (spar ? "Кулачный бой: " : "Драка: ") + (npc ? npc.name : "противник") + " — " +
-          ({ win: "вы взяли верх", loss: "он взял верх", fled: "вы ушли" }[outcome] || outcome) +
+          (spar ? "Кулачный бой: " : "Драка: ") + (npc ? npc.name : (f.enemies[0] ? f.enemies[0].name : "противник")) + " — " +
+          ({ win: "вы взяли верх", loss: "он взял верх", fled: "вы ушли", caught: "вас скрутили" }[outcome] || outcome) +
           (note ? " (" + note + ")." : "."),
           "fight");
       }
     }
 
     var summary = {
-      name: npc ? npc.name : "—",
+      name: npc ? npc.name : (f.enemies[0] ? f.enemies[0].name : "—"),
       mode: f.mode,
       outcome: outcome,
       rounds: f.round,
       heat: f.heatTotal || 0,
-      rep: extraData.rep || f.rep || 0,
+      rep: f.repTotal || 0,
       note: note,
-      log: f.log.slice(-8)
+      lost: extraData.lost || 0,
+      units: (f.units || []).map(function (u) {
+        return {
+          key: u.key, name: u.name, side: u.side, col: u.col, row: u.row,
+          hp: Math.round(u.hp), down: !!u.down, dead: !!u.dead
+        };
+      }),
+      log: f.log.slice(-14)
     };
 
     state.flags.lastFight = summary;
@@ -4416,19 +5976,37 @@ body {
     close: close,
     start: start,
     move: move,
+    flee: flee,
     decide: decide,
     finish: finish,
     odds: odds,
     isActive: isActive,
+    toggleAlly: toggleAlly,
+    alliesAvailable: alliesAvailable,
+    allyState: allyState,
+    squadAftermath: squadAftermath,
+    aimDef: aimDef,
+    chooseAim: chooseAim,
     weaponOf: weaponOf,
     armorOf: armorOf,
     attackPower: attackPower,
     defenseOf: defenseOf,
     hitChance: hitChance,
+    damageRoll: damageRoll,
     damage: damageRoll,
     fleeChance: fleeChance,
-    chooseNpcStance: chooseNpcStance,
-    witnessNames: witnessNames
+    chooseNpcStance: chooseStance,
+    witnessNames: witnessNames,
+    strike: strike,
+    unitByKey: unitByKey,
+    aliveUnits: aliveUnits,
+    log: log,
+    /* Травмы появляются только в бою и при страже, поэтому живут здесь. */
+    maim: maim,
+    setTarget: setTarget,
+    hasInjury: hasInjury,
+    injuryPenalty: injuryPenalty,
+    injuryWord: injuryWord
   };
 
 })(typeof window !== "undefined" ? window : this);/* ============================================================
@@ -4868,6 +6446,638 @@ body {
   };
 
 })(typeof window !== "undefined" ? window : this);/* ============================================================
+   BOW GUARD — стража, клетка и расплата.
+
+   Зачем: розыск в 0.0.5–0.0.6 был цифрой в панели. Убили торговку —
+   и никто не пришёл. По ТЗ последствия должны быть событием,
+   а не записью в профиле.
+
+   Как устроено:
+     • у стражи свой розыск (org:guard), он растёт от нападений
+       и особенно от убийств;
+     • перевалил за порог — стража приходит сама, внезапно,
+       и предлагает выбор, а не бьёт без слова;
+     • сдаться — клетка без драки; откупиться — если денег много;
+       бежать — шанс от выживания, при провале изобьют и покалечат;
+       оскорбить короля — казнят на месте;
+       драться — трое против вас, и это видно заранее;
+     • в клетке время идёт, розыск спадает, есть побег и подкуп;
+     • увечья остаются навсегда.
+
+   Модуль чистый: не знает ни про SugarCube, ни про DOM.
+   ============================================================ */
+(function (global) {
+  "use strict";
+
+  var Bow = global.Bow = global.Bow || {};
+
+  var GUARD = "org:guard";
+
+  function R() { return Bow.data.fightRules.guard; }
+  function clamp(v, a, b) { return Bow.util.clamp(v, a, b); }
+  function rnd(rng) { return (rng || Math.random)(); }
+
+  /* ---------- Угроза ---------- */
+  function heat(state) {
+    return Bow.steal.heatOf(state, GUARD);
+  }
+
+  function shouldCome(state) {
+    if (!state || state.dead || state.jail) { return false; }
+    if (state.fight) { return false; }
+    return heat(state) >= R().threshold;
+  }
+
+  /* Отряд стражи: имена и умения из данных, каждый — живой человек.
+     Они не «мобы из воздуха»: их можно ранить, убить и запомнить. */
+  function squad(state) {
+    var cfg = R();
+    var names = cfg.names || ["Стражник"];
+    var units = [];
+    for (var i = 0; i < cfg.squad; i++) {
+      units.push({
+        key: "guard:" + i,
+        refId: null,
+        side: "enemy",
+        name: names[i % names.length],
+        npc: true,
+        person: false,
+        skills: cfg.skills,
+        needs: { health: 84, fatigue: 70, hunger: 60, mood: 55 },
+        weapon: cfg.gear.weapon,
+        armor: cfg.gear.armor,
+        hp: 84
+      });
+    }
+    return units;
+  }
+
+  /* ---------- Приход ----------
+     Не «сразу после убийства», а через несколько часов: у стражи
+     должно быть время узнать. Игрок получает выбор, а не удар в спину. */
+  function schedule(state) {
+    if (!shouldCome(state)) { return false; }
+    if (state.flags.guardAt !== undefined && state.flags.guardAt !== null) { return false; }
+    state.flags.guardAt = state.time.totalHours + R().arriveHours;
+    return true;
+  }
+
+  /* Вызывается на каждом часу: пора ли. */
+  function checkArrival(state) {
+    if (state.flags.guardAt === undefined || state.flags.guardAt === null) { return false; }
+    if (state.dead || state.jail || state.fight) { return false; }
+    if (state.time.totalHours < state.flags.guardAt) { return false; }
+
+    state.flags.guardAt = null;
+    state.guard = {
+      phase: "demand",
+      arrived: true,
+      squad: squad(state),
+      fledTo: null,
+      heatAt: heat(state)
+    };
+    Bow.journal.add(state, "На улице появилась стража. Они идут прямо к вам.", "guard");
+    return true;
+  }
+
+  /* ---------- Варианты ---------- */
+
+  /* Сдаться: без драки, сразу в клетку. */
+  /* Стражу видно, только когда она пришла. Раньше сдаться и
+     откупиться можно было и в момент, когда десятник ещё спал, —
+     то есть одним щелчком закрыть дело, которого ещё нет. */
+  function faceToFace(g) {
+    return !!(g && g.phase === "demand" && g.arrived);
+  }
+
+  function surrender(state) {
+    var g = state.guard;
+    if (!faceToFace(g)) { return { ok: false, message: "Сейчас некому сдаваться." }; }
+    state.guard = null;
+    state.flags.guardAt = null;
+    toJail(state, "сознался");
+    return {
+      ok: true,
+      message: "Вы поднимаете руки. Вас ведут в клетку — без побоев, но и без пощады."
+    };
+  }
+
+  /* Откуп: цена растёт вместе с розыском. */
+  function bribeCost(state) {
+    return Math.round(R().bribeBase + heat(state) * 1.6);
+  }
+
+  function bribe(state) {
+    var g = state.guard;
+    if (!faceToFace(g)) { return { ok: false, message: "Сейчас некому платить." }; }
+
+    var cost = bribeCost(state);
+    if (state.player.money < cost) {
+      return { ok: false, message: "Столько у вас нет: нужно " + cost + " м." };
+    }
+
+    state.player.money -= cost;
+    state.guard = null;
+    state.flags.guardAt = null;
+    Bow.steal.addHeat(state, GUARD, -Math.round(heat(state) * 0.7));
+    Bow.work.addReputation(state, GUARD, 5);
+    Bow.journal.add(state, "Стражу подкупили за " + cost + " м. Дело закрыли тихо.", "guard");
+    return { ok: true, message: "Отдали " + cost + " м. Десятник отводит глаза и уходит." };
+  }
+
+  /* Побег: шанс от выживания и увечий. Провал — избиение, возможно,
+     навсегда, и всё равно клетка. */
+  function fleeChance(state) {
+    /* Без стражи рядом бежать не от кого: раньше эта цифра
+       показывалась и считалась всегда. */
+    if (!faceToFace(state.guard)) { return 0; }
+    var base = 0.30 + ((state.player.skills.survival || 0) / 240)
+      + ((state.player.skills.stealth || 0) / 400)
+      + Bow.fight.injuryPenalty(state.player, "flee");
+    if (Bow.time.isNight(state)) { base += 0.10; }
+    if (state.player.needs.fatigue < 30) { base -= 0.12; }
+    return clamp(base, 0.08, 0.85);
+  }
+
+  function flee(state, rng) {
+    var g = state.guard;
+    if (!g || g.phase !== "demand") { return { ok: false, message: "Сейчас не от кого бежать." }; }
+
+    Bow.time.advance(state, 1);
+    Bow.needs.applyChange(state.player, "fatigue", -8);
+
+    if (rnd(rng) < fleeChance(state)) {
+      /* Ушли — но не исчезли: розыск остаётся, и каждый переход
+         снова даёт шанс, что вас узнают. */
+      var places = Object.keys(Bow.data.locations).filter(function (k) {
+        return k !== state.player.location;
+      });
+      var to = places[Math.floor(rnd(rng) * places.length) % places.length];
+      state.player.location = to;
+      state.guard = null;
+      state.flags.guardAt = null;
+      /* В розыске каждый переход — новый шанс быть узнанным,
+         без порога 60: иначе обещание «каждый переход» ложь. */
+      state.flags.hunted = true;
+      state.flags.huntedUntil = state.time.totalHours + 72;
+      state.flags.huntedHeat = Math.max(heat(state), R().threshold);
+      Bow.journal.add(state, "Вы ушли от стражи бегом. Теперь за вами смотрят внимательнее.", "guard");
+      return {
+        ok: true,
+        escaped: true,
+        message: "Вы ушли. Теперь каждый переход может стоить свободы."
+      };
+    }
+
+    /* Поймали: бьют и калечат. */
+    var dmg = 12 + Math.round(rnd(rng) * 10);
+    Bow.needs.applyChange(state.player, "health", -dmg);
+
+    /* Увечье — не гарантия, а шанс. В тесте проверяется заведомо
+       провальным броском: 0.99 проходит мимо порога maimChance. */
+    var injury = null;
+    if (rnd(rng) < Bow.data.fightRules.maimChance) {
+      injury = Bow.fight.maim(state.player, rng);
+    }
+
+    state.guard = null;
+    state.flags.guardAt = null;
+
+    var text = "Вас догнали и били, пока не перестали подниматься.";
+    if (injury) { text += " С тех пор " + injury.name + " — навсегда."; }
+    Bow.journal.add(state, text, "guard");
+
+    toJail(state, "бежал и попался");
+
+    return {
+      ok: true,
+      escaped: false,
+      injury: injury ? injury.name : null,
+      message: text
+    };
+  }
+
+  /* Оскорбить короля: короткий путь на плаху.
+     Это осознанный выбор игрока, а не случайность. */
+  function insultKing(state) {
+    var g = state.guard;
+    if (!g || g.phase !== "demand") { return { ok: false, message: "Сейчас не с кем говорить." }; }
+
+    state.guard = null;
+    state.flags.guardAt = null;
+    state.dead = {
+      cause: "казнь",
+      text: "Вы сказали вслух то, что в Хладных Ветрах не говорят даже шёпотом. " +
+        "Десятник не стал спорить: он просто кивнул своим.",
+      hours: state.time.totalHours
+    };
+    Bow.journal.add(state, "Казнь за оскорбление короля.", "death");
+    return { ok: true, message: "Вас казнили. Игра окончена." };
+  }
+
+  /* Драка со стражей. */
+  function fight(state) {
+    var g = state.guard;
+    if (!g || g.phase !== "demand") { return { ok: false, message: "Сейчас не с кем драться." }; }
+
+    var squadUnits = g.squad;
+    state.guard = null;
+    state.flags.guardAt = null;
+
+    state.fight = {
+      personId: null,
+      mode: "guard",
+      phase: "choose",
+      round: 0,
+      log: [],
+      witnesses: Bow.steal.witnessesAt(state, state.player.location)
+        .map(function (p) { return p.id; }),
+      /* С кем вы пришли — с тем и стоите. Раньше бой со стражей
+         всегда начинался в одиночку, и отряд был бесполезен там,
+         где он нужнее всего. */
+      allies: Bow.fight.alliesAvailable(state).filter(function (a) {
+        return a.willing;
+      }).map(function (a) { return a.id; }),
+      enemies: [],
+      guardSquad: squadUnits,
+      units: [],
+      heatTotal: 0,
+      repTotal: 0
+    };
+
+    /* Стража не ждёт, пока игрок нажмёт вторую кнопку: решение
+       «драться» уже принято. Иначе промежуточный экран обещает
+       выбор, которого нет. */
+    return Bow.fight.start(state, "guard");
+  }
+
+  /* ---------- Клетка ---------- */
+  function toJail(state, reason) {
+    var g = R();
+    state.jail = {
+      hoursLeft: g.cellsHours,
+      reason: reason || "вина",
+      since: state.time.totalHours
+    };
+    state.guard = null;
+    state.flags.guardAt = null;
+    state.flags.hunted = false;
+    state.player.location = "square";
+    Bow.journal.add(state, "Вас заперли в клетке у частокола. Срок — " + g.cellsHours + " ч.", "guard");
+    return state.jail;
+  }
+
+  /* Отсидеть: время идёт, розыск спадает сам (подписка на сутки). */
+  function serve(state, hours) {
+    if (!state.jail) { return { ok: false, message: "Вы не в клетке." }; }
+    var h = Math.max(1, Math.min(hours || 4, state.jail.hoursLeft));
+
+    Bow.time.advance(state, h);
+    state.jail.hoursLeft -= h;
+    Bow.needs.applyChange(state.player, "mood", -3);
+    Bow.needs.applyChange(state.player, "fatigue", 6);
+
+    if (state.jail.hoursLeft <= 0) {
+      release(state);
+      return { ok: true, released: true, message: "Срок вышел. Вас выпускают." };
+    }
+    return { ok: true, message: "Прошло " + h + " ч. Осталось " + state.jail.hoursLeft + " ч." };
+  }
+
+  function release(state) {
+    state.jail = null;
+    Bow.steal.addHeat(state, GUARD, -Math.round(heat(state) * 0.6));
+    Bow.work.addReputation(state, GUARD, 8);
+    Bow.journal.add(state, "Вас выпустили из клетки.", "guard");
+  }
+
+  /* Побег из клетки: труднее, чем с улицы, но возможен. */
+  function escapeJail(state, rng) {
+    if (!state.jail) { return { ok: false, message: "Вы не в клетке." }; }
+    var base = 0.18 + ((state.player.skills.stealth || 0) / 300)
+      + ((state.player.skills.survival || 0) / 500)
+      + Bow.fight.injuryPenalty(state.player, "flee");
+    if (state.time.hour >= 22 || state.time.hour < 5) { base += 0.12; }
+    base = clamp(base, 0.05, 0.7);
+
+    Bow.time.advance(state, 2);
+
+    if (rnd(rng) < base) {
+      state.jail = null;
+      state.flags.guardAt = null;
+      Bow.steal.addHeat(state, GUARD, 15);
+      Bow.journal.add(state, "Вы выбрались из клетки и ушли в темноту.", "guard");
+      return { ok: true, escaped: true, message: "Засов поддался. Вас ищут злее прежнего." };
+    }
+
+    Bow.steal.addHeat(state, GUARD, 5);
+    Bow.needs.applyChange(state.player, "health", -6);
+    Bow.journal.add(state, "Побег из клетки не удался.", "guard");
+    return { ok: true, escaped: false, message: "Вас вернули на место. Теперь следят внимательнее." };
+  }
+
+  /* Подкуп в клетке: дешевле, чем на улице, но и денег уже меньше. */
+  function bribeJail(state) {
+    if (!state.jail) { return { ok: false, message: "Вы не в клетке." }; }
+    var cost = Math.round(R().bribeBase * 0.8 + state.jail.hoursLeft);
+    if (state.player.money < cost) {
+      return { ok: false, message: "Нужно " + cost + " м., у вас " + state.player.money + "." };
+    }
+    state.player.money -= cost;
+    state.jail = null;
+    Bow.steal.addHeat(state, GUARD, -Math.round(heat(state) * 0.5));
+    Bow.journal.add(state, "Клетку откупили за " + cost + " м.", "guard");
+    return { ok: true, released: true, message: "Сторож отворачивается. Вы уходите." };
+  }
+
+  /* ---------- Каждый час и каждый переход ---------- */
+  Bow.bus.on("tick:hour", function (state) {
+    if (state.dead || state.jail) { return; }
+    schedule(state);
+    checkArrival(state);
+  });
+
+  /* Каждый переход по городу — шанс, что вас узнают. */
+  function onMove(state, rng) {
+    if (state.dead || state.jail || state.fight || state.guard) { return false; }
+    if (!state.flags.hunted) { return false; }
+    if (state.flags.huntedUntil && state.time.totalHours > state.flags.huntedUntil) {
+      state.flags.hunted = false;
+      return false;
+    }
+
+    var knownHeat = state.flags.huntedHeat || heat(state);
+    var chance = 0.22 + knownHeat / 400;
+    if (rnd(rng) >= chance) { return false; }
+
+    /* Узнали на новом месте: стража уже здесь, и ждать больше нечего. */
+    state.guard = {
+      phase: "demand",
+      arrived: true,
+      squad: squad(state),
+      fledTo: state.player.location,
+      heatAt: knownHeat
+    };
+    Bow.journal.add(state, "На новом месте вас уже ждут: стража узнала.", "guard");
+    return true;
+  }
+
+  /* Шанс быть узнанным на переходе. Показывается игроку в розыске,
+     чтобы «каждый переход может стоить свободы» было цифрой. */
+  function huntedChance(state) {
+    if (!state.flags.hunted) { return 0; }
+    if (state.flags.huntedUntil && state.time.totalHours > state.flags.huntedUntil) { return 0; }
+    return clamp(0.22 + (state.flags.huntedHeat || heat(state)) / 400, 0, 0.9);
+  }
+
+  Bow.guard = {
+    heat: heat,
+    huntedChance: huntedChance,
+    shouldCome: shouldCome,
+    schedule: schedule,
+    checkArrival: checkArrival,
+    surrender: surrender,
+    bribeCost: bribeCost,
+    bribe: bribe,
+    fleeChance: fleeChance,
+    flee: flee,
+    insultKing: insultKing,
+    fight: fight,
+    squad: squad,
+    toJail: toJail,
+    serve: serve,
+    release: release,
+    escapeJail: escapeJail,
+    bribeJail: bribeJail,
+    onMove: onMove,
+    THRESHOLD: function () { return R().threshold; }
+  };
+
+})(typeof window !== "undefined" ? window : this);/* ============================================================
+   BOW STREET — внезапные встречи на улице.
+
+   Зачем: до 0.0.6.1 мир реагировал только на клики игрока.
+   Ходишь по городу — тихо. По ТЗ события должны иметь причину,
+   а не быть украшением: грабитель выходит на того, у кого есть
+   деньги и кто выглядит слабо, а не на каждого подряд.
+
+   Как устроено:
+     • встреча случается при переходе между локациями;
+     • шанс зависит от времени суток, места и толщины кошеля;
+     • всегда есть выбор: отдать, драться, бежать, припугнуть;
+     • никто не нападает на того, кто только что был избит;
+     • событие висит в состоянии и переживает перерисовку.
+
+   Модуль чистый: не знает ни про SugarCube, ни про DOM.
+   ============================================================ */
+(function (global) {
+  "use strict";
+
+  var Bow = global.Bow = global.Bow || {};
+
+  function clamp(v, a, b) { return Bow.util.clamp(v, a, b); }
+  function rnd(rng) { return (rng || Math.random)(); }
+
+  /* ---------- Кто выходит ----------
+     Те же правила, что у жителей: имя, умения, оружие.
+     Грабитель — не «моб», он потом может встретиться снова. */
+  var NAMES = ["Косой", "Рваное Ухо", "Тихий", "Гнилой Зуб", "Пепел"];
+
+  function makeRobber(state, rng) {
+    var names = NAMES.filter(function (n) {
+      return !Object.keys(state.people).some(function (id) { return state.people[id].name === n; });
+    });
+    var pool = names.length ? names : NAMES;
+    var name = pool[Math.floor(rnd(rng) * pool.length) % pool.length];
+
+    var strength = 25 + Math.round(rnd(rng) * 25);
+    return {
+      key: "robber",
+      refId: null,
+      side: "enemy",
+      name: name,
+      npc: true,
+      person: false,
+      skills: { combat: strength, survival: 30, stealth: 20 },
+      needs: { health: 70, fatigue: 65, hunger: 40, mood: 50 },
+      weapon: rnd(rng) < 0.5 ? "item:knife" : null,
+      armor: null,
+      hp: 70,
+      demand: 6 + Math.round(rnd(rng) * 10),
+      /* Свой кошель у него тоже есть — иначе «обобрать» было бы
+         пустым обещанием, а победитель ушёл бы ни с чем. */
+      money: 8 + Math.round(rnd(rng) * 20)
+    };
+  }
+
+  /* ---------- Шанс встречи ----------
+     Ночью, на околице, с полным кошелём — опасно.
+     В трактире и у кузницы не грабят: там люди. */
+  function chanceAt(state) {
+    var loc = state.player.location;
+    if (loc === "tavern" || loc === "smithy") { return 0; }
+    if (state.player.needs.health < 25) { return 0; }
+
+    var base = loc === "outskirts" ? 0.18 : loc === "forest" ? 0.14 : 0.07;
+    if (Bow.time.isNight(state)) { base += 0.12; }
+    if (state.player.money >= 40) { base += 0.08; }
+    if (state.player.money >= 100) { base += 0.07; }
+    /* Тот, кто умеет драться, выглядит менее заманчиво. */
+    base -= ((state.player.skills.combat || 0) / 400);
+    return clamp(base, 0, 0.45);
+  }
+
+  function maybeRob(state, rng) {
+    if (state.dead || state.jail || state.fight || state.guard || state.encounter) { return false; }
+    if (state.player.money <= 0) { return false; }
+    var chance = chanceAt(state);
+    if (chance <= 0) { return false; }
+    if (rnd(rng) >= chance) { return false; }
+
+    state.encounter = {
+      kind: "robber",
+      robber: makeRobber(state, rng),
+      phase: "demand",
+      at: state.player.location
+    };
+    Bow.journal.add(state, "Из-за угла выходит человек с ножом и просит кошель.", "danger");
+    return true;
+  }
+
+  function close(state) {
+    state.encounter = null;
+    return { ok: true, message: "" };
+  }
+
+  /* ---------- Отдать ---------- */
+  function pay(state) {
+    var e = state.encounter;
+    if (!e) { return { ok: false, message: "Никто ничего не требует." }; }
+    var sum = Math.min(state.player.money, e.robber.demand);
+    state.player.money -= sum;
+    state.encounter = null;
+    Bow.needs.applyChange(state.player, "mood", -3);
+    Bow.journal.add(state, "Вы отдали грабителю " + sum + " м. и ушли целыми.", "danger");
+    return { ok: true, message: "Кошель стал легче на " + sum + " м. Зато без крови." };
+  }
+
+  /* ---------- Припугнуть ----------
+     Навык боя и оружие в руке решают: увидел топор — передумал. */
+  function scareChance(state) {
+    var e = state.encounter;
+    if (!e) { return 0; }
+    var weapon = Bow.fight.weaponOf(state.player);
+    var base = 0.15 + ((state.player.skills.combat || 0) / 300);
+    if (weapon) { base += 0.22; }
+    /* Голос тоже оружие: власть — умение говорить так, чтобы
+       поверили. До 0.0.6.3 этот навык не влиял ни на что. */
+    base += Math.min(0.18, (state.player.skills.leadership || 0) / 350);
+    base -= ((e.robber.skills.combat || 0) / 500);
+    if (state.player.needs.health < 40) { base -= 0.15; }
+    return clamp(base, 0.05, 0.8);
+  }
+
+  function scare(state, rng) {
+    var e = state.encounter;
+    if (!e) { return { ok: false, message: "Никого нет." }; }
+
+    if (rnd(rng) < scareChance(state)) {
+      state.encounter = null;
+      Bow.needs.applyChange(state.player, "mood", 4);
+      Bow.journal.add(state, "Грабитель посмотрел на ваши руки и передумал.", "danger");
+      return { ok: true, scared: true, message: "Он отступил. В этот раз — без драки." };
+    }
+
+    /* Не испугался — сразу бьёт. */
+    Bow.needs.applyChange(state.player, "health", -8);
+    e.phase = "fight";
+    Bow.journal.add(state, "Грабитель не испугался и ударил первым.", "danger");
+    return { ok: true, scared: false, message: "Он ударил первым: −8 здор." };
+  }
+
+  /* ---------- Драка ---------- */
+  function fight(state) {
+    var e = state.encounter;
+    if (!e) { return { ok: false, message: "Никого нет." }; }
+
+    var robber = e.robber;
+    state.encounter = null;
+
+    state.fight = {
+      personId: null,
+      mode: "robbery",
+      phase: "choose",
+      round: 0,
+      log: [],
+      witnesses: [],
+      allies: [],
+      enemies: [{
+        key: "enemy:robber",
+        refId: null,
+        side: "enemy",
+        name: robber.name,
+        npc: true,
+        person: false,
+        skills: robber.skills,
+        needs: robber.needs,
+        weapon: robber.weapon,
+        armor: null,
+        hp: robber.hp,
+        money: robber.money
+      }],
+      units: [],
+      heatTotal: 0,
+      repTotal: 0
+    };
+
+    return Bow.fight.start(state, "robbery");
+  }
+
+  /* ---------- Бежать ---------- */
+  function fleeChance(state) {
+    var e = state.encounter;
+    if (!e) { return 0; }
+    var base = 0.4 + ((state.player.skills.survival || 0) / 250)
+      + Bow.fight.injuryPenalty(state.player, "flee");
+    base -= ((e.robber.skills.combat || 0) / 500);
+    return clamp(base, 0.1, 0.9);
+  }
+
+  function flee(state, rng) {
+    var e = state.encounter;
+    if (!e) { return { ok: false, message: "Никого нет." }; }
+
+    if (rnd(rng) < fleeChance(state)) {
+      /* Убежали — но в незнакомое место: телепорт не бесплатный. */
+      var places = Object.keys(Bow.data.locations).filter(function (k) {
+        return k !== state.player.location;
+      });
+      var to = places[Math.floor(rnd(rng) * places.length) % places.length];
+      state.player.location = to;
+      state.encounter = null;
+      Bow.journal.add(state, "Вы ушли от грабителя бегом.", "danger");
+      return { ok: true, escaped: true, message: "Вы ушли — правда, не туда, куда шли." };
+    }
+
+    Bow.needs.applyChange(state.player, "health", -7);
+    Bow.journal.add(state, "Грабитель догнал вас на бегу.", "danger");
+    return { ok: true, escaped: false, message: "Он догнал: −7 здор. Придётся драться." };
+  }
+
+  Bow.street = {
+    chanceAt: chanceAt,
+    maybeRob: maybeRob,
+    makeRobber: makeRobber,
+    pay: pay,
+    scareChance: scareChance,
+    scare: scare,
+    fight: fight,
+    fleeChance: fleeChance,
+    flee: flee,
+    close: close
+  };
+
+})(typeof window !== "undefined" ? window : this);/* ============================================================
    BOW EVENTS — атмосфера сцены и значимые события.
 
    ВАЖНОЕ РАЗДЕЛЕНИЕ (исправление по замечанию владельца):
@@ -5128,6 +7338,8 @@ body {
         Bow.events.afterAction(state, rng);
       }
       Bow.needs.ensure(state.player);
+      /* Стража приходит по часам, но час мог пройти внутри действия. */
+      if (!state.guard && !state.fight) { Bow.guard.checkArrival(state); }
     }
 
     return result;
@@ -5137,8 +7349,15 @@ body {
   var act = {
     move: function (state, to) {
       var res = Bow.actions.move(state, to);
-      if (res.ok) { res.__moved = true; Bow.events.afterMove(state, rng); }
-      state.stats.actionsTaken += 0;
+      if (res.ok) {
+        res.__moved = true;
+        Bow.events.afterMove(state, rng);
+        /* Каждый переход — это шанс встретить стражу или грабителя.
+           Проверки живут здесь, а не в интерфейсе: иначе тот же путь
+           через другой интерфейс не давал бы событий. */
+        if (!state.fight && !state.guard) { Bow.guard.onMove(state, rng); }
+        if (!state.fight && !state.guard && !state.encounter) { Bow.street.maybeRob(state, rng); }
+      }
       return res;
     },
     eat: function (state, key) {
@@ -5188,6 +7407,35 @@ body {
       }
       return res;
     },
+    stealLook: function (state, personId) {
+      var res = Bow.steal.study(state, personId);
+      if (res.ok) { Bow.needs.ensure(state.player); }
+      return res;
+    },
+    stealDistract: function (state, personId) {
+      var res = Bow.steal.distract(state, personId, rng);
+      if (res.ok) {
+        Bow.needs.ensure(state.player);
+        Bow.events.afterAction(state, rng);
+      }
+      return res;
+    },
+    stealPocket: function (state, personId) {
+      var res = Bow.steal.pockets(state, personId, rng);
+      if (res.ok) {
+        Bow.events.afterAction(state, rng);
+        Bow.needs.ensure(state.player);
+      }
+      return res;
+    },
+    treat: function (state) {
+      var res = Bow.needs.treat(state, rng);
+      if (res.ok) {
+        Bow.needs.ensure(state.player);
+        Bow.events.afterAction(state, rng);
+      }
+      return res;
+    },
     work: function (state, jobKey) {
       var res = Bow.work.perform(state, jobKey, rng);
       if (res.ok) {
@@ -5217,8 +7465,8 @@ body {
       if (res.ok) { Bow.needs.ensure(state.player); }
       return res;
     },
-    fightMove: function (state, stance) {
-      var res = Bow.fight.move(state, stance, rng);
+    fightMove: function (state, stance, target, aim) {
+      var res = Bow.fight.move(state, stance, rng, target, aim);
       if (res.ok) {
         Bow.needs.ensure(state.player);
         /* Побег и победа — обычные действия: мир откликается. */
@@ -5226,12 +7474,69 @@ body {
       }
       return res;
     },
+    fightTarget: function (state, key) {
+      return Bow.fight.setTarget(state, key);
+    },
     fightDecide: function (state, choice) {
       var res = Bow.fight.decide(state, choice, rng);
       if (res.ok) {
         Bow.needs.ensure(state.player);
         Bow.events.afterAction(state, rng);
       }
+      return res;
+    },
+    fightAlly: function (state, personId) {
+      return Bow.fight.toggleAlly(state, personId);
+    },
+
+    /* ---------- Стража ----------
+       Приход проверяется и здесь: не только по часам, но и после
+       любого действия, иначе стража «замечала» бы убийство лишь
+       к следующему тику. */
+    guardSurrender: function (state) {
+      return Bow.guard.surrender(state);
+    },
+    guardBribe: function (state) {
+      return Bow.guard.bribe(state);
+    },
+    guardFlee: function (state) {
+      var res = Bow.guard.flee(state, rng);
+      if (res.ok) { Bow.needs.ensure(state.player); }
+      return res;
+    },
+    guardInsult: function (state) {
+      return Bow.guard.insultKing(state);
+    },
+    guardFight: function (state) {
+      return Bow.guard.fight(state);
+    },
+    jailServe: function (state) {
+      var res = Bow.guard.serve(state, 4);
+      if (res.ok) { Bow.needs.ensure(state.player); }
+      return res;
+    },
+    jailEscape: function (state) {
+      var res = Bow.guard.escapeJail(state, rng);
+      if (res.ok) { Bow.needs.ensure(state.player); }
+      return res;
+    },
+    jailBribe: function (state) {
+      return Bow.guard.bribeJail(state);
+    },
+
+    /* ---------- Улица ---------- */
+    streetPay: function (state) {
+      return Bow.street.pay(state);
+    },
+    streetScare: function (state) {
+      return Bow.street.scare(state, rng);
+    },
+    streetFight: function (state) {
+      return Bow.street.fight(state);
+    },
+    streetFlee: function (state) {
+      var res = Bow.street.flee(state, rng);
+      if (res.ok) { Bow.needs.ensure(state.player); }
       return res;
     }
   };
@@ -5265,6 +7570,8 @@ body {
   /* Названия навыков — в одном месте. До 0.0.6 список был скопирован
      дважды, и «скрытность» в обоих экземплярах отсутствовала: навык
      работал, но на экране его не было. */
+  /* Умения: что каждое делает. До 0.0.6.3 висели только числа,
+     и понять, зачем качать «Торг», было нельзя. */
   var SKILL_NAMES = {
     combat: "Бой",
     trade: "Торг",
@@ -5272,6 +7579,15 @@ body {
     medicine: "Лечение",
     leadership: "Власть",
     stealth: "Скрытность"
+  };
+
+  var SKILL_HINT = {
+    combat: "как сильно и часто вы попадаете",
+    trade: "дешевле покупать, дороже продавать",
+    survival: "точнее бить, лучше бегать, читать следы",
+    medicine: "быстрее затягиваются раны",
+    leadership: "люди идут за вами при меньшем доверии",
+    stealth: "кражи, побег, клетка"
   };
 
   function skillName(key) { return SKILL_NAMES[key] || key; }
@@ -5295,6 +7611,30 @@ body {
   /* Мини-полосы в шапке: состояние видно всегда, даже с закрытой панелью.
      Это то, что владелец просил по образцу Kenshi: нажал на человека —
      сразу видишь его состояние. */
+  /* Розыск: сколько набрано, сколько до порога и сколько шансов
+     потратить на переход. Без этого цифра жила только в журнале. */
+  function renderHeat(state) {
+    var box = $("bow-heat");
+    if (!box) { return; }
+
+    var heat = Bow.guard.heat(state);
+    var threshold = Bow.data.fightRules.guard.threshold;
+    var hunted = Bow.guard.huntedChance(state);
+    var parts = [];
+
+    if (heat > 0) {
+      parts.push('<span class="bow-heat-line">Розыск <b>' + Math.round(heat) + '</b>' +
+        (heat >= threshold ? ' — стража уже ищет' : ' из ' + threshold) + '</span>');
+    }
+    if (hunted > 0) {
+      parts.push('<span class="bow-heat-line bow-heat-hunted">Вас узнают на переходе: <b>' +
+        Math.round(hunted * 100) + '%</b></span>');
+    }
+
+    box.innerHTML = parts.join("");
+    box.classList.toggle("bow-heat-on", parts.length > 0);
+  }
+
   function renderTopStatus(state) {
     var box = $("bow-topbar-status");
     if (!box) { return; }
@@ -5355,9 +7695,76 @@ body {
   function renderSkills(state) {
     var box = $("bow-skills");
     if (!box) { return; }
+
     box.innerHTML = Object.keys(SKILL_NAMES).map(function (k) {
-      return '<div class="bow-skill"><span>' + skillName(k) + '</span><b>' + (state.player.skills[k] || 0) + '</b></div>';
+      var v = state.player.skills[k] || 0;
+      var lvl = v >= 60 ? "high" : v >= 30 ? "mid" : "low";
+      return '<div class="bow-skill bow-skill-' + lvl + '" title="' + esc(SKILL_HINT[k] || "") + '">' +
+        '<span class="bow-skill-name">' + skillName(k) + '</span>' +
+        '<span class="bow-skill-bar"><i style="width:' + Math.round(v) + '%"></i></span>' +
+        '<b>' + v + '</b>' +
+      '</div>';
     }).join("");
+  }
+
+  /* ---------- Тело: что не заживёт ----------
+     Увечья постоянные, и игрок должен видеть их без открытия
+     карточки: иначе «покалеченная рука» остаётся строчкой в данных. */
+  function renderInjuries(state) {
+    var box = $("bow-injuries");
+    if (!box) { return; }
+
+    var list = state.player.injuries || [];
+    if (!list.length) {
+      box.innerHTML = '<div class="bow-empty">Целы. Пока.</div>';
+      return;
+    }
+
+    box.innerHTML = list.map(function (entry) {
+      var def = Bow.data.fightRules.injuries[entry.key] || {};
+      var name = def.name || entry.key;
+      var effect = def.label || "";
+      return '<div class="bow-injury">' +
+        '<span class="bow-injury-name">' + esc(name) + '</span>' +
+        (effect ? '<span class="bow-injury-effect">' + esc(effect) + '</span>' : "") +
+        '</div>';
+    }).join("") +
+      '<div class="bow-injury-note">Это не заживёт. Лечения пока нет.</div>';
+  }
+
+  /* ---------- Перевязка ----------
+     Здоровье не поднималось ничем до 0.0.6.3. Теперь есть лечение:
+     раз в сутки, с навыком «Лечение» в основе. Кнопка показывает,
+     сколько вернётся и когда это можно сделать снова. */
+  function renderTreat(state) {
+    var box = $("bow-treat");
+    if (!box) { return; }
+
+    var health = state.player.needs.health;
+    var medicine = state.player.skills.medicine || 0;
+    var gain = Math.round(4 + medicine * 0.18 + 1.5);
+    var last = state.player.lastTreat || 0;
+    /* Не лечили ни разу — ждать нечего. */
+    var wait = state.player.lastTreat ? 24 - (state.time.totalHours - last) : 0;
+
+    if (health >= 100) {
+      box.innerHTML = '<div class="bow-empty">Вы целы. Перевязывать нечего.</div>';
+      return;
+    }
+
+    var ready = wait <= 0 && state.player.needs.fatigue >= 8;
+    var why = wait > 0 ? "Следующая перевязка через " + Math.ceil(wait) + " ч."
+      : state.player.needs.fatigue < 8 ? "Руки не держат бинт — нужен отдых."
+      : "Час работы. Вернёт примерно " + gain + " здор.";
+
+    box.innerHTML =
+      '<div class="bow-treat-row">' +
+        '<span class="bow-treat-gain">+' + gain + ' здор.</span>' +
+        '<button class="bow-trade-btn" data-act="treat"' + (ready ? "" : " disabled") + '>Перевязать</button>' +
+      '</div>' +
+      '<div class="bow-treat-note">' + esc(why) + '</div>' +
+      '<div class="bow-treat-note">Заживает само: ' +
+        Bow.needs.healRate(state.player).toFixed(1) + ' здор. в час.</div>';
   }
 
   function renderInventory(state) {
@@ -5421,9 +7828,30 @@ body {
       if (purse > 0) {
         var chance = Math.round(Bow.steal.successChance(state, p) * 100);
         var risky = chance < 35 ? " bow-steal-risky" : "";
-        stealBtn = '<button class="bow-trade-btn bow-steal-btn' + risky + '" ' +
-          'data-act="steal" data-person="' + esc(p.id) + '" ' +
-          'title="Шанс удачи: ' + chance + '%">Срезать кошель · ' + purse + ' м.</button>';
+        var prep = Bow.steal.prepCount(state, p.id);
+        var prepMax = (Bow.data.fightRules.steal || {}).maxPrep || 2;
+        var pocketCh = Math.round(Bow.steal.pocketChance(state, p) * 100);
+
+        /* Подготовка — это ступени, а не украшение: каждая реально
+           поднимает шанс, поэтому рядом стоит цифра «сколько уже». */
+        stealBtn = '<div class="bow-steal-block">' +
+          '<div class="bow-steal-head"><span>Срезать кошель</span>' +
+            '<b class="' + (chance < 35 ? "bow-crit-text" : "") + '">' + chance + '%</b></div>' +
+          '<div class="bow-steal-acts">' +
+            '<button class="bow-trade-btn" data-act="steal-look" data-person="' + esc(p.id) + '"' +
+              (prep >= prepMax ? " disabled" : "") + ' title="Потратить час и присмотреться">Присмотреться</button>' +
+            '<button class="bow-trade-btn" data-act="steal-distract" data-person="' + esc(p.id) + '"' +
+              (prep >= prepMax ? " disabled" : "") + ' title="Отвлечь разговором — зависит от торга и власти">Отвлечь</button>' +
+          '</div>' +
+          '<div class="bow-steal-prep">готовность <b>' + prep + '/' + prepMax + '</b>' +
+            (prep ? ' · +' + Math.round(Bow.steal.prepBonus(state, p.id) * 100) + '%' : "") + '</div>' +
+          '<div class="bow-steal-acts">' +
+            '<button class="bow-trade-btn bow-steal-btn' + risky + '" data-act="steal" data-person="' + esc(p.id) + '">' +
+              'Взять кошель · ' + purse + ' м.</button>' +
+            '<button class="bow-trade-btn" data-act="steal-pocket" data-person="' + esc(p.id) + '" ' +
+              'title="Тише и мельче: карман, а не кошель">Карман · ' + pocketCh + '%</button>' +
+          '</div>' +
+        '</div>';
       }
 
       return '<div class="bow-person">' +
@@ -5547,6 +7975,25 @@ body {
   /* ---------- Сцена ----------
      Здесь только описание места и атмосфера. Бытовые зарисовки
      НЕ попадают в журнал: журнал — это история, а не фон. */
+  /* Завеса перехода. Живёт в каркасе, а не в пассаже: иначе при
+     смене места она бы исчезала вместе со старой разметкой.
+     Только прозрачность и никакого сдвига — так её видно и на
+     телефоне, и при включённом «уменьшить движение». */
+  function runVeil() {
+    var app = $("bow-app");
+    if (!app) { return; }
+    var veil = $("bow-veil");
+    if (!veil) {
+      veil = document.createElement("div");
+      veil.id = "bow-veil";
+      veil.className = "bow-veil";
+      app.appendChild(veil);
+    }
+    veil.classList.remove("bow-veil-run");
+    void veil.offsetWidth;
+    veil.classList.add("bow-veil-run");
+  }
+
   function renderScene(state, animate) {
     var loc = Bow.data.locations[state.player.location];
     var title = $("bow-loc-name");
@@ -5562,13 +8009,43 @@ body {
     }
     if (amb) { amb.textContent = state.flags.ambience || ""; }
 
-    /* Затухание при смене сцены. */
+    /* Затухание при смене сцены: короткая тень и проявление. */
     if (animate && scene) {
+      runVeil();
       scene.classList.remove("bow-scene-fade");
       /* Перезапуск анимации: чтение offsetWidth сбрасывает состояние. */
       void scene.offsetWidth;
       scene.classList.add("bow-scene-fade");
     }
+
+    /* Подсветка текущего места на кнопках перехода и счётчики в заголовках
+       складывающихся блоков: видно сразу, где стоите и что есть рядом. */
+    var moveBtns = document.querySelectorAll('.bow-actions [data-act="move"][data-loc]');
+    for (var i = 0; i < moveBtns.length; i++) {
+      var here = moveBtns[i].getAttribute("data-loc") === state.player.location;
+      moveBtns[i].classList.toggle("bow-btn-here", here);
+      if (here) { moveBtns[i].setAttribute("aria-current", "location"); }
+      else { moveBtns[i].removeAttribute("aria-current"); }
+    }
+
+    var counts = {
+      "bow-jobs": Bow.work.listAt(state).length,
+      "bow-people": Bow.actions.peopleAt(state, state.player.location).length,
+      "passages": ((loc && loc.trades) ? loc.trades.length : 0)
+    };
+    Object.keys(counts).forEach(function (id) {
+      var inner = $(id);
+      var fold = inner && inner.parentElement;
+      var sum = fold && fold.querySelector(".bow-fold-sum");
+      if (!sum) { return; }
+      var badge = sum.querySelector(".bow-fold-count");
+      if (!badge) {
+        badge = document.createElement("b");
+        badge.className = "bow-fold-count";
+        sum.insertBefore(badge, sum.querySelector(".bow-fold-i"));
+      }
+      badge.textContent = counts[id] ? String(counts[id]) : "0";
+    });
 
     var res = $("bow-last");
     if (res) { res.textContent = lastMessage; }
@@ -5725,116 +8202,372 @@ body {
   }
 
   /* ---------- Бой ----------
-     Одно окно на три положения: выбор (до боя), обмен ударами и
-     развязка. Игрок всегда видит свои шансы и своё здоровье. */
-  function fightBar(value) {
-    var lvl = Bow.needs.level(value);
-    return '<span class="bow-fight-bar"><i class="bow-fill bow-' + lvl + '" style="width:' + Math.round(value) + '%"></i></span>';
+     Отдельный экран, а не карточка в сцене: поле с фишками должно
+     занимать место, иначе в него не вглядываются.
+
+     Стиль намеренно простой, как в старых пошаговых играх:
+     прямоугольники, номера, полоска здоровья над головой.
+     Никаких человечков — только то, что читается с одного взгляда. */
+  var FIGHT_LABEL = {
+    win: "вы взяли верх",
+    loss: "вас сбили с ног",
+    fled: "вы ушли",
+    killed: "он мёртв",
+    caught: "вас скрутили",
+    spare: "вы отпустили"
+  };
+
+  function fightChip(u, aimedAt, targetKey) {
+    /* Номер фишки: 1 — вы, дальше союзники; у противника своя нумерация. */
+    var num = u.index;
+    var cls = "bow-chip bow-chip-" + (u.side === "ally" ? "ally" : "enemy");
+    if (u.dead) { cls += " bow-chip-dead"; }
+    else if (u.down) { cls += " bow-chip-down"; }
+    /* Кого бьют прямо сейчас — видно до чтения хроники. */
+    if (!u.dead && aimedAt && aimedAt.indexOf(u.key) !== -1) { cls += " bow-chip-aimed"; }
+    /* Ваша цель на следующий удар — видна до нажатия «Бить». */
+    var isTarget = u.side === "enemy" && !u.dead && u.key === targetKey;
+    if (isTarget) { cls += " bow-chip-target"; }
+
+    var mark = u.dead ? "☠" : u.down ? "✦✦✦" : "";
+    var hp = Math.max(0, Math.round(u.hp));
+    var lvl = hp <= 20 ? "critical" : hp <= 45 ? "low" : "ok";
+
+    var attrs = u.side === "enemy" && !u.dead
+      ? ' data-act="fight-target" data-target="' + esc(u.key) + '" role="button" tabindex="0" title="Бить этого"'
+      : "";
+
+    return '<div class="' + cls + '"' + attrs +
+      ' style="grid-column:' + (u.col + 1) + ';grid-row:' + (u.row + 1) + '">' +
+      '<span class="bow-chip-hp bow-' + lvl + '">' + hp + '</span>' +
+      '<span class="bow-chip-body"><b>' + num + '</b></span>' +
+      '<span class="bow-chip-name">' + esc(u.name) + '</span>' +
+      (mark ? '<span class="bow-chip-mark">' + mark + '</span>' : "") +
+    '</div>';
+  }
+
+  function fightField(f) {
+    var A = Bow.data.fightRules.arena;
+    var cells = [];
+    for (var r = 0; r < A.rows; r++) {
+      for (var c = 0; c < A.cols; c++) {
+        cells.push('<span class="bow-cell-' + (((c + r) % 2) ? "b" : "a") + '"></span>');
+      }
+    }
+
+    /* Номера: свои — с 1, противник — с 1 в своём цвете. */
+    var ally = 0, enemy = 0;
+    var units = (f.units || []).map(function (u) {
+      var copy = {};
+      Object.keys(u).forEach(function (k) { copy[k] = u[k]; });
+      copy.index = u.side === "ally" ? (++ally) : (++enemy);
+      return copy;
+    });
+
+    var roster = units.map(function (u) {
+      var label = u.side === "ally" ? "свой" : "враг";
+      return '<div class="bow-roster-row bow-roster-' + (u.side === "ally" ? "ally" : "enemy") + '">' +
+        '<b>' + u.index + '</b>' +
+        '<span>' + esc(u.name) + '</span>' +
+        '<span class="bow-roster-hp">' + Math.round(u.hp) + '</span>' +
+        '<span class="bow-roster-side">' + label + '</span>' +
+      '</div>';
+    }).join("");
+
+    /* Кого бьют в этом ходу — из зафиксированных целей боя. */
+    var aimedAt = (f.aim || []).map(function (a) { return a.to; });
+
+    return '<div class="bow-arena-wrap">' +
+      '<div class="bow-arena" style="--cols:' + A.cols + ';--rows:' + A.rows + '">' +
+        cells.join("") +
+        units.map(function (u) { return fightChip(u, aimedAt, f.target); }).join("") +
+      '</div>' +
+      '<div class="bow-roster">' + roster + '</div>' +
+    '</div>';
+  }
+
+  function fightLog(f) {
+    return (f.log || []).slice(-8).map(function (l) {
+      /* Записи хранятся как есть — их текст собран в момент удара,
+         поэтому «Вы» не превращается обратно в имя. */
+      return '<div class="bow-fight-line bow-fight-' + esc(l.who) + '">' + esc(l.text) + '</div>';
+    }).join("");
   }
 
   function renderFight(state) {
     var box = $("bow-fight");
-    if (!box) { return; }
+    var page = $("bow-fight-page");
     var f = state.fight;
 
-    /* Отчёт после боя остаётся на экране, пока игрок не начнёт
-       что-то новое: последствие должно быть видно, а не мигнуть. */
+    /* Отчёт после боя — на месте страницы. */
     if (!f) {
       var last = state.flags.lastFight;
-      if (last) {
-        var label = { win: "вы взяли верх", loss: "вас сбили с ног", fled: "вы ушли",
-                      killed: "он мёртв", spare: "вы отпустили" }[last.outcome] || last.outcome;
-        box.innerHTML = '<div class="bow-fight-card bow-fight-summary">' +
-          '<div class="bow-fight-head"><b>' + esc(last.name) + '</b><span>' + esc(label) + '</span></div>' +
-          (last.note ? '<div class="bow-fight-note">' + esc(last.note) + '</div>' : "") +
-          (last.heat ? '<div class="bow-fight-note">розыск +' + last.heat + '</div>' : "") +
-          '<div class="bow-fight-log">' + last.log.map(function (l) {
-            return '<div class="bow-fight-line">' + esc(l.text) + '</div>';
-          }).join("") + '</div>' +
-          '<div class="bow-fight-acts">' +
-            '<button class="bow-btn bow-btn-sm" data-act="fight-close">Довольно</button>' +
-          '</div>' +
+      if (box) { box.innerHTML = ""; box.classList.remove("bow-fight-open"); }
+      if (!page) { return; }
+      if (!last) { page.innerHTML = ""; page.classList.remove("bow-page-open"); return; }
+
+      page.innerHTML = '<div class="bow-fight-page-inner">' +
+        '<div class="bow-fight-head"><b>' + esc(last.name) + '</b>' +
+          '<span>' + esc(FIGHT_LABEL[last.outcome] || last.outcome) + '</span></div>' +
+        (last.note ? '<div class="bow-fight-note">' + esc(last.note) + '</div>' : "") +
+        (last.heat ? '<div class="bow-fight-note">розыск +' + last.heat + '</div>' : "") +
+        '<div class="bow-fight-log">' + (last.log || []).map(function (l) {
+          return '<div class="bow-fight-line bow-fight-' + esc(l.who) + '">' + esc(l.text) + '</div>';
+        }).join("") + '</div>' +
+        '<div class="bow-fight-acts">' +
+          '<button class="bow-btn bow-btn-sm" data-act="fight-close">Вернуться</button>' +
+        '</div>' +
+      '</div>';
+      page.classList.add("bow-page-open");
+      return;
+    }
+
+    var npc = f.personId ? state.people[f.personId] : null;
+    var p = state.player;
+
+    /* --- Окно выбора: до боя --- */
+    if (f.phase === "choose") {
+      var mode = f.mode;
+      var html = "";
+
+      if (mode === "guard") {
+        var squad = (f.guardSquad || []).length;
+        html += '<div class="bow-fight-head"><b>Стража Брода</b><span>их ' + squad + '</span></div>';
+        html += '<div class="bow-fight-odds">' +
+          '<span>ваш удар <b>' + Math.round(Bow.fight.hitChance(p, { skills: Bow.data.fightRules.guard.skills, needs: { fatigue: 70, health: 84 } }, "press") * 100) + '%</b></span>' +
+          '<span>их удар <b>' + Math.round(Bow.fight.hitChance({ skills: Bow.data.fightRules.guard.skills, needs: { fatigue: 70, health: 84 } }, p, "press") * 100) + '%</b></span>' +
         '</div>';
-        box.classList.add("bow-fight-open");
-        return;
+        html += '<div class="bow-fight-warn">Трое против одного — это не драка. Но выбора уже нет.</div>';
+      } else {
+        var odds = Bow.fight.odds(state, f.personId, "crime");
+        html += '<div class="bow-fight-head"><b>' + esc(npc.name) + '</b><span>' + esc(npc.role) + '</span></div>';
+        html += '<div class="bow-fight-odds">' +
+          '<span>ваш удар <b>' + Math.round(odds.yourHit * 100) + '%</b></span>' +
+          '<span>его удар <b>' + Math.round(odds.theirHit * 100) + '%</b></span>' +
+          '<span>в кошеле <b>' + odds.purse + ' м.</b></span>' +
+        '</div>';
+        html += '<div class="bow-fight-note">' +
+          (odds.canSpar
+            ? 'Кулачный бой: без последствий, навык боя растёт.'
+            : npc.name + ' не станет бороться по-честному — только напасть.') +
+          (odds.witnesses ? ' Видят: ' + odds.witnesses + '.' : ' Никого рядом.') +
+        '</div>';
+        html += '<div class="bow-fight-warn">Нападение: розыск +' + odds.heat +
+          ', отношение общины ' + odds.rep + '.</div>';
+
+        var blocked = "";
+        if (p.needs.fatigue < 12) { blocked = "Вы едва стоите: нужен отдых."; }
+        else if (p.needs.health < 25) { blocked = "Вы слишком плохи, чтобы драться."; }
+        if (blocked) { html += '<div class="bow-fight-note bow-fight-blocked">' + esc(blocked) + '</div>'; }
+
+        /* ---------- Отряд ----------
+           Каждый показан с причиной: не «серая кнопка», а цифра.
+           Доверие, боевой навык и здоровье — вот из чего складывается
+           «пойдёт» или «нет», и игрок видит это до решения. */
+        var allies = Bow.fight.alliesAvailable(state);
+        if (allies.length) {
+          html += '<div class="bow-squad-title">Кто пойдёт с вами</div>';
+          html += '<div class="bow-squad">';
+          allies.forEach(function (a) {
+            var on = (f.allies || []).indexOf(a.id) !== -1;
+            var cls = "bow-squad-card" + (on ? " bow-squad-on" : "") + (a.willing ? "" : " bow-squad-no");
+            html += '<button class="' + cls + '" data-act="fight-ally" data-person="' +
+              esc(a.id) + '"' + (a.willing ? "" : " disabled") + '>' +
+              '<span class="bow-squad-name">' + (on ? "✓ " : "") + esc(a.name) + '</span>' +
+              '<span class="bow-squad-role">' + esc(a.role) + '</span>' +
+              '<span class="bow-squad-stats">' +
+                '<span>бой ' + a.combat + '</span>' +
+                '<span class="' + (a.attitude < a.trustNeed ? "bow-crit-text" : "") + '">доверие ' +
+                  Math.round(a.attitude) + '/' + a.trustNeed + '</span>' +
+                '<span class="' + (a.health < 45 ? "bow-crit-text" : "") + '">' + Math.round(a.health) + ' здор.</span>' +
+              '</span>' +
+              (a.why ? '<span class="bow-squad-why">не пойдёт — ' + esc(a.why) + '</span>'
+                     : '<span class="bow-squad-why bow-good-text">пойдёт</span>') +
+            '</button>';
+          });
+          html += '</div>';
+        }
+
+        html += '<div class="bow-fight-acts">' +
+          (odds.canSpar ? '<button class="bow-btn bow-btn-sm" data-act="fight-start" data-mode="spar"' + (blocked ? " disabled" : "") + '>Кулачный бой</button>' : '') +
+          '<button class="bow-btn bow-btn-sm bow-fight-danger" data-act="fight-start" data-mode="crime"' + (blocked ? " disabled" : "") + '>Напасть</button>' +
+          '<button class="bow-btn bow-btn-sm" data-act="fight-close">Отойти</button>' +
+        '</div>';
       }
+
+      if (page) {
+        page.innerHTML = '<div class="bow-fight-page-inner">' + html + '</div>';
+        page.classList.add("bow-page-open");
+      }
+      if (box) { box.innerHTML = ""; box.classList.remove("bow-fight-open"); }
+      return;
+    }
+
+    /* --- Идёт бой --- */
+    if (f.phase === "exchange" || f.phase === "aftermath") {
+      var body = "";
+
+      body += '<div class="bow-fight-head">' +
+        '<b>' + (f.mode === "guard" ? "Стража Брода" : (npc ? esc(npc.name) : (f.mode === "robbery" ? "Грабитель" : "Противник"))) + '</b>' +
+        '<span>круг ' + f.round + '</span></div>';
+
+      body += fightField(f);
+
+      if (f.phase === "exchange") {
+        /* ---------- Куда бить ----------
+           Удар один, но место разное, и шанс у каждого свой.
+           Игрок видит цифру до нажатия, а не узнаёт из хроники. */
+        var liveFoes = f.units.filter(function (u) {
+          return u.side === "enemy" && !u.down && !u.dead;
+        });
+        var foeUnit = (f.target && liveFoes.filter(function (u) { return u.key === f.target; })[0]) ||
+          liveFoes[0] || null;
+        var foePerson = foeUnit ? (foeUnit.refId ? state.people[foeUnit.refId] : foeUnit) : null;
+
+        var aimOrder = ["head", "body", "legs", "arms"];
+        var aimBtns = aimOrder.map(function (key) {
+          var aim = Bow.fight.aimDef(key);
+          var ch = foePerson
+            ? Math.round(Bow.fight.hitChance(p, foePerson, "press", key) * 100)
+            : 0;
+          var risky = ch < 35 ? " bow-aim-risky" : "";
+          return '<button class="bow-aim-btn' + risky + '" data-act="fight-move" data-stance="press"' +
+            ' data-aim="' + key + '"' + (f.target ? ' data-target="' + esc(f.target) + '"' : "") +
+            ' title="' + esc(aim.note) + '">' +
+            '<span class="bow-aim-name">' + esc(aim.short) + '</span>' +
+            '<span class="bow-aim-hit">попад. ' + ch + '%</span>' +
+            '<span class="bow-aim-hurt">ур. ' + (aim.hurt >= 1 ? "+" : "") +
+              Math.round(aim.hurt * 100 - 100) + '%</span>' +
+          '</button>';
+        }).join("");
+
+        body += '<div class="bow-fight-log">' + fightLog(f) + '</div>';
+        body += '<div class="bow-aim-row">' + aimBtns + '</div>';
+        body += '<div class="bow-aim-legend"><span>шанс попасть</span><span>урон</span>' +
+          '<span>побег <b>' + Math.round(Bow.fight.fleeChance(state) * 100) + '%</b></span></div>';
+        body += '<div class="bow-fight-acts">' +
+          '<button class="bow-btn bow-btn-sm" data-act="fight-move" data-stance="guard">Держать защиту</button>' +
+          '<button class="bow-btn bow-btn-sm" data-act="fight-move" data-stance="flee">Бежать</button>' +
+        '</div>';
+      } else {
+        body += '<div class="bow-fight-log">' + fightLog(f) + '</div>';
+        body += '<div class="bow-fight-note">' + (npc ? esc(npc.name) : "Он") +
+          ' сидит в снегу и смотрит на вас. Дальше — ваш выбор, и это запомнят.</div>';
+        body += '<div class="bow-fight-acts">' +
+          '<button class="bow-btn bow-btn-sm" data-act="fight-decide" data-choice="spare">Отпустить</button>' +
+          '<button class="bow-btn bow-btn-sm bow-fight-danger" data-act="fight-decide" data-choice="rob">Обобрать</button>' +
+          '<button class="bow-btn bow-btn-sm bow-fight-danger" data-act="fight-decide" data-choice="kill">Добить</button>' +
+        '</div>';
+      }
+
+      if (page) {
+        page.innerHTML = '<div class="bow-fight-page-inner">' + body + '</div>';
+        page.classList.add("bow-page-open");
+      }
+      if (box) { box.innerHTML = ""; box.classList.remove("bow-fight-open"); }
+      return;
+    }
+  }
+
+  /* ---------- Стража на улице ----------
+     Не «вы пойманы», а разговор: у игрока есть выбор, и каждый
+     вариант чем-то стоит. */
+  function renderGuard(state) {
+    var box = $("bow-guard");
+    if (!box) { return; }
+    var g = state.guard;
+
+    if (!g) {
       box.classList.remove("bow-fight-open");
       box.innerHTML = "";
       return;
     }
 
-    var npc = state.people[f.personId];
-    if (!npc) { box.classList.remove("bow-fight-open"); box.innerHTML = ""; return; }
-    var R = Bow.data.fightRules;
-    var p = state.player;
-    var html = "";
+    var heat = Bow.steal.heatOf(state, "org:guard");
+    var cost = Bow.guard.bribeCost(state);
+    var canPay = state.player.money >= cost;
+    var fleeCh = Math.round(Bow.guard.fleeChance(state) * 100);
 
-    if (f.phase === "choose") {
-      var odds = Bow.fight.odds(state, f.personId, "crime");
-      html += '<div class="bow-fight-head"><b>' + esc(npc.name) + '</b><span>' + esc(npc.role) + '</span></div>';
-      html += '<div class="bow-fight-odds">' +
-        '<span>ваш удар <b>' + Math.round(odds.yourHit * 100) + '%</b></span>' +
-        '<span>его удар <b>' + Math.round(odds.theirHit * 100) + '%</b></span>' +
-        '<span>в кошеле <b>' + odds.purse + ' м.</b></span>' +
-      '</div>';
-      html += '<div class="bow-fight-note">' +
-        (odds.canSpar
-          ? 'Кулачный бой: без последствий, навык боя растёт.'
-          : npc.name + ' не станет бороться по-честному — только напасть.') +
-        (odds.witnesses ? ' Видят: ' + odds.witnesses + '.' : ' Никого рядом.') +
-        '</div>';
-      html += '<div class="bow-fight-warn">Нападение: розыск +' + odds.heat +
-        ', отношение общины ' + odds.rep + '.</div>';
-
-      /* Условия игрока проверяются до кнопки, а не после: лучше
-         сразу сказать «вымотан», чем дать нажать и отказать. */
-      var blocked = "";
-      if (p.needs.fatigue < 12) { blocked = "Вы едва стоите: нужен отдых."; }
-      else if (p.needs.health < 25) { blocked = "Вы слишком плохи, чтобы драться. Отлежитесь."; }
-      if (blocked) { html += '<div class="bow-fight-note bow-fight-blocked">' + esc(blocked) + '</div>'; }
-
-      html += '<div class="bow-fight-acts">' +
-        (odds.canSpar ? '<button class="bow-btn bow-btn-sm" data-act="fight-start" data-mode="spar"' + (blocked ? " disabled" : "") + '>Кулачный бой</button>' : '') +
-        '<button class="bow-btn bow-btn-sm bow-fight-danger" data-act="fight-start" data-mode="crime"' + (blocked ? " disabled" : "") + '>Напасть</button>' +
-        '<button class="bow-btn bow-btn-sm" data-act="fight-close">Отойти</button>' +
-      '</div>';
-    } else if (f.phase === "exchange") {
-      var yours = Bow.fight.hitChance(p, npc, "press");
-      var theirs = Bow.fight.hitChance(npc, p, "press");
-      html += '<div class="bow-fight-head"><b>' + esc(npc.name) + '</b>' +
-        '<span>' + Math.round(npc.needs.health) + ' здор.</span></div>';
-      html += '<div class="bow-fight-rows">' +
-        '<div class="bow-fight-row"><span>' + esc(npc.name) + '</span>' + fightBar(npc.needs.health) + '</div>' +
-        '<div class="bow-fight-row"><span>Вы</span>' + fightBar(p.needs.health) + '</div>' +
-      '</div>';
-      html += '<div class="bow-fight-odds">' +
-        '<span>ваш удар <b>' + Math.round(yours * 100) + '%</b></span>' +
-        '<span>его удар <b>' + Math.round(theirs * 100) + '%</b></span>' +
-        '<span>побег <b>' + Math.round(Bow.fight.fleeChance(state) * 100) + '%</b></span>' +
-      '</div>';
-      html += '<div class="bow-fight-log">' + f.log.slice(-6).map(function (l) {
-        return '<div class="bow-fight-line bow-fight-' + esc(l.who) + '">' + esc(l.text) + '</div>';
-      }).join("") + '</div>';
-      html += '<div class="bow-fight-acts">' +
-        '<button class="bow-btn bow-btn-sm bow-fight-danger" data-act="fight-move" data-stance="press">Бить</button>' +
-        '<button class="bow-btn bow-btn-sm" data-act="fight-move" data-stance="guard">Держать защиту</button>' +
-        '<button class="bow-btn bow-btn-sm" data-act="fight-move" data-stance="flee">Бежать</button>' +
-      '</div>';
-    } else if (f.phase === "aftermath") {
-      html += '<div class="bow-fight-head"><b>' + esc(npc.name) + '</b><span>сдался</span></div>';
-      html += '<div class="bow-fight-log">' + f.log.slice(-6).map(function (l) {
-        return '<div class="bow-fight-line bow-fight-' + esc(l.who) + '">' + esc(l.text) + '</div>';
-      }).join("") + '</div>';
-      html += '<div class="bow-fight-note">' + esc(npc.name) + ' сидит в снегу и смотрит на вас. Дальше — ваш выбор, и это запомнят.</div>';
-      html += '<div class="bow-fight-acts">' +
-        '<button class="bow-btn bow-btn-sm" data-act="fight-decide" data-choice="spare">Отпустить</button>' +
-        '<button class="bow-btn bow-btn-sm bow-fight-danger" data-act="fight-decide" data-choice="rob">Обобрать</button>' +
-        '<button class="bow-btn bow-btn-sm bow-fight-danger" data-act="fight-decide" data-choice="kill">Добить</button>' +
-      '</div>';
-    }
-
-    box.innerHTML = '<div class="bow-fight-card">' + html + '</div>';
+    box.innerHTML = '<div class="bow-fight-card bow-guard-card">' +
+      '<div class="bow-fight-head"><b>Стража Брода</b><span>розыск ' + heat + '</span></div>' +
+      '<div class="bow-fight-note">Десятник смотрит на вас без злобы, как на работу. ' +
+        'Их ' + g.squad.length + ', и у каждого топор.</div>' +
+      '<div class="bow-fight-acts bow-guard-acts">' +
+        '<button class="bow-btn bow-btn-sm" data-act="guard-surrender">Сдаться</button>' +
+        '<button class="bow-btn bow-btn-sm" data-act="guard-bribe"' + (canPay ? "" : " disabled") + '>Откупиться · ' + cost + ' м.</button>' +
+        '<button class="bow-btn bow-btn-sm" data-act="guard-flee">Бежать · ' + fleeCh + '%</button>' +
+        '<button class="bow-btn bow-btn-sm bow-fight-danger" data-act="guard-fight">Драться</button>' +
+        '<button class="bow-btn bow-btn-sm bow-fight-danger" data-act="guard-insult">Сказать, что Норвинг — слабак</button>' +
+      '</div>' +
+      (canPay ? "" : '<div class="bow-fight-note">На откуп не хватает: у вас ' + state.player.money + ' м.</div>') +
+    '</div>';
     box.classList.add("bow-fight-open");
+  }
+
+  /* ---------- Клетка ---------- */
+  function renderJail(state) {
+    var box = $("bow-jail");
+    if (!box) { return; }
+    if (!state.jail) { box.classList.remove("bow-fight-open"); box.innerHTML = ""; return; }
+
+    box.innerHTML = '<div class="bow-fight-card bow-jail-card">' +
+      '<div class="bow-fight-head"><b>Клетка</b><span>осталось ' + state.jail.hoursLeft + ' ч.</span></div>' +
+      '<div class="bow-fight-note">Плетень, засов и снег. Кормят раз в день. ' +
+        'Розыск спадает сам, пока вы сидите.</div>' +
+      '<div class="bow-fight-acts">' +
+        '<button class="bow-btn bow-btn-sm" data-act="jail-serve">Отсидеть 4 ч.</button>' +
+        '<button class="bow-btn bow-btn-sm" data-act="jail-escape">Бежать</button>' +
+        '<button class="bow-btn bow-btn-sm" data-act="jail-bribe">Подкупить сторожа</button>' +
+      '</div>' +
+    '</div>';
+    box.classList.add("bow-fight-open");
+  }
+
+  /* ---------- Уличная встреча ---------- */
+  function renderEncounter(state) {
+    var box = $("bow-encounter");
+    if (!box) { return; }
+    var e = state.encounter;
+    if (!e) { box.classList.remove("bow-fight-open"); box.innerHTML = ""; return; }
+
+    box.innerHTML = '<div class="bow-fight-card bow-encounter-card">' +
+      '<div class="bow-fight-head"><b>' + esc(e.robber.name) + '</b><span>требует ' + e.robber.demand + ' м.</span></div>' +
+      '<div class="bow-fight-note">Он не торопится. Нож держит низко, у бедра — так учат тех, кто не хочет махать.</div>' +
+      '<div class="bow-fight-acts">' +
+        '<button class="bow-btn bow-btn-sm" data-act="street-pay">Отдать ' + Math.min(state.player.money, e.robber.demand) + ' м.</button>' +
+        '<button class="bow-btn bow-btn-sm" data-act="street-scare">Припугнуть · ' + Math.round(Bow.street.scareChance(state) * 100) + '%</button>' +
+        '<button class="bow-btn bow-btn-sm" data-act="street-flee">Бежать · ' + Math.round(Bow.street.fleeChance(state) * 100) + '%</button>' +
+        '<button class="bow-btn bow-btn-sm bow-fight-danger" data-act="street-fight">Драться</button>' +
+      '</div>' +
+    '</div>';
+    box.classList.add("bow-fight-open");
+  }
+
+  /* ---------- Смерть ----------
+     Конец игры должен быть экраном, а не молчанием интерфейса. */
+  function renderDeath(state) {
+    var app = $("bow-app");
+    if (!app) { return; }
+    if (!state.dead) {
+      app.classList.remove("bow-dead");
+      var old = $("bow-death");
+      if (old && old.parentNode) { old.parentNode.removeChild(old); }
+      return;
+    }
+    if ($("bow-death")) { return; }
+
+    app.classList.add("bow-dead");
+    var el = document.createElement("div");
+    el.id = "bow-death";
+    el.className = "bow-death";
+    el.innerHTML = '<div class="bow-death-inner">' +
+      '<h2>Конец</h2>' +
+      '<p>' + esc(state.dead.text) + '</p>' +
+      '<p class="bow-dim">Причина: ' + esc(state.dead.cause) + ' · ' +
+        esc(Bow.time.format(state)) + '</p>' +
+      '<button class="bow-btn" data-act="death-restart">Начать заново</button>' +
+    '</div>';
+    app.appendChild(el);
   }
 
   /* ---------- Отрисовка всего ---------- */
@@ -5851,7 +8584,10 @@ body {
 
     renderHeader(state);
     renderTopStatus(state);
+    renderHeat(state);
     renderNeeds(state);
+    renderInjuries(state);
+    renderTreat(state);
     renderSkills(state);
     renderInventory(state);
     renderJobs(state);
@@ -5860,7 +8596,14 @@ body {
     renderJournal(state);
     renderScene(state, animate && (sceneChanged || (options && options.forceFade)));
     renderDialog(state);
+    var app2 = $("bow-app");
+    if (app2) { app2.classList.toggle("bow-in-fight", !!(state.fight && state.fight.phase !== "choose")); }
+
     renderFight(state);
+    renderGuard(state);
+    renderJail(state);
+    renderEncounter(state);
+    renderDeath(state);
     renderTrade(state);
   }
 
@@ -5879,7 +8622,22 @@ body {
 
     /* --- Купить --- */
     if (trades.length) {
+      var tradeSkill = (state.player.skills && state.player.skills.trade) || 0;
+      var orgId = loc && loc.org;
+      var rep = (orgId && Bow.work) ? Bow.work.reputation(state, orgId) : 0;
+      var hints = [];
+      if (tradeSkill >= 4) {
+        hints.push("торг " + Math.round(tradeSkill) + " (−" + Math.round(Math.min(0.18, tradeSkill * 0.003) * 100) + "%)");
+      }
+      if (rep >= 25) {
+        hints.push("уважение общины (" + (rep >= 60 ? "−28%" : "−11%") + ")");
+      } else if (rep <= -25) {
+        hints.push("недоверие общины (" + (rep <= -60 ? "+35%" : "+20%") + ")");
+      }
       html.push('<div class="bow-trade-group-title">Купить</div>');
+      if (hints.length) {
+        html.push('<div class="bow-trade-note">Цены: ' + esc(hints.join(" · ")) + '</div>');
+      }
       trades.forEach(function (key) {
         var item = Bow.data.items[key];
         if (!item) { return; }
@@ -6067,6 +8825,18 @@ body {
     steal: function (el) {
       return Bow.adapter.act.steal(getState(), el.getAttribute("data-person"));
     },
+    "steal-look": function (el) {
+      return Bow.adapter.act.stealLook(getState(), el.getAttribute("data-person"));
+    },
+    "steal-distract": function (el) {
+      return Bow.adapter.act.stealDistract(getState(), el.getAttribute("data-person"));
+    },
+    "steal-pocket": function (el) {
+      return Bow.adapter.act.stealPocket(getState(), el.getAttribute("data-person"));
+    },
+    treat: function () {
+      return Bow.adapter.act.treat(getState());
+    },
 
     /* ---------- Бой ----------
        Окно боя — не панель и не карточка: оно поверх сцены и
@@ -6090,10 +8860,40 @@ body {
       if (Bow.fight.isActive(state) && state.fight.phase === "aftermath") {
         return { ok: false, message: "Он больше не бьётся. Решайте, что с ним делать." };
       }
-      return Bow.adapter.act.fightMove(state, el.getAttribute("data-stance"));
+      return Bow.adapter.act.fightMove(state, el.getAttribute("data-stance"),
+        el.getAttribute("data-target"), el.getAttribute("data-aim"));
+    },
+    "fight-target": function (el) {
+      return Bow.adapter.act.fightTarget(getState(), el.getAttribute("data-target"));
     },
     "fight-decide": function (el) {
       return Bow.adapter.act.fightDecide(getState(), el.getAttribute("data-choice"));
+    },
+    "fight-ally": function (el) {
+      return Bow.adapter.act.fightAlly(getState(), el.getAttribute("data-person"));
+    },
+
+    /* ---------- Стража ---------- */
+    "guard-surrender": function () { return Bow.adapter.act.guardSurrender(getState()); },
+    "guard-bribe": function () { return Bow.adapter.act.guardBribe(getState()); },
+    "guard-flee": function () { return Bow.adapter.act.guardFlee(getState()); },
+    "guard-insult": function () { return Bow.adapter.act.guardInsult(getState()); },
+    "guard-fight": function () { return Bow.adapter.act.guardFight(getState()); },
+
+    /* ---------- Клетка ---------- */
+    "jail-serve": function () { return Bow.adapter.act.jailServe(getState()); },
+    "jail-escape": function () { return Bow.adapter.act.jailEscape(getState()); },
+    "jail-bribe": function () { return Bow.adapter.act.jailBribe(getState()); },
+
+    /* ---------- Улица ---------- */
+    "street-pay": function () { return Bow.adapter.act.streetPay(getState()); },
+    "street-scare": function () { return Bow.adapter.act.streetScare(getState()); },
+    "street-fight": function () { return Bow.adapter.act.streetFight(getState()); },
+    "street-flee": function () { return Bow.adapter.act.streetFlee(getState()); },
+
+    "death-restart": function () {
+      restart();
+      return { ok: true, message: "" };
     },
     work: function (el) {
       return Bow.adapter.act.work(getState(), el.getAttribute("data-job"));
@@ -6165,14 +8965,65 @@ body {
   var DURING_FIGHT_ALLOWED = {
     "fight-start": true,
     "fight-move": true,
+    "fight-target": true,
     "fight-decide": true,
     "fight-close": true,
+    "fight-ally": true,
     "panel": true,
     "inspect": true,
     "close-sheet": true,
     "close-dialog": true,
     "clock": true
   };
+
+  /* Пока стража стоит рядом, из города не уйдёшь. */
+  var DURING_GUARD_ALLOWED = {
+    "guard-surrender": true,
+    "guard-bribe": true,
+    "guard-flee": true,
+    "guard-insult": true,
+    "guard-fight": true,
+    "fight-start": true,
+    "fight-move": true,
+    "fight-target": true,
+    "fight-decide": true,
+    "fight-close": true,
+    "panel": true,
+    "clock": true
+  };
+
+  /* В клетке доступно только то, что доступно в клетке. */
+  var IN_JAIL_ALLOWED = {
+    "jail-serve": true,
+    "jail-escape": true,
+    "jail-bribe": true,
+    "panel": true,
+    "clock": true
+  };
+
+  /* На улице, когда к вам подошли, тоже не до торговли. */
+  var IN_ENCOUNTER_ALLOWED = {
+    "street-pay": true,
+    "street-scare": true,
+    "street-fight": true,
+    "street-flee": true,
+    "fight-start": true,
+    "fight-move": true,
+    "fight-target": true,
+    "fight-decide": true,
+    "fight-close": true,
+    "panel": true,
+    "clock": true
+  };
+
+  function blockedBy(state, act) {
+    if (state.dead) { return act === "death-restart" || act === "panel" ? null : "Всё кончено. Начните заново."; }
+    if (state.jail && !IN_JAIL_ALLOWED[act]) { return "Вы в клетке. Отсюда не выйти по своей воле."; }
+    if (state.guard && !DURING_GUARD_ALLOWED[act]) { return "Сначала решите со стражей."; }
+    if (state.encounter && !IN_ENCOUNTER_ALLOWED[act]) { return "Сначала решите с грабителем."; }
+    if (state.fight && !DURING_FIGHT_ALLOWED[act]) { return "Сначала закончите бой."; }
+    return null;
+  }
 
   function onClick(event) {
     var el = event.target.closest("[data-act]");
@@ -6182,9 +9033,10 @@ body {
     var fn = handlers[act];
     if (!fn) { return; }
 
-    if (getState().fight && !DURING_FIGHT_ALLOWED[act]) {
+    var why = blockedBy(getState(), act);
+    if (why) {
       event.preventDefault();
-      Bow.ui.setMessage("Сначала закончите бой.");
+      Bow.ui.setMessage(why);
       refresh(true);
       return;
     }
@@ -6234,6 +9086,9 @@ body {
     if (state.dialog) { return false; }
     /* Бой — пошаговый: часы не должны тикать между ударами. */
     if (state.fight) { return false; }
+    /* Стража и грабитель ждут ответа, а не хода времени. */
+    if (state.guard || state.encounter) { return false; }
+    if (state.dead) { return false; }
     if (Bow.ui.isDrawerOpen()) { return false; }
     if (openPersonId) { return false; }
     return true;
@@ -6504,6 +9359,7 @@ body {
     &lt;/div&gt;
 
     &lt;div class=&quot;bow-topbar-status&quot; id=&quot;bow-topbar-status&quot;&gt;&lt;/div&gt;
+    &lt;div class=&quot;bow-heat&quot; id=&quot;bow-heat&quot;&gt;&lt;/div&gt;
   &lt;/header&gt;
 
   &lt;!-- ============================================================
@@ -6545,6 +9401,12 @@ body {
           &lt;section class=&quot;bow-dpanel&quot; data-section=&quot;state&quot;&gt;
             &lt;h2 class=&quot;bow-h2&quot;&gt;Состояние&lt;/h2&gt;
             &lt;div id=&quot;bow-needs&quot; class=&quot;bow-needs&quot;&gt;&lt;/div&gt;
+          &lt;/section&gt;
+
+          &lt;section class=&quot;bow-dpanel&quot; data-section=&quot;body&quot;&gt;
+            &lt;h2 class=&quot;bow-h2&quot;&gt;Тело&lt;/h2&gt;
+            &lt;div id=&quot;bow-injuries&quot; class=&quot;bow-injuries&quot;&gt;&lt;/div&gt;
+            &lt;div id=&quot;bow-treat&quot; class=&quot;bow-treat&quot;&gt;&lt;/div&gt;
           &lt;/section&gt;
 
           &lt;section class=&quot;bow-dpanel&quot; data-section=&quot;skills&quot;&gt;
@@ -6598,8 +9460,10 @@ body {
         &lt;div class=&quot;bow-result&quot; id=&quot;bow-last&quot; aria-live=&quot;polite&quot;&gt;&lt;/div&gt;
       &lt;/section&gt;
 
-      &lt;!-- Бой: окно поверх сцены, живёт в состоянии, а не в DOM --&gt;
-      &lt;section id=&quot;bow-fight&quot; class=&quot;bow-fight&quot; aria-live=&quot;polite&quot;&gt;&lt;/section&gt;
+      &lt;!-- Стража и уличная встреча: это происходит со вами здесь и сейчас --&gt;
+      &lt;section id=&quot;bow-guard&quot; class=&quot;bow-fight&quot; aria-live=&quot;polite&quot;&gt;&lt;/section&gt;
+      &lt;section id=&quot;bow-encounter&quot; class=&quot;bow-fight&quot; aria-live=&quot;polite&quot;&gt;&lt;/section&gt;
+      &lt;section id=&quot;bow-jail&quot; class=&quot;bow-fight&quot; aria-live=&quot;polite&quot;&gt;&lt;/section&gt;
 
       &lt;!-- Диалог: лента реплик и варианты ответа --&gt;
       &lt;section id=&quot;bow-dialog&quot; class=&quot;bow-dialog&quot; aria-live=&quot;polite&quot;&gt;&lt;/section&gt;
@@ -6638,10 +9502,20 @@ body {
     &lt;/main&gt;
   &lt;/div&gt;
 
+  &lt;!--
+       БОЙ — ОТДЕЛЬНЫЙ ПАССАЖ
+       Не карточка в сцене: поле с фишками должно занимать место.
+       Экран открывается поверх, сцена под ним гаснет.
+  --&gt;
+  &lt;section id=&quot;bow-fight-page&quot; class=&quot;bow-fight-page&quot; aria-hidden=&quot;true&quot;&gt;
+    &lt;!-- Бой на отдельной странице. Здесь только поле и управление. --&gt;
+    &lt;div id=&quot;bow-fight&quot;&gt;&lt;/div&gt;
+  &lt;/section&gt;
+
   &lt;div id=&quot;bow-sheet&quot; class=&quot;bow-sheet&quot; aria-hidden=&quot;true&quot;&gt;&lt;/div&gt;
 
   &lt;footer class=&quot;bow-footer&quot;&gt;
-    &lt;span&gt;Blades Of War · прототип 0.0.6 · тестовая локация: Студёный Брод&lt;/span&gt;
+    &lt;span&gt;Blades Of War · прототип 0.0.6.3 · тестовая локация: Студёный Брод&lt;/span&gt;
     &lt;span class=&quot;bow-dim&quot;&gt;Текст мира — черновой, имена и место подлежат согласованию&lt;/span&gt;
   &lt;/footer&gt;
 

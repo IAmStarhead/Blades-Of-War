@@ -30,6 +30,7 @@
     </div>
 
     <div class="bow-topbar-status" id="bow-topbar-status"></div>
+    <div class="bow-heat" id="bow-heat"></div>
   </header>
 
   <!-- ============================================================
@@ -71,6 +72,12 @@
           <section class="bow-dpanel" data-section="state">
             <h2 class="bow-h2">Состояние</h2>
             <div id="bow-needs" class="bow-needs"></div>
+          </section>
+
+          <section class="bow-dpanel" data-section="body">
+            <h2 class="bow-h2">Тело</h2>
+            <div id="bow-injuries" class="bow-injuries"></div>
+            <div id="bow-treat" class="bow-treat"></div>
           </section>
 
           <section class="bow-dpanel" data-section="skills">
@@ -124,8 +131,10 @@
         <div class="bow-result" id="bow-last" aria-live="polite"></div>
       </section>
 
-      <!-- Бой: окно поверх сцены, живёт в состоянии, а не в DOM -->
-      <section id="bow-fight" class="bow-fight" aria-live="polite"></section>
+      <!-- Стража и уличная встреча: это происходит со вами здесь и сейчас -->
+      <section id="bow-guard" class="bow-fight" aria-live="polite"></section>
+      <section id="bow-encounter" class="bow-fight" aria-live="polite"></section>
+      <section id="bow-jail" class="bow-fight" aria-live="polite"></section>
 
       <!-- Диалог: лента реплик и варианты ответа -->
       <section id="bow-dialog" class="bow-dialog" aria-live="polite"></section>
@@ -164,10 +173,20 @@
     </main>
   </div>
 
+  <!--
+       БОЙ — ОТДЕЛЬНЫЙ ПАССАЖ
+       Не карточка в сцене: поле с фишками должно занимать место.
+       Экран открывается поверх, сцена под ним гаснет.
+  -->
+  <section id="bow-fight-page" class="bow-fight-page" aria-hidden="true">
+    <!-- Бой на отдельной странице. Здесь только поле и управление. -->
+    <div id="bow-fight"></div>
+  </section>
+
   <div id="bow-sheet" class="bow-sheet" aria-hidden="true"></div>
 
   <footer class="bow-footer">
-    <span>Blades Of War · прототип 0.0.6 · тестовая локация: Студёный Брод</span>
+    <span>Blades Of War · прототип 0.0.6.3 · тестовая локация: Студёный Брод</span>
     <span class="bow-dim">Текст мира — черновой, имена и место подлежат согласованию</span>
   </footer>
 
