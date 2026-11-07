@@ -901,17 +901,44 @@
     spare: "вы отпустили"
   };
 
+  /* Плавная память координат фигурок на снегу между тактами боя. */
+  var lastFightPos = {};
+
+  function animateArenaMoves(page) {
+    if (!page) { return; }
+    var chips = page.querySelectorAll(".bow-chip[data-to-left]");
+    if (!chips.length) { return; }
+    var apply = function () {
+      for (var i = 0; i < chips.length; i++) {
+        var el = chips[i];
+        var tl = el.getAttribute("data-to-left");
+        var tt = el.getAttribute("data-to-top");
+        if (tl !== null) { el.style.left = tl + "%"; }
+        if (tt !== null) { el.style.top = tt + "%"; }
+      }
+    };
+    if (typeof global.requestAnimationFrame === "function") {
+      global.requestAnimationFrame(function () {
+        global.requestAnimationFrame(apply);
+      });
+    } else {
+      apply();
+    }
+  }
+
   function fightChip(u, aimedAt, strikingKeys, targetKey, state) {
+    var A = Bow.data.fightRules.arena;
     var num = u.index;
     var cls = "bow-chip bow-chip-" + (u.side === "ally" ? "ally" : "enemy");
     if (u.dead) { cls += " bow-chip-dead"; }
     else if (u.down) { cls += " bow-chip-down"; }
+    if (u.stance === "guard" && !u.down && !u.dead) { cls += " bow-chip-guard"; }
     if (!u.dead && aimedAt && aimedAt.indexOf(u.key) !== -1) { cls += " bow-chip-aimed"; }
     if (!u.dead && !u.down && strikingKeys && strikingKeys.indexOf(u.key) !== -1) { cls += " bow-chip-strike"; }
     var isTarget = u.side === "enemy" && !u.dead && u.key === targetKey;
     if (isTarget) { cls += " bow-chip-target"; }
 
-    var mark = u.dead ? "☠" : u.down ? "✦✦✦" : u.disarmed ? "без ор." : "";
+    var mark = u.dead ? "☠" : u.down ? "✦✦✦" : u.disarmed ? "без ор." : (u.stance === "guard" ? "⛨ поз." : "");
     var hp = Math.max(0, Math.round(u.hp));
     var lvl = hp <= 20 ? "critical" : hp <= 45 ? "low" : "ok";
 
@@ -932,12 +959,25 @@
         })
       : "";
 
+    var leftPct = Math.round(((u.col + 0.5) / A.cols) * 1000) / 10;
+    var topPct = Math.round((13 + u.row * 27) * 10) / 10;
+    var zIdx = 12 + u.row * 3 + (u.key === "player" ? 1 : 0);
+
+    var prev = lastFightPos[u.key];
+    var startLeft = prev ? prev.left : leftPct;
+    var startTop = prev ? prev.top : topPct;
+    var moved = prev && (prev.left !== leftPct || prev.top !== topPct);
+    lastFightPos[u.key] = { left: leftPct, top: topPct };
+
     var attrs = u.side === "enemy" && !u.dead
       ? ' data-act="fight-target" data-target="' + esc(u.key) + '" role="button" tabindex="0" title="Назначить целью"'
       : "";
+    var animAttrs = moved
+      ? ' data-to-left="' + leftPct + '" data-to-top="' + topPct + '"'
+      : "";
 
-    return '<div class="' + cls + '"' + attrs +
-      ' style="grid-column:' + (u.col + 1) + ';grid-row:' + (u.row + 1) + '">' +
+    return '<div class="' + cls + '" data-unit="' + esc(u.key) + '"' + attrs + animAttrs +
+      ' style="left:' + startLeft + '%;top:' + startTop + '%;z-index:' + zIdx + '">' +
       '<span class="bow-chip-overhead">' +
         '<b class="bow-chip-num">' + num + '</b>' +
         '<span class="bow-chip-hpbar"><i class="bow-fill bow-' + lvl + '" style="width:' + Math.min(100, hp) + '%"></i></span>' +
@@ -951,11 +991,10 @@
 
   function fightField(f, state) {
     var A = Bow.data.fightRules.arena;
-    var cells = [];
-    for (var r = 0; r < A.rows; r++) {
-      for (var c = 0; c < A.cols; c++) {
-        cells.push('<span class="bow-cell-' + (((c + r) % 2) ? "b" : "a") + '"></span>');
-      }
+    var steps = [];
+    for (var c = 0; c < A.cols; c++) {
+      steps.push('<span class="bow-snow-step" style="left:' +
+        (Math.round(((c + 0.5) / A.cols) * 1000) / 10) + '%"></span>');
     }
 
     var ally = 0, enemy = 0;
@@ -966,11 +1005,18 @@
       return copy;
     });
 
+    var playerU = units.filter(function (u) { return u.key === "player"; })[0];
     var roster = units.map(function (u) {
       var label = u.side === "ally" ? "свой" : "враг";
+      var rangeTag = "";
+      if (u.side === "enemy" && playerU && !u.dead && !u.down) {
+        var close = Bow.fight.inMelee && Bow.fight.inMelee(playerU, u);
+        var dist = Math.max(Math.abs(u.col - playerU.col), Math.abs(u.row - playerU.row));
+        rangeTag = close ? " · вплотную" : (" · " + dist + " шаг.");
+      }
       return '<div class="bow-roster-row bow-roster-' + (u.side === "ally" ? "ally" : "enemy") + '">' +
         '<b>' + u.index + '</b>' +
-        '<span>' + esc(u.name) + '</span>' +
+        '<span>' + esc(u.name) + '<i class="bow-dim">' + rangeTag + '</i></span>' +
         '<span class="bow-roster-hp">' + Math.round(u.hp) + '</span>' +
         '<span class="bow-roster-side">' + label + '</span>' +
       '</div>';
@@ -984,7 +1030,7 @@
       '<div class="bow-arena-scene">' +
         bg +
         '<div class="bow-arena" style="--cols:' + A.cols + ';--rows:' + A.rows + '">' +
-          cells.join("") +
+          '<div class="bow-arena-tracks">' + steps.join("") + '</div>' +
           units.map(function (u) { return fightChip(u, aimedAt, strikingKeys, f.target, state); }).join("") +
         '</div>' +
       '</div>' +
@@ -1007,6 +1053,7 @@
 
     /* Отчёт после боя — на месте страницы. */
     if (!f) {
+      lastFightPos = {};
       var last = state.flags.lastFight;
       if (box) { box.innerHTML = ""; box.classList.remove("bow-fight-open"); }
       if (!page) { return; }
@@ -1033,6 +1080,7 @@
 
     /* --- Окно выбора: до боя --- */
     if (f.phase === "choose") {
+      lastFightPos = {};
       var mode = f.mode;
       var html = "";
 
@@ -1113,9 +1161,22 @@
     if (f.phase === "exchange" || f.phase === "aftermath") {
       var body = "";
 
+      var liveFoesTop = f.units.filter(function (u) {
+        return u.side === "enemy" && !u.down && !u.dead;
+      });
+      var playerUnitTop = f.units.filter(function (u) { return u.key === "player"; })[0];
+      var foeUnitTop = (f.target && liveFoesTop.filter(function (u) { return u.key === f.target; })[0]) ||
+        liveFoesTop[0] || null;
+      var rangeNote = "";
+      if (playerUnitTop && foeUnitTop && f.phase === "exchange") {
+        var inReach = Bow.fight.inMelee && Bow.fight.inMelee(playerUnitTop, foeUnitTop);
+        var stepDist = Math.max(Math.abs(foeUnitTop.col - playerUnitTop.col), Math.abs(foeUnitTop.row - playerUnitTop.row));
+        rangeNote = inReach ? " · вплотную" : (" · до цели " + stepDist + " шаг.");
+      }
+
       body += '<div class="bow-fight-head">' +
         '<b>' + (f.mode === "guard" ? "Стража Брода" : (npc ? esc(npc.name) : (f.mode === "robbery" ? "Грабитель" : "Противник"))) + '</b>' +
-        '<span>круг ' + f.round + '</span></div>';
+        '<span>круг ' + f.round + rangeNote + '</span></div>';
 
       body += fightField(f, state);
 
@@ -1124,14 +1185,12 @@
         var speed = orders.speed || "paused";
         var curStance = orders.stance || "press";
         var curAim = orders.aim || "body";
-        var curSquad = orders.squad || "focus";
+        var rawSq = orders.squad || "free";
+        var curSquad = rawSq === "guard" ? "hold" : rawSq;
         var hasCompanions = f.units.some(function (u) { return u.side === "ally" && u.key !== "player"; });
 
-        var liveFoes = f.units.filter(function (u) {
-          return u.side === "enemy" && !u.down && !u.dead;
-        });
-        var foeUnit = (f.target && liveFoes.filter(function (u) { return u.key === f.target; })[0]) ||
-          liveFoes[0] || null;
+        var liveFoes = liveFoesTop;
+        var foeUnit = foeUnitTop;
         var foePerson = foeUnit ? (foeUnit.refId ? state.people[foeUnit.refId] : foeUnit) : null;
         var fleePct = Math.round(Bow.fight.fleeChance(state) * 100);
 
@@ -1170,20 +1229,21 @@
 
         body += '<div class="bow-aim-row">' + aimBtns + '</div>';
 
-        /* Тактическая стойка героя + приказ отряду */
+        /* Позиция героя и команды отряду (0.0.7.1: сближение или удержание рубежа) */
         body += '<div class="bow-orders-bar">' +
           '<div class="bow-order-group">' +
-            '<span class="bow-order-label">Стойка:</span>' +
-            '<button class="bow-btn bow-btn-sm' + (curStance === "press" ? " bow-order-on" : "") + '" data-act="fight-order" data-kind="stance" data-val="press">Напор</button>' +
-            '<button class="bow-btn bow-btn-sm' + (curStance === "guard" ? " bow-order-on" : "") + '" data-act="fight-move" data-stance="guard">Держать защиту</button>' +
-            '<button class="bow-btn bow-btn-sm' + (curStance === "flee" ? " bow-order-on" : "") + '" data-act="fight-move" data-stance="flee">Бежать · ' + fleePct + '%</button>' +
+            '<span class="bow-order-label">Герой:</span>' +
+            '<button class="bow-btn bow-btn-sm' + (curStance === "press" ? " bow-order-on" : "") + '" data-act="fight-order" data-kind="stance" data-val="press" title="Подходить вплотную к цели и наносить удар">⚔ Сближаться</button>' +
+            '<button class="bow-btn bow-btn-sm' + (curStance === "guard" ? " bow-order-on" : "") + '" data-act="fight-move" data-stance="guard" title="Остаться на месте в защите; бить только подошедших вплотную">⛨ Держать позицию</button>' +
+            '<button class="bow-btn bow-btn-sm" data-act="fight-move" data-stance="back" title="Отойти на шаг назад в защиту">↶ Шаг назад</button>' +
+            '<button class="bow-btn bow-btn-sm" data-act="fight-move" data-stance="flee">Бежать · ' + fleePct + '%</button>' +
           '</div>' +
           (hasCompanions
             ? '<div class="bow-order-group">' +
                 '<span class="bow-order-label">Отряд:</span>' +
-                '<button class="bow-btn bow-btn-sm' + (curSquad === "focus" ? " bow-order-on" : "") + '" data-act="fight-order" data-kind="squad" data-val="focus" title="Все бьют вашу цель">По цели</button>' +
-                '<button class="bow-btn bow-btn-sm' + (curSquad === "free" ? " bow-order-on" : "") + '" data-act="fight-order" data-kind="squad" data-val="free" title="Отряд сам выбирает цели и удары, как в Kenshi">Вольный бой</button>' +
-                '<button class="bow-btn bow-btn-sm' + (curSquad === "guard" ? " bow-order-on" : "") + '" data-act="fight-order" data-kind="squad" data-val="guard" title="Спутники бьются от защиты и берегут здоровье">Держать строй</button>' +
+                '<button class="bow-btn bow-btn-sm' + (curSquad === "free" ? " bow-order-on" : "") + '" data-act="fight-order" data-kind="squad" data-val="free" title="Спутники сами сближаются с врагами и выбирают цели">Вольно · сближаться</button>' +
+                '<button class="bow-btn bow-btn-sm' + (curSquad === "focus" ? " bow-order-on" : "") + '" data-act="fight-order" data-kind="squad" data-val="focus" title="Спутники сближаются с вашей выбранной целью">Идти на цель</button>' +
+                '<button class="bow-btn bow-btn-sm' + (curSquad === "hold" ? " bow-order-on" : "") + '" data-act="fight-order" data-kind="squad" data-val="hold" title="Спутники стоят на своих местах в защите и ждут врага">Держать позицию</button>' +
               '</div>'
             : '') +
         '</div>';
@@ -1203,6 +1263,7 @@
       if (page) {
         page.innerHTML = '<div class="bow-fight-page-inner">' + body + '</div>';
         page.classList.add("bow-page-open");
+        animateArenaMoves(page);
       }
       if (box) { box.innerHTML = ""; box.classList.remove("bow-fight-open"); }
       return;
@@ -1347,6 +1408,7 @@
     renderEncounter(state);
     renderDeath(state);
     renderTrade(state);
+    renderSettings();
   }
 
   /* ---------- Товар и снедь ----------
@@ -1448,10 +1510,90 @@
     box.innerHTML = '<div class="bow-trade">' + html.join("") + '</div>';
   }
 
+  /* ---------- Настройки игры и Меню (0.0.7.1) ---------- */
+  var SETTINGS_KEY = "bow-settings-v1";
+  var DEFAULT_SETTINGS = {
+    fightStart: "1x",
+    font: "normal",
+    motion: "full"
+  };
+
+  function getSettings() {
+    var out = {
+      fightStart: DEFAULT_SETTINGS.fightStart,
+      font: DEFAULT_SETTINGS.font,
+      motion: DEFAULT_SETTINGS.motion
+    };
+    try {
+      var raw = global.localStorage && global.localStorage.getItem(SETTINGS_KEY);
+      if (raw) {
+        var parsed = JSON.parse(raw);
+        if (parsed && ["paused", "1x", "2x"].indexOf(parsed.fightStart) !== -1) { out.fightStart = parsed.fightStart; }
+        if (parsed && ["normal", "large"].indexOf(parsed.font) !== -1) { out.font = parsed.font; }
+        if (parsed && ["full", "calm"].indexOf(parsed.motion) !== -1) { out.motion = parsed.motion; }
+      }
+    } catch (err) { /* ignore */ }
+    return out;
+  }
+
+  function applySettings(cfg) {
+    var s = cfg || getSettings();
+    var root = document.documentElement;
+    if (root) {
+      root.classList.toggle("bow-font-lg", s.font === "large");
+      root.classList.toggle("bow-motion-calm", s.motion === "calm");
+    }
+    return s;
+  }
+
+  function setSetting(key, val) {
+    var cur = getSettings();
+    if (key === "fightStart" && ["paused", "1x", "2x"].indexOf(val) !== -1) { cur.fightStart = val; }
+    else if (key === "font" && ["normal", "large"].indexOf(val) !== -1) { cur.font = val; }
+    else if (key === "motion" && ["full", "calm"].indexOf(val) !== -1) { cur.motion = val; }
+    else { return { ok: false, message: "Неизвестная настройка." }; }
+
+    try {
+      if (global.localStorage) { global.localStorage.setItem(SETTINGS_KEY, JSON.stringify(cur)); }
+    } catch (err) { /* ignore */ }
+    applySettings(cur);
+    renderSettings();
+    return { ok: true, settings: cur, message: "Настройки сохранены." };
+  }
+
+  function renderSettings() {
+    var box = $("bow-settings");
+    if (!box) { return; }
+    var s = getSettings();
+    box.innerHTML =
+      '<div class="bow-setting-row">' +
+        '<div class="bow-setting-label"><b>Начало боя</b><span class="bow-dim">В каком темпе открывается схватка</span></div>' +
+        '<div class="bow-setting-opts">' +
+          '<button class="bow-btn bow-btn-sm' + (s.fightStart === "1x" ? " bow-order-on" : "") + '" data-act="setting" data-key="fightStart" data-val="1x">Живой 1x</button>' +
+          '<button class="bow-btn bow-btn-sm' + (s.fightStart === "2x" ? " bow-order-on" : "") + '" data-act="setting" data-key="fightStart" data-val="2x">Быстро 2x</button>' +
+          '<button class="bow-btn bow-btn-sm' + (s.fightStart === "paused" ? " bow-order-on" : "") + '" data-act="setting" data-key="fightStart" data-val="paused">На паузе</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="bow-setting-row">' +
+        '<div class="bow-setting-label"><b>Размер текста</b><span class="bow-dim">Крупнее шрифт для долгого чтения</span></div>' +
+        '<div class="bow-setting-opts">' +
+          '<button class="bow-btn bow-btn-sm' + (s.font === "normal" ? " bow-order-on" : "") + '" data-act="setting" data-key="font" data-val="normal">Обычный</button>' +
+          '<button class="bow-btn bow-btn-sm' + (s.font === "large" ? " bow-order-on" : "") + '" data-act="setting" data-key="font" data-val="large">Крупный</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="bow-setting-row">' +
+        '<div class="bow-setting-label"><b>Снег и движение</b><span class="bow-dim">Анимация погоды и фигур на сцене</span></div>' +
+        '<div class="bow-setting-opts">' +
+          '<button class="bow-btn bow-btn-sm' + (s.motion === "full" ? " bow-order-on" : "") + '" data-act="setting" data-key="motion" data-val="full">Включены</button>' +
+          '<button class="bow-btn bow-btn-sm' + (s.motion === "calm" ? " bow-order-on" : "") + '" data-act="setting" data-key="motion" data-val="calm">Спокойно</button>' +
+        '</div>' +
+      '</div>';
+  }
+
   /* ---------- Отдельное модальное окно вкладки поверх игры (0.0.7) ----------
      Визуальное состояние, не игровое — не попадает в сохранение. */
   var drawerOpen = false;
-  var modalSection = "state";
+  var modalSection = "save";
 
   var MODAL_TITLES = {
     state: "Состояние и тело",
@@ -1460,7 +1602,7 @@
     people: "Жители поселения",
     orgs: "Общины",
     journal: "Хроника",
-    save: "Память игры"
+    save: "Меню игры"
   };
 
   function focusModalSection(key) {
@@ -1512,7 +1654,7 @@
     return setDrawer(true, target);
   }
 
-  function toggleDrawer() { return openModal("state"); }
+  function toggleDrawer() { return openModal("save"); }
 
   function isDrawerOpen() { return drawerOpen; }
 
@@ -1527,6 +1669,10 @@
     scrollDrawerTo: scrollDrawerTo,
     setTab: setTab,
     setStageSelection: setStageSelection,
+    getSettings: getSettings,
+    setSetting: setSetting,
+    applySettings: applySettings,
+    renderSettings: renderSettings,
     renderPersonSheet: renderPersonSheet,
     setMessage: setMessage,
     esc: esc

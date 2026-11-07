@@ -92,13 +92,20 @@
     });
   }
 
-  /* Нанести постоянную травму. Возвращает описание или null. */
-  function maim(person, rng) {
-    var keys = Object.keys(injuryDefs());
+  /* Нанести постоянную травму по месту удара (голова → глаз, руки → рука,
+     ноги → колено, корпус → рёбра). Если такая травма уже есть — берём свободную. */
+  var AIM_INJURY = { head: "eye", arms: "arm", legs: "leg", body: "ribs" };
+
+  function maim(person, rng, aimKey) {
+    var defs = injuryDefs();
+    var keys = Object.keys(defs);
     var free = keys.filter(function (k) { return !hasInjury(person, k); });
     if (!free.length) { return null; }
-    var key = free[Math.floor(rollOf(rng) * free.length) % free.length];
-    var def = injuryDefs()[key];
+    var preferred = aimKey && AIM_INJURY[aimKey];
+    var key = (preferred && free.indexOf(preferred) !== -1)
+      ? preferred
+      : free[Math.floor(rollOf(rng) * free.length) % free.length];
+    var def = defs[key];
     person.injuries = person.injuries || [];
     person.injuries.push({ key: key, at: null });
     return def;
@@ -404,8 +411,13 @@
 
     var R = rules();
     var n = state.player.needs;
-    if (n.fatigue < 12) { return { ok: false, message: "Вы едва стоите. Сначала отдых." }; }
-    if (n.health < 25) { return { ok: false, message: "Вы слишком плохи, чтобы драться." }; }
+    /* Нападать первым или выходить на кулачный бой полумёртвым нельзя,
+       но когда стража или грабитель уже взяли за ворот — отмахнуться
+       придётся в любом состоянии. */
+    if (mode !== "guard" && mode !== "robbery") {
+      if (n.fatigue < 12) { return { ok: false, message: "Вы едва стоите. Сначала отдых." }; }
+      if (n.health < 25) { return { ok: false, message: "Вы слишком плохи, чтобы драться." }; }
+    }
 
     if (["spar", "crime", "guard", "robbery"].indexOf(mode) === -1) {
       return { ok: false, message: "Так не дерутся." };
@@ -524,13 +536,13 @@
       f.orders = {
         stance: "press",
         aim: "body",
-        squad: "focus",
+        squad: "free",
         speed: "paused"
       };
     }
     if (!f.orders.stance) { f.orders.stance = "press"; }
     if (!f.orders.aim) { f.orders.aim = "body"; }
-    if (!f.orders.squad) { f.orders.squad = "focus"; }
+    if (!f.orders.squad) { f.orders.squad = "free"; }
     if (!f.orders.speed) { f.orders.speed = "paused"; }
     return f.orders;
   }
@@ -561,13 +573,13 @@
     }
 
     if (kind === "squad") {
-      if (["focus", "free", "guard"].indexOf(value) === -1) {
+      if (["focus", "free", "guard", "hold"].indexOf(value) === -1) {
         return { ok: false, message: "Неизвестный приказ отряду." };
       }
-      o.squad = value;
-      var qLabel = value === "free" ? "Отряд бьётся вольно."
-        : value === "guard" ? "Отряд держит строй от защиты."
-        : "Отряд бьёт вашу цель.";
+      o.squad = value === "guard" ? "hold" : value;
+      var qLabel = o.squad === "free" ? "Отряд сам сближается и бьётся вольно."
+        : o.squad === "hold" ? "Отряд держит позицию в защите."
+        : "Отряд сближается с вашей целью.";
       return { ok: true, orders: o, message: qLabel };
     }
 
@@ -657,17 +669,102 @@
     }
   }
 
-  /* ---------- Один ход ----------
-     Сначала бьют свои, потом отвечает противник. Противник выбирает
-     самого слабого — так поступает и толпа. */
+  /* ---------- Пространство поля боя (0.0.7.1) ----------
+     Удар в рукопашной достаёт только вплотную (соседняя клетка).
+     Никто не бьёт через всю карту: чтобы ударить — надо подойти. */
+  function inMelee(a, b) {
+    if (!a || !b) { return false; }
+    return Math.abs((a.col || 0) - (b.col || 0)) <= 1 &&
+           Math.abs((a.row || 0) - (b.row || 0)) <= 1;
+  }
+
+  function gridDist(a, b) {
+    return Math.abs((a.col || 0) - (b.col || 0)) + Math.abs((a.row || 0) - (b.row || 0));
+  }
+
+  function cellOccupied(f, col, row, ignoreKey) {
+    var A = rules().arena;
+    if (col < 0 || col >= A.cols || row < 0 || row >= A.rows) { return true; }
+    for (var i = 0; i < f.units.length; i++) {
+      var u = f.units[i];
+      if (u.key === ignoreKey || u.down || u.dead) { continue; }
+      if (u.col === col && u.row === row) { return true; }
+    }
+    return false;
+  }
+
+  /* Сближение к цели по снегу: до maxSteps клеток за такт, обходя занятые клетки. */
+  function stepToward(f, mover, target, maxSteps) {
+    if (!mover || !target || inMelee(mover, target)) { return false; }
+    var moved = false;
+    var steps = maxSteps || 1;
+    for (var s = 0; s < steps; s++) {
+      if (inMelee(mover, target)) { break; }
+      var dc = target.col > mover.col ? 1 : (target.col < mover.col ? -1 : 0);
+      var dr = target.row > mover.row ? 1 : (target.row < mover.row ? -1 : 0);
+      var candidates = [];
+      if (dc !== 0 && dr !== 0) { candidates.push([mover.col + dc, mover.row + dr]); }
+      if (dc !== 0) { candidates.push([mover.col + dc, mover.row]); }
+      if (dr !== 0) { candidates.push([mover.col, mover.row + dr]); }
+      if (dc !== 0) {
+        candidates.push([mover.col + dc, mover.row - 1]);
+        candidates.push([mover.col + dc, mover.row + 1]);
+      }
+      var picked = null;
+      for (var c = 0; c < candidates.length; c++) {
+        if (!cellOccupied(f, candidates[c][0], candidates[c][1], mover.key)) {
+          picked = candidates[c];
+          break;
+        }
+      }
+      if (!picked) { break; }
+      mover.col = picked[0];
+      mover.row = picked[1];
+      moved = true;
+    }
+    return moved;
+  }
+
+  /* Шаг назад: разорвать контакт за спины спутников и встать в защиту. */
+  function stepBack(state, rng) {
+    var f = state.fight;
+    if (!f || f.phase !== "exchange") { return { ok: false, message: "Сейчас не бой." }; }
+    var playerUnit = unitByKey(f, "player");
+    if (!playerUnit || playerUnit.down) { return { ok: false, message: "Вы не можете отойти." }; }
+    var o = ensureOrders(f);
+    o.stance = "guard";
+    var stepped = false;
+    var backCols = [playerUnit.col - 1, playerUnit.col];
+    var tryRows = [playerUnit.row, playerUnit.row - 1, playerUnit.row + 1];
+    for (var bi = 0; bi < backCols.length && !stepped; bi++) {
+      for (var ri = 0; ri < tryRows.length && !stepped; ri++) {
+        if (backCols[bi] === playerUnit.col && tryRows[ri] === playerUnit.row) { continue; }
+        if (!cellOccupied(f, backCols[bi], tryRows[ri], playerUnit.key)) {
+          playerUnit.col = backCols[bi];
+          playerUnit.row = tryRows[ri];
+          stepped = true;
+        }
+      }
+    }
+    if (stepped) {
+      log(f, "you", "Вы отступаете на шаг назад и закрываетесь.");
+    }
+    return move(state, "guard", rng, f.target || null, o.aim || "body");
+  }
+
+  /* ---------- Один такт боя ----------
+     Сначала ходят свои, потом отвечает противник. Чтобы ударить,
+     нужно стоять вплотную (inMelee); кто держит позицию — ждёт врага. */
   function move(state, stance, rng, targetKey, aimKey) {
     var f = state.fight;
     var R = rules();
     if (!f || f.phase !== "exchange") { return { ok: false, message: "Сейчас не бой." }; }
 
     if (stance === "flee") { return flee(state, rng); }
+    if (stance === "back") { return stepBack(state, rng); }
     if (stance !== "press" && stance !== "guard") { return { ok: false, message: "Так не дерутся." }; }
 
+    f.units.forEach(function (u) { syncUnit(state, u); });
     var playerUnit = unitByKey(f, "player");
     if (!playerUnit) { return { ok: false, message: "Вас нет на поле." }; }
 
@@ -678,9 +775,6 @@
       return { ok: true, message: "" };
     }
 
-    /* --- 1. Свои бьют ---
-       Цель выбирается игроком. Раньше удар всегда уходил в первого
-       по списку, и «бить того, кто держится крепче» было невозможно. */
     var foes = aliveUnits(f, "enemy");
     if (!foes.length) { endBySide(state, "ally"); return { ok: true, message: "" }; }
 
@@ -692,68 +786,167 @@
     }
     f.target = foe.key;
 
-    /* Цели текущего хода: поле должно показать, кто кого бьёт,
-       а не заставлять игрока дочитывать хронику. */
     f.aim = [];
-
     ensureOrders(f);
     playerUnit.stance = stance;
 
+    /* --- 1. Ход героя --- */
     if (!playerUnit.down) {
-      /* Бьёте тем местом, какое выбрали. По умолчанию — корпус:
-         без выбора всегда был только один «удар вообще». */
-      strike(state, playerUnit, foe, stance, rng, aimKey || (f.orders && f.orders.aim) || "body");
-      syncUnit(state, playerUnit);
-      syncUnit(state, foe);
-      f.aim.push({ from: playerUnit.key, to: foe.key });
+      if (stance === "press") {
+        /* В напоре герой сам сближается с целью (рывок до 2 шагов). */
+        if (!inMelee(playerUnit, foe)) {
+          stepToward(f, playerUnit, foe, 2);
+        }
+        if (inMelee(playerUnit, foe)) {
+          strike(state, playerUnit, foe, stance, rng, aimKey || (f.orders && f.orders.aim) || "body");
+          syncUnit(state, playerUnit);
+          syncUnit(state, foe);
+          f.aim.push({ from: playerUnit.key, to: foe.key });
+        } else {
+          /* Если до выбранного не дотянуться из-за строя, бьём того, кто вплотную. */
+          var adjFoe = aliveUnits(f, "enemy").filter(function (e) { return inMelee(playerUnit, e); })[0];
+          if (adjFoe) {
+            strike(state, playerUnit, adjFoe, stance, rng, aimKey || (f.orders && f.orders.aim) || "body");
+            syncUnit(state, playerUnit);
+            syncUnit(state, adjFoe);
+            f.aim.push({ from: playerUnit.key, to: adjFoe.key });
+          } else {
+            Bow.needs.applyChange(state.player, "fatigue", -1);
+            log(f, "you", "Вы сближаетесь с " + foe.name + ".");
+          }
+        }
+      } else {
+        /* «Держать позицию» (guard): герой НЕ бежит вперёд. Если враг уже
+           подошёл вплотную — встречает коротким ударом из защиты; иначе
+           держит место и переводит дух. */
+        var nearFoe = inMelee(playerUnit, foe)
+          ? foe
+          : aliveUnits(f, "enemy").filter(function (e) { return inMelee(playerUnit, e); })[0];
+        if (nearFoe) {
+          strike(state, playerUnit, nearFoe, "guard", rng, aimKey || (f.orders && f.orders.aim) || "body");
+          syncUnit(state, playerUnit);
+          syncUnit(state, nearFoe);
+          f.aim.push({ from: playerUnit.key, to: nearFoe.key });
+        } else {
+          Bow.needs.applyChange(state.player, "fatigue", 2);
+          log(f, "you", "Вы держите позицию в защите и ждёте противника.");
+        }
+      }
     }
 
-    /* Союзники действуют по приказу командира (0.0.7):
-       • focus — наваливаются на вашу цель;
-       • free  — сами выбирают самого слабого врага и место удара (как в Kenshi);
-       • guard — держат строй от защиты, берегут силы и режут ответный урон. */
-    var squadOrder = (f.orders && f.orders.squad) || "focus";
+    /* --- 2. Ход спутников по приказу командира ---
+       • focus — сами подходят к вашей цели и бьют её;
+       • free  — сами подходят к ближайшему/слабейшему врагу и рубятся (как в Kenshi);
+       • hold / guard — стоят на месте стеной в защите, бьют только подошедших вплотную. */
+    var rawSquad = (f.orders && f.orders.squad) || "focus";
+    var squadOrder = rawSquad === "guard" ? "hold" : rawSquad;
+
     aliveUnits(f, "ally").forEach(function (u) {
       if (u.key === "player") { return; }
       var live = aliveUnits(f, "enemy");
       if (!live.length) { return; }
-      var prey = live[0];
-      var allyStance = squadOrder === "guard" ? "guard" : "press";
+      var allyStance = squadOrder === "hold" ? "guard" : "press";
       var allyAim = "body";
+      var prey = live[0];
 
       if (squadOrder === "free") {
-        live.sort(function (a, b) { return a.hp - b.hp; });
+        live.sort(function (a, b) {
+          var da = inMelee(u, a) ? 0 : 1;
+          var db = inMelee(u, b) ? 0 : 1;
+          if (da !== db) { return da - db; }
+          return a.hp - b.hp;
+        });
         prey = live[0];
         allyAim = chooseAim(u, state);
-      } else if (f.target) {
+      } else if (squadOrder === "focus" && f.target) {
         var focused = live.filter(function (e) { return e.key === f.target; })[0];
         if (focused) { prey = focused; }
+      } else if (squadOrder === "hold") {
+        var adjacent = live.filter(function (e) { return inMelee(u, e); })[0];
+        prey = adjacent || null;
       }
 
       u.stance = allyStance;
-      strike(state, u, prey, allyStance, rng, allyAim);
-      syncUnit(state, u);
-      syncUnit(state, prey);
-      f.aim.push({ from: u.key, to: prey.key });
+
+      if (squadOrder === "hold") {
+        if (prey) {
+          strike(state, u, prey, "guard", rng, "body");
+          syncUnit(state, u);
+          syncUnit(state, prey);
+          f.aim.push({ from: u.key, to: prey.key });
+        }
+        return;
+      }
+
+      if (!inMelee(u, prey)) {
+        stepToward(f, u, prey, 2);
+      }
+      if (!inMelee(u, prey)) {
+        var nearAny = live.filter(function (e) { return inMelee(u, e); })[0];
+        if (nearAny) { prey = nearAny; }
+      }
+      if (inMelee(u, prey)) {
+        strike(state, u, prey, allyStance, rng, allyAim);
+        syncUnit(state, u);
+        syncUnit(state, prey);
+        f.aim.push({ from: u.key, to: prey.key });
+      } else {
+        log(f, "you", u.name + " подходит ближе к врагу.");
+      }
     });
 
     if (!aliveUnits(f, "enemy").length) { endBySide(state, "ally"); return { ok: true, message: "" }; }
-
-    /* Противник мог сдаться уже от нашего удара. */
     if (enemyGivesUp(f)) { endBySide(state, "ally"); return { ok: true, message: "" }; }
 
-    /* --- 2. Противник отвечает --- */
-    aliveUnits(f, "enemy").forEach(function (foe) {
+    /* --- 3. Противник сближается и отвечает --- */
+    aliveUnits(f, "enemy").forEach(function (foeUnit) {
+      /* Если игрок уже сбит до порога и стоящих союзников не осталось —
+         остальные стражники не бьют лежачего на «−0 здор.». */
+      if (state.player.needs.health <= R.yieldAt.player) {
+        playerUnit.down = true;
+      }
       var ours = aliveUnits(f, "ally");
       if (!ours.length) { return; }
-      ours.sort(function (a, b) { return a.hp - b.hp; });
-      var victim = ours[0];
-      var foeStance = chooseStance(foe);
-      foe.stance = foeStance;
+
+      var foeStance = chooseStance(foeUnit);
+      foeUnit.stance = foeStance;
       if (foeStance === "yield") { return; }
-      strike(state, foe, victim, foeStance, rng, chooseAim(foe, state));
+
+      /* Сначала те, кто реально стоит перед врагом вплотную!
+         Так союзник, вышедший вперёд, прикрывает героя за спиной. */
+      var engaged = ours.filter(function (a) { return inMelee(foeUnit, a); });
+      var victim = null;
+      if (engaged.length) {
+        engaged.sort(function (a, b) { return a.hp - b.hp; });
+        victim = engaged[0];
+      } else {
+        ours.sort(function (a, b) {
+          var d = gridDist(foeUnit, a) - gridDist(foeUnit, b);
+          return d !== 0 ? d : (a.hp - b.hp);
+        });
+        victim = ours[0];
+        if (foeStance === "press") {
+          stepToward(f, foeUnit, victim, 1);
+        }
+        /* После шага проверяем, дотянулся ли до кого-то из наших. */
+        var nowEngaged = aliveUnits(f, "ally").filter(function (a) { return inMelee(foeUnit, a); });
+        if (nowEngaged.length) {
+          nowEngaged.sort(function (a, b) { return a.hp - b.hp; });
+          victim = nowEngaged[0];
+        } else {
+          if (foeStance === "press") {
+            log(f, "them", foeUnit.name + " сближается по снегу.");
+          }
+          return;
+        }
+      }
+
+      strike(state, foeUnit, victim, foeStance, rng, chooseAim(foeUnit, state));
       syncUnit(state, victim);
-      f.aim.push({ from: foe.key, to: victim.key });
+      if (victim.key === "player" && state.player.needs.health <= R.yieldAt.player) {
+        victim.down = true;
+      }
+      f.aim.push({ from: foeUnit.key, to: victim.key });
     });
 
     /* Игрок на нуле — бой кончен, даже если фишка ещё «стоит»:
@@ -845,7 +1038,7 @@
       /* Шанс растёт с силой удара и с тем, куда бьёте: в голову
          калечит чаще, по рукам — реже. Остаётся шансом. */
       var injuryRoll = Math.min(0.34, (0.06 + (damage - R.maimAt) * 0.008) * aim.maim);
-      if (rollOf(rng) < injuryRoll) { maimed = maim(dP, rng); }
+      if (rollOf(rng) < injuryRoll) { maimed = maim(dP, rng, aimKey); }
     }
 
     /* Сбить с ног можно и не убивая: удар в голову или по ногам
@@ -868,12 +1061,10 @@
       }
     }
     if (defender.side === "ally" && !defender.npc && dP.needs.health - damage <= R.yieldAt.player) {
-      /* Игрока не убивают на улице: его доводят до земли.
-         Не ниже порога. Раньше стоял Math.round, и удар, который
-         должен был остановиться на 12, заканчивался на 11.5 —
-         тест ловил это как «провалился ниже порога». */
-      var room = dP.needs.health - R.yieldAt.player;
-      damage = Math.max(0, Math.min(damage, Math.floor(room)));
+      var room = Bow.util.round1(dP.needs.health - R.yieldAt.player);
+      damage = Math.max(0, Math.min(damage, room));
+      defender.down = true;
+      if (damage <= 0) { return; }
     }
     if (defender.side === "ally" && defender.npc && mode === "spar" &&
         dP.needs.health - damage <= R.yieldAt.npc) {
@@ -1176,7 +1367,7 @@
     }
 
     var summary = {
-      name: npc ? npc.name : (f.enemies[0] ? f.enemies[0].name : "—"),
+      name: f.mode === "guard" ? "Стража Брода" : (npc ? npc.name : (f.enemies[0] ? f.enemies[0].name : "—")),
       mode: f.mode,
       outcome: outcome,
       rounds: f.round,
@@ -1221,6 +1412,9 @@
     start: start,
     move: move,
     step: step,
+    stepBack: stepBack,
+    inMelee: inMelee,
+    stepToward: stepToward,
     setOrder: setOrder,
     ensureOrders: ensureOrders,
     flee: flee,

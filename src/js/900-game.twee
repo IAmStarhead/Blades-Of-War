@@ -105,7 +105,8 @@
       var state = getState();
       var res = Bow.adapter.act.fightStart(state, el.getAttribute("data-mode"));
       if (res && res.ok && state.fight && state.fight.phase === "exchange") {
-        Bow.fight.setOrder(state, "speed", "1x");
+        var spd = (Bow.ui.getSettings && Bow.ui.getSettings().fightStart) || "1x";
+        Bow.fight.setOrder(state, "speed", spd);
         startFightClock();
       }
       return res;
@@ -135,17 +136,16 @@
       var aim = el.getAttribute("data-aim");
       if (state.fight && state.fight.phase === "exchange") {
         var o = Bow.fight.ensureOrders(state.fight);
-        if (stance) { o.stance = stance; }
+        if (stance && stance !== "flee" && stance !== "back") { o.stance = stance; }
         if (aim) { o.aim = aim; }
-        /* На живом ходу (1x / 2x) смена места удара или стойки защиты
-           меняет приказ на лету, а не делает внеочередной удар.
-           На паузе (или при попытке побега) сразу выполняет такт. */
-        if (o.speed !== "paused" && stance !== "flee") {
+        /* На живом ходу (1x / 2x) смена места удара или удержания позиции
+           меняет приказ на лету. Побег и шаг назад выполняются сразу. */
+        if (o.speed !== "paused" && stance !== "flee" && stance !== "back") {
           return {
             ok: true,
             message: stance === "guard"
-              ? "Переходите в глухую защиту."
-              : ("Метите " + Bow.fight.aimDef(aim || o.aim).short + ".")
+              ? "Держите позицию в защите."
+              : ("Сближаетесь · метите " + Bow.fight.aimDef(aim || o.aim).short + ".")
           };
         }
       }
@@ -171,7 +171,8 @@
       var state = getState();
       var res = Bow.adapter.act.guardFight(state);
       if (res && res.ok && state.fight && state.fight.phase === "exchange") {
-        Bow.fight.setOrder(state, "speed", "1x");
+        var spd = (Bow.ui.getSettings && Bow.ui.getSettings().fightStart) || "1x";
+        Bow.fight.setOrder(state, "speed", spd);
         startFightClock();
       }
       return res;
@@ -189,7 +190,8 @@
       var state = getState();
       var res = Bow.adapter.act.streetFight(state);
       if (res && res.ok && state.fight && state.fight.phase === "exchange") {
-        Bow.fight.setOrder(state, "speed", "1x");
+        var spd = (Bow.ui.getSettings && Bow.ui.getSettings().fightStart) || "1x";
+        Bow.fight.setOrder(state, "speed", spd);
         startFightClock();
       }
       return res;
@@ -228,7 +230,11 @@
     },
     "close-panel": function () {
       Bow.ui.setDrawer(false);
+      startFightClock();
       return { ok: true, message: "" };
+    },
+    setting: function (el) {
+      return Bow.ui.setSetting(el.getAttribute("data-key"), el.getAttribute("data-val"));
     },
     tab: function (el) {
       Bow.ui.setTab(el.getAttribute("data-tab"));
@@ -306,13 +312,28 @@
     "clock": true
   };
 
+  /* Сервисные и закрывающие кнопки интерфейса никогда не должны блокироваться:
+     иначе после поражения страже невозможно закрыть отчёт боя перед клеткой. */
+  var ALWAYS_ALLOWED = {
+    "fight-close": true,
+    "close-panel": true,
+    "close-sheet": true,
+    "close-dialog": true,
+    "stage-close": true,
+    "panel": true,
+    "setting": true,
+    "tab": true
+  };
+
   /* В клетке доступно только то, что доступно в клетке. */
   var IN_JAIL_ALLOWED = {
     "jail-serve": true,
     "jail-escape": true,
     "jail-bribe": true,
+    "fight-close": true,
     "panel": true,
     "close-panel": true,
+    "setting": true,
     "tab": true,
     "stage-close": true,
     "clock": true
@@ -333,13 +354,15 @@
     "fight-close": true,
     "panel": true,
     "close-panel": true,
+    "setting": true,
     "tab": true,
     "stage-close": true,
     "clock": true
   };
 
   function blockedBy(state, act) {
-    if (state.dead) { return act === "death-restart" || act === "panel" ? null : "Всё кончено. Начните заново."; }
+    if (ALWAYS_ALLOWED[act]) { return null; }
+    if (state.dead) { return act === "death-restart" ? null : "Всё кончено. Начните заново."; }
     if (state.jail && !IN_JAIL_ALLOWED[act]) { return "Вы в клетке. Отсюда не выйти по своей воле."; }
     if (state.guard && !DURING_GUARD_ALLOWED[act]) { return "Сначала решите со стражей."; }
     if (state.encounter && !IN_ENCOUNTER_ALLOWED[act]) { return "Сначала решите с грабителем."; }
@@ -408,8 +431,8 @@
     if (state.dialog) { return false; }
     /* Бой — пошаговый: часы не должны тикать между ударами. */
     if (state.fight) { return false; }
-    /* Стража и грабитель ждут ответа, а не хода времени. */
-    if (state.guard || state.encounter) { return false; }
+    /* Стража, грабитель и клетка ждут решения игрока, а не фоновых часов. */
+    if (state.guard || state.encounter || state.jail) { return false; }
     if (state.dead) { return false; }
     if (Bow.ui.isDrawerOpen()) { return false; }
     if (openPersonId) { return false; }
@@ -532,6 +555,10 @@
           return;
         }
 
+        stopFightClock();
+        Bow.ui.setDrawer(false);
+        Bow.ui.setStageSelection(null);
+        openSheet(null);
         vars().game = result.state;
         Bow.ui.setMessage(
           result.mode === "migrated"
@@ -540,6 +567,7 @@
         );
         refresh();
         startClock();
+        startFightClock();
       };
       reader.readAsText(file);
     });
@@ -548,6 +576,10 @@
   }
 
   function restart() {
+    stopFightClock();
+    Bow.ui.setDrawer(false);
+    Bow.ui.setStageSelection(null);
+    openSheet(null);
     vars().game = Bow.adapter.freshState();
     vars().game.createdAt = Date.now();
     Bow.ui.setMessage("Новая игра начата. Прежний прогресс в памяти браузера перезаписан.");
@@ -577,10 +609,15 @@
       return;
     }
 
+    stopFightClock();
+    Bow.ui.setDrawer(false);
+    Bow.ui.setStageSelection(null);
+    openSheet(null);
     vars().game = result.state;
     Bow.ui.setMessage("Продолжаем с автосохранения.");
     refresh();
     startClock();
+    startFightClock();
   }
 
   /* Тихая проверка автосейва при старте: без сообщений игроку.
@@ -698,7 +735,8 @@
       btnContinue.disabled = false;
     }
 
-    /* Отрисовка стартового экрана. */
+    /* Применяем сохранённые настройки и отрисовываем стартовый экран. */
+    if (Bow.ui.applySettings) { Bow.ui.applySettings(); }
     Bow.ui.setMessage("Осмотритесь. Здесь пока немного людей, но они настоящие.");
     refresh(true);
     startClock();

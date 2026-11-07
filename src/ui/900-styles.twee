@@ -3123,3 +3123,196 @@ body {
     transition-duration: 0.001s !important;
   }
 }
+
+
+/* ============================================================
+   КРУГ 13 (0.0.7.1) — КРУПНЫЙ ГЕРБ-МЕНЮ, НАСТРОЙКИ И ЖИВОЕ ПОЛЕ БОЯ
+   ============================================================ */
+
+/* Укрупнённый логотип с клинками — вход в Меню игры */
+.bow-topbar .bow-logo-btn {
+  gap: 11px;
+  padding: 5px 12px 5px 7px;
+  border: 1px solid rgba(168, 182, 196, 0.18);
+  background: linear-gradient(180deg, rgba(24, 31, 39, 0.85) 0%, rgba(15, 20, 26, 0.92) 100%);
+  border-radius: var(--bow-radius);
+}
+
+.bow-topbar .bow-logo-btn:hover {
+  border-color: rgba(201, 169, 97, 0.55);
+  background: linear-gradient(180deg, rgba(31, 40, 50, 0.95) 0%, rgba(19, 25, 33, 0.96) 100%);
+}
+
+.bow-topbar .bow-logo-img {
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+  filter: drop-shadow(0 3px 8px rgba(0, 0, 0, 0.72));
+}
+
+.bow-topbar .bow-logo-btn:hover .bow-logo-img {
+  transform: scale(1.06);
+  filter: drop-shadow(0 0 10px rgba(201, 169, 97, 0.42));
+}
+
+.bow-topbar .bow-logo-text b {
+  font-size: 1rem;
+  letter-spacing: 0.13em;
+}
+
+.bow-topbar .bow-logo-text i {
+  display: block;
+  font-style: normal;
+  font-family: var(--bow-mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--bow-dim);
+  margin-top: 2px;
+}
+
+/* --- Меню игры и Настройки --- */
+.bow-menu-top {
+  margin-bottom: 14px;
+}
+
+.bow-menu-resume {
+  width: 100%;
+  justify-content: center;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  padding: 11px 16px;
+  border-color: var(--bow-gold);
+  background: rgba(201, 169, 97, 0.14);
+  color: var(--bow-silver);
+}
+
+.bow-menu-resume:hover {
+  background: rgba(201, 169, 97, 0.24);
+}
+
+.bow-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.bow-setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 8px 10px;
+  background: #121820;
+  border: 1px solid var(--bow-line-soft);
+  border-radius: var(--bow-radius);
+}
+
+.bow-setting-label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.bow-setting-label b {
+  font-size: 0.84rem;
+  color: var(--bow-silver);
+}
+
+.bow-setting-label span {
+  font-size: 0.72rem;
+}
+
+.bow-setting-opts {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+/* Режим крупного шрифта из Настроек */
+html.bow-font-lg {
+  font-size: 18px;
+}
+
+/* Спокойный режим сцены (отключает кружение снега и плавное качание) */
+html.bow-motion-calm .bow-snow-flake,
+html.bow-motion-calm .bow-stage-actor .bow-fig-svg {
+  animation: none !important;
+}
+
+/* --- Поле боя 0.0.7.1: сближение по снегу без клеток в небе --- */
+.bow-arena-scene {
+  min-height: 276px;
+}
+
+.bow-arena-scene .bow-arena {
+  display: block;
+  position: relative;
+  z-index: 2;
+  min-height: 276px;
+  aspect-ratio: auto;
+  padding: 0;
+  border: 0;
+  background: linear-gradient(180deg, rgba(12, 17, 23, 0.06) 0%, rgba(15, 22, 30, 0.34) 55%, rgba(16, 24, 33, 0.68) 100%);
+}
+
+/* Тонкие вешки шагов на снегу (показывают дистанцию 0..6 без решётки) */
+.bow-arena-tracks {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 10px;
+  height: 16px;
+  pointer-events: none;
+}
+
+.bow-snow-step {
+  position: absolute;
+  bottom: 0;
+  width: 28px;
+  height: 5px;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: rgba(190, 206, 222, 0.14);
+  border-bottom: 1px solid rgba(190, 206, 222, 0.25);
+}
+
+.bow-arena-scene .bow-chip {
+  position: absolute;
+  transform: translate(-50%, 0);
+  min-width: 68px;
+  min-height: 0;
+  padding: 3px 5px;
+  border-radius: var(--bow-radius);
+  transition:
+    left 0.36s cubic-bezier(0.22, 1, 0.36, 1),
+    top 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.18s ease,
+    border-color 0.16s ease,
+    background 0.16s ease;
+}
+
+.bow-arena-scene .bow-chip-ally.bow-chip-strike {
+  transform: translate(calc(-50% + 9px), -2px);
+}
+
+.bow-arena-scene .bow-chip-enemy.bow-chip-strike {
+  transform: translate(calc(-50% - 9px), -2px);
+}
+
+.bow-arena-scene .bow-chip-guard .bow-chip-overhead {
+  border-color: rgba(126, 176, 212, 0.65);
+}
+
+@media (max-width: 720px) {
+  .bow-topbar .bow-logo-img {
+    width: 44px;
+    height: 44px;
+  }
+  .bow-arena-scene,
+  .bow-arena-scene .bow-arena {
+    min-height: 236px;
+  }
+}

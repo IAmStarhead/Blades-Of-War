@@ -218,6 +218,16 @@
       }
       state.version = "0.0.7";
       return state;
+    },
+
+    /* 0.0.7 → 0.0.7.1: дистанция и сближение на поле боя, удержание
+       позиции отрядом и исправление выхода в клетку после поражения страже. */
+    "0.0.7": function (state) {
+      if (state.fight && state.fight.orders && state.fight.orders.squad === "guard") {
+        state.fight.orders.squad = "hold";
+      }
+      state.version = "0.0.7.1";
+      return state;
     }
   };
 

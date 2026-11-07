@@ -183,9 +183,9 @@
       };
     }
 
-    /* Поймали: бьют и калечат. */
+    /* Поймали: бьют и калечат, но в клетку ведут живым (минимум 5 здор.). */
     var dmg = 12 + Math.round(rnd(rng) * 10);
-    Bow.needs.applyChange(state.player, "health", -dmg);
+    state.player.needs.health = Math.max(5, Bow.util.round1(state.player.needs.health - dmg));
 
     /* Увечье — не гарантия, а шанс. В тесте проверяется заведомо
        провальным броском: 0.99 проходит мимо порога maimChance. */
@@ -288,6 +288,10 @@
 
     Bow.time.advance(state, h);
     state.jail.hoursLeft -= h;
+    /* В клетке кормят скудно, раз в день, но умереть с голоду не дают. */
+    if (state.player.needs.hunger < 35) {
+      state.player.needs.hunger = 42;
+    }
     Bow.needs.applyChange(state.player, "mood", -3);
     Bow.needs.applyChange(state.player, "fatigue", 6);
 
@@ -325,7 +329,7 @@
     }
 
     Bow.steal.addHeat(state, GUARD, 5);
-    Bow.needs.applyChange(state.player, "health", -6);
+    state.player.needs.health = Math.max(5, Bow.util.round1(state.player.needs.health - 6));
     Bow.journal.add(state, "Побег из клетки не удался.", "guard");
     return { ok: true, escaped: false, message: "Вас вернули на место. Теперь следят внимательнее." };
   }

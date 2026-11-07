@@ -6,11 +6,11 @@
        Щит, дата/монеты/погода, кнопки окон разделов и часы справа.
        ============================================================ -->
   <header class="bow-topbar">
-    <button class="bow-logo-btn" id="bow-logo-btn" aria-label="Открыть окно состояния" aria-expanded="false" title="Состояние персонажа">
+    <button class="bow-logo-btn" id="bow-logo-btn" aria-label="Меню игры" aria-expanded="false" title="Меню игры — продолжить, настройки, сохранения">
       <span class="bow-logo-img" aria-hidden="true"></span>
       <span class="bow-logo-text">
         <b>Blades Of War</b>
-        <i id="bow-season">Эдем</i>
+        <i><span id="bow-season">Эдем</span> · меню</i>
       </span>
     </button>
 
@@ -41,8 +41,8 @@
       <button class="bow-rail-btn" data-act="panel" data-panel="journal" title="Хроника">
         <span class="bow-rail-i">≡</span><span class="bow-rail-l">Хрон.</span>
       </button>
-      <button class="bow-rail-btn" data-act="panel" data-panel="save" title="Сохранения">
-        <span class="bow-rail-i">⌸</span><span class="bow-rail-l">Сейв</span>
+      <button class="bow-rail-btn" data-act="panel" data-panel="save" title="Меню игры и настройки">
+        <span class="bow-rail-i">☰</span><span class="bow-rail-l">Меню</span>
       </button>
     </nav>
 
@@ -197,15 +197,22 @@
             </section>
 
             <section class="bow-dpanel" data-section="save">
+              <div class="bow-menu-top">
+                <button class="bow-btn bow-menu-resume" data-act="close-panel">▶ Продолжить игру</button>
+              </div>
+
+              <h3 class="bow-subh">Настройки</h3>
+              <div id="bow-settings" class="bow-settings"></div>
+
               <h3 class="bow-subh">Память игры</h3>
               <div class="bow-saves">
+                <button class="bow-btn bow-btn-sm" id="bow-btn-continue" disabled>Продолжить с автосейва</button>
                 <button class="bow-btn bow-btn-sm" id="bow-btn-save">Выгрузить сохранение</button>
                 <button class="bow-btn bow-btn-sm" id="bow-btn-load">Загрузить файл</button>
-                <button class="bow-btn bow-btn-sm" id="bow-btn-continue" disabled>Продолжить с автосейва</button>
                 <button class="bow-btn bow-btn-sm bow-btn-danger" id="bow-btn-restart">Начать заново</button>
               </div>
               <p class="bow-note">
-                Игра сохраняется в браузере после каждого действия.
+                Игра сама сохраняется в браузере после каждого действия.
                 Чтобы перенести прогресс — выгрузите файл.
               </p>
             </section>
@@ -227,7 +234,7 @@
   <div id="bow-sheet" class="bow-sheet" aria-hidden="true"></div>
 
   <footer class="bow-footer">
-    <span>Blades Of War · прототип 0.0.7 · тестовая локация: Студёный Брод</span>
+    <span>Blades Of War · прототип 0.0.7.1 · тестовая локация: Студёный Брод</span>
     <span class="bow-dim">Текст мира — черновой, имена и место подлежат согласованию</span>
   </footer>
 

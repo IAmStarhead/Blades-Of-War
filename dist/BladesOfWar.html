@@ -3228,6 +3228,199 @@ body {
     animation-duration: 0.001s !important;
     transition-duration: 0.001s !important;
   }
+}
+
+
+/* ============================================================
+   КРУГ 13 (0.0.7.1) — КРУПНЫЙ ГЕРБ-МЕНЮ, НАСТРОЙКИ И ЖИВОЕ ПОЛЕ БОЯ
+   ============================================================ */
+
+/* Укрупнённый логотип с клинками — вход в Меню игры */
+.bow-topbar .bow-logo-btn {
+  gap: 11px;
+  padding: 5px 12px 5px 7px;
+  border: 1px solid rgba(168, 182, 196, 0.18);
+  background: linear-gradient(180deg, rgba(24, 31, 39, 0.85) 0%, rgba(15, 20, 26, 0.92) 100%);
+  border-radius: var(--bow-radius);
+}
+
+.bow-topbar .bow-logo-btn:hover {
+  border-color: rgba(201, 169, 97, 0.55);
+  background: linear-gradient(180deg, rgba(31, 40, 50, 0.95) 0%, rgba(19, 25, 33, 0.96) 100%);
+}
+
+.bow-topbar .bow-logo-img {
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+  filter: drop-shadow(0 3px 8px rgba(0, 0, 0, 0.72));
+}
+
+.bow-topbar .bow-logo-btn:hover .bow-logo-img {
+  transform: scale(1.06);
+  filter: drop-shadow(0 0 10px rgba(201, 169, 97, 0.42));
+}
+
+.bow-topbar .bow-logo-text b {
+  font-size: 1rem;
+  letter-spacing: 0.13em;
+}
+
+.bow-topbar .bow-logo-text i {
+  display: block;
+  font-style: normal;
+  font-family: var(--bow-mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--bow-dim);
+  margin-top: 2px;
+}
+
+/* --- Меню игры и Настройки --- */
+.bow-menu-top {
+  margin-bottom: 14px;
+}
+
+.bow-menu-resume {
+  width: 100%;
+  justify-content: center;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  padding: 11px 16px;
+  border-color: var(--bow-gold);
+  background: rgba(201, 169, 97, 0.14);
+  color: var(--bow-silver);
+}
+
+.bow-menu-resume:hover {
+  background: rgba(201, 169, 97, 0.24);
+}
+
+.bow-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.bow-setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 8px 10px;
+  background: #121820;
+  border: 1px solid var(--bow-line-soft);
+  border-radius: var(--bow-radius);
+}
+
+.bow-setting-label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.bow-setting-label b {
+  font-size: 0.84rem;
+  color: var(--bow-silver);
+}
+
+.bow-setting-label span {
+  font-size: 0.72rem;
+}
+
+.bow-setting-opts {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+/* Режим крупного шрифта из Настроек */
+html.bow-font-lg {
+  font-size: 18px;
+}
+
+/* Спокойный режим сцены (отключает кружение снега и плавное качание) */
+html.bow-motion-calm .bow-snow-flake,
+html.bow-motion-calm .bow-stage-actor .bow-fig-svg {
+  animation: none !important;
+}
+
+/* --- Поле боя 0.0.7.1: сближение по снегу без клеток в небе --- */
+.bow-arena-scene {
+  min-height: 276px;
+}
+
+.bow-arena-scene .bow-arena {
+  display: block;
+  position: relative;
+  z-index: 2;
+  min-height: 276px;
+  aspect-ratio: auto;
+  padding: 0;
+  border: 0;
+  background: linear-gradient(180deg, rgba(12, 17, 23, 0.06) 0%, rgba(15, 22, 30, 0.34) 55%, rgba(16, 24, 33, 0.68) 100%);
+}
+
+/* Тонкие вешки шагов на снегу (показывают дистанцию 0..6 без решётки) */
+.bow-arena-tracks {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 10px;
+  height: 16px;
+  pointer-events: none;
+}
+
+.bow-snow-step {
+  position: absolute;
+  bottom: 0;
+  width: 28px;
+  height: 5px;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: rgba(190, 206, 222, 0.14);
+  border-bottom: 1px solid rgba(190, 206, 222, 0.25);
+}
+
+.bow-arena-scene .bow-chip {
+  position: absolute;
+  transform: translate(-50%, 0);
+  min-width: 68px;
+  min-height: 0;
+  padding: 3px 5px;
+  border-radius: var(--bow-radius);
+  transition:
+    left 0.36s cubic-bezier(0.22, 1, 0.36, 1),
+    top 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.18s ease,
+    border-color 0.16s ease,
+    background 0.16s ease;
+}
+
+.bow-arena-scene .bow-chip-ally.bow-chip-strike {
+  transform: translate(calc(-50% + 9px), -2px);
+}
+
+.bow-arena-scene .bow-chip-enemy.bow-chip-strike {
+  transform: translate(calc(-50% - 9px), -2px);
+}
+
+.bow-arena-scene .bow-chip-guard .bow-chip-overhead {
+  border-color: rgba(126, 176, 212, 0.65);
+}
+
+@media (max-width: 720px) {
+  .bow-topbar .bow-logo-img {
+    width: 44px;
+    height: 44px;
+  }
+  .bow-arena-scene,
+  .bow-arena-scene .bow-arena {
+    min-height: 236px;
+  }
 }</style>
 	<script role="script" id="twine-user-script" type="text/twine-javascript">/* ============================================================
    BOW CORE — базовые утилиты, ГПСЧ, шина событий.
@@ -3339,7 +3532,7 @@ body {
   Bow.data = {
 
     meta: {
-      version: "0.0.7",
+      version: "0.0.7.1",
       title: "Blades Of War",
       worldName: "Эдем · Королевство Хладных Ветров",
       /* ВНИМАНИЕ: поселение ниже — тестовое, придумано разработчиком
@@ -3845,13 +4038,16 @@ body {
       arena: {
         cols: 7,
         rows: 3,
+        /* Герой встаёт по центру слева [0,1], спутники на флангах,
+           а противник — напротив в трёх шагах [3,*]: без ударов через
+           всю карту, со зримым сближением в рукопашную. */
         spawn: {
-          ally:  [[0, 0], [0, 1], [0, 2]],
-          enemy: [[6, 0], [6, 1], [6, 2]]
+          ally:  [[0, 1], [0, 0], [0, 2]],
+          enemy: [[3, 1], [3, 0], [3, 2]]
         },
         /* Запасные места, если союзников или врагов больше трёх. */
-        extra: { ally: [[1, 0], [1, 1], [1, 2]], enemy: [[5, 0], [5, 1], [5, 2]] },
-        stunAt: 8,        // нокаут: фишка ложится, над ней звёздочки
+        extra: { ally: [[1, 1], [1, 0], [1, 2]], enemy: [[4, 1], [4, 0], [4, 2]] },
+        stunAt: 8,
         allySpawns: ["bror", "tarn"]
       },
 
@@ -4198,6 +4394,16 @@ body {
         };
       }
       state.version = "0.0.7";
+      return state;
+    },
+
+    /* 0.0.7 → 0.0.7.1: дистанция и сближение на поле боя, удержание
+       позиции отрядом и исправление выхода в клетку после поражения страже. */
+    "0.0.7": function (state) {
+      if (state.fight && state.fight.orders && state.fight.orders.squad === "guard") {
+        state.fight.orders.squad = "hold";
+      }
+      state.version = "0.0.7.1";
       return state;
     }
   };
@@ -5804,13 +6010,20 @@ body {
     });
   }
 
-  /* Нанести постоянную травму. Возвращает описание или null. */
-  function maim(person, rng) {
-    var keys = Object.keys(injuryDefs());
+  /* Нанести постоянную травму по месту удара (голова → глаз, руки → рука,
+     ноги → колено, корпус → рёбра). Если такая травма уже есть — берём свободную. */
+  var AIM_INJURY = { head: "eye", arms: "arm", legs: "leg", body: "ribs" };
+
+  function maim(person, rng, aimKey) {
+    var defs = injuryDefs();
+    var keys = Object.keys(defs);
     var free = keys.filter(function (k) { return !hasInjury(person, k); });
     if (!free.length) { return null; }
-    var key = free[Math.floor(rollOf(rng) * free.length) % free.length];
-    var def = injuryDefs()[key];
+    var preferred = aimKey && AIM_INJURY[aimKey];
+    var key = (preferred && free.indexOf(preferred) !== -1)
+      ? preferred
+      : free[Math.floor(rollOf(rng) * free.length) % free.length];
+    var def = defs[key];
     person.injuries = person.injuries || [];
     person.injuries.push({ key: key, at: null });
     return def;
@@ -6116,8 +6329,13 @@ body {
 
     var R = rules();
     var n = state.player.needs;
-    if (n.fatigue < 12) { return { ok: false, message: "Вы едва стоите. Сначала отдых." }; }
-    if (n.health < 25) { return { ok: false, message: "Вы слишком плохи, чтобы драться." }; }
+    /* Нападать первым или выходить на кулачный бой полумёртвым нельзя,
+       но когда стража или грабитель уже взяли за ворот — отмахнуться
+       придётся в любом состоянии. */
+    if (mode !== "guard" && mode !== "robbery") {
+      if (n.fatigue < 12) { return { ok: false, message: "Вы едва стоите. Сначала отдых." }; }
+      if (n.health < 25) { return { ok: false, message: "Вы слишком плохи, чтобы драться." }; }
+    }
 
     if (["spar", "crime", "guard", "robbery"].indexOf(mode) === -1) {
       return { ok: false, message: "Так не дерутся." };
@@ -6236,13 +6454,13 @@ body {
       f.orders = {
         stance: "press",
         aim: "body",
-        squad: "focus",
+        squad: "free",
         speed: "paused"
       };
     }
     if (!f.orders.stance) { f.orders.stance = "press"; }
     if (!f.orders.aim) { f.orders.aim = "body"; }
-    if (!f.orders.squad) { f.orders.squad = "focus"; }
+    if (!f.orders.squad) { f.orders.squad = "free"; }
     if (!f.orders.speed) { f.orders.speed = "paused"; }
     return f.orders;
   }
@@ -6273,13 +6491,13 @@ body {
     }
 
     if (kind === "squad") {
-      if (["focus", "free", "guard"].indexOf(value) === -1) {
+      if (["focus", "free", "guard", "hold"].indexOf(value) === -1) {
         return { ok: false, message: "Неизвестный приказ отряду." };
       }
-      o.squad = value;
-      var qLabel = value === "free" ? "Отряд бьётся вольно."
-        : value === "guard" ? "Отряд держит строй от защиты."
-        : "Отряд бьёт вашу цель.";
+      o.squad = value === "guard" ? "hold" : value;
+      var qLabel = o.squad === "free" ? "Отряд сам сближается и бьётся вольно."
+        : o.squad === "hold" ? "Отряд держит позицию в защите."
+        : "Отряд сближается с вашей целью.";
       return { ok: true, orders: o, message: qLabel };
     }
 
@@ -6369,17 +6587,102 @@ body {
     }
   }
 
-  /* ---------- Один ход ----------
-     Сначала бьют свои, потом отвечает противник. Противник выбирает
-     самого слабого — так поступает и толпа. */
+  /* ---------- Пространство поля боя (0.0.7.1) ----------
+     Удар в рукопашной достаёт только вплотную (соседняя клетка).
+     Никто не бьёт через всю карту: чтобы ударить — надо подойти. */
+  function inMelee(a, b) {
+    if (!a || !b) { return false; }
+    return Math.abs((a.col || 0) - (b.col || 0)) <= 1 &&
+           Math.abs((a.row || 0) - (b.row || 0)) <= 1;
+  }
+
+  function gridDist(a, b) {
+    return Math.abs((a.col || 0) - (b.col || 0)) + Math.abs((a.row || 0) - (b.row || 0));
+  }
+
+  function cellOccupied(f, col, row, ignoreKey) {
+    var A = rules().arena;
+    if (col < 0 || col >= A.cols || row < 0 || row >= A.rows) { return true; }
+    for (var i = 0; i < f.units.length; i++) {
+      var u = f.units[i];
+      if (u.key === ignoreKey || u.down || u.dead) { continue; }
+      if (u.col === col && u.row === row) { return true; }
+    }
+    return false;
+  }
+
+  /* Сближение к цели по снегу: до maxSteps клеток за такт, обходя занятые клетки. */
+  function stepToward(f, mover, target, maxSteps) {
+    if (!mover || !target || inMelee(mover, target)) { return false; }
+    var moved = false;
+    var steps = maxSteps || 1;
+    for (var s = 0; s < steps; s++) {
+      if (inMelee(mover, target)) { break; }
+      var dc = target.col > mover.col ? 1 : (target.col < mover.col ? -1 : 0);
+      var dr = target.row > mover.row ? 1 : (target.row < mover.row ? -1 : 0);
+      var candidates = [];
+      if (dc !== 0 && dr !== 0) { candidates.push([mover.col + dc, mover.row + dr]); }
+      if (dc !== 0) { candidates.push([mover.col + dc, mover.row]); }
+      if (dr !== 0) { candidates.push([mover.col, mover.row + dr]); }
+      if (dc !== 0) {
+        candidates.push([mover.col + dc, mover.row - 1]);
+        candidates.push([mover.col + dc, mover.row + 1]);
+      }
+      var picked = null;
+      for (var c = 0; c < candidates.length; c++) {
+        if (!cellOccupied(f, candidates[c][0], candidates[c][1], mover.key)) {
+          picked = candidates[c];
+          break;
+        }
+      }
+      if (!picked) { break; }
+      mover.col = picked[0];
+      mover.row = picked[1];
+      moved = true;
+    }
+    return moved;
+  }
+
+  /* Шаг назад: разорвать контакт за спины спутников и встать в защиту. */
+  function stepBack(state, rng) {
+    var f = state.fight;
+    if (!f || f.phase !== "exchange") { return { ok: false, message: "Сейчас не бой." }; }
+    var playerUnit = unitByKey(f, "player");
+    if (!playerUnit || playerUnit.down) { return { ok: false, message: "Вы не можете отойти." }; }
+    var o = ensureOrders(f);
+    o.stance = "guard";
+    var stepped = false;
+    var backCols = [playerUnit.col - 1, playerUnit.col];
+    var tryRows = [playerUnit.row, playerUnit.row - 1, playerUnit.row + 1];
+    for (var bi = 0; bi < backCols.length && !stepped; bi++) {
+      for (var ri = 0; ri < tryRows.length && !stepped; ri++) {
+        if (backCols[bi] === playerUnit.col && tryRows[ri] === playerUnit.row) { continue; }
+        if (!cellOccupied(f, backCols[bi], tryRows[ri], playerUnit.key)) {
+          playerUnit.col = backCols[bi];
+          playerUnit.row = tryRows[ri];
+          stepped = true;
+        }
+      }
+    }
+    if (stepped) {
+      log(f, "you", "Вы отступаете на шаг назад и закрываетесь.");
+    }
+    return move(state, "guard", rng, f.target || null, o.aim || "body");
+  }
+
+  /* ---------- Один такт боя ----------
+     Сначала ходят свои, потом отвечает противник. Чтобы ударить,
+     нужно стоять вплотную (inMelee); кто держит позицию — ждёт врага. */
   function move(state, stance, rng, targetKey, aimKey) {
     var f = state.fight;
     var R = rules();
     if (!f || f.phase !== "exchange") { return { ok: false, message: "Сейчас не бой." }; }
 
     if (stance === "flee") { return flee(state, rng); }
+    if (stance === "back") { return stepBack(state, rng); }
     if (stance !== "press" && stance !== "guard") { return { ok: false, message: "Так не дерутся." }; }
 
+    f.units.forEach(function (u) { syncUnit(state, u); });
     var playerUnit = unitByKey(f, "player");
     if (!playerUnit) { return { ok: false, message: "Вас нет на поле." }; }
 
@@ -6390,9 +6693,6 @@ body {
       return { ok: true, message: "" };
     }
 
-    /* --- 1. Свои бьют ---
-       Цель выбирается игроком. Раньше удар всегда уходил в первого
-       по списку, и «бить того, кто держится крепче» было невозможно. */
     var foes = aliveUnits(f, "enemy");
     if (!foes.length) { endBySide(state, "ally"); return { ok: true, message: "" }; }
 
@@ -6404,68 +6704,167 @@ body {
     }
     f.target = foe.key;
 
-    /* Цели текущего хода: поле должно показать, кто кого бьёт,
-       а не заставлять игрока дочитывать хронику. */
     f.aim = [];
-
     ensureOrders(f);
     playerUnit.stance = stance;
 
+    /* --- 1. Ход героя --- */
     if (!playerUnit.down) {
-      /* Бьёте тем местом, какое выбрали. По умолчанию — корпус:
-         без выбора всегда был только один «удар вообще». */
-      strike(state, playerUnit, foe, stance, rng, aimKey || (f.orders && f.orders.aim) || "body");
-      syncUnit(state, playerUnit);
-      syncUnit(state, foe);
-      f.aim.push({ from: playerUnit.key, to: foe.key });
+      if (stance === "press") {
+        /* В напоре герой сам сближается с целью (рывок до 2 шагов). */
+        if (!inMelee(playerUnit, foe)) {
+          stepToward(f, playerUnit, foe, 2);
+        }
+        if (inMelee(playerUnit, foe)) {
+          strike(state, playerUnit, foe, stance, rng, aimKey || (f.orders && f.orders.aim) || "body");
+          syncUnit(state, playerUnit);
+          syncUnit(state, foe);
+          f.aim.push({ from: playerUnit.key, to: foe.key });
+        } else {
+          /* Если до выбранного не дотянуться из-за строя, бьём того, кто вплотную. */
+          var adjFoe = aliveUnits(f, "enemy").filter(function (e) { return inMelee(playerUnit, e); })[0];
+          if (adjFoe) {
+            strike(state, playerUnit, adjFoe, stance, rng, aimKey || (f.orders && f.orders.aim) || "body");
+            syncUnit(state, playerUnit);
+            syncUnit(state, adjFoe);
+            f.aim.push({ from: playerUnit.key, to: adjFoe.key });
+          } else {
+            Bow.needs.applyChange(state.player, "fatigue", -1);
+            log(f, "you", "Вы сближаетесь с " + foe.name + ".");
+          }
+        }
+      } else {
+        /* «Держать позицию» (guard): герой НЕ бежит вперёд. Если враг уже
+           подошёл вплотную — встречает коротким ударом из защиты; иначе
+           держит место и переводит дух. */
+        var nearFoe = inMelee(playerUnit, foe)
+          ? foe
+          : aliveUnits(f, "enemy").filter(function (e) { return inMelee(playerUnit, e); })[0];
+        if (nearFoe) {
+          strike(state, playerUnit, nearFoe, "guard", rng, aimKey || (f.orders && f.orders.aim) || "body");
+          syncUnit(state, playerUnit);
+          syncUnit(state, nearFoe);
+          f.aim.push({ from: playerUnit.key, to: nearFoe.key });
+        } else {
+          Bow.needs.applyChange(state.player, "fatigue", 2);
+          log(f, "you", "Вы держите позицию в защите и ждёте противника.");
+        }
+      }
     }
 
-    /* Союзники действуют по приказу командира (0.0.7):
-       • focus — наваливаются на вашу цель;
-       • free  — сами выбирают самого слабого врага и место удара (как в Kenshi);
-       • guard — держат строй от защиты, берегут силы и режут ответный урон. */
-    var squadOrder = (f.orders && f.orders.squad) || "focus";
+    /* --- 2. Ход спутников по приказу командира ---
+       • focus — сами подходят к вашей цели и бьют её;
+       • free  — сами подходят к ближайшему/слабейшему врагу и рубятся (как в Kenshi);
+       • hold / guard — стоят на месте стеной в защите, бьют только подошедших вплотную. */
+    var rawSquad = (f.orders && f.orders.squad) || "focus";
+    var squadOrder = rawSquad === "guard" ? "hold" : rawSquad;
+
     aliveUnits(f, "ally").forEach(function (u) {
       if (u.key === "player") { return; }
       var live = aliveUnits(f, "enemy");
       if (!live.length) { return; }
-      var prey = live[0];
-      var allyStance = squadOrder === "guard" ? "guard" : "press";
+      var allyStance = squadOrder === "hold" ? "guard" : "press";
       var allyAim = "body";
+      var prey = live[0];
 
       if (squadOrder === "free") {
-        live.sort(function (a, b) { return a.hp - b.hp; });
+        live.sort(function (a, b) {
+          var da = inMelee(u, a) ? 0 : 1;
+          var db = inMelee(u, b) ? 0 : 1;
+          if (da !== db) { return da - db; }
+          return a.hp - b.hp;
+        });
         prey = live[0];
         allyAim = chooseAim(u, state);
-      } else if (f.target) {
+      } else if (squadOrder === "focus" && f.target) {
         var focused = live.filter(function (e) { return e.key === f.target; })[0];
         if (focused) { prey = focused; }
+      } else if (squadOrder === "hold") {
+        var adjacent = live.filter(function (e) { return inMelee(u, e); })[0];
+        prey = adjacent || null;
       }
 
       u.stance = allyStance;
-      strike(state, u, prey, allyStance, rng, allyAim);
-      syncUnit(state, u);
-      syncUnit(state, prey);
-      f.aim.push({ from: u.key, to: prey.key });
+
+      if (squadOrder === "hold") {
+        if (prey) {
+          strike(state, u, prey, "guard", rng, "body");
+          syncUnit(state, u);
+          syncUnit(state, prey);
+          f.aim.push({ from: u.key, to: prey.key });
+        }
+        return;
+      }
+
+      if (!inMelee(u, prey)) {
+        stepToward(f, u, prey, 2);
+      }
+      if (!inMelee(u, prey)) {
+        var nearAny = live.filter(function (e) { return inMelee(u, e); })[0];
+        if (nearAny) { prey = nearAny; }
+      }
+      if (inMelee(u, prey)) {
+        strike(state, u, prey, allyStance, rng, allyAim);
+        syncUnit(state, u);
+        syncUnit(state, prey);
+        f.aim.push({ from: u.key, to: prey.key });
+      } else {
+        log(f, "you", u.name + " подходит ближе к врагу.");
+      }
     });
 
     if (!aliveUnits(f, "enemy").length) { endBySide(state, "ally"); return { ok: true, message: "" }; }
-
-    /* Противник мог сдаться уже от нашего удара. */
     if (enemyGivesUp(f)) { endBySide(state, "ally"); return { ok: true, message: "" }; }
 
-    /* --- 2. Противник отвечает --- */
-    aliveUnits(f, "enemy").forEach(function (foe) {
+    /* --- 3. Противник сближается и отвечает --- */
+    aliveUnits(f, "enemy").forEach(function (foeUnit) {
+      /* Если игрок уже сбит до порога и стоящих союзников не осталось —
+         остальные стражники не бьют лежачего на «−0 здор.». */
+      if (state.player.needs.health <= R.yieldAt.player) {
+        playerUnit.down = true;
+      }
       var ours = aliveUnits(f, "ally");
       if (!ours.length) { return; }
-      ours.sort(function (a, b) { return a.hp - b.hp; });
-      var victim = ours[0];
-      var foeStance = chooseStance(foe);
-      foe.stance = foeStance;
+
+      var foeStance = chooseStance(foeUnit);
+      foeUnit.stance = foeStance;
       if (foeStance === "yield") { return; }
-      strike(state, foe, victim, foeStance, rng, chooseAim(foe, state));
+
+      /* Сначала те, кто реально стоит перед врагом вплотную!
+         Так союзник, вышедший вперёд, прикрывает героя за спиной. */
+      var engaged = ours.filter(function (a) { return inMelee(foeUnit, a); });
+      var victim = null;
+      if (engaged.length) {
+        engaged.sort(function (a, b) { return a.hp - b.hp; });
+        victim = engaged[0];
+      } else {
+        ours.sort(function (a, b) {
+          var d = gridDist(foeUnit, a) - gridDist(foeUnit, b);
+          return d !== 0 ? d : (a.hp - b.hp);
+        });
+        victim = ours[0];
+        if (foeStance === "press") {
+          stepToward(f, foeUnit, victim, 1);
+        }
+        /* После шага проверяем, дотянулся ли до кого-то из наших. */
+        var nowEngaged = aliveUnits(f, "ally").filter(function (a) { return inMelee(foeUnit, a); });
+        if (nowEngaged.length) {
+          nowEngaged.sort(function (a, b) { return a.hp - b.hp; });
+          victim = nowEngaged[0];
+        } else {
+          if (foeStance === "press") {
+            log(f, "them", foeUnit.name + " сближается по снегу.");
+          }
+          return;
+        }
+      }
+
+      strike(state, foeUnit, victim, foeStance, rng, chooseAim(foeUnit, state));
       syncUnit(state, victim);
-      f.aim.push({ from: foe.key, to: victim.key });
+      if (victim.key === "player" && state.player.needs.health <= R.yieldAt.player) {
+        victim.down = true;
+      }
+      f.aim.push({ from: foeUnit.key, to: victim.key });
     });
 
     /* Игрок на нуле — бой кончен, даже если фишка ещё «стоит»:
@@ -6557,7 +6956,7 @@ body {
       /* Шанс растёт с силой удара и с тем, куда бьёте: в голову
          калечит чаще, по рукам — реже. Остаётся шансом. */
       var injuryRoll = Math.min(0.34, (0.06 + (damage - R.maimAt) * 0.008) * aim.maim);
-      if (rollOf(rng) < injuryRoll) { maimed = maim(dP, rng); }
+      if (rollOf(rng) < injuryRoll) { maimed = maim(dP, rng, aimKey); }
     }
 
     /* Сбить с ног можно и не убивая: удар в голову или по ногам
@@ -6580,12 +6979,10 @@ body {
       }
     }
     if (defender.side === "ally" && !defender.npc && dP.needs.health - damage <= R.yieldAt.player) {
-      /* Игрока не убивают на улице: его доводят до земли.
-         Не ниже порога. Раньше стоял Math.round, и удар, который
-         должен был остановиться на 12, заканчивался на 11.5 —
-         тест ловил это как «провалился ниже порога». */
-      var room = dP.needs.health - R.yieldAt.player;
-      damage = Math.max(0, Math.min(damage, Math.floor(room)));
+      var room = Bow.util.round1(dP.needs.health - R.yieldAt.player);
+      damage = Math.max(0, Math.min(damage, room));
+      defender.down = true;
+      if (damage <= 0) { return; }
     }
     if (defender.side === "ally" && defender.npc && mode === "spar" &&
         dP.needs.health - damage <= R.yieldAt.npc) {
@@ -6888,7 +7285,7 @@ body {
     }
 
     var summary = {
-      name: npc ? npc.name : (f.enemies[0] ? f.enemies[0].name : "—"),
+      name: f.mode === "guard" ? "Стража Брода" : (npc ? npc.name : (f.enemies[0] ? f.enemies[0].name : "—")),
       mode: f.mode,
       outcome: outcome,
       rounds: f.round,
@@ -6933,6 +7330,9 @@ body {
     start: start,
     move: move,
     step: step,
+    stepBack: stepBack,
+    inMelee: inMelee,
+    stepToward: stepToward,
     setOrder: setOrder,
     ensureOrders: ensureOrders,
     flee: flee,
@@ -7588,9 +7988,9 @@ body {
       };
     }
 
-    /* Поймали: бьют и калечат. */
+    /* Поймали: бьют и калечат, но в клетку ведут живым (минимум 5 здор.). */
     var dmg = 12 + Math.round(rnd(rng) * 10);
-    Bow.needs.applyChange(state.player, "health", -dmg);
+    state.player.needs.health = Math.max(5, Bow.util.round1(state.player.needs.health - dmg));
 
     /* Увечье — не гарантия, а шанс. В тесте проверяется заведомо
        провальным броском: 0.99 проходит мимо порога maimChance. */
@@ -7693,6 +8093,10 @@ body {
 
     Bow.time.advance(state, h);
     state.jail.hoursLeft -= h;
+    /* В клетке кормят скудно, раз в день, но умереть с голоду не дают. */
+    if (state.player.needs.hunger < 35) {
+      state.player.needs.hunger = 42;
+    }
     Bow.needs.applyChange(state.player, "mood", -3);
     Bow.needs.applyChange(state.player, "fatigue", 6);
 
@@ -7730,7 +8134,7 @@ body {
     }
 
     Bow.steal.addHeat(state, GUARD, 5);
-    Bow.needs.applyChange(state.player, "health", -6);
+    state.player.needs.health = Math.max(5, Bow.util.round1(state.player.needs.health - 6));
     Bow.journal.add(state, "Побег из клетки не удался.", "guard");
     return { ok: true, escaped: false, message: "Вас вернули на место. Теперь следят внимательнее." };
   }
@@ -9905,17 +10309,44 @@ body {
     spare: "вы отпустили"
   };
 
+  /* Плавная память координат фигурок на снегу между тактами боя. */
+  var lastFightPos = {};
+
+  function animateArenaMoves(page) {
+    if (!page) { return; }
+    var chips = page.querySelectorAll(".bow-chip[data-to-left]");
+    if (!chips.length) { return; }
+    var apply = function () {
+      for (var i = 0; i < chips.length; i++) {
+        var el = chips[i];
+        var tl = el.getAttribute("data-to-left");
+        var tt = el.getAttribute("data-to-top");
+        if (tl !== null) { el.style.left = tl + "%"; }
+        if (tt !== null) { el.style.top = tt + "%"; }
+      }
+    };
+    if (typeof global.requestAnimationFrame === "function") {
+      global.requestAnimationFrame(function () {
+        global.requestAnimationFrame(apply);
+      });
+    } else {
+      apply();
+    }
+  }
+
   function fightChip(u, aimedAt, strikingKeys, targetKey, state) {
+    var A = Bow.data.fightRules.arena;
     var num = u.index;
     var cls = "bow-chip bow-chip-" + (u.side === "ally" ? "ally" : "enemy");
     if (u.dead) { cls += " bow-chip-dead"; }
     else if (u.down) { cls += " bow-chip-down"; }
+    if (u.stance === "guard" && !u.down && !u.dead) { cls += " bow-chip-guard"; }
     if (!u.dead && aimedAt && aimedAt.indexOf(u.key) !== -1) { cls += " bow-chip-aimed"; }
     if (!u.dead && !u.down && strikingKeys && strikingKeys.indexOf(u.key) !== -1) { cls += " bow-chip-strike"; }
     var isTarget = u.side === "enemy" && !u.dead && u.key === targetKey;
     if (isTarget) { cls += " bow-chip-target"; }
 
-    var mark = u.dead ? "☠" : u.down ? "✦✦✦" : u.disarmed ? "без ор." : "";
+    var mark = u.dead ? "☠" : u.down ? "✦✦✦" : u.disarmed ? "без ор." : (u.stance === "guard" ? "⛨ поз." : "");
     var hp = Math.max(0, Math.round(u.hp));
     var lvl = hp <= 20 ? "critical" : hp <= 45 ? "low" : "ok";
 
@@ -9936,12 +10367,25 @@ body {
         })
       : "";
 
+    var leftPct = Math.round(((u.col + 0.5) / A.cols) * 1000) / 10;
+    var topPct = Math.round((13 + u.row * 27) * 10) / 10;
+    var zIdx = 12 + u.row * 3 + (u.key === "player" ? 1 : 0);
+
+    var prev = lastFightPos[u.key];
+    var startLeft = prev ? prev.left : leftPct;
+    var startTop = prev ? prev.top : topPct;
+    var moved = prev && (prev.left !== leftPct || prev.top !== topPct);
+    lastFightPos[u.key] = { left: leftPct, top: topPct };
+
     var attrs = u.side === "enemy" && !u.dead
       ? ' data-act="fight-target" data-target="' + esc(u.key) + '" role="button" tabindex="0" title="Назначить целью"'
       : "";
+    var animAttrs = moved
+      ? ' data-to-left="' + leftPct + '" data-to-top="' + topPct + '"'
+      : "";
 
-    return '<div class="' + cls + '"' + attrs +
-      ' style="grid-column:' + (u.col + 1) + ';grid-row:' + (u.row + 1) + '">' +
+    return '<div class="' + cls + '" data-unit="' + esc(u.key) + '"' + attrs + animAttrs +
+      ' style="left:' + startLeft + '%;top:' + startTop + '%;z-index:' + zIdx + '">' +
       '<span class="bow-chip-overhead">' +
         '<b class="bow-chip-num">' + num + '</b>' +
         '<span class="bow-chip-hpbar"><i class="bow-fill bow-' + lvl + '" style="width:' + Math.min(100, hp) + '%"></i></span>' +
@@ -9955,11 +10399,10 @@ body {
 
   function fightField(f, state) {
     var A = Bow.data.fightRules.arena;
-    var cells = [];
-    for (var r = 0; r < A.rows; r++) {
-      for (var c = 0; c < A.cols; c++) {
-        cells.push('<span class="bow-cell-' + (((c + r) % 2) ? "b" : "a") + '"></span>');
-      }
+    var steps = [];
+    for (var c = 0; c < A.cols; c++) {
+      steps.push('<span class="bow-snow-step" style="left:' +
+        (Math.round(((c + 0.5) / A.cols) * 1000) / 10) + '%"></span>');
     }
 
     var ally = 0, enemy = 0;
@@ -9970,11 +10413,18 @@ body {
       return copy;
     });
 
+    var playerU = units.filter(function (u) { return u.key === "player"; })[0];
     var roster = units.map(function (u) {
       var label = u.side === "ally" ? "свой" : "враг";
+      var rangeTag = "";
+      if (u.side === "enemy" && playerU && !u.dead && !u.down) {
+        var close = Bow.fight.inMelee && Bow.fight.inMelee(playerU, u);
+        var dist = Math.max(Math.abs(u.col - playerU.col), Math.abs(u.row - playerU.row));
+        rangeTag = close ? " · вплотную" : (" · " + dist + " шаг.");
+      }
       return '<div class="bow-roster-row bow-roster-' + (u.side === "ally" ? "ally" : "enemy") + '">' +
         '<b>' + u.index + '</b>' +
-        '<span>' + esc(u.name) + '</span>' +
+        '<span>' + esc(u.name) + '<i class="bow-dim">' + rangeTag + '</i></span>' +
         '<span class="bow-roster-hp">' + Math.round(u.hp) + '</span>' +
         '<span class="bow-roster-side">' + label + '</span>' +
       '</div>';
@@ -9988,7 +10438,7 @@ body {
       '<div class="bow-arena-scene">' +
         bg +
         '<div class="bow-arena" style="--cols:' + A.cols + ';--rows:' + A.rows + '">' +
-          cells.join("") +
+          '<div class="bow-arena-tracks">' + steps.join("") + '</div>' +
           units.map(function (u) { return fightChip(u, aimedAt, strikingKeys, f.target, state); }).join("") +
         '</div>' +
       '</div>' +
@@ -10011,6 +10461,7 @@ body {
 
     /* Отчёт после боя — на месте страницы. */
     if (!f) {
+      lastFightPos = {};
       var last = state.flags.lastFight;
       if (box) { box.innerHTML = ""; box.classList.remove("bow-fight-open"); }
       if (!page) { return; }
@@ -10037,6 +10488,7 @@ body {
 
     /* --- Окно выбора: до боя --- */
     if (f.phase === "choose") {
+      lastFightPos = {};
       var mode = f.mode;
       var html = "";
 
@@ -10117,9 +10569,22 @@ body {
     if (f.phase === "exchange" || f.phase === "aftermath") {
       var body = "";
 
+      var liveFoesTop = f.units.filter(function (u) {
+        return u.side === "enemy" && !u.down && !u.dead;
+      });
+      var playerUnitTop = f.units.filter(function (u) { return u.key === "player"; })[0];
+      var foeUnitTop = (f.target && liveFoesTop.filter(function (u) { return u.key === f.target; })[0]) ||
+        liveFoesTop[0] || null;
+      var rangeNote = "";
+      if (playerUnitTop && foeUnitTop && f.phase === "exchange") {
+        var inReach = Bow.fight.inMelee && Bow.fight.inMelee(playerUnitTop, foeUnitTop);
+        var stepDist = Math.max(Math.abs(foeUnitTop.col - playerUnitTop.col), Math.abs(foeUnitTop.row - playerUnitTop.row));
+        rangeNote = inReach ? " · вплотную" : (" · до цели " + stepDist + " шаг.");
+      }
+
       body += '<div class="bow-fight-head">' +
         '<b>' + (f.mode === "guard" ? "Стража Брода" : (npc ? esc(npc.name) : (f.mode === "robbery" ? "Грабитель" : "Противник"))) + '</b>' +
-        '<span>круг ' + f.round + '</span></div>';
+        '<span>круг ' + f.round + rangeNote + '</span></div>';
 
       body += fightField(f, state);
 
@@ -10128,14 +10593,12 @@ body {
         var speed = orders.speed || "paused";
         var curStance = orders.stance || "press";
         var curAim = orders.aim || "body";
-        var curSquad = orders.squad || "focus";
+        var rawSq = orders.squad || "free";
+        var curSquad = rawSq === "guard" ? "hold" : rawSq;
         var hasCompanions = f.units.some(function (u) { return u.side === "ally" && u.key !== "player"; });
 
-        var liveFoes = f.units.filter(function (u) {
-          return u.side === "enemy" && !u.down && !u.dead;
-        });
-        var foeUnit = (f.target && liveFoes.filter(function (u) { return u.key === f.target; })[0]) ||
-          liveFoes[0] || null;
+        var liveFoes = liveFoesTop;
+        var foeUnit = foeUnitTop;
         var foePerson = foeUnit ? (foeUnit.refId ? state.people[foeUnit.refId] : foeUnit) : null;
         var fleePct = Math.round(Bow.fight.fleeChance(state) * 100);
 
@@ -10174,20 +10637,21 @@ body {
 
         body += '<div class="bow-aim-row">' + aimBtns + '</div>';
 
-        /* Тактическая стойка героя + приказ отряду */
+        /* Позиция героя и команды отряду (0.0.7.1: сближение или удержание рубежа) */
         body += '<div class="bow-orders-bar">' +
           '<div class="bow-order-group">' +
-            '<span class="bow-order-label">Стойка:</span>' +
-            '<button class="bow-btn bow-btn-sm' + (curStance === "press" ? " bow-order-on" : "") + '" data-act="fight-order" data-kind="stance" data-val="press">Напор</button>' +
-            '<button class="bow-btn bow-btn-sm' + (curStance === "guard" ? " bow-order-on" : "") + '" data-act="fight-move" data-stance="guard">Держать защиту</button>' +
-            '<button class="bow-btn bow-btn-sm' + (curStance === "flee" ? " bow-order-on" : "") + '" data-act="fight-move" data-stance="flee">Бежать · ' + fleePct + '%</button>' +
+            '<span class="bow-order-label">Герой:</span>' +
+            '<button class="bow-btn bow-btn-sm' + (curStance === "press" ? " bow-order-on" : "") + '" data-act="fight-order" data-kind="stance" data-val="press" title="Подходить вплотную к цели и наносить удар">⚔ Сближаться</button>' +
+            '<button class="bow-btn bow-btn-sm' + (curStance === "guard" ? " bow-order-on" : "") + '" data-act="fight-move" data-stance="guard" title="Остаться на месте в защите; бить только подошедших вплотную">⛨ Держать позицию</button>' +
+            '<button class="bow-btn bow-btn-sm" data-act="fight-move" data-stance="back" title="Отойти на шаг назад в защиту">↶ Шаг назад</button>' +
+            '<button class="bow-btn bow-btn-sm" data-act="fight-move" data-stance="flee">Бежать · ' + fleePct + '%</button>' +
           '</div>' +
           (hasCompanions
             ? '<div class="bow-order-group">' +
                 '<span class="bow-order-label">Отряд:</span>' +
-                '<button class="bow-btn bow-btn-sm' + (curSquad === "focus" ? " bow-order-on" : "") + '" data-act="fight-order" data-kind="squad" data-val="focus" title="Все бьют вашу цель">По цели</button>' +
-                '<button class="bow-btn bow-btn-sm' + (curSquad === "free" ? " bow-order-on" : "") + '" data-act="fight-order" data-kind="squad" data-val="free" title="Отряд сам выбирает цели и удары, как в Kenshi">Вольный бой</button>' +
-                '<button class="bow-btn bow-btn-sm' + (curSquad === "guard" ? " bow-order-on" : "") + '" data-act="fight-order" data-kind="squad" data-val="guard" title="Спутники бьются от защиты и берегут здоровье">Держать строй</button>' +
+                '<button class="bow-btn bow-btn-sm' + (curSquad === "free" ? " bow-order-on" : "") + '" data-act="fight-order" data-kind="squad" data-val="free" title="Спутники сами сближаются с врагами и выбирают цели">Вольно · сближаться</button>' +
+                '<button class="bow-btn bow-btn-sm' + (curSquad === "focus" ? " bow-order-on" : "") + '" data-act="fight-order" data-kind="squad" data-val="focus" title="Спутники сближаются с вашей выбранной целью">Идти на цель</button>' +
+                '<button class="bow-btn bow-btn-sm' + (curSquad === "hold" ? " bow-order-on" : "") + '" data-act="fight-order" data-kind="squad" data-val="hold" title="Спутники стоят на своих местах в защите и ждут врага">Держать позицию</button>' +
               '</div>'
             : '') +
         '</div>';
@@ -10207,6 +10671,7 @@ body {
       if (page) {
         page.innerHTML = '<div class="bow-fight-page-inner">' + body + '</div>';
         page.classList.add("bow-page-open");
+        animateArenaMoves(page);
       }
       if (box) { box.innerHTML = ""; box.classList.remove("bow-fight-open"); }
       return;
@@ -10351,6 +10816,7 @@ body {
     renderEncounter(state);
     renderDeath(state);
     renderTrade(state);
+    renderSettings();
   }
 
   /* ---------- Товар и снедь ----------
@@ -10452,10 +10918,90 @@ body {
     box.innerHTML = '<div class="bow-trade">' + html.join("") + '</div>';
   }
 
+  /* ---------- Настройки игры и Меню (0.0.7.1) ---------- */
+  var SETTINGS_KEY = "bow-settings-v1";
+  var DEFAULT_SETTINGS = {
+    fightStart: "1x",
+    font: "normal",
+    motion: "full"
+  };
+
+  function getSettings() {
+    var out = {
+      fightStart: DEFAULT_SETTINGS.fightStart,
+      font: DEFAULT_SETTINGS.font,
+      motion: DEFAULT_SETTINGS.motion
+    };
+    try {
+      var raw = global.localStorage && global.localStorage.getItem(SETTINGS_KEY);
+      if (raw) {
+        var parsed = JSON.parse(raw);
+        if (parsed && ["paused", "1x", "2x"].indexOf(parsed.fightStart) !== -1) { out.fightStart = parsed.fightStart; }
+        if (parsed && ["normal", "large"].indexOf(parsed.font) !== -1) { out.font = parsed.font; }
+        if (parsed && ["full", "calm"].indexOf(parsed.motion) !== -1) { out.motion = parsed.motion; }
+      }
+    } catch (err) { /* ignore */ }
+    return out;
+  }
+
+  function applySettings(cfg) {
+    var s = cfg || getSettings();
+    var root = document.documentElement;
+    if (root) {
+      root.classList.toggle("bow-font-lg", s.font === "large");
+      root.classList.toggle("bow-motion-calm", s.motion === "calm");
+    }
+    return s;
+  }
+
+  function setSetting(key, val) {
+    var cur = getSettings();
+    if (key === "fightStart" && ["paused", "1x", "2x"].indexOf(val) !== -1) { cur.fightStart = val; }
+    else if (key === "font" && ["normal", "large"].indexOf(val) !== -1) { cur.font = val; }
+    else if (key === "motion" && ["full", "calm"].indexOf(val) !== -1) { cur.motion = val; }
+    else { return { ok: false, message: "Неизвестная настройка." }; }
+
+    try {
+      if (global.localStorage) { global.localStorage.setItem(SETTINGS_KEY, JSON.stringify(cur)); }
+    } catch (err) { /* ignore */ }
+    applySettings(cur);
+    renderSettings();
+    return { ok: true, settings: cur, message: "Настройки сохранены." };
+  }
+
+  function renderSettings() {
+    var box = $("bow-settings");
+    if (!box) { return; }
+    var s = getSettings();
+    box.innerHTML =
+      '<div class="bow-setting-row">' +
+        '<div class="bow-setting-label"><b>Начало боя</b><span class="bow-dim">В каком темпе открывается схватка</span></div>' +
+        '<div class="bow-setting-opts">' +
+          '<button class="bow-btn bow-btn-sm' + (s.fightStart === "1x" ? " bow-order-on" : "") + '" data-act="setting" data-key="fightStart" data-val="1x">Живой 1x</button>' +
+          '<button class="bow-btn bow-btn-sm' + (s.fightStart === "2x" ? " bow-order-on" : "") + '" data-act="setting" data-key="fightStart" data-val="2x">Быстро 2x</button>' +
+          '<button class="bow-btn bow-btn-sm' + (s.fightStart === "paused" ? " bow-order-on" : "") + '" data-act="setting" data-key="fightStart" data-val="paused">На паузе</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="bow-setting-row">' +
+        '<div class="bow-setting-label"><b>Размер текста</b><span class="bow-dim">Крупнее шрифт для долгого чтения</span></div>' +
+        '<div class="bow-setting-opts">' +
+          '<button class="bow-btn bow-btn-sm' + (s.font === "normal" ? " bow-order-on" : "") + '" data-act="setting" data-key="font" data-val="normal">Обычный</button>' +
+          '<button class="bow-btn bow-btn-sm' + (s.font === "large" ? " bow-order-on" : "") + '" data-act="setting" data-key="font" data-val="large">Крупный</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="bow-setting-row">' +
+        '<div class="bow-setting-label"><b>Снег и движение</b><span class="bow-dim">Анимация погоды и фигур на сцене</span></div>' +
+        '<div class="bow-setting-opts">' +
+          '<button class="bow-btn bow-btn-sm' + (s.motion === "full" ? " bow-order-on" : "") + '" data-act="setting" data-key="motion" data-val="full">Включены</button>' +
+          '<button class="bow-btn bow-btn-sm' + (s.motion === "calm" ? " bow-order-on" : "") + '" data-act="setting" data-key="motion" data-val="calm">Спокойно</button>' +
+        '</div>' +
+      '</div>';
+  }
+
   /* ---------- Отдельное модальное окно вкладки поверх игры (0.0.7) ----------
      Визуальное состояние, не игровое — не попадает в сохранение. */
   var drawerOpen = false;
-  var modalSection = "state";
+  var modalSection = "save";
 
   var MODAL_TITLES = {
     state: "Состояние и тело",
@@ -10464,7 +11010,7 @@ body {
     people: "Жители поселения",
     orgs: "Общины",
     journal: "Хроника",
-    save: "Память игры"
+    save: "Меню игры"
   };
 
   function focusModalSection(key) {
@@ -10516,7 +11062,7 @@ body {
     return setDrawer(true, target);
   }
 
-  function toggleDrawer() { return openModal("state"); }
+  function toggleDrawer() { return openModal("save"); }
 
   function isDrawerOpen() { return drawerOpen; }
 
@@ -10531,6 +11077,10 @@ body {
     scrollDrawerTo: scrollDrawerTo,
     setTab: setTab,
     setStageSelection: setStageSelection,
+    getSettings: getSettings,
+    setSetting: setSetting,
+    applySettings: applySettings,
+    renderSettings: renderSettings,
     renderPersonSheet: renderPersonSheet,
     setMessage: setMessage,
     esc: esc
@@ -10642,7 +11192,8 @@ body {
       var state = getState();
       var res = Bow.adapter.act.fightStart(state, el.getAttribute("data-mode"));
       if (res && res.ok && state.fight && state.fight.phase === "exchange") {
-        Bow.fight.setOrder(state, "speed", "1x");
+        var spd = (Bow.ui.getSettings && Bow.ui.getSettings().fightStart) || "1x";
+        Bow.fight.setOrder(state, "speed", spd);
         startFightClock();
       }
       return res;
@@ -10672,17 +11223,16 @@ body {
       var aim = el.getAttribute("data-aim");
       if (state.fight && state.fight.phase === "exchange") {
         var o = Bow.fight.ensureOrders(state.fight);
-        if (stance) { o.stance = stance; }
+        if (stance && stance !== "flee" && stance !== "back") { o.stance = stance; }
         if (aim) { o.aim = aim; }
-        /* На живом ходу (1x / 2x) смена места удара или стойки защиты
-           меняет приказ на лету, а не делает внеочередной удар.
-           На паузе (или при попытке побега) сразу выполняет такт. */
-        if (o.speed !== "paused" && stance !== "flee") {
+        /* На живом ходу (1x / 2x) смена места удара или удержания позиции
+           меняет приказ на лету. Побег и шаг назад выполняются сразу. */
+        if (o.speed !== "paused" && stance !== "flee" && stance !== "back") {
           return {
             ok: true,
             message: stance === "guard"
-              ? "Переходите в глухую защиту."
-              : ("Метите " + Bow.fight.aimDef(aim || o.aim).short + ".")
+              ? "Держите позицию в защите."
+              : ("Сближаетесь · метите " + Bow.fight.aimDef(aim || o.aim).short + ".")
           };
         }
       }
@@ -10708,7 +11258,8 @@ body {
       var state = getState();
       var res = Bow.adapter.act.guardFight(state);
       if (res && res.ok && state.fight && state.fight.phase === "exchange") {
-        Bow.fight.setOrder(state, "speed", "1x");
+        var spd = (Bow.ui.getSettings && Bow.ui.getSettings().fightStart) || "1x";
+        Bow.fight.setOrder(state, "speed", spd);
         startFightClock();
       }
       return res;
@@ -10726,7 +11277,8 @@ body {
       var state = getState();
       var res = Bow.adapter.act.streetFight(state);
       if (res && res.ok && state.fight && state.fight.phase === "exchange") {
-        Bow.fight.setOrder(state, "speed", "1x");
+        var spd = (Bow.ui.getSettings && Bow.ui.getSettings().fightStart) || "1x";
+        Bow.fight.setOrder(state, "speed", spd);
         startFightClock();
       }
       return res;
@@ -10765,7 +11317,11 @@ body {
     },
     "close-panel": function () {
       Bow.ui.setDrawer(false);
+      startFightClock();
       return { ok: true, message: "" };
+    },
+    setting: function (el) {
+      return Bow.ui.setSetting(el.getAttribute("data-key"), el.getAttribute("data-val"));
     },
     tab: function (el) {
       Bow.ui.setTab(el.getAttribute("data-tab"));
@@ -10843,13 +11399,28 @@ body {
     "clock": true
   };
 
+  /* Сервисные и закрывающие кнопки интерфейса никогда не должны блокироваться:
+     иначе после поражения страже невозможно закрыть отчёт боя перед клеткой. */
+  var ALWAYS_ALLOWED = {
+    "fight-close": true,
+    "close-panel": true,
+    "close-sheet": true,
+    "close-dialog": true,
+    "stage-close": true,
+    "panel": true,
+    "setting": true,
+    "tab": true
+  };
+
   /* В клетке доступно только то, что доступно в клетке. */
   var IN_JAIL_ALLOWED = {
     "jail-serve": true,
     "jail-escape": true,
     "jail-bribe": true,
+    "fight-close": true,
     "panel": true,
     "close-panel": true,
+    "setting": true,
     "tab": true,
     "stage-close": true,
     "clock": true
@@ -10870,13 +11441,15 @@ body {
     "fight-close": true,
     "panel": true,
     "close-panel": true,
+    "setting": true,
     "tab": true,
     "stage-close": true,
     "clock": true
   };
 
   function blockedBy(state, act) {
-    if (state.dead) { return act === "death-restart" || act === "panel" ? null : "Всё кончено. Начните заново."; }
+    if (ALWAYS_ALLOWED[act]) { return null; }
+    if (state.dead) { return act === "death-restart" ? null : "Всё кончено. Начните заново."; }
     if (state.jail && !IN_JAIL_ALLOWED[act]) { return "Вы в клетке. Отсюда не выйти по своей воле."; }
     if (state.guard && !DURING_GUARD_ALLOWED[act]) { return "Сначала решите со стражей."; }
     if (state.encounter && !IN_ENCOUNTER_ALLOWED[act]) { return "Сначала решите с грабителем."; }
@@ -10945,8 +11518,8 @@ body {
     if (state.dialog) { return false; }
     /* Бой — пошаговый: часы не должны тикать между ударами. */
     if (state.fight) { return false; }
-    /* Стража и грабитель ждут ответа, а не хода времени. */
-    if (state.guard || state.encounter) { return false; }
+    /* Стража, грабитель и клетка ждут решения игрока, а не фоновых часов. */
+    if (state.guard || state.encounter || state.jail) { return false; }
     if (state.dead) { return false; }
     if (Bow.ui.isDrawerOpen()) { return false; }
     if (openPersonId) { return false; }
@@ -11069,6 +11642,10 @@ body {
           return;
         }
 
+        stopFightClock();
+        Bow.ui.setDrawer(false);
+        Bow.ui.setStageSelection(null);
+        openSheet(null);
         vars().game = result.state;
         Bow.ui.setMessage(
           result.mode === "migrated"
@@ -11077,6 +11654,7 @@ body {
         );
         refresh();
         startClock();
+        startFightClock();
       };
       reader.readAsText(file);
     });
@@ -11085,6 +11663,10 @@ body {
   }
 
   function restart() {
+    stopFightClock();
+    Bow.ui.setDrawer(false);
+    Bow.ui.setStageSelection(null);
+    openSheet(null);
     vars().game = Bow.adapter.freshState();
     vars().game.createdAt = Date.now();
     Bow.ui.setMessage("Новая игра начата. Прежний прогресс в памяти браузера перезаписан.");
@@ -11114,10 +11696,15 @@ body {
       return;
     }
 
+    stopFightClock();
+    Bow.ui.setDrawer(false);
+    Bow.ui.setStageSelection(null);
+    openSheet(null);
     vars().game = result.state;
     Bow.ui.setMessage("Продолжаем с автосохранения.");
     refresh();
     startClock();
+    startFightClock();
   }
 
   /* Тихая проверка автосейва при старте: без сообщений игроку.
@@ -11235,7 +11822,8 @@ body {
       btnContinue.disabled = false;
     }
 
-    /* Отрисовка стартового экрана. */
+    /* Применяем сохранённые настройки и отрисовываем стартовый экран. */
+    if (Bow.ui.applySettings) { Bow.ui.applySettings(); }
     Bow.ui.setMessage("Осмотритесь. Здесь пока немного людей, но они настоящие.");
     refresh(true);
     startClock();
@@ -11255,11 +11843,11 @@ body {
        Щит, дата/монеты/погода, кнопки окон разделов и часы справа.
        ============================================================ --&gt;
   &lt;header class=&quot;bow-topbar&quot;&gt;
-    &lt;button class=&quot;bow-logo-btn&quot; id=&quot;bow-logo-btn&quot; aria-label=&quot;Открыть окно состояния&quot; aria-expanded=&quot;false&quot; title=&quot;Состояние персонажа&quot;&gt;
+    &lt;button class=&quot;bow-logo-btn&quot; id=&quot;bow-logo-btn&quot; aria-label=&quot;Меню игры&quot; aria-expanded=&quot;false&quot; title=&quot;Меню игры — продолжить, настройки, сохранения&quot;&gt;
       &lt;span class=&quot;bow-logo-img&quot; aria-hidden=&quot;true&quot;&gt;&lt;/span&gt;
       &lt;span class=&quot;bow-logo-text&quot;&gt;
         &lt;b&gt;Blades Of War&lt;/b&gt;
-        &lt;i id=&quot;bow-season&quot;&gt;Эдем&lt;/i&gt;
+        &lt;i&gt;&lt;span id=&quot;bow-season&quot;&gt;Эдем&lt;/span&gt; · меню&lt;/i&gt;
       &lt;/span&gt;
     &lt;/button&gt;
 
@@ -11290,8 +11878,8 @@ body {
       &lt;button class=&quot;bow-rail-btn&quot; data-act=&quot;panel&quot; data-panel=&quot;journal&quot; title=&quot;Хроника&quot;&gt;
         &lt;span class=&quot;bow-rail-i&quot;&gt;≡&lt;/span&gt;&lt;span class=&quot;bow-rail-l&quot;&gt;Хрон.&lt;/span&gt;
       &lt;/button&gt;
-      &lt;button class=&quot;bow-rail-btn&quot; data-act=&quot;panel&quot; data-panel=&quot;save&quot; title=&quot;Сохранения&quot;&gt;
-        &lt;span class=&quot;bow-rail-i&quot;&gt;⌸&lt;/span&gt;&lt;span class=&quot;bow-rail-l&quot;&gt;Сейв&lt;/span&gt;
+      &lt;button class=&quot;bow-rail-btn&quot; data-act=&quot;panel&quot; data-panel=&quot;save&quot; title=&quot;Меню игры и настройки&quot;&gt;
+        &lt;span class=&quot;bow-rail-i&quot;&gt;☰&lt;/span&gt;&lt;span class=&quot;bow-rail-l&quot;&gt;Меню&lt;/span&gt;
       &lt;/button&gt;
     &lt;/nav&gt;
 
@@ -11446,15 +12034,22 @@ body {
             &lt;/section&gt;
 
             &lt;section class=&quot;bow-dpanel&quot; data-section=&quot;save&quot;&gt;
+              &lt;div class=&quot;bow-menu-top&quot;&gt;
+                &lt;button class=&quot;bow-btn bow-menu-resume&quot; data-act=&quot;close-panel&quot;&gt;▶ Продолжить игру&lt;/button&gt;
+              &lt;/div&gt;
+
+              &lt;h3 class=&quot;bow-subh&quot;&gt;Настройки&lt;/h3&gt;
+              &lt;div id=&quot;bow-settings&quot; class=&quot;bow-settings&quot;&gt;&lt;/div&gt;
+
               &lt;h3 class=&quot;bow-subh&quot;&gt;Память игры&lt;/h3&gt;
               &lt;div class=&quot;bow-saves&quot;&gt;
+                &lt;button class=&quot;bow-btn bow-btn-sm&quot; id=&quot;bow-btn-continue&quot; disabled&gt;Продолжить с автосейва&lt;/button&gt;
                 &lt;button class=&quot;bow-btn bow-btn-sm&quot; id=&quot;bow-btn-save&quot;&gt;Выгрузить сохранение&lt;/button&gt;
                 &lt;button class=&quot;bow-btn bow-btn-sm&quot; id=&quot;bow-btn-load&quot;&gt;Загрузить файл&lt;/button&gt;
-                &lt;button class=&quot;bow-btn bow-btn-sm&quot; id=&quot;bow-btn-continue&quot; disabled&gt;Продолжить с автосейва&lt;/button&gt;
                 &lt;button class=&quot;bow-btn bow-btn-sm bow-btn-danger&quot; id=&quot;bow-btn-restart&quot;&gt;Начать заново&lt;/button&gt;
               &lt;/div&gt;
               &lt;p class=&quot;bow-note&quot;&gt;
-                Игра сохраняется в браузере после каждого действия.
+                Игра сама сохраняется в браузере после каждого действия.
                 Чтобы перенести прогресс — выгрузите файл.
               &lt;/p&gt;
             &lt;/section&gt;
@@ -11476,7 +12071,7 @@ body {
   &lt;div id=&quot;bow-sheet&quot; class=&quot;bow-sheet&quot; aria-hidden=&quot;true&quot;&gt;&lt;/div&gt;
 
   &lt;footer class=&quot;bow-footer&quot;&gt;
-    &lt;span&gt;Blades Of War · прототип 0.0.7 · тестовая локация: Студёный Брод&lt;/span&gt;
+    &lt;span&gt;Blades Of War · прототип 0.0.7.1 · тестовая локация: Студёный Брод&lt;/span&gt;
     &lt;span class=&quot;bow-dim&quot;&gt;Текст мира — черновой, имена и место подлежат согласованию&lt;/span&gt;
   &lt;/footer&gt;
 

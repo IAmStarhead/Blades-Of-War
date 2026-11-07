@@ -808,7 +808,7 @@ function byAct(act, key) {
 
     const back = win.Bow.save.deserialize(win.Bow.save.serialize(g, 1));
     assert(back.ok, "старое сохранение не загрузилось: " + back.reason);
-    eq(back.state.version, "0.0.7", "версия после миграции");
+    eq(back.state.version, "0.0.7.1", "версия после миграции");
     assert(back.state.fight === null, "после миграции нет пустого слота боя");
     assert(back.state.people["person:tarn"].weapon, "кузнец остался без топора");
     return "0.0.5 → " + back.state.version + ", топор кузнеца на месте";
@@ -1005,7 +1005,7 @@ function byAct(act, key) {
     delete g.flags.huntedHeat;
 
     const back = win.Bow.save.deserialize(win.Bow.save.serialize(g, 1));
-    eq(back.state.version, "0.0.7", "версия после миграции");
+    eq(back.state.version, "0.0.7.1", "версия после миграции");
     assert(back.state.guard && back.state.guard.arrived === true,
       "стража из старого сохранения осталась «непришедшей» — из неё не выбраться");
     eq(back.state.flags.huntedUntil, null, "поле срока розыска");
@@ -1470,7 +1470,7 @@ function byAct(act, key) {
     bror.needs.health = 20;
     let guard = 0;
     while (g.fight && g.fight.phase === "exchange" && !brorUnit.down && guard++ < 25) {
-      win.Bow.fight.move(g, "guard", seq([0.95, 0.95, 0.05, 0.5, 0.95]));
+      win.Bow.fight.move(g, "press", seq([0.95, 0.95, 0.05, 0.5, 0.95]));
     }
     assert(brorUnit.down, "спутник с 20 здор. не выбыл за 25 обменов");
     win.Bow.fight.finish(g, "fled", {});
@@ -1763,7 +1763,7 @@ function byAct(act, key) {
 
     const back = win.Bow.save.deserialize(win.Bow.save.serialize(g, 1));
     assert(back.ok, "сохранение 0.0.6.2 не загрузилось: " + back.reason);
-    eq(back.state.version, "0.0.7", "версия после миграции");
+    eq(back.state.version, "0.0.7.1", "версия после миграции");
     assert(back.state.steal && typeof back.state.steal === "object", "нет слота подготовки кражи");
     eq(back.state.player.lastTreat, null, "lastTreat после миграции");
     assert(typeof back.state.player.skills.medicine === "number", "навык лечения не восстановлен");
@@ -1961,9 +1961,188 @@ function byAct(act, key) {
     };
     const back = win.Bow.save.deserialize(win.Bow.save.serialize(g, 1));
     assert(back.ok, "сохранение 0.0.6.3 не загрузилось: " + back.reason);
-    eq(back.state.version, "0.0.7", "версия после миграции");
-    assert(back.state.fight.orders && back.state.fight.orders.aim === "body", "приказы боя не созданы при миграции");
-    return "0.0.6.3 → 0.0.7, приказы боя созданы";
+    eq(back.state.version, "0.0.7.1", "версия после миграции");
+    assert(back.state.fight.orders && back.state.fight.orders.aim === "body", "приказы боя созданы при миграции");
+    return "0.0.6.3 → 0.0.7.1, приказы боя созданы";
+  });
+
+  /* 8н. Круг 13 (0.0.7.1): фикс зависания в клетке, честная дистанция боя, логотип и Меню игры */
+  check("После поражения страже кнопка «Вернуться» закрывает экран боя и пускает в клетку (фикс бага)", () => {
+    const g = game();
+    const snap = clone(g);
+    try {
+      g.fight = null;
+      g.jail = null;
+      g.dead = null;
+      g.player.location = "square";
+      g.people["person:bror"].location = "forest";
+      g.people["person:tarn"].location = "smithy";
+      g.player.needs.health = 24;
+      g.player.needs.fatigue = 50;
+      g.player.skills.combat = 5;
+      g.heat["org:guard"] = 80;
+      g.flags.guardAt = g.time.totalHours;
+
+      win.Bow.guard.checkArrival(g);
+      win.Bow.guard.fight(g);
+      /* Сближаемся со стражниками, промахиваемся (0.99), а все трое бьют в ответ (0.01). */
+      let steps = 0;
+      while (g.fight && steps++ < 8) {
+        win.Bow.fight.move(g, "press", seq([0.99, 0.01, 0.5, 0.01, 0.01, 0.5, 0.01, 0.01, 0.5, 0.01]));
+      }
+      win.BowGame.refresh(true);
+
+      assert(!g.fight, "бой со стражей не завершился поражением");
+      assert(g.jail && g.jail.hoursLeft > 0, "игрок не отправлен в клетку");
+      assert(g.flags.lastFight && g.flags.lastFight.outcome === "caught", "нет сводки пленения");
+      eq(g.flags.lastFight.name, "Стража Брода", "заголовок сводки стражи");
+
+      /* Ни один стражник не должен бить уже скрученного героя на «−0 здор.». */
+      const zeroLine = (g.flags.lastFight.log || []).filter((l) => /[−-]0 здор\./.test(l.text));
+      eq(zeroLine.length, 0, "в хронике остался удар на −0 здор.: " + zeroLine.map((z) => z.text).join("; "));
+
+      const page = doc().getElementById("bow-fight-page");
+      assert(page.classList.contains("bow-page-open"), "экран отчёта боя не открыт");
+      const closeBtn = page.querySelector('[data-act="fight-close"]');
+      assert(closeBtn, "нет кнопки «Вернуться»");
+      click(closeBtn);
+
+      assert(!g.flags.lastFight, "сводка боя не очистилась после нажатия «Вернуться»");
+      assert(!page.classList.contains("bow-page-open"), "экран боя остался висеть поверх клетки!");
+      assert(doc().getElementById("bow-jail").classList.contains("bow-fight-open"), "карточка клетки не видна");
+      return "отчёт «Стража Брода» закрылся, открыта клетка (" + g.jail.hoursLeft + " ч.), без −0 здор.";
+    } finally {
+      Object.keys(snap).forEach((k) => { g[k] = snap[k]; });
+      win.BowGame.stopFightClock();
+      win.BowGame.refresh(true);
+    }
+  });
+
+  check("Увечье соответствует месту удара: удар в голову не ломает рёбра", () => {
+    const pHead = { injuries: [] };
+    const pLegs = { injuries: [] };
+    const pArms = { injuries: [] };
+    const pBody = { injuries: [] };
+    const iHead = win.Bow.fight.maim(pHead, () => 0.9, "head");
+    const iLegs = win.Bow.fight.maim(pLegs, () => 0.1, "legs");
+    const iArms = win.Bow.fight.maim(pArms, () => 0.5, "arms");
+    const iBody = win.Bow.fight.maim(pBody, () => 0.2, "body");
+    eq(iHead.key, "eye", "голова → глаз");
+    eq(iLegs.key, "leg", "ноги → колено");
+    eq(iArms.key, "arm", "руки → рука");
+    eq(iBody.key, "ribs", "корпус → рёбра");
+    return "head→eye, legs→leg, arms→arm, body→ribs";
+  });
+
+  check("Поле боя 0.0.7.1: с края карты не достать — нужно сближение, а «Держать позицию» ждёт врага", () => {
+    const g = clone(game());
+    g.fight = null;
+    g.player.location = "square";
+    g.player.needs.health = 100;
+    g.player.needs.fatigue = 100;
+    const bror = g.people["person:bror"];
+    bror.location = "square";
+    bror.attitude = 50;
+    bror.needs.health = 100;
+    bror.needs.fatigue = 100;
+    const liva = g.people["person:liva"];
+    liva.location = "square";
+    liva.needs.health = 100;
+
+    win.Bow.fight.open(g, "person:liva");
+    win.Bow.fight.toggleAlly(g, "person:bror");
+    win.Bow.fight.start(g, "crime", seq([0.5]));
+
+    const you = g.fight.units.filter((u) => u.key === "player")[0];
+    const ally = g.fight.units.filter((u) => u.refId === "person:bror")[0];
+    const foe = g.fight.units.filter((u) => u.side === "enemy")[0];
+
+    assert(!win.Bow.fight.inMelee(you, foe), "в начале боя враг уже вплотную без сближения");
+    const startFoeCol = foe.col;
+
+    /* Оба держат позицию (guard + hold): никто из наших не бежит вперёд и не бьёт через карту,
+       а Лива сама делает шаг по снегу к нашему строю. */
+    win.Bow.fight.setOrder(g, "squad", "hold");
+    win.Bow.fight.move(g, "guard", seq([0.05, 0.05, 0.05]));
+    eq(you.col, 0, "герой сошёл с позиции при приказе держать позицию");
+    eq(ally.col, 0, "спутник побежал вперёд вопреки приказу «Держать позицию»");
+    eq(liva.needs.health, 100, "враг получил удар через поле без сближения!");
+    assert(foe.col < startFoeCol, "враг не сделал шаг сближения: " + foe.col);
+
+    /* Теперь даём спутнику «Вольно · сближаться» (free), а сами держим позицию сзади:
+       Брор сам выходит вперёд вплотную, бьёт Ливу и принимает ответный удар на себя! */
+    win.Bow.fight.setOrder(g, "squad", "free");
+    win.Bow.fight.move(g, "guard", seq([0.05, 0.5, 0.05, 0.5]));
+    assert(ally.col > 0 && win.Bow.fight.inMelee(ally, foe), "спутник в вольном режиме не подошёл вплотную");
+    assert(liva.needs.health < 100, "подошедший спутник не нанёс удар");
+    eq(g.player.needs.health, 100, "враг ударил героя за спиной спутника через клетку!");
+    return "удержание рубежа (col 0), сближение врага (" + startFoeCol + "→" + foe.col + ") и прикрытие отрядом работают";
+  });
+
+  check("Команда «Шаг назад» разрывает дистанцию и ставит героя в защиту", () => {
+    const g = clone(game());
+    g.fight = null;
+    g.player.location = "square";
+    g.player.needs.health = 100;
+    g.player.needs.fatigue = 100;
+    g.people["person:liva"].location = "square";
+    g.people["person:liva"].needs.health = 100;
+
+    win.Bow.fight.open(g, "person:liva");
+    win.Bow.fight.start(g, "crime", seq([0.5]));
+    /* Сначала сближаемся вплотную (col 0 → 2). */
+    win.Bow.fight.move(g, "press", seq([0.95, 0.95]));
+    const you = g.fight.units.filter((u) => u.key === "player")[0];
+    const closeCol = you.col;
+    assert(closeCol >= 2, "герой не сблизился: col=" + closeCol);
+
+    /* Делаем шаг назад. */
+    win.Bow.fight.move(g, "back", seq([0.95, 0.95]));
+    assert(you.col < closeCol, "шаг назад не отвёл бойца: " + closeCol + " → " + you.col);
+    eq(you.stance, "guard", "после шага назад не включилась защита");
+    return "рывок col " + closeCol + " → шаг назад col " + you.col;
+  });
+
+  check("Укрупнённый логотип открывает «Меню игры» с кнопкой Продолжить и рабочими Настройками", () => {
+    win.Bow.ui.setDrawer(false);
+    const styles = [...doc().querySelectorAll("style")].map((x) => x.textContent).join("\n");
+    assert(/\.bow-topbar\s+\.bow-logo-img\s*\{[^}]*width:\s*5[2-9]px/.test(styles),
+      "логотип в шапке не укрупнён");
+
+    const logo = doc().getElementById("bow-logo-btn");
+    click(logo);
+    const modal = doc().getElementById("bow-drawer");
+    assert(modal.classList.contains("bow-modal-open"), "клик по логотипу не открыл окно");
+    eq(doc().getElementById("bow-modal-title").textContent, "Меню игры", "логотип открыл не Меню игры");
+
+    const resumeBtn = modal.querySelector(".bow-menu-resume[data-act='close-panel']");
+    assert(resumeBtn, "в Меню игры нет кнопки «Продолжить игру»");
+
+    /* Проверяем переключение настроек через DOM */
+    const lgBtn = modal.querySelector('[data-act="setting"][data-key="font"][data-val="large"]');
+    assert(lgBtn, "нет кнопки крупного шрифта в Настройках");
+    click(lgBtn);
+    assert(doc().documentElement.classList.contains("bow-font-lg"), "крупный шрифт не применился");
+    eq(win.Bow.ui.getSettings().font, "large", "настройка шрифта не сохранилась");
+
+    /* Возвращаем обычный шрифт и закрываем меню кнопкой «Продолжить игру» */
+    click(modal.querySelector('[data-act="setting"][data-key="font"][data-val="normal"]'));
+    assert(!doc().documentElement.classList.contains("bow-font-lg"), "обычный шрифт не вернулся");
+    click(resumeBtn);
+    assert(!modal.classList.contains("bow-modal-open"), "кнопка «Продолжить игру» не закрыла меню");
+    return "логотип 56px → Меню игры (Продолжить + Настройки + Сохранения)";
+  });
+
+  check("В клетке живые часы стоят, а заключённого раз в сутки кормят баландой", () => {
+    const g = clone(game());
+    g.time.scale = "4x";
+    g.jail = { hoursLeft: 16, reason: "воровство" };
+    assert(!win.BowGame.clockShouldRun(g), "живые часы продолжают бежать мимо срока в клетке!");
+
+    g.player.needs.hunger = 18;
+    win.Bow.guard.serve(g, 4);
+    assert(g.player.needs.hunger >= 35, "заключённого не покормили при голоде: " + g.player.needs.hunger);
+    return "часы в клетке остановлены, пайка выдана (сытость " + g.player.needs.hunger + ")";
   });
 
   check("Оскорбление короля заканчивает игру", () => {
