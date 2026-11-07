@@ -3316,3 +3316,499 @@ html.bow-motion-calm .bow-stage-actor .bow-fig-svg {
     min-height: 236px;
   }
 }
+
+
+/* ============================================================
+   КРУГ 14 (0.0.7.2) — ВЫВЕРЕННЫЕ ОКНА, ТОЧНЫЕ ХИТБОКСЫ И 60 FPS ДОЖДЬ/СНЕГ
+   ============================================================ */
+
+/* --- 1. Полноценное центрирование всех модальных окон поверх старых правил --- */
+#bow-drawer.bow-modal,
+#bow-body.bow-body-open #bow-drawer.bow-modal {
+  position: fixed;
+  inset: 0;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  max-width: none;
+  height: 100vh;
+  max-height: none;
+  margin: 0;
+  padding: 18px;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  overflow: visible;
+  z-index: 60;
+  align-items: center;
+  justify-content: center;
+}
+
+#bow-drawer.bow-modal:not(.bow-modal-open) {
+  display: none !important;
+}
+
+#bow-drawer.bow-modal.bow-modal-open {
+  display: flex !important;
+  opacity: 1;
+}
+
+@keyframes bow-modal-pop {
+  from { opacity: 0; transform: translateY(6px) scale(0.985); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.bow-modal-box {
+  width: min(580px, calc(100vw - 28px));
+  max-height: min(85vh, 740px);
+  background: linear-gradient(175deg, #19212a 0%, #11161d 100%);
+  border: 1px solid #33414f;
+  border-top: 2px solid var(--bow-bordo);
+  border-radius: 6px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.78), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  animation: bow-modal-pop 0.16s ease-out both;
+  overflow: hidden;
+}
+
+.bow-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px 18px;
+  background: rgba(10, 14, 19, 0.55);
+  border-bottom: 1px solid var(--bow-line-soft);
+}
+
+.bow-modal-head #bow-modal-title.bow-h2 {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  font-size: 0.86rem;
+  letter-spacing: 0.15em;
+  color: var(--bow-silver);
+}
+
+#bow-body.bow-body-open #bow-drawer.bow-modal .bow-modal-body.bow-drawer-scroll,
+#bow-drawer.bow-modal .bow-modal-body.bow-drawer-scroll {
+  width: 100%;
+  max-width: none;
+  max-height: calc(min(85vh, 740px) - 56px);
+  padding: 16px 18px 18px;
+  overflow-y: auto;
+}
+
+/* Единая ровная квадратная кнопка закрытия ✕ во всех окнах */
+.bow-dialog-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
+  padding: 0;
+  border-radius: 4px;
+  border: 1px solid var(--bow-line-soft);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--bow-dim);
+  line-height: 1;
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+
+.bow-dialog-close:hover {
+  color: var(--bow-silver);
+  border-color: var(--bow-steel);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* Окно осмотра персонажа (#bow-sheet) — такое же ровное и по центру */
+.bow-sheet.bow-sheet-open {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(3px);
+}
+
+.bow-sheet-card {
+  width: min(560px, calc(100vw - 28px));
+  margin: auto;
+  border: 1px solid #33414f;
+  border-top: 2px solid var(--bow-steel);
+  border-radius: 6px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.78);
+  animation: bow-modal-pop 0.16s ease-out both;
+}
+
+/* --- 2. Исправление распирания кнопок .bow-btn-sm в рядах и сетках --- */
+.bow-setting-opts .bow-btn-sm,
+.bow-order-group .bow-btn-sm,
+.bow-fight-speeds .bow-btn-sm,
+.bow-fight-acts .bow-btn-sm,
+.bow-hud-acts .bow-btn-sm {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  margin-bottom: 0;
+  padding: 7px 12px;
+  min-height: 36px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.bow-saves {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.bow-saves .bow-btn-sm {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  margin-bottom: 0;
+  text-align: center;
+}
+
+/* Сетка карточек спутников перед боем */
+.bow-squad {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 8px;
+  margin: 8px 0 12px;
+}
+
+/* Собранное окно для предбоевого выбора и послебоевого отчёта (не в пустоте на 980px!) */
+.bow-fight-page-inner:not(.bow-fight-live-shell) {
+  max-width: 620px;
+  margin: 5vh auto;
+  padding: 18px 20px;
+  background: linear-gradient(175deg, #182029 0%, #11161d 100%);
+  border: 1px solid #33414f;
+  border-top: 2px solid var(--bow-bordo);
+  border-radius: 6px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.75);
+}
+
+.bow-fight-page-inner:not(.bow-fight-live-shell) .bow-fight-acts {
+  justify-content: flex-end;
+  padding-top: 10px;
+  border-top: 1px solid var(--bow-line-soft);
+}
+
+/* Выравнивание карточек Стражи, Клетки, Грабителя и Диалога в потоке */
+.bow-fight.bow-fight-open,
+.bow-dialog.bow-dialog-open {
+  margin-bottom: 12px;
+  border-radius: 6px;
+}
+
+.bow-dialog-head .bow-dialog-meta {
+  margin-left: auto;
+}
+
+/* --- 3. Выверенная всплывающая карточка внутри Главного окна (#bow-stage-pop) --- */
+.bow-stage {
+  height: 368px;
+  border-radius: 6px;
+}
+
+.bow-stage-bg-wrap,
+.bow-stage-weather-wrap {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.bow-stage-weather-wrap { z-index: 2; }
+.bow-stage-layer { z-index: 3; }
+.bow-stage-top { z-index: 4; }
+.bow-stage-bottom { z-index: 4; }
+.bow-stage-pop {
+  top: 46px;
+  right: 14px;
+  left: auto;
+  z-index: 6;
+  width: min(364px, calc(100% - 28px));
+  max-height: calc(100% - 88px);
+}
+
+.bow-stage-pop.bow-stage-pop-left {
+  right: auto;
+  left: 14px;
+}
+
+.bow-stage-card {
+  background: linear-gradient(175deg, rgba(22, 29, 37, 0.97) 0%, rgba(15, 20, 26, 0.98) 100%);
+  border: 1px solid #394857;
+  border-top: 2px solid var(--bow-gold-dim);
+  border-radius: 6px;
+  padding: 12px 14px;
+  box-shadow: 0 16px 42px rgba(0, 0, 0, 0.72);
+  animation: bow-modal-pop 0.14s ease-out both;
+}
+
+.bow-stage-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-bottom: 8px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--bow-line-soft);
+}
+
+.bow-stage-card-title {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+}
+
+.bow-stage-card-title b {
+  font-size: 0.92rem;
+  color: var(--bow-silver);
+}
+
+.bow-person-acts-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.bow-self-acts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.bow-steal-block {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--bow-line-soft);
+}
+
+.bow-steal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: var(--bow-mono);
+  font-size: 0.7rem;
+  color: var(--bow-dim);
+  margin-bottom: 6px;
+}
+
+.bow-steal-acts.bow-steal-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.bow-person-acts-grid .bow-trade-btn,
+.bow-steal-grid .bow-trade-btn {
+  width: 100%;
+  min-height: 34px;
+  text-align: center;
+  justify-content: center;
+}
+
+.bow-stage-mini-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.bow-stage-mini-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+  border-top: 1px solid var(--bow-line-soft);
+}
+
+.bow-stage-mini-list .bow-stage-mini-row:first-child {
+  border-top: 0;
+  padding-top: 2px;
+}
+
+.bow-stage-mini-row.bow-stage-mini-locked {
+  grid-template-columns: 1fr;
+}
+
+.bow-stage-mini-name {
+  min-width: 0;
+  line-height: 1.3;
+}
+
+/* --- 4. Надёжные, чёткие хитбоксы объектов и персонажей --- */
+.bow-spot,
+.bow-actor,
+.bow-arena-scene .bow-chip-enemy {
+  touch-action: manipulation;
+  user-select: none;
+}
+
+/* Внутренние SVG и подписи никогда не перехватывают клик мимо кнопки */
+.bow-spot *,
+.bow-actor *,
+.bow-arena-scene .bow-chip * {
+  pointer-events: none;
+}
+
+/* Расширенная зона захвата (+14..18px вокруг визуального контура) */
+.bow-spot::before {
+  content: "";
+  position: absolute;
+  inset: -7px -9px;
+}
+
+.bow-spot {
+  z-index: 3;
+  min-height: 38px;
+  padding: 6px 12px;
+  background: rgba(13, 18, 24, 0.88);
+  border: 1px solid rgba(154, 170, 186, 0.34);
+  border-radius: 5px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.48);
+}
+
+.bow-actor {
+  z-index: 4;
+  min-width: 82px;
+  min-height: 98px;
+  padding: 6px 10px 6px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+}
+
+.bow-actor::before {
+  content: "";
+  position: absolute;
+  inset: -6px -10px;
+}
+
+.bow-actor:hover,
+.bow-actor.bow-actor-on {
+  background: rgba(201, 169, 97, 0.07);
+  border-color: rgba(201, 169, 97, 0.42);
+}
+
+/* Хитбоксы на поле боя: свои не перекрывают врагов, у врагов щедрая зона клика */
+.bow-arena-backdrop {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.bow-arena-slot {
+  position: relative;
+  z-index: 2;
+}
+
+.bow-arena-scene .bow-chip-ally,
+.bow-arena-scene .bow-chip-dead {
+  pointer-events: none;
+}
+
+.bow-arena-scene .bow-chip-enemy {
+  pointer-events: auto;
+  min-width: 78px;
+  padding: 5px 8px;
+}
+
+.bow-arena-scene .bow-chip-enemy:hover {
+  z-index: 30 !important;
+}
+
+/* --- 5. Настоящий 60 FPS GPU-дождь, снег и туман без рывков --- */
+.bow-stage-weather {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+@keyframes bow-rain-glide {
+  0%   { transform: translate3d(22px, -48px, 0) rotate(13deg); }
+  100% { transform: translate3d(-56px, 412px, 0) rotate(13deg); }
+}
+
+.bow-rain-drop {
+  position: absolute;
+  top: 0;
+  width: 1.5px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, rgba(180, 204, 226, 0) 0%, rgba(196, 218, 238, 0.88) 100%);
+  will-change: transform;
+  animation-name: bow-rain-glide;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+.bow-rain-mist {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 76px;
+  background: linear-gradient(0deg, rgba(164, 188, 210, 0.11) 0%, rgba(164, 188, 210, 0) 100%);
+}
+
+@keyframes bow-snow-glide {
+  0%   { transform: translate3d(0, -24px, 0); opacity: 0; }
+  12%  { opacity: 0.78; }
+  88%  { opacity: 0.72; }
+  100% { transform: translate3d(var(--drift, -18px), 396px, 0); opacity: 0; }
+}
+
+.bow-snow-flake {
+  position: absolute;
+  top: 0;
+  border-radius: 50%;
+  background: #dce7f2;
+  box-shadow: 0 0 4px rgba(220, 231, 242, 0.45);
+  will-change: transform, opacity;
+  animation-name: bow-snow-glide;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+@keyframes bow-fog-drift {
+  0%   { transform: translate3d(-3%, 0, 0); opacity: 0.42; }
+  50%  { transform: translate3d(3%, -2px, 0); opacity: 0.62; }
+  100% { transform: translate3d(-3%, 0, 0); opacity: 0.42; }
+}
+
+.bow-fog-band {
+  position: absolute;
+  left: -8%;
+  right: -8%;
+  bottom: 14%;
+  height: 96px;
+  background: radial-gradient(50% 60% at 50% 50%, rgba(188, 204, 218, 0.22) 0%, rgba(188, 204, 218, 0) 100%);
+  will-change: transform, opacity;
+  animation: bow-fog-drift 9s ease-in-out infinite;
+}
+
+html.bow-motion-calm .bow-rain-drop,
+html.bow-motion-calm .bow-snow-flake,
+html.bow-motion-calm .bow-fog-band {
+  animation: none !important;
+}
+
+@media (max-width: 720px) {
+  .bow-stage { height: 284px; }
+  .bow-actor { bottom: 34px !important; min-width: 68px; }
+  .bow-saves { grid-template-columns: 1fr; }
+  .bow-person-acts-grid { grid-template-columns: 1fr 1fr; }
+  .bow-stage-pop,
+  .bow-stage-pop.bow-stage-pop-left {
+    left: 10px;
+    right: 10px;
+    width: auto;
+  }
+}

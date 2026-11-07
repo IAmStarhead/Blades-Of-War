@@ -808,7 +808,7 @@ function byAct(act, key) {
 
     const back = win.Bow.save.deserialize(win.Bow.save.serialize(g, 1));
     assert(back.ok, "старое сохранение не загрузилось: " + back.reason);
-    eq(back.state.version, "0.0.7.1", "версия после миграции");
+    eq(back.state.version, "0.0.7.2", "версия после миграции");
     assert(back.state.fight === null, "после миграции нет пустого слота боя");
     assert(back.state.people["person:tarn"].weapon, "кузнец остался без топора");
     return "0.0.5 → " + back.state.version + ", топор кузнеца на месте";
@@ -1005,7 +1005,7 @@ function byAct(act, key) {
     delete g.flags.huntedHeat;
 
     const back = win.Bow.save.deserialize(win.Bow.save.serialize(g, 1));
-    eq(back.state.version, "0.0.7.1", "версия после миграции");
+    eq(back.state.version, "0.0.7.2", "версия после миграции");
     assert(back.state.guard && back.state.guard.arrived === true,
       "стража из старого сохранения осталась «непришедшей» — из неё не выбраться");
     eq(back.state.flags.huntedUntil, null, "поле срока розыска");
@@ -1763,7 +1763,7 @@ function byAct(act, key) {
 
     const back = win.Bow.save.deserialize(win.Bow.save.serialize(g, 1));
     assert(back.ok, "сохранение 0.0.6.2 не загрузилось: " + back.reason);
-    eq(back.state.version, "0.0.7.1", "версия после миграции");
+    eq(back.state.version, "0.0.7.2", "версия после миграции");
     assert(back.state.steal && typeof back.state.steal === "object", "нет слота подготовки кражи");
     eq(back.state.player.lastTreat, null, "lastTreat после миграции");
     assert(typeof back.state.player.skills.medicine === "number", "навык лечения не восстановлен");
@@ -1961,7 +1961,7 @@ function byAct(act, key) {
     };
     const back = win.Bow.save.deserialize(win.Bow.save.serialize(g, 1));
     assert(back.ok, "сохранение 0.0.6.3 не загрузилось: " + back.reason);
-    eq(back.state.version, "0.0.7.1", "версия после миграции");
+    eq(back.state.version, "0.0.7.2", "версия после миграции");
     assert(back.state.fight.orders && back.state.fight.orders.aim === "body", "приказы боя созданы при миграции");
     return "0.0.6.3 → 0.0.7.1, приказы боя созданы";
   });
@@ -2143,6 +2143,106 @@ function byAct(act, key) {
     win.Bow.guard.serve(g, 4);
     assert(g.player.needs.hunger >= 35, "заключённого не покормили при голоде: " + g.player.needs.hunger);
     return "часы в клетке остановлены, пайка выдана (сытость " + g.player.needs.hunger + ")";
+  });
+
+  /* 8о. Круг 14 (0.0.7.2): 60 FPS дождь без рывков, точные хитбоксы и ровная геометрия окон */
+  check("Дождь рисуется на GPU и НЕ пересоздаётся при тиках часов и боя (нет рывков 1.5 FPS)", () => {
+    const g = game();
+    const snap = clone(g);
+    try {
+      g.player.location = "square";
+      g.flags.weather = "мелкий дождь";
+      win.BowGame.refresh(true);
+
+      const rainNode = doc().querySelector("#bow-stage .bow-stage-rain");
+      assert(rainNode, "при дожде не отрисовался слой .bow-stage-rain");
+      assert(rainNode.querySelectorAll(".bow-rain-drop").length >= 20, "слишком мало капель дождя");
+
+      /* Серия перерисовок (как при тиках 1x/4x) НЕ должна сносить DOM-узел дождя и сбрасывать анимацию! */
+      for (let i = 0; i < 5; i++) {
+        g.player.money += 1;
+        win.BowGame.refresh(true);
+      }
+      const rainAfter = doc().querySelector("#bow-stage .bow-stage-rain");
+      assert(rainAfter === rainNode, "слой дождя на сцене пересоздался при refresh — анимация сбрасывается!");
+
+      /* То же самое в живом бою: тики боя не должны дёргать фон и дождь */
+      g.people["person:liva"].location = "square";
+      g.people["person:liva"].needs.health = 100;
+      win.Bow.fight.open(g, "person:liva");
+      win.Bow.fight.start(g, "crime", seq([0.5]));
+      win.BowGame.refresh(true);
+
+      const battleRain = doc().querySelector("#bow-fight-page .bow-arena-backdrop .bow-stage-rain");
+      assert(battleRain, "на поле боя нет дождя");
+      win.Bow.fight.move(g, "guard", seq([0.95, 0.95]));
+      win.BowGame.refresh(true);
+      const battleRainAfter = doc().querySelector("#bow-fight-page .bow-arena-backdrop .bow-stage-rain");
+      assert(battleRainAfter === battleRain, "дождь на поле боя пересоздался при такте боя!");
+
+      return "26 GPU-струй дождя сохраняют DOM-узел и при тиках мира, и в бою";
+    } finally {
+      Object.keys(snap).forEach((k) => { g[k] = snap[k]; });
+      win.BowGame.stopFightClock();
+      win.BowGame.refresh(true);
+    }
+  });
+
+  check("Хитбоксы объектов и персонажей разведены по ярусам, SVG пропускает клик, а карточка не заслоняет цель", () => {
+    const g = game();
+    const snap = clone(g);
+    try {
+      g.player.location = "square";
+      Object.keys(g.people).forEach((id) => {
+        g.people[id].alive = true;
+        g.people[id].location = "square";
+      });
+      win.Bow.ui.setStageSelection(null);
+      win.BowGame.refresh(true);
+
+      const spots = [...doc().querySelectorAll("#bow-stage .bow-spot")];
+      const actors = [...doc().querySelectorAll("#bow-stage .bow-actor")];
+      assert(spots.length >= 3 && actors.length >= 5, "не все точки и фигурки отрисованы");
+
+      /* Все точки окружения в верхнем ярусе (<= 42%), не на головах персонажей */
+      spots.forEach((sp) => {
+        const topPct = parseFloat(sp.style.top);
+        assert(topPct <= 42, "точка окружения слишком низко и лезет на людей: top=" + sp.style.top);
+      });
+
+      /* Все актёры равномерно разнесены по X без наложений */
+      const xs = actors.map((a) => parseFloat(a.getAttribute("data-x"))).sort((a, b) => a - b);
+      for (let i = 1; i < xs.length; i++) {
+        assert(xs[i] - xs[i - 1] >= 12, "фигурки людей слиплись по X: " + xs.join(", "));
+      }
+
+      /* Клик прямо по внутреннему элементу SVG (<circle> головы правого жителя) открывает карточку слева */
+      const rightNpc = actors.filter((a) => parseFloat(a.getAttribute("data-x")) > 60)[0];
+      const svgInner = rightNpc.querySelector("circle") || rightNpc.querySelector("svg");
+      click(svgInner);
+      const pop = doc().getElementById("bow-stage-pop");
+      assert(pop.classList.contains("bow-stage-pop-open"), "клик по внутреннему SVG не открыл карточку");
+      assert(pop.classList.contains("bow-stage-pop-left"), "карточка правого жителя не ушла влево и закрыла его");
+
+      /* Клик по пустому фону сцены закрывает карточку */
+      click(doc().querySelector("#bow-stage-canvas .bow-stage-bg-wrap"));
+      assert(!pop.classList.contains("bow-stage-pop-open"), "клик по пустому месту сцены не закрыл карточку");
+
+      return "ярусы разведены, X: [" + xs.join(", ") + "%], умная сторона карточки работает";
+    } finally {
+      Object.keys(snap).forEach((k) => { g[k] = snap[k]; });
+      win.Bow.ui.setStageSelection(null);
+      win.BowGame.refresh(true);
+    }
+  });
+
+  check("Геометрия окон 0.0.7.2: модальное окно по центру 100vw, а кнопки в группах не распирает на 100%", () => {
+    const styles = [...doc().querySelectorAll("style")].map((x) => x.textContent).join("\n");
+    assert(/#bow-body\.bow-body-open\s+#bow-drawer\.bow-modal\s*\{[^}]*width:\s*100vw/.test(styles),
+      "модальное окно всё ещё зажато старой шириной боковой панели");
+    assert(/\.bow-setting-opts\s+\.bow-btn-sm[\s\S]*?width:\s*auto/.test(styles),
+      "кнопки .bow-btn-sm в рядах настроек и приказов всё ещё растянуты на 100%");
+    return "центровка 100vw + компактные inline-flex кнопки в окнах";
   });
 
   check("Оскорбление короля заканчивает игру", () => {

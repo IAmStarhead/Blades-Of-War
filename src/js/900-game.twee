@@ -243,7 +243,12 @@
     "stage-select": function (el) {
       var kind = el.getAttribute("data-kind");
       var personId = el.getAttribute("data-person");
-      Bow.ui.setStageSelection({ kind: kind, personId: personId });
+      var xVal = parseFloat(el.getAttribute("data-x"));
+      Bow.ui.setStageSelection({
+        kind: kind,
+        personId: personId,
+        x: isNaN(xVal) ? null : xVal
+      });
       if (kind === "jobs" || kind === "trade") { Bow.ui.setTab(kind); }
       if (kind === "person") { Bow.ui.setTab("people"); }
       return { ok: true, message: "" };
@@ -372,7 +377,14 @@
 
   function onClick(event) {
     var el = event.target.closest("[data-act]");
-    if (!el) { return; }
+    if (!el) {
+      /* Клик по пустому фону Главного окна закрывает всплывающую карточку сцены. */
+      if (event.target.closest && event.target.closest("#bow-stage-canvas") && !event.target.closest("#bow-stage-pop")) {
+        Bow.ui.setStageSelection(null);
+        refresh(true);
+      }
+      return;
+    }
 
     var act = el.getAttribute("data-act");
     var fn = handlers[act];

@@ -3421,6 +3421,502 @@ html.bow-motion-calm .bow-stage-actor .bow-fig-svg {
   .bow-arena-scene .bow-arena {
     min-height: 236px;
   }
+}
+
+
+/* ============================================================
+   КРУГ 14 (0.0.7.2) — ВЫВЕРЕННЫЕ ОКНА, ТОЧНЫЕ ХИТБОКСЫ И 60 FPS ДОЖДЬ/СНЕГ
+   ============================================================ */
+
+/* --- 1. Полноценное центрирование всех модальных окон поверх старых правил --- */
+#bow-drawer.bow-modal,
+#bow-body.bow-body-open #bow-drawer.bow-modal {
+  position: fixed;
+  inset: 0;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  max-width: none;
+  height: 100vh;
+  max-height: none;
+  margin: 0;
+  padding: 18px;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  overflow: visible;
+  z-index: 60;
+  align-items: center;
+  justify-content: center;
+}
+
+#bow-drawer.bow-modal:not(.bow-modal-open) {
+  display: none !important;
+}
+
+#bow-drawer.bow-modal.bow-modal-open {
+  display: flex !important;
+  opacity: 1;
+}
+
+@keyframes bow-modal-pop {
+  from { opacity: 0; transform: translateY(6px) scale(0.985); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.bow-modal-box {
+  width: min(580px, calc(100vw - 28px));
+  max-height: min(85vh, 740px);
+  background: linear-gradient(175deg, #19212a 0%, #11161d 100%);
+  border: 1px solid #33414f;
+  border-top: 2px solid var(--bow-bordo);
+  border-radius: 6px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.78), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  animation: bow-modal-pop 0.16s ease-out both;
+  overflow: hidden;
+}
+
+.bow-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px 18px;
+  background: rgba(10, 14, 19, 0.55);
+  border-bottom: 1px solid var(--bow-line-soft);
+}
+
+.bow-modal-head #bow-modal-title.bow-h2 {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  font-size: 0.86rem;
+  letter-spacing: 0.15em;
+  color: var(--bow-silver);
+}
+
+#bow-body.bow-body-open #bow-drawer.bow-modal .bow-modal-body.bow-drawer-scroll,
+#bow-drawer.bow-modal .bow-modal-body.bow-drawer-scroll {
+  width: 100%;
+  max-width: none;
+  max-height: calc(min(85vh, 740px) - 56px);
+  padding: 16px 18px 18px;
+  overflow-y: auto;
+}
+
+/* Единая ровная квадратная кнопка закрытия ✕ во всех окнах */
+.bow-dialog-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
+  padding: 0;
+  border-radius: 4px;
+  border: 1px solid var(--bow-line-soft);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--bow-dim);
+  line-height: 1;
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+
+.bow-dialog-close:hover {
+  color: var(--bow-silver);
+  border-color: var(--bow-steel);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* Окно осмотра персонажа (#bow-sheet) — такое же ровное и по центру */
+.bow-sheet.bow-sheet-open {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(3px);
+}
+
+.bow-sheet-card {
+  width: min(560px, calc(100vw - 28px));
+  margin: auto;
+  border: 1px solid #33414f;
+  border-top: 2px solid var(--bow-steel);
+  border-radius: 6px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.78);
+  animation: bow-modal-pop 0.16s ease-out both;
+}
+
+/* --- 2. Исправление распирания кнопок .bow-btn-sm в рядах и сетках --- */
+.bow-setting-opts .bow-btn-sm,
+.bow-order-group .bow-btn-sm,
+.bow-fight-speeds .bow-btn-sm,
+.bow-fight-acts .bow-btn-sm,
+.bow-hud-acts .bow-btn-sm {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  margin-bottom: 0;
+  padding: 7px 12px;
+  min-height: 36px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.bow-saves {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.bow-saves .bow-btn-sm {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  margin-bottom: 0;
+  text-align: center;
+}
+
+/* Сетка карточек спутников перед боем */
+.bow-squad {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 8px;
+  margin: 8px 0 12px;
+}
+
+/* Собранное окно для предбоевого выбора и послебоевого отчёта (не в пустоте на 980px!) */
+.bow-fight-page-inner:not(.bow-fight-live-shell) {
+  max-width: 620px;
+  margin: 5vh auto;
+  padding: 18px 20px;
+  background: linear-gradient(175deg, #182029 0%, #11161d 100%);
+  border: 1px solid #33414f;
+  border-top: 2px solid var(--bow-bordo);
+  border-radius: 6px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.75);
+}
+
+.bow-fight-page-inner:not(.bow-fight-live-shell) .bow-fight-acts {
+  justify-content: flex-end;
+  padding-top: 10px;
+  border-top: 1px solid var(--bow-line-soft);
+}
+
+/* Выравнивание карточек Стражи, Клетки, Грабителя и Диалога в потоке */
+.bow-fight.bow-fight-open,
+.bow-dialog.bow-dialog-open {
+  margin-bottom: 12px;
+  border-radius: 6px;
+}
+
+.bow-dialog-head .bow-dialog-meta {
+  margin-left: auto;
+}
+
+/* --- 3. Выверенная всплывающая карточка внутри Главного окна (#bow-stage-pop) --- */
+.bow-stage {
+  height: 368px;
+  border-radius: 6px;
+}
+
+.bow-stage-bg-wrap,
+.bow-stage-weather-wrap {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.bow-stage-weather-wrap { z-index: 2; }
+.bow-stage-layer { z-index: 3; }
+.bow-stage-top { z-index: 4; }
+.bow-stage-bottom { z-index: 4; }
+.bow-stage-pop {
+  top: 46px;
+  right: 14px;
+  left: auto;
+  z-index: 6;
+  width: min(364px, calc(100% - 28px));
+  max-height: calc(100% - 88px);
+}
+
+.bow-stage-pop.bow-stage-pop-left {
+  right: auto;
+  left: 14px;
+}
+
+.bow-stage-card {
+  background: linear-gradient(175deg, rgba(22, 29, 37, 0.97) 0%, rgba(15, 20, 26, 0.98) 100%);
+  border: 1px solid #394857;
+  border-top: 2px solid var(--bow-gold-dim);
+  border-radius: 6px;
+  padding: 12px 14px;
+  box-shadow: 0 16px 42px rgba(0, 0, 0, 0.72);
+  animation: bow-modal-pop 0.14s ease-out both;
+}
+
+.bow-stage-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-bottom: 8px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--bow-line-soft);
+}
+
+.bow-stage-card-title {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+}
+
+.bow-stage-card-title b {
+  font-size: 0.92rem;
+  color: var(--bow-silver);
+}
+
+.bow-person-acts-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.bow-self-acts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.bow-steal-block {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--bow-line-soft);
+}
+
+.bow-steal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: var(--bow-mono);
+  font-size: 0.7rem;
+  color: var(--bow-dim);
+  margin-bottom: 6px;
+}
+
+.bow-steal-acts.bow-steal-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.bow-person-acts-grid .bow-trade-btn,
+.bow-steal-grid .bow-trade-btn {
+  width: 100%;
+  min-height: 34px;
+  text-align: center;
+  justify-content: center;
+}
+
+.bow-stage-mini-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.bow-stage-mini-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+  border-top: 1px solid var(--bow-line-soft);
+}
+
+.bow-stage-mini-list .bow-stage-mini-row:first-child {
+  border-top: 0;
+  padding-top: 2px;
+}
+
+.bow-stage-mini-row.bow-stage-mini-locked {
+  grid-template-columns: 1fr;
+}
+
+.bow-stage-mini-name {
+  min-width: 0;
+  line-height: 1.3;
+}
+
+/* --- 4. Надёжные, чёткие хитбоксы объектов и персонажей --- */
+.bow-spot,
+.bow-actor,
+.bow-arena-scene .bow-chip-enemy {
+  touch-action: manipulation;
+  user-select: none;
+}
+
+/* Внутренние SVG и подписи никогда не перехватывают клик мимо кнопки */
+.bow-spot *,
+.bow-actor *,
+.bow-arena-scene .bow-chip * {
+  pointer-events: none;
+}
+
+/* Расширенная зона захвата (+14..18px вокруг визуального контура) */
+.bow-spot::before {
+  content: "";
+  position: absolute;
+  inset: -7px -9px;
+}
+
+.bow-spot {
+  z-index: 3;
+  min-height: 38px;
+  padding: 6px 12px;
+  background: rgba(13, 18, 24, 0.88);
+  border: 1px solid rgba(154, 170, 186, 0.34);
+  border-radius: 5px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.48);
+}
+
+.bow-actor {
+  z-index: 4;
+  min-width: 82px;
+  min-height: 98px;
+  padding: 6px 10px 6px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+}
+
+.bow-actor::before {
+  content: "";
+  position: absolute;
+  inset: -6px -10px;
+}
+
+.bow-actor:hover,
+.bow-actor.bow-actor-on {
+  background: rgba(201, 169, 97, 0.07);
+  border-color: rgba(201, 169, 97, 0.42);
+}
+
+/* Хитбоксы на поле боя: свои не перекрывают врагов, у врагов щедрая зона клика */
+.bow-arena-backdrop {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.bow-arena-slot {
+  position: relative;
+  z-index: 2;
+}
+
+.bow-arena-scene .bow-chip-ally,
+.bow-arena-scene .bow-chip-dead {
+  pointer-events: none;
+}
+
+.bow-arena-scene .bow-chip-enemy {
+  pointer-events: auto;
+  min-width: 78px;
+  padding: 5px 8px;
+}
+
+.bow-arena-scene .bow-chip-enemy:hover {
+  z-index: 30 !important;
+}
+
+/* --- 5. Настоящий 60 FPS GPU-дождь, снег и туман без рывков --- */
+.bow-stage-weather {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+@keyframes bow-rain-glide {
+  0%   { transform: translate3d(22px, -48px, 0) rotate(13deg); }
+  100% { transform: translate3d(-56px, 412px, 0) rotate(13deg); }
+}
+
+.bow-rain-drop {
+  position: absolute;
+  top: 0;
+  width: 1.5px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, rgba(180, 204, 226, 0) 0%, rgba(196, 218, 238, 0.88) 100%);
+  will-change: transform;
+  animation-name: bow-rain-glide;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+.bow-rain-mist {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 76px;
+  background: linear-gradient(0deg, rgba(164, 188, 210, 0.11) 0%, rgba(164, 188, 210, 0) 100%);
+}
+
+@keyframes bow-snow-glide {
+  0%   { transform: translate3d(0, -24px, 0); opacity: 0; }
+  12%  { opacity: 0.78; }
+  88%  { opacity: 0.72; }
+  100% { transform: translate3d(var(--drift, -18px), 396px, 0); opacity: 0; }
+}
+
+.bow-snow-flake {
+  position: absolute;
+  top: 0;
+  border-radius: 50%;
+  background: #dce7f2;
+  box-shadow: 0 0 4px rgba(220, 231, 242, 0.45);
+  will-change: transform, opacity;
+  animation-name: bow-snow-glide;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+@keyframes bow-fog-drift {
+  0%   { transform: translate3d(-3%, 0, 0); opacity: 0.42; }
+  50%  { transform: translate3d(3%, -2px, 0); opacity: 0.62; }
+  100% { transform: translate3d(-3%, 0, 0); opacity: 0.42; }
+}
+
+.bow-fog-band {
+  position: absolute;
+  left: -8%;
+  right: -8%;
+  bottom: 14%;
+  height: 96px;
+  background: radial-gradient(50% 60% at 50% 50%, rgba(188, 204, 218, 0.22) 0%, rgba(188, 204, 218, 0) 100%);
+  will-change: transform, opacity;
+  animation: bow-fog-drift 9s ease-in-out infinite;
+}
+
+html.bow-motion-calm .bow-rain-drop,
+html.bow-motion-calm .bow-snow-flake,
+html.bow-motion-calm .bow-fog-band {
+  animation: none !important;
+}
+
+@media (max-width: 720px) {
+  .bow-stage { height: 284px; }
+  .bow-actor { bottom: 34px !important; min-width: 68px; }
+  .bow-saves { grid-template-columns: 1fr; }
+  .bow-person-acts-grid { grid-template-columns: 1fr 1fr; }
+  .bow-stage-pop,
+  .bow-stage-pop.bow-stage-pop-left {
+    left: 10px;
+    right: 10px;
+    width: auto;
+  }
 }</style>
 	<script role="script" id="twine-user-script" type="text/twine-javascript">/* ============================================================
    BOW CORE — базовые утилиты, ГПСЧ, шина событий.
@@ -3532,7 +4028,7 @@ html.bow-motion-calm .bow-stage-actor .bow-fig-svg {
   Bow.data = {
 
     meta: {
-      version: "0.0.7.1",
+      version: "0.0.7.2",
       title: "Blades Of War",
       worldName: "Эдем · Королевство Хладных Ветров",
       /* ВНИМАНИЕ: поселение ниже — тестовое, придумано разработчиком
@@ -4404,6 +4900,12 @@ html.bow-motion-calm .bow-stage-actor .bow-fig-svg {
         state.fight.orders.squad = "hold";
       }
       state.version = "0.0.7.1";
+      return state;
+    },
+
+    /* 0.0.7.1 → 0.0.7.2: плавная погода 60 FPS, разведённые хитбоксы сцены и выравнивание окон. */
+    "0.0.7.1": function (state) {
+      state.version = "0.0.7.2";
       return state;
     }
   };
@@ -8946,6 +9448,9 @@ html.bow-motion-calm .bow-stage-actor .bow-fig-svg {
     var h = (state && state.time && typeof state.time.hour === "number") ? state.time.hour : 12;
     var w = (state && state.flags && state.flags.weather) ? String(state.flags.weather) : "";
     var snowy = /снег|метел|позём|круп|вьюг/i.test(w);
+    var rainy = !snowy && /дожд|морос|лив|гроз|сыр|оттеп/i.test(w);
+    var foggy = !snowy && !rainy && /туман/i.test(w);
+    var weatherKind = snowy ? "snow" : (rainy ? "rain" : (foggy ? "fog" : "clear"));
     var phase = "day";
     if (h >= 22 || h < 5) { phase = "night"; }
     else if (h >= 5 && h < 8) { phase = "dawn"; }
@@ -8982,10 +9487,19 @@ html.bow-motion-calm .bow-stage-actor .bow-fig-svg {
       }
     };
 
-    var p = palettes[phase];
-    p.phase = phase;
-    p.snowy = snowy;
-    return p;
+    var base = palettes[phase];
+    return {
+      skyTop: base.skyTop, skyBot: base.skyBot,
+      far: base.far, mid: base.mid,
+      snowTop: base.snowTop, snowBot: base.snowBot,
+      line: base.line, glow: base.glow, glowOp: base.glowOp,
+      stars: base.stars && !rainy, moon: base.moon && !rainy,
+      phase: phase,
+      snowy: snowy,
+      rainy: rainy,
+      foggy: foggy,
+      weatherKind: weatherKind
+    };
   }
 
   /* ---------- Минималистичная фигурка персонажа / бойца ----------
@@ -9095,19 +9609,59 @@ html.bow-motion-calm .bow-stage-actor .bow-fig-svg {
     '</svg>';
   }
 
-  /* ---------- Минималистичные фоны 5 локаций ---------- */
-  function snowParticlesSvg(enabled) {
-    if (!enabled) { return ""; }
-    var flakes = [
-      [80, 42], [190, 88], [310, 34], [430, 110], [560, 56],
-      [690, 94], [820, 48], [140, 170], [380, 190], [640, 165], [880, 145]
-    ];
-    return '<g class="bow-stage-snow" opacity="0.55">' +
-      flakes.map(function (pt, idx) {
-        return '<line x1="' + pt[0] + '" y1="' + pt[1] + '" x2="' + (pt[0] - 8) + '" y2="' + (pt[1] + 14) +
-          '" stroke="#d7e1ea" stroke-width="1.3" stroke-linecap="round" class="bow-flake bow-flake-' + (idx % 3) + '"/>';
-      }).join("") +
-    '</g>';
+  /* ---------- Плавный 60 FPS погодный слой (дождь / снег / туман) ----------
+     Живёт в отдельном постоянном DOM-узле поверх фона и НЕ пересоздаётся
+     при каждом тике часов/боя — поэтому капли и снег летят непрерывно. */
+  var RAIN_DROPS = [
+    [3, 0.04, 0.68, 22, 0.42], [7, 0.31, 0.74, 18, 0.34], [11, 0.52, 0.62, 26, 0.48],
+    [15, 0.19, 0.79, 20, 0.36], [19, 0.63, 0.66, 24, 0.45], [23, 0.08, 0.72, 19, 0.32],
+    [27, 0.44, 0.64, 27, 0.50], [31, 0.71, 0.76, 21, 0.38], [35, 0.15, 0.69, 23, 0.44],
+    [39, 0.57, 0.61, 25, 0.47], [43, 0.26, 0.77, 18, 0.33], [47, 0.82, 0.67, 24, 0.43],
+    [51, 0.11, 0.73, 20, 0.37], [55, 0.48, 0.63, 26, 0.49], [59, 0.69, 0.78, 19, 0.35],
+    [63, 0.22, 0.65, 23, 0.44], [67, 0.59, 0.71, 21, 0.39], [71, 0.06, 0.60, 27, 0.51],
+    [75, 0.38, 0.75, 18, 0.34], [79, 0.74, 0.66, 24, 0.46], [83, 0.17, 0.72, 20, 0.37],
+    [87, 0.53, 0.64, 25, 0.48], [91, 0.29, 0.77, 19, 0.35], [95, 0.66, 0.68, 22, 0.42],
+    [99, 0.41, 0.63, 24, 0.45], [103, 0.85, 0.71, 20, 0.36]
+  ];
+
+  var SNOW_FLAKES = [
+    [4, 0.2, 4.4, 3.2, -18], [9, 1.7, 5.2, 2.4, -12], [14, 3.1, 3.9, 3.8, -24],
+    [19, 0.8, 4.9, 2.6, -15], [24, 2.5, 4.2, 3.4, -22], [29, 4.0, 5.5, 2.2, -10],
+    [34, 1.3, 3.7, 3.6, -26], [39, 2.9, 4.7, 2.8, -16], [44, 0.5, 5.1, 2.5, -14],
+    [49, 3.6, 4.0, 3.5, -20], [54, 1.9, 4.8, 2.7, -15], [59, 4.3, 3.8, 3.9, -25],
+    [64, 0.9, 5.3, 2.3, -12], [69, 2.7, 4.3, 3.3, -19], [74, 1.5, 4.6, 2.9, -17],
+    [79, 3.8, 3.9, 3.7, -23], [84, 0.4, 5.0, 2.5, -13], [89, 2.2, 4.5, 3.1, -18],
+    [94, 3.3, 4.1, 3.4, -21], [98, 1.1, 5.4, 2.4, -14]
+  ];
+
+  function weatherOverlayHtml(state, locKey, forBattle) {
+    var indoor = (locKey === "tavern" || locKey === "smithy") && !forBattle;
+    if (indoor) { return ""; }
+    var pal = skyOf(state);
+    if (pal.weatherKind === "rain") {
+      return '<div class="bow-stage-weather bow-stage-rain" aria-hidden="true">' +
+        RAIN_DROPS.map(function (d) {
+          return '<i class="bow-rain-drop" style="left:' + d[0] + '%;animation-delay:-' + d[1] +
+            's;animation-duration:' + d[2] + 's;height:' + d[3] + 'px;opacity:' + d[4] + '"></i>';
+        }).join("") +
+        '<span class="bow-rain-mist"></span>' +
+      '</div>';
+    }
+    if (pal.weatherKind === "snow") {
+      return '<div class="bow-stage-weather bow-stage-snow" aria-hidden="true">' +
+        SNOW_FLAKES.map(function (f) {
+          return '<i class="bow-snow-flake" style="left:' + f[0] + '%;animation-delay:-' + f[1] +
+            's;animation-duration:' + f[2] + 's;width:' + f[3] + 'px;height:' + f[3] +
+            'px;--drift:' + f[4] + 'px"></i>';
+        }).join("") +
+      '</div>';
+    }
+    if (pal.weatherKind === "fog") {
+      return '<div class="bow-stage-weather bow-stage-fog" aria-hidden="true">' +
+        '<span class="bow-fog-band"></span>' +
+      '</div>';
+    }
+    return "";
   }
 
   function skyBaseSvg(pal, indoor) {
@@ -9284,42 +9838,48 @@ html.bow-motion-calm .bow-stage-actor .bow-fig-svg {
         '</g>';
     }
 
-    if (!indoor) {
-      svg += snowParticlesSvg(pal.snowy);
-    }
+
 
     return '<svg class="bow-stage-bg" viewBox="0 0 960 320" preserveAspectRatio="xMidYMid slice" aria-hidden="true">' +
       svg + '</svg>';
   }
 
-  /* ---------- Интерактивные точки локации на сцене ---------- */
+  /* ---------- Интерактивные точки локации на сцене ----------
+     Верхний ярус (y = 32%..41%) — ориентиры окружения над головами,
+     нижний ярус (bottom = 42px) — живые люди на земле. Хитбоксы
+     разведены по высоте и ширине и никогда не перекрывают друг друга. */
   var STAGE_PROPS = {
     square: [
-      { kind: "trade", label: "Торговые лавки", sub: "товар", x: 15, y: 58 },
-      { kind: "jobs",  label: "Подвода и ряды", sub: "работа", x: 40, y: 63 },
-      { kind: "exit",  loc: "tavern", label: "Трактир →", sub: "1 ч.", x: 85, y: 54 }
+      { kind: "trade", label: "Торговые лавки", sub: "товар", x: 17, y: 37 },
+      { kind: "jobs",  label: "Подвода и ряды", sub: "работа", x: 50, y: 35 },
+      { kind: "exit",  loc: "tavern", label: "Трактир →", sub: "1 ч.", x: 83, y: 35 }
     ],
     tavern: [
-      { kind: "rest",  label: "У очага", sub: "отдых", x: 31, y: 60 },
-      { kind: "jobs",  label: "Зал и котёл", sub: "работа", x: 48, y: 56 },
-      { kind: "trade", label: "Стойка", sub: "снедь и брага", x: 66, y: 55 }
+      { kind: "rest",  label: "У очага", sub: "отдых", x: 28, y: 35 },
+      { kind: "jobs",  label: "Зал и котёл", sub: "работа", x: 52, y: 33 },
+      { kind: "trade", label: "Стойка", sub: "снедь и брага", x: 76, y: 36 }
     ],
     smithy: [
-      { kind: "jobs",  label: "Горн и мехи", sub: "работа", x: 18, y: 56 },
-      { kind: "trade", label: "Железо у Тарна", sub: "купить / сбыть", x: 79, y: 55 }
+      { kind: "jobs",  label: "Горн и мехи", sub: "работа", x: 20, y: 35 },
+      { kind: "trade", label: "Железо у Тарна", sub: "купить / сбыть", x: 78, y: 35 }
     ],
     outskirts: [
-      { kind: "jobs",  label: "Поленница", sub: "наколоть дров", x: 41, y: 63 },
-      { kind: "exit",  loc: "forest", label: "В тайгу →", sub: "3 ч.", x: 83, y: 58 }
+      { kind: "jobs",  label: "Поленница", sub: "наколоть дров", x: 36, y: 37 },
+      { kind: "exit",  loc: "forest", label: "В тайгу →", sub: "3 ч.", x: 82, y: 36 }
     ],
     forest: [
-      { kind: "jobs",  label: "Опушка и следы", sub: "работа", x: 34, y: 64 },
-      { kind: "exit",  loc: "outskirts", label: "К околице →", sub: "2 ч.", x: 84, y: 60 }
+      { kind: "jobs",  label: "Опушка и следы", sub: "работа", x: 36, y: 37 },
+      { kind: "exit",  loc: "outskirts", label: "К околице →", sub: "2 ч.", x: 82, y: 36 }
     ]
   };
 
-  /* Рассадка фигурок жителей в кадре (в процентах ширины сцены). */
-  var NPC_SLOTS = [56, 71, 44, 82];
+  function npcSlotX(idx, count) {
+    if (count <= 1) { return 62; }
+    if (count === 2) { return idx === 0 ? 50 : 74; }
+    if (count === 3) { return [44, 63, 82][idx]; }
+    var span = 44;
+    return Math.round(42 + (span * idx) / (count - 1));
+  }
 
   function renderHotspotsAndActors(state, selected) {
     var locKey = state.player.location;
@@ -9327,12 +9887,12 @@ html.bow-motion-calm .bow-stage-actor .bow-fig-svg {
     var people = Bow.actions.peopleAt(state, locKey);
     var html = [];
 
-    /* 1. Точки интереса самой локации */
+    /* 1. Точки интереса самой локации (верхний ярус) */
     props.forEach(function (pr) {
       if (pr.kind === "exit") {
         html.push(
-          '<button class="bow-spot bow-spot-exit" style="left:' + pr.x + '%;top:' + pr.y + '%" ' +
-            'data-act="move" data-loc="' + esc(pr.loc) + '" title="Перейти: ' + esc(pr.label) + '">' +
+          '<button type="button" class="bow-spot bow-spot-exit" style="left:' + pr.x + '%;top:' + pr.y + '%" ' +
+            'data-act="move" data-loc="' + esc(pr.loc) + '" data-x="' + pr.x + '" title="Перейти: ' + esc(pr.label) + '">' +
             '<span class="bow-spot-dot"></span>' +
             '<span class="bow-spot-txt"><b>' + esc(pr.label) + '</b><i>' + esc(pr.sub) + '</i></span>' +
           '</button>'
@@ -9341,8 +9901,8 @@ html.bow-motion-calm .bow-stage-actor .bow-fig-svg {
       }
       if (pr.kind === "rest") {
         html.push(
-          '<button class="bow-spot bow-spot-prop" style="left:' + pr.x + '%;top:' + pr.y + '%" ' +
-            'data-act="rest" title="Отдохнуть в тепле">' +
+          '<button type="button" class="bow-spot bow-spot-prop" style="left:' + pr.x + '%;top:' + pr.y + '%" ' +
+            'data-act="rest" data-x="' + pr.x + '" title="Отдохнуть в тепле">' +
             '<span class="bow-spot-dot"></span>' +
             '<span class="bow-spot-txt"><b>' + esc(pr.label) + '</b><i>' + esc(pr.sub) + '</i></span>' +
           '</button>'
@@ -9351,28 +9911,28 @@ html.bow-motion-calm .bow-stage-actor .bow-fig-svg {
       }
       var active = selected && selected.kind === pr.kind ? " bow-spot-on" : "";
       html.push(
-        '<button class="bow-spot bow-spot-prop' + active + '" style="left:' + pr.x + '%;top:' + pr.y + '%" ' +
-          'data-act="stage-select" data-kind="' + esc(pr.kind) + '">' +
+        '<button type="button" class="bow-spot bow-spot-prop' + active + '" style="left:' + pr.x + '%;top:' + pr.y + '%" ' +
+          'data-act="stage-select" data-kind="' + esc(pr.kind) + '" data-x="' + pr.x + '">' +
           '<span class="bow-spot-dot"></span>' +
           '<span class="bow-spot-txt"><b>' + esc(pr.label) + '</b><i>' + esc(pr.sub) + '</i></span>' +
         '</button>'
       );
     });
 
-    /* 2. Фигурка самого игрока слева на переднем плане */
+    /* 2. Фигурка самого игрока слева на переднем плане (нижний ярус) */
     var pWeapon = weaponKindOf(state, state.player);
     var selfActive = selected && selected.kind === "self" ? " bow-actor-on" : "";
     html.push(
-      '<button class="bow-actor bow-actor-player' + selfActive + '" style="left:24%;bottom:12px" ' +
-        'data-act="stage-select" data-kind="self" title="Вы — припасы, отдых и перевязка">' +
+      '<button type="button" class="bow-actor bow-actor-player' + selfActive + '" style="left:20%;bottom:42px" ' +
+        'data-act="stage-select" data-kind="self" data-x="20" title="Вы — припасы, отдых и перевязка">' +
         figureSvg({ roleKey: "player", side: "player", weapon: pWeapon }) +
         '<span class="bow-actor-tag"><b>Вы</b></span>' +
       '</button>'
     );
 
-    /* 3. Фигурки жителей, которые реально находятся здесь и сейчас */
+    /* 3. Фигурки жителей (равномерно разнесены по правому/среднему плану) */
     people.forEach(function (p, idx) {
-      var x = NPC_SLOTS[idx % NPC_SLOTS.length];
+      var x = npcSlotX(idx, people.length);
       var isSel = selected && selected.kind === "person" && selected.personId === p.id;
       var tone = p.attitude >= 20 ? "warm" : p.attitude <= -20 ? "cold" : "neutral";
       var wKind = weaponKindOf(state, p);
@@ -9380,9 +9940,9 @@ html.bow-motion-calm .bow-stage-actor .bow-fig-svg {
       var sign = p.attitude > 0 ? "+" : "";
 
       html.push(
-        '<button class="bow-actor bow-actor-npc' + (isSel ? " bow-actor-on" : "") + '" ' +
-          'style="left:' + x + '%;bottom:14px" ' +
-          'data-act="stage-select" data-kind="person" data-person="' + esc(p.id) + '" ' +
+        '<button type="button" class="bow-actor bow-actor-npc' + (isSel ? " bow-actor-on" : "") + '" ' +
+          'style="left:' + x + '%;bottom:42px" ' +
+          'data-act="stage-select" data-kind="person" data-person="' + esc(p.id) + '" data-x="' + x + '" ' +
           'title="' + esc(p.name + " — " + p.role) + '">' +
           (hp < 100
             ? '<span class="bow-actor-hp"><i style="width:' + hp + '%"></i></span>'
@@ -9404,6 +9964,7 @@ html.bow-motion-calm .bow-stage-actor .bow-fig-svg {
     figureSvg: figureSvg,
     weaponKindOf: weaponKindOf,
     backdropSvg: backdropSvg,
+    weatherOverlayHtml: weatherOverlayHtml,
     renderHotspotsAndActors: renderHotspotsAndActors
   };
 
@@ -9960,19 +10521,24 @@ html.bow-motion-calm .bow-stage-actor .bow-fig-svg {
     if (!pop) { return; }
     if (!stageSelection) {
       pop.innerHTML = "";
-      pop.classList.remove("bow-stage-pop-open");
+      pop.classList.remove("bow-stage-pop-open", "bow-stage-pop-left");
       return;
     }
 
     var sel = stageSelection;
-    var closeBtn = '<button class="bow-dialog-close" data-act="stage-close" aria-label="Скрыть карточку">✕</button>';
+    /* Если кликнули по фигуре/объекту справа — открываем карточку слева,
+       чтобы не заслонять выбранного человека и соседей рядом. */
+    var openLeft = (typeof sel.x === "number") ? (sel.x > 52) : (sel.kind === "person");
+    pop.classList.toggle("bow-stage-pop-left", !!openLeft);
+
+    var closeBtn = '<button type="button" class="bow-dialog-close" data-act="stage-close" aria-label="Скрыть карточку">✕</button>';
 
     if (sel.kind === "person") {
       var p = state.people[sel.personId];
       if (!p || !p.alive || p.location !== state.player.location) {
         stageSelection = null;
         pop.innerHTML = "";
-        pop.classList.remove("bow-stage-pop-open");
+        pop.classList.remove("bow-stage-pop-open", "bow-stage-pop-left");
         return;
       }
       var tone = p.attitude >= 20 ? "warm" : p.attitude <= -20 ? "cold" : "neutral";
@@ -9984,27 +10550,30 @@ html.bow-motion-calm .bow-stage-actor .bow-fig-svg {
         var prepMax = (Bow.data.fightRules.steal || {}).maxPrep || 2;
         var pocketCh = Math.round(Bow.steal.pocketChance(state, p) * 100);
         stealHtml = '<div class="bow-steal-block">' +
-          '<div class="bow-steal-head"><span>Кошель (' + purse + ' м.)</span><b>' + ch + '%</b></div>' +
-          '<div class="bow-steal-acts">' +
-            '<button class="bow-trade-btn" data-act="steal-look" data-person="' + esc(p.id) + '"' + (prep >= prepMax ? " disabled" : "") + '>Присмотреться</button>' +
-            '<button class="bow-trade-btn" data-act="steal-distract" data-person="' + esc(p.id) + '"' + (prep >= prepMax ? " disabled" : "") + '>Отвлечь</button>' +
-            '<button class="bow-trade-btn bow-steal-btn" data-act="steal" data-person="' + esc(p.id) + '">Срезать · ' + ch + '%</button>' +
-            '<button class="bow-trade-btn" data-act="steal-pocket" data-person="' + esc(p.id) + '">Карман · ' + pocketCh + '%</button>' +
+          '<div class="bow-steal-head"><span>Кошель · ' + purse + ' м.</span><b>шанс ' + ch + '%</b></div>' +
+          '<div class="bow-steal-acts bow-steal-grid">' +
+            '<button type="button" class="bow-trade-btn" data-act="steal-look" data-person="' + esc(p.id) + '"' + (prep >= prepMax ? " disabled" : "") + '>Присмотреться</button>' +
+            '<button type="button" class="bow-trade-btn" data-act="steal-distract" data-person="' + esc(p.id) + '"' + (prep >= prepMax ? " disabled" : "") + '>Отвлечь</button>' +
+            '<button type="button" class="bow-trade-btn bow-steal-btn" data-act="steal" data-person="' + esc(p.id) + '">Срезать · ' + ch + '%</button>' +
+            '<button type="button" class="bow-trade-btn" data-act="steal-pocket" data-person="' + esc(p.id) + '">Карман · ' + pocketCh + '%</button>' +
           '</div>' +
         '</div>';
       }
       pop.innerHTML =
         '<div class="bow-stage-card">' +
           '<div class="bow-stage-card-head">' +
-            '<div><b>' + esc(p.name) + '</b> <span class="bow-dim">· ' + esc(p.role) + '</span></div>' +
-            '<span class="bow-tone bow-' + tone + '">' + (p.attitude > 0 ? "+" : "") + Math.round(p.attitude) + '</span>' +
+            '<div class="bow-stage-card-title">' +
+              '<b>' + esc(p.name) + '</b>' +
+              '<span class="bow-dim">· ' + esc(p.role) + '</span>' +
+              '<span class="bow-tone bow-' + tone + '">' + (p.attitude > 0 ? "+" : "") + Math.round(p.attitude) + '</span>' +
+            '</div>' +
             closeBtn +
           '</div>' +
-          '<div class="bow-stage-card-meta">здор. ' + Math.round(p.needs.health) + ' · бодр. ' + Math.round(p.needs.fatigue) + '</div>' +
-          '<div class="bow-person-acts">' +
-            '<button class="bow-trade-btn" data-act="talk" data-person="' + esc(p.id) + '">Говорить</button>' +
-            '<button class="bow-trade-btn" data-act="inspect" data-person="' + esc(p.id) + '">Осмотреть</button>' +
-            '<button class="bow-trade-btn bow-fight-btn" data-act="fight-open" data-person="' + esc(p.id) + '">' +
+          '<div class="bow-stage-card-meta">здоровье ' + Math.round(p.needs.health) + ' · бодрость ' + Math.round(p.needs.fatigue) + '</div>' +
+          '<div class="bow-person-acts bow-person-acts-grid">' +
+            '<button type="button" class="bow-trade-btn" data-act="talk" data-person="' + esc(p.id) + '">Говорить</button>' +
+            '<button type="button" class="bow-trade-btn" data-act="inspect" data-person="' + esc(p.id) + '">Осмотреть</button>' +
+            '<button type="button" class="bow-trade-btn bow-fight-btn" data-act="fight-open" data-person="' + esc(p.id) + '">' +
               (p.attitude >= Bow.data.fightRules.sparMinAttitude ? 'Бой' : 'Напасть') + '</button>' +
           '</div>' +
           stealHtml +
@@ -10017,18 +10586,18 @@ html.bow-motion-calm .bow-stage-actor .bow-fig-svg {
       var jobs = Bow.work.listAt(state);
       var jRows = jobs.map(function (j) {
         if (!j.available) {
-          return '<div class="bow-stage-mini-row"><span class="bow-dim">' + esc(j.title) + ' — не доверят</span></div>';
+          return '<div class="bow-stage-mini-row bow-stage-mini-locked"><span class="bow-dim">' + esc(j.title) + ' — не доверят</span></div>';
         }
         return '<div class="bow-stage-mini-row">' +
-          '<span>' + esc(j.title) + ' <i class="bow-dim">(' + j.hours + ' ч., ' + Math.round(j.chance * 100) + '%)</i></span>' +
+          '<span class="bow-stage-mini-name">' + esc(j.title) + ' <i class="bow-dim">(' + j.hours + ' ч., ' + Math.round(j.chance * 100) + '%)</i></span>' +
           '<b class="bow-gold-txt">' + j.payMin + '–' + j.payMax + ' м.</b>' +
-          '<button class="bow-trade-btn" data-act="work" data-job="' + esc(j.key) + '">Взяться</button>' +
+          '<button type="button" class="bow-trade-btn" data-act="work" data-job="' + esc(j.key) + '">Взяться</button>' +
         '</div>';
       }).join("") || '<div class="bow-empty">Работы нет.</div>';
 
       pop.innerHTML = '<div class="bow-stage-card">' +
-        '<div class="bow-stage-card-head"><b>Работа здесь</b>' + closeBtn + '</div>' +
-        jRows + '</div>';
+        '<div class="bow-stage-card-head"><div class="bow-stage-card-title"><b>Работа здесь</b></div>' + closeBtn + '</div>' +
+        '<div class="bow-stage-mini-list">' + jRows + '</div></div>';
       pop.classList.add("bow-stage-pop-open");
       return;
     }
@@ -10042,15 +10611,15 @@ html.bow-motion-calm .bow-stage-actor .bow-fig-svg {
         var price = Bow.economy.buyPrice(key, state, state.player.location);
         var short = state.player.money < price;
         return '<div class="bow-stage-mini-row">' +
-          '<span>' + esc(item.name) + '</span>' +
-          '<b>' + price + ' м.</b>' +
-          '<button class="bow-trade-btn" data-act="buy" data-key="' + esc(key) + '"' + (short ? " disabled" : "") + '>Взять</button>' +
+          '<span class="bow-stage-mini-name">' + esc(item.name) + '</span>' +
+          '<b class="bow-gold-txt">' + price + ' м.</b>' +
+          '<button type="button" class="bow-trade-btn" data-act="buy" data-key="' + esc(key) + '"' + (short ? " disabled" : "") + '>Взять</button>' +
         '</div>';
       }).join("") || '<div class="bow-empty">Здесь не торгуют.</div>';
 
       pop.innerHTML = '<div class="bow-stage-card">' +
-        '<div class="bow-stage-card-head"><b>Лавка · у вас ' + state.player.money + ' м.</b>' + closeBtn + '</div>' +
-        tRows + '</div>';
+        '<div class="bow-stage-card-head"><div class="bow-stage-card-title"><b>Лавка</b><span class="bow-dim">· у вас ' + state.player.money + ' м.</span></div>' + closeBtn + '</div>' +
+        '<div class="bow-stage-mini-list">' + tRows + '</div></div>';
       pop.classList.add("bow-stage-pop-open");
       return;
     }
@@ -10062,18 +10631,18 @@ html.bow-motion-calm .bow-stage-actor .bow-fig-svg {
         if (def && (def.food || def.mood)) {
           var act = def.food ? "eat" : "drink";
           var k = Bow.economy.keyOf(def);
-          cons.push('<button class="bow-trade-btn" data-act="' + act + '" data-item="' + esc(k) + '">' +
+          cons.push('<button type="button" class="bow-trade-btn" data-act="' + act + '" data-item="' + esc(k) + '">' +
             (def.food ? "Съесть " : "Выпить ") + esc(def.name) + ' (×' + entry.qty + ')</button>');
         }
       });
       var w = Bow.fight.weaponOf(state.player);
       var ar = Bow.fight.armorOf(state.player);
       pop.innerHTML = '<div class="bow-stage-card">' +
-        '<div class="bow-stage-card-head"><b>' + esc(state.player.name) + '</b>' + closeBtn + '</div>' +
+        '<div class="bow-stage-card-head"><div class="bow-stage-card-title"><b>' + esc(state.player.name) + '</b><span class="bow-dim">· при себе</span></div>' + closeBtn + '</div>' +
         '<div class="bow-stage-card-meta">В руке: ' + esc(w ? w.name : "пусто") + ' · На себе: ' + esc(ar ? ar.name : "пусто") + '</div>' +
-        '<div class="bow-person-acts">' +
-          '<button class="bow-trade-btn" data-act="rest">☾ Отдохнуть</button>' +
-          (state.player.needs.health < 100 ? '<button class="bow-trade-btn" data-act="treat">✚ Перевязать</button>' : '') +
+        '<div class="bow-person-acts bow-self-acts">' +
+          '<button type="button" class="bow-trade-btn" data-act="rest">☾ Отдохнуть</button>' +
+          (state.player.needs.health < 100 ? '<button type="button" class="bow-trade-btn" data-act="treat">✚ Перевязать</button>' : '') +
           cons.join("") +
         '</div>' +
       '</div>';
@@ -10084,11 +10653,38 @@ html.bow-motion-calm .bow-stage-actor .bow-fig-svg {
   function renderStage(state) {
     var canvas = $("bow-stage-canvas");
     if (!canvas || !Bow.stage) { return; }
-    canvas.innerHTML =
-      Bow.stage.backdropSvg(state.player.location, state, false) +
-      '<div class="bow-stage-layer">' +
-        Bow.stage.renderHotspotsAndActors(state, stageSelection) +
-      '</div>';
+
+    var locKey = state.player.location;
+    var pal = Bow.stage.skyOf(state);
+    var bgKey = locKey + "|" + pal.phase + "|" + pal.weatherKind;
+    var wKey = locKey + "|" + pal.weatherKind;
+
+    var bgWrap = canvas.querySelector(".bow-stage-bg-wrap");
+    var wWrap = canvas.querySelector(".bow-stage-weather-wrap");
+    var layer = canvas.querySelector(".bow-stage-layer");
+
+    if (!bgWrap || !wWrap || !layer) {
+      canvas.innerHTML =
+        '<div class="bow-stage-bg-wrap"></div>' +
+        '<div class="bow-stage-weather-wrap"></div>' +
+        '<div class="bow-stage-layer"></div>';
+      bgWrap = canvas.querySelector(".bow-stage-bg-wrap");
+      wWrap = canvas.querySelector(".bow-stage-weather-wrap");
+      layer = canvas.querySelector(".bow-stage-layer");
+    }
+
+    if (bgWrap.getAttribute("data-bg-key") !== bgKey) {
+      bgWrap.setAttribute("data-bg-key", bgKey);
+      bgWrap.innerHTML = Bow.stage.backdropSvg(locKey, state, false);
+    }
+    if (wWrap.getAttribute("data-w-key") !== wKey) {
+      wWrap.setAttribute("data-w-key", wKey);
+      wWrap.innerHTML = Bow.stage.weatherOverlayHtml
+        ? Bow.stage.weatherOverlayHtml(state, locKey, false)
+        : "";
+    }
+
+    layer.innerHTML = Bow.stage.renderHotspotsAndActors(state, stageSelection);
     renderStagePop(state);
   }
 
@@ -10433,17 +11029,19 @@ html.bow-motion-calm .bow-stage-actor .bow-fig-svg {
     var aimedAt = (f.aim || []).map(function (a) { return a.to; });
     var strikingKeys = (f.aim || []).map(function (a) { return a.from; });
     var bg = (Bow.stage && state) ? Bow.stage.backdropSvg(state.player.location, state, true) : "";
+    var wHtml = (Bow.stage && Bow.stage.weatherOverlayHtml && state)
+      ? Bow.stage.weatherOverlayHtml(state, state.player.location, true)
+      : "";
 
-    return '<div class="bow-arena-wrap">' +
-      '<div class="bow-arena-scene">' +
-        bg +
+    return {
+      bgHtml: bg + wHtml,
+      arenaHtml:
         '<div class="bow-arena" style="--cols:' + A.cols + ';--rows:' + A.rows + '">' +
           '<div class="bow-arena-tracks">' + steps.join("") + '</div>' +
           units.map(function (u) { return fightChip(u, aimedAt, strikingKeys, f.target, state); }).join("") +
-        '</div>' +
-      '</div>' +
-      '<div class="bow-roster">' + roster + '</div>' +
-    '</div>';
+        '</div>',
+      rosterHtml: roster
+    };
   }
 
   function fightLog(f) {
@@ -10582,11 +11180,11 @@ html.bow-motion-calm .bow-stage-actor .bow-fig-svg {
         rangeNote = inReach ? " · вплотную" : (" · до цели " + stepDist + " шаг.");
       }
 
-      body += '<div class="bow-fight-head">' +
+      var headHtml = '<div class="bow-fight-head">' +
         '<b>' + (f.mode === "guard" ? "Стража Брода" : (npc ? esc(npc.name) : (f.mode === "robbery" ? "Грабитель" : "Противник"))) + '</b>' +
         '<span>круг ' + f.round + rangeNote + '</span></div>';
 
-      body += fightField(f, state);
+      var fld = fightField(f, state);
 
       if (f.phase === "exchange") {
         var orders = Bow.fight.ensureOrders(f);
@@ -10669,7 +11267,28 @@ html.bow-motion-calm .bow-stage-actor .bow-fig-svg {
       }
 
       if (page) {
-        page.innerHTML = '<div class="bow-fight-page-inner">' + body + '</div>';
+        var palB = Bow.stage ? Bow.stage.skyOf(state) : { phase: "day", weatherKind: "clear" };
+        var bKey = state.player.location + "|" + palB.phase + "|" + palB.weatherKind;
+        var shell = page.querySelector(".bow-fight-live-shell");
+        if (!shell || shell.getAttribute("data-bg-key") !== bKey) {
+          page.innerHTML =
+            '<div class="bow-fight-page-inner bow-fight-live-shell" data-bg-key="' + esc(bKey) + '">' +
+              '<div class="bow-fight-head-slot">' + headHtml + '</div>' +
+              '<div class="bow-arena-wrap">' +
+                '<div class="bow-arena-scene">' +
+                  '<div class="bow-arena-backdrop">' + fld.bgHtml + '</div>' +
+                  '<div class="bow-arena-slot">' + fld.arenaHtml + '</div>' +
+                '</div>' +
+                '<div class="bow-roster">' + fld.rosterHtml + '</div>' +
+              '</div>' +
+              '<div class="bow-fight-controls-slot">' + body + '</div>' +
+            '</div>';
+        } else {
+          shell.querySelector(".bow-fight-head-slot").innerHTML = headHtml;
+          shell.querySelector(".bow-arena-slot").innerHTML = fld.arenaHtml;
+          shell.querySelector(".bow-roster").innerHTML = fld.rosterHtml;
+          shell.querySelector(".bow-fight-controls-slot").innerHTML = body;
+        }
         page.classList.add("bow-page-open");
         animateArenaMoves(page);
       }
@@ -11330,7 +11949,12 @@ html.bow-motion-calm .bow-stage-actor .bow-fig-svg {
     "stage-select": function (el) {
       var kind = el.getAttribute("data-kind");
       var personId = el.getAttribute("data-person");
-      Bow.ui.setStageSelection({ kind: kind, personId: personId });
+      var xVal = parseFloat(el.getAttribute("data-x"));
+      Bow.ui.setStageSelection({
+        kind: kind,
+        personId: personId,
+        x: isNaN(xVal) ? null : xVal
+      });
       if (kind === "jobs" || kind === "trade") { Bow.ui.setTab(kind); }
       if (kind === "person") { Bow.ui.setTab("people"); }
       return { ok: true, message: "" };
@@ -11459,7 +12083,14 @@ html.bow-motion-calm .bow-stage-actor .bow-fig-svg {
 
   function onClick(event) {
     var el = event.target.closest("[data-act]");
-    if (!el) { return; }
+    if (!el) {
+      /* Клик по пустому фону Главного окна закрывает всплывающую карточку сцены. */
+      if (event.target.closest && event.target.closest("#bow-stage-canvas") && !event.target.closest("#bow-stage-pop")) {
+        Bow.ui.setStageSelection(null);
+        refresh(true);
+      }
+      return;
+    }
 
     var act = el.getAttribute("data-act");
     var fn = handlers[act];
@@ -12071,7 +12702,7 @@ html.bow-motion-calm .bow-stage-actor .bow-fig-svg {
   &lt;div id=&quot;bow-sheet&quot; class=&quot;bow-sheet&quot; aria-hidden=&quot;true&quot;&gt;&lt;/div&gt;
 
   &lt;footer class=&quot;bow-footer&quot;&gt;
-    &lt;span&gt;Blades Of War · прототип 0.0.7.1 · тестовая локация: Студёный Брод&lt;/span&gt;
+    &lt;span&gt;Blades Of War · прототип 0.0.7.2 · тестовая локация: Студёный Брод&lt;/span&gt;
     &lt;span class=&quot;bow-dim&quot;&gt;Текст мира — черновой, имена и место подлежат согласованию&lt;/span&gt;
   &lt;/footer&gt;
 

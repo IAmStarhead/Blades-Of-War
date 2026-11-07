@@ -23,6 +23,9 @@
     var h = (state && state.time && typeof state.time.hour === "number") ? state.time.hour : 12;
     var w = (state && state.flags && state.flags.weather) ? String(state.flags.weather) : "";
     var snowy = /снег|метел|позём|круп|вьюг/i.test(w);
+    var rainy = !snowy && /дожд|морос|лив|гроз|сыр|оттеп/i.test(w);
+    var foggy = !snowy && !rainy && /туман/i.test(w);
+    var weatherKind = snowy ? "snow" : (rainy ? "rain" : (foggy ? "fog" : "clear"));
     var phase = "day";
     if (h >= 22 || h < 5) { phase = "night"; }
     else if (h >= 5 && h < 8) { phase = "dawn"; }
@@ -59,10 +62,19 @@
       }
     };
 
-    var p = palettes[phase];
-    p.phase = phase;
-    p.snowy = snowy;
-    return p;
+    var base = palettes[phase];
+    return {
+      skyTop: base.skyTop, skyBot: base.skyBot,
+      far: base.far, mid: base.mid,
+      snowTop: base.snowTop, snowBot: base.snowBot,
+      line: base.line, glow: base.glow, glowOp: base.glowOp,
+      stars: base.stars && !rainy, moon: base.moon && !rainy,
+      phase: phase,
+      snowy: snowy,
+      rainy: rainy,
+      foggy: foggy,
+      weatherKind: weatherKind
+    };
   }
 
   /* ---------- Минималистичная фигурка персонажа / бойца ----------
@@ -172,19 +184,59 @@
     '</svg>';
   }
 
-  /* ---------- Минималистичные фоны 5 локаций ---------- */
-  function snowParticlesSvg(enabled) {
-    if (!enabled) { return ""; }
-    var flakes = [
-      [80, 42], [190, 88], [310, 34], [430, 110], [560, 56],
-      [690, 94], [820, 48], [140, 170], [380, 190], [640, 165], [880, 145]
-    ];
-    return '<g class="bow-stage-snow" opacity="0.55">' +
-      flakes.map(function (pt, idx) {
-        return '<line x1="' + pt[0] + '" y1="' + pt[1] + '" x2="' + (pt[0] - 8) + '" y2="' + (pt[1] + 14) +
-          '" stroke="#d7e1ea" stroke-width="1.3" stroke-linecap="round" class="bow-flake bow-flake-' + (idx % 3) + '"/>';
-      }).join("") +
-    '</g>';
+  /* ---------- Плавный 60 FPS погодный слой (дождь / снег / туман) ----------
+     Живёт в отдельном постоянном DOM-узле поверх фона и НЕ пересоздаётся
+     при каждом тике часов/боя — поэтому капли и снег летят непрерывно. */
+  var RAIN_DROPS = [
+    [3, 0.04, 0.68, 22, 0.42], [7, 0.31, 0.74, 18, 0.34], [11, 0.52, 0.62, 26, 0.48],
+    [15, 0.19, 0.79, 20, 0.36], [19, 0.63, 0.66, 24, 0.45], [23, 0.08, 0.72, 19, 0.32],
+    [27, 0.44, 0.64, 27, 0.50], [31, 0.71, 0.76, 21, 0.38], [35, 0.15, 0.69, 23, 0.44],
+    [39, 0.57, 0.61, 25, 0.47], [43, 0.26, 0.77, 18, 0.33], [47, 0.82, 0.67, 24, 0.43],
+    [51, 0.11, 0.73, 20, 0.37], [55, 0.48, 0.63, 26, 0.49], [59, 0.69, 0.78, 19, 0.35],
+    [63, 0.22, 0.65, 23, 0.44], [67, 0.59, 0.71, 21, 0.39], [71, 0.06, 0.60, 27, 0.51],
+    [75, 0.38, 0.75, 18, 0.34], [79, 0.74, 0.66, 24, 0.46], [83, 0.17, 0.72, 20, 0.37],
+    [87, 0.53, 0.64, 25, 0.48], [91, 0.29, 0.77, 19, 0.35], [95, 0.66, 0.68, 22, 0.42],
+    [99, 0.41, 0.63, 24, 0.45], [103, 0.85, 0.71, 20, 0.36]
+  ];
+
+  var SNOW_FLAKES = [
+    [4, 0.2, 4.4, 3.2, -18], [9, 1.7, 5.2, 2.4, -12], [14, 3.1, 3.9, 3.8, -24],
+    [19, 0.8, 4.9, 2.6, -15], [24, 2.5, 4.2, 3.4, -22], [29, 4.0, 5.5, 2.2, -10],
+    [34, 1.3, 3.7, 3.6, -26], [39, 2.9, 4.7, 2.8, -16], [44, 0.5, 5.1, 2.5, -14],
+    [49, 3.6, 4.0, 3.5, -20], [54, 1.9, 4.8, 2.7, -15], [59, 4.3, 3.8, 3.9, -25],
+    [64, 0.9, 5.3, 2.3, -12], [69, 2.7, 4.3, 3.3, -19], [74, 1.5, 4.6, 2.9, -17],
+    [79, 3.8, 3.9, 3.7, -23], [84, 0.4, 5.0, 2.5, -13], [89, 2.2, 4.5, 3.1, -18],
+    [94, 3.3, 4.1, 3.4, -21], [98, 1.1, 5.4, 2.4, -14]
+  ];
+
+  function weatherOverlayHtml(state, locKey, forBattle) {
+    var indoor = (locKey === "tavern" || locKey === "smithy") && !forBattle;
+    if (indoor) { return ""; }
+    var pal = skyOf(state);
+    if (pal.weatherKind === "rain") {
+      return '<div class="bow-stage-weather bow-stage-rain" aria-hidden="true">' +
+        RAIN_DROPS.map(function (d) {
+          return '<i class="bow-rain-drop" style="left:' + d[0] + '%;animation-delay:-' + d[1] +
+            's;animation-duration:' + d[2] + 's;height:' + d[3] + 'px;opacity:' + d[4] + '"></i>';
+        }).join("") +
+        '<span class="bow-rain-mist"></span>' +
+      '</div>';
+    }
+    if (pal.weatherKind === "snow") {
+      return '<div class="bow-stage-weather bow-stage-snow" aria-hidden="true">' +
+        SNOW_FLAKES.map(function (f) {
+          return '<i class="bow-snow-flake" style="left:' + f[0] + '%;animation-delay:-' + f[1] +
+            's;animation-duration:' + f[2] + 's;width:' + f[3] + 'px;height:' + f[3] +
+            'px;--drift:' + f[4] + 'px"></i>';
+        }).join("") +
+      '</div>';
+    }
+    if (pal.weatherKind === "fog") {
+      return '<div class="bow-stage-weather bow-stage-fog" aria-hidden="true">' +
+        '<span class="bow-fog-band"></span>' +
+      '</div>';
+    }
+    return "";
   }
 
   function skyBaseSvg(pal, indoor) {
@@ -361,42 +413,48 @@
         '</g>';
     }
 
-    if (!indoor) {
-      svg += snowParticlesSvg(pal.snowy);
-    }
+
 
     return '<svg class="bow-stage-bg" viewBox="0 0 960 320" preserveAspectRatio="xMidYMid slice" aria-hidden="true">' +
       svg + '</svg>';
   }
 
-  /* ---------- Интерактивные точки локации на сцене ---------- */
+  /* ---------- Интерактивные точки локации на сцене ----------
+     Верхний ярус (y = 32%..41%) — ориентиры окружения над головами,
+     нижний ярус (bottom = 42px) — живые люди на земле. Хитбоксы
+     разведены по высоте и ширине и никогда не перекрывают друг друга. */
   var STAGE_PROPS = {
     square: [
-      { kind: "trade", label: "Торговые лавки", sub: "товар", x: 15, y: 58 },
-      { kind: "jobs",  label: "Подвода и ряды", sub: "работа", x: 40, y: 63 },
-      { kind: "exit",  loc: "tavern", label: "Трактир →", sub: "1 ч.", x: 85, y: 54 }
+      { kind: "trade", label: "Торговые лавки", sub: "товар", x: 17, y: 37 },
+      { kind: "jobs",  label: "Подвода и ряды", sub: "работа", x: 50, y: 35 },
+      { kind: "exit",  loc: "tavern", label: "Трактир →", sub: "1 ч.", x: 83, y: 35 }
     ],
     tavern: [
-      { kind: "rest",  label: "У очага", sub: "отдых", x: 31, y: 60 },
-      { kind: "jobs",  label: "Зал и котёл", sub: "работа", x: 48, y: 56 },
-      { kind: "trade", label: "Стойка", sub: "снедь и брага", x: 66, y: 55 }
+      { kind: "rest",  label: "У очага", sub: "отдых", x: 28, y: 35 },
+      { kind: "jobs",  label: "Зал и котёл", sub: "работа", x: 52, y: 33 },
+      { kind: "trade", label: "Стойка", sub: "снедь и брага", x: 76, y: 36 }
     ],
     smithy: [
-      { kind: "jobs",  label: "Горн и мехи", sub: "работа", x: 18, y: 56 },
-      { kind: "trade", label: "Железо у Тарна", sub: "купить / сбыть", x: 79, y: 55 }
+      { kind: "jobs",  label: "Горн и мехи", sub: "работа", x: 20, y: 35 },
+      { kind: "trade", label: "Железо у Тарна", sub: "купить / сбыть", x: 78, y: 35 }
     ],
     outskirts: [
-      { kind: "jobs",  label: "Поленница", sub: "наколоть дров", x: 41, y: 63 },
-      { kind: "exit",  loc: "forest", label: "В тайгу →", sub: "3 ч.", x: 83, y: 58 }
+      { kind: "jobs",  label: "Поленница", sub: "наколоть дров", x: 36, y: 37 },
+      { kind: "exit",  loc: "forest", label: "В тайгу →", sub: "3 ч.", x: 82, y: 36 }
     ],
     forest: [
-      { kind: "jobs",  label: "Опушка и следы", sub: "работа", x: 34, y: 64 },
-      { kind: "exit",  loc: "outskirts", label: "К околице →", sub: "2 ч.", x: 84, y: 60 }
+      { kind: "jobs",  label: "Опушка и следы", sub: "работа", x: 36, y: 37 },
+      { kind: "exit",  loc: "outskirts", label: "К околице →", sub: "2 ч.", x: 82, y: 36 }
     ]
   };
 
-  /* Рассадка фигурок жителей в кадре (в процентах ширины сцены). */
-  var NPC_SLOTS = [56, 71, 44, 82];
+  function npcSlotX(idx, count) {
+    if (count <= 1) { return 62; }
+    if (count === 2) { return idx === 0 ? 50 : 74; }
+    if (count === 3) { return [44, 63, 82][idx]; }
+    var span = 44;
+    return Math.round(42 + (span * idx) / (count - 1));
+  }
 
   function renderHotspotsAndActors(state, selected) {
     var locKey = state.player.location;
@@ -404,12 +462,12 @@
     var people = Bow.actions.peopleAt(state, locKey);
     var html = [];
 
-    /* 1. Точки интереса самой локации */
+    /* 1. Точки интереса самой локации (верхний ярус) */
     props.forEach(function (pr) {
       if (pr.kind === "exit") {
         html.push(
-          '<button class="bow-spot bow-spot-exit" style="left:' + pr.x + '%;top:' + pr.y + '%" ' +
-            'data-act="move" data-loc="' + esc(pr.loc) + '" title="Перейти: ' + esc(pr.label) + '">' +
+          '<button type="button" class="bow-spot bow-spot-exit" style="left:' + pr.x + '%;top:' + pr.y + '%" ' +
+            'data-act="move" data-loc="' + esc(pr.loc) + '" data-x="' + pr.x + '" title="Перейти: ' + esc(pr.label) + '">' +
             '<span class="bow-spot-dot"></span>' +
             '<span class="bow-spot-txt"><b>' + esc(pr.label) + '</b><i>' + esc(pr.sub) + '</i></span>' +
           '</button>'
@@ -418,8 +476,8 @@
       }
       if (pr.kind === "rest") {
         html.push(
-          '<button class="bow-spot bow-spot-prop" style="left:' + pr.x + '%;top:' + pr.y + '%" ' +
-            'data-act="rest" title="Отдохнуть в тепле">' +
+          '<button type="button" class="bow-spot bow-spot-prop" style="left:' + pr.x + '%;top:' + pr.y + '%" ' +
+            'data-act="rest" data-x="' + pr.x + '" title="Отдохнуть в тепле">' +
             '<span class="bow-spot-dot"></span>' +
             '<span class="bow-spot-txt"><b>' + esc(pr.label) + '</b><i>' + esc(pr.sub) + '</i></span>' +
           '</button>'
@@ -428,28 +486,28 @@
       }
       var active = selected && selected.kind === pr.kind ? " bow-spot-on" : "";
       html.push(
-        '<button class="bow-spot bow-spot-prop' + active + '" style="left:' + pr.x + '%;top:' + pr.y + '%" ' +
-          'data-act="stage-select" data-kind="' + esc(pr.kind) + '">' +
+        '<button type="button" class="bow-spot bow-spot-prop' + active + '" style="left:' + pr.x + '%;top:' + pr.y + '%" ' +
+          'data-act="stage-select" data-kind="' + esc(pr.kind) + '" data-x="' + pr.x + '">' +
           '<span class="bow-spot-dot"></span>' +
           '<span class="bow-spot-txt"><b>' + esc(pr.label) + '</b><i>' + esc(pr.sub) + '</i></span>' +
         '</button>'
       );
     });
 
-    /* 2. Фигурка самого игрока слева на переднем плане */
+    /* 2. Фигурка самого игрока слева на переднем плане (нижний ярус) */
     var pWeapon = weaponKindOf(state, state.player);
     var selfActive = selected && selected.kind === "self" ? " bow-actor-on" : "";
     html.push(
-      '<button class="bow-actor bow-actor-player' + selfActive + '" style="left:24%;bottom:12px" ' +
-        'data-act="stage-select" data-kind="self" title="Вы — припасы, отдых и перевязка">' +
+      '<button type="button" class="bow-actor bow-actor-player' + selfActive + '" style="left:20%;bottom:42px" ' +
+        'data-act="stage-select" data-kind="self" data-x="20" title="Вы — припасы, отдых и перевязка">' +
         figureSvg({ roleKey: "player", side: "player", weapon: pWeapon }) +
         '<span class="bow-actor-tag"><b>Вы</b></span>' +
       '</button>'
     );
 
-    /* 3. Фигурки жителей, которые реально находятся здесь и сейчас */
+    /* 3. Фигурки жителей (равномерно разнесены по правому/среднему плану) */
     people.forEach(function (p, idx) {
-      var x = NPC_SLOTS[idx % NPC_SLOTS.length];
+      var x = npcSlotX(idx, people.length);
       var isSel = selected && selected.kind === "person" && selected.personId === p.id;
       var tone = p.attitude >= 20 ? "warm" : p.attitude <= -20 ? "cold" : "neutral";
       var wKind = weaponKindOf(state, p);
@@ -457,9 +515,9 @@
       var sign = p.attitude > 0 ? "+" : "";
 
       html.push(
-        '<button class="bow-actor bow-actor-npc' + (isSel ? " bow-actor-on" : "") + '" ' +
-          'style="left:' + x + '%;bottom:14px" ' +
-          'data-act="stage-select" data-kind="person" data-person="' + esc(p.id) + '" ' +
+        '<button type="button" class="bow-actor bow-actor-npc' + (isSel ? " bow-actor-on" : "") + '" ' +
+          'style="left:' + x + '%;bottom:42px" ' +
+          'data-act="stage-select" data-kind="person" data-person="' + esc(p.id) + '" data-x="' + x + '" ' +
           'title="' + esc(p.name + " — " + p.role) + '">' +
           (hp < 100
             ? '<span class="bow-actor-hp"><i style="width:' + hp + '%"></i></span>'
@@ -481,6 +539,7 @@
     figureSvg: figureSvg,
     weaponKindOf: weaponKindOf,
     backdropSvg: backdropSvg,
+    weatherOverlayHtml: weatherOverlayHtml,
     renderHotspotsAndActors: renderHotspotsAndActors
   };
 

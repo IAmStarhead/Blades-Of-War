@@ -552,19 +552,24 @@
     if (!pop) { return; }
     if (!stageSelection) {
       pop.innerHTML = "";
-      pop.classList.remove("bow-stage-pop-open");
+      pop.classList.remove("bow-stage-pop-open", "bow-stage-pop-left");
       return;
     }
 
     var sel = stageSelection;
-    var closeBtn = '<button class="bow-dialog-close" data-act="stage-close" aria-label="Скрыть карточку">✕</button>';
+    /* Если кликнули по фигуре/объекту справа — открываем карточку слева,
+       чтобы не заслонять выбранного человека и соседей рядом. */
+    var openLeft = (typeof sel.x === "number") ? (sel.x > 52) : (sel.kind === "person");
+    pop.classList.toggle("bow-stage-pop-left", !!openLeft);
+
+    var closeBtn = '<button type="button" class="bow-dialog-close" data-act="stage-close" aria-label="Скрыть карточку">✕</button>';
 
     if (sel.kind === "person") {
       var p = state.people[sel.personId];
       if (!p || !p.alive || p.location !== state.player.location) {
         stageSelection = null;
         pop.innerHTML = "";
-        pop.classList.remove("bow-stage-pop-open");
+        pop.classList.remove("bow-stage-pop-open", "bow-stage-pop-left");
         return;
       }
       var tone = p.attitude >= 20 ? "warm" : p.attitude <= -20 ? "cold" : "neutral";
@@ -576,27 +581,30 @@
         var prepMax = (Bow.data.fightRules.steal || {}).maxPrep || 2;
         var pocketCh = Math.round(Bow.steal.pocketChance(state, p) * 100);
         stealHtml = '<div class="bow-steal-block">' +
-          '<div class="bow-steal-head"><span>Кошель (' + purse + ' м.)</span><b>' + ch + '%</b></div>' +
-          '<div class="bow-steal-acts">' +
-            '<button class="bow-trade-btn" data-act="steal-look" data-person="' + esc(p.id) + '"' + (prep >= prepMax ? " disabled" : "") + '>Присмотреться</button>' +
-            '<button class="bow-trade-btn" data-act="steal-distract" data-person="' + esc(p.id) + '"' + (prep >= prepMax ? " disabled" : "") + '>Отвлечь</button>' +
-            '<button class="bow-trade-btn bow-steal-btn" data-act="steal" data-person="' + esc(p.id) + '">Срезать · ' + ch + '%</button>' +
-            '<button class="bow-trade-btn" data-act="steal-pocket" data-person="' + esc(p.id) + '">Карман · ' + pocketCh + '%</button>' +
+          '<div class="bow-steal-head"><span>Кошель · ' + purse + ' м.</span><b>шанс ' + ch + '%</b></div>' +
+          '<div class="bow-steal-acts bow-steal-grid">' +
+            '<button type="button" class="bow-trade-btn" data-act="steal-look" data-person="' + esc(p.id) + '"' + (prep >= prepMax ? " disabled" : "") + '>Присмотреться</button>' +
+            '<button type="button" class="bow-trade-btn" data-act="steal-distract" data-person="' + esc(p.id) + '"' + (prep >= prepMax ? " disabled" : "") + '>Отвлечь</button>' +
+            '<button type="button" class="bow-trade-btn bow-steal-btn" data-act="steal" data-person="' + esc(p.id) + '">Срезать · ' + ch + '%</button>' +
+            '<button type="button" class="bow-trade-btn" data-act="steal-pocket" data-person="' + esc(p.id) + '">Карман · ' + pocketCh + '%</button>' +
           '</div>' +
         '</div>';
       }
       pop.innerHTML =
         '<div class="bow-stage-card">' +
           '<div class="bow-stage-card-head">' +
-            '<div><b>' + esc(p.name) + '</b> <span class="bow-dim">· ' + esc(p.role) + '</span></div>' +
-            '<span class="bow-tone bow-' + tone + '">' + (p.attitude > 0 ? "+" : "") + Math.round(p.attitude) + '</span>' +
+            '<div class="bow-stage-card-title">' +
+              '<b>' + esc(p.name) + '</b>' +
+              '<span class="bow-dim">· ' + esc(p.role) + '</span>' +
+              '<span class="bow-tone bow-' + tone + '">' + (p.attitude > 0 ? "+" : "") + Math.round(p.attitude) + '</span>' +
+            '</div>' +
             closeBtn +
           '</div>' +
-          '<div class="bow-stage-card-meta">здор. ' + Math.round(p.needs.health) + ' · бодр. ' + Math.round(p.needs.fatigue) + '</div>' +
-          '<div class="bow-person-acts">' +
-            '<button class="bow-trade-btn" data-act="talk" data-person="' + esc(p.id) + '">Говорить</button>' +
-            '<button class="bow-trade-btn" data-act="inspect" data-person="' + esc(p.id) + '">Осмотреть</button>' +
-            '<button class="bow-trade-btn bow-fight-btn" data-act="fight-open" data-person="' + esc(p.id) + '">' +
+          '<div class="bow-stage-card-meta">здоровье ' + Math.round(p.needs.health) + ' · бодрость ' + Math.round(p.needs.fatigue) + '</div>' +
+          '<div class="bow-person-acts bow-person-acts-grid">' +
+            '<button type="button" class="bow-trade-btn" data-act="talk" data-person="' + esc(p.id) + '">Говорить</button>' +
+            '<button type="button" class="bow-trade-btn" data-act="inspect" data-person="' + esc(p.id) + '">Осмотреть</button>' +
+            '<button type="button" class="bow-trade-btn bow-fight-btn" data-act="fight-open" data-person="' + esc(p.id) + '">' +
               (p.attitude >= Bow.data.fightRules.sparMinAttitude ? 'Бой' : 'Напасть') + '</button>' +
           '</div>' +
           stealHtml +
@@ -609,18 +617,18 @@
       var jobs = Bow.work.listAt(state);
       var jRows = jobs.map(function (j) {
         if (!j.available) {
-          return '<div class="bow-stage-mini-row"><span class="bow-dim">' + esc(j.title) + ' — не доверят</span></div>';
+          return '<div class="bow-stage-mini-row bow-stage-mini-locked"><span class="bow-dim">' + esc(j.title) + ' — не доверят</span></div>';
         }
         return '<div class="bow-stage-mini-row">' +
-          '<span>' + esc(j.title) + ' <i class="bow-dim">(' + j.hours + ' ч., ' + Math.round(j.chance * 100) + '%)</i></span>' +
+          '<span class="bow-stage-mini-name">' + esc(j.title) + ' <i class="bow-dim">(' + j.hours + ' ч., ' + Math.round(j.chance * 100) + '%)</i></span>' +
           '<b class="bow-gold-txt">' + j.payMin + '–' + j.payMax + ' м.</b>' +
-          '<button class="bow-trade-btn" data-act="work" data-job="' + esc(j.key) + '">Взяться</button>' +
+          '<button type="button" class="bow-trade-btn" data-act="work" data-job="' + esc(j.key) + '">Взяться</button>' +
         '</div>';
       }).join("") || '<div class="bow-empty">Работы нет.</div>';
 
       pop.innerHTML = '<div class="bow-stage-card">' +
-        '<div class="bow-stage-card-head"><b>Работа здесь</b>' + closeBtn + '</div>' +
-        jRows + '</div>';
+        '<div class="bow-stage-card-head"><div class="bow-stage-card-title"><b>Работа здесь</b></div>' + closeBtn + '</div>' +
+        '<div class="bow-stage-mini-list">' + jRows + '</div></div>';
       pop.classList.add("bow-stage-pop-open");
       return;
     }
@@ -634,15 +642,15 @@
         var price = Bow.economy.buyPrice(key, state, state.player.location);
         var short = state.player.money < price;
         return '<div class="bow-stage-mini-row">' +
-          '<span>' + esc(item.name) + '</span>' +
-          '<b>' + price + ' м.</b>' +
-          '<button class="bow-trade-btn" data-act="buy" data-key="' + esc(key) + '"' + (short ? " disabled" : "") + '>Взять</button>' +
+          '<span class="bow-stage-mini-name">' + esc(item.name) + '</span>' +
+          '<b class="bow-gold-txt">' + price + ' м.</b>' +
+          '<button type="button" class="bow-trade-btn" data-act="buy" data-key="' + esc(key) + '"' + (short ? " disabled" : "") + '>Взять</button>' +
         '</div>';
       }).join("") || '<div class="bow-empty">Здесь не торгуют.</div>';
 
       pop.innerHTML = '<div class="bow-stage-card">' +
-        '<div class="bow-stage-card-head"><b>Лавка · у вас ' + state.player.money + ' м.</b>' + closeBtn + '</div>' +
-        tRows + '</div>';
+        '<div class="bow-stage-card-head"><div class="bow-stage-card-title"><b>Лавка</b><span class="bow-dim">· у вас ' + state.player.money + ' м.</span></div>' + closeBtn + '</div>' +
+        '<div class="bow-stage-mini-list">' + tRows + '</div></div>';
       pop.classList.add("bow-stage-pop-open");
       return;
     }
@@ -654,18 +662,18 @@
         if (def && (def.food || def.mood)) {
           var act = def.food ? "eat" : "drink";
           var k = Bow.economy.keyOf(def);
-          cons.push('<button class="bow-trade-btn" data-act="' + act + '" data-item="' + esc(k) + '">' +
+          cons.push('<button type="button" class="bow-trade-btn" data-act="' + act + '" data-item="' + esc(k) + '">' +
             (def.food ? "Съесть " : "Выпить ") + esc(def.name) + ' (×' + entry.qty + ')</button>');
         }
       });
       var w = Bow.fight.weaponOf(state.player);
       var ar = Bow.fight.armorOf(state.player);
       pop.innerHTML = '<div class="bow-stage-card">' +
-        '<div class="bow-stage-card-head"><b>' + esc(state.player.name) + '</b>' + closeBtn + '</div>' +
+        '<div class="bow-stage-card-head"><div class="bow-stage-card-title"><b>' + esc(state.player.name) + '</b><span class="bow-dim">· при себе</span></div>' + closeBtn + '</div>' +
         '<div class="bow-stage-card-meta">В руке: ' + esc(w ? w.name : "пусто") + ' · На себе: ' + esc(ar ? ar.name : "пусто") + '</div>' +
-        '<div class="bow-person-acts">' +
-          '<button class="bow-trade-btn" data-act="rest">☾ Отдохнуть</button>' +
-          (state.player.needs.health < 100 ? '<button class="bow-trade-btn" data-act="treat">✚ Перевязать</button>' : '') +
+        '<div class="bow-person-acts bow-self-acts">' +
+          '<button type="button" class="bow-trade-btn" data-act="rest">☾ Отдохнуть</button>' +
+          (state.player.needs.health < 100 ? '<button type="button" class="bow-trade-btn" data-act="treat">✚ Перевязать</button>' : '') +
           cons.join("") +
         '</div>' +
       '</div>';
@@ -676,11 +684,38 @@
   function renderStage(state) {
     var canvas = $("bow-stage-canvas");
     if (!canvas || !Bow.stage) { return; }
-    canvas.innerHTML =
-      Bow.stage.backdropSvg(state.player.location, state, false) +
-      '<div class="bow-stage-layer">' +
-        Bow.stage.renderHotspotsAndActors(state, stageSelection) +
-      '</div>';
+
+    var locKey = state.player.location;
+    var pal = Bow.stage.skyOf(state);
+    var bgKey = locKey + "|" + pal.phase + "|" + pal.weatherKind;
+    var wKey = locKey + "|" + pal.weatherKind;
+
+    var bgWrap = canvas.querySelector(".bow-stage-bg-wrap");
+    var wWrap = canvas.querySelector(".bow-stage-weather-wrap");
+    var layer = canvas.querySelector(".bow-stage-layer");
+
+    if (!bgWrap || !wWrap || !layer) {
+      canvas.innerHTML =
+        '<div class="bow-stage-bg-wrap"></div>' +
+        '<div class="bow-stage-weather-wrap"></div>' +
+        '<div class="bow-stage-layer"></div>';
+      bgWrap = canvas.querySelector(".bow-stage-bg-wrap");
+      wWrap = canvas.querySelector(".bow-stage-weather-wrap");
+      layer = canvas.querySelector(".bow-stage-layer");
+    }
+
+    if (bgWrap.getAttribute("data-bg-key") !== bgKey) {
+      bgWrap.setAttribute("data-bg-key", bgKey);
+      bgWrap.innerHTML = Bow.stage.backdropSvg(locKey, state, false);
+    }
+    if (wWrap.getAttribute("data-w-key") !== wKey) {
+      wWrap.setAttribute("data-w-key", wKey);
+      wWrap.innerHTML = Bow.stage.weatherOverlayHtml
+        ? Bow.stage.weatherOverlayHtml(state, locKey, false)
+        : "";
+    }
+
+    layer.innerHTML = Bow.stage.renderHotspotsAndActors(state, stageSelection);
     renderStagePop(state);
   }
 
@@ -1025,17 +1060,19 @@
     var aimedAt = (f.aim || []).map(function (a) { return a.to; });
     var strikingKeys = (f.aim || []).map(function (a) { return a.from; });
     var bg = (Bow.stage && state) ? Bow.stage.backdropSvg(state.player.location, state, true) : "";
+    var wHtml = (Bow.stage && Bow.stage.weatherOverlayHtml && state)
+      ? Bow.stage.weatherOverlayHtml(state, state.player.location, true)
+      : "";
 
-    return '<div class="bow-arena-wrap">' +
-      '<div class="bow-arena-scene">' +
-        bg +
+    return {
+      bgHtml: bg + wHtml,
+      arenaHtml:
         '<div class="bow-arena" style="--cols:' + A.cols + ';--rows:' + A.rows + '">' +
           '<div class="bow-arena-tracks">' + steps.join("") + '</div>' +
           units.map(function (u) { return fightChip(u, aimedAt, strikingKeys, f.target, state); }).join("") +
-        '</div>' +
-      '</div>' +
-      '<div class="bow-roster">' + roster + '</div>' +
-    '</div>';
+        '</div>',
+      rosterHtml: roster
+    };
   }
 
   function fightLog(f) {
@@ -1174,11 +1211,11 @@
         rangeNote = inReach ? " · вплотную" : (" · до цели " + stepDist + " шаг.");
       }
 
-      body += '<div class="bow-fight-head">' +
+      var headHtml = '<div class="bow-fight-head">' +
         '<b>' + (f.mode === "guard" ? "Стража Брода" : (npc ? esc(npc.name) : (f.mode === "robbery" ? "Грабитель" : "Противник"))) + '</b>' +
         '<span>круг ' + f.round + rangeNote + '</span></div>';
 
-      body += fightField(f, state);
+      var fld = fightField(f, state);
 
       if (f.phase === "exchange") {
         var orders = Bow.fight.ensureOrders(f);
@@ -1261,7 +1298,28 @@
       }
 
       if (page) {
-        page.innerHTML = '<div class="bow-fight-page-inner">' + body + '</div>';
+        var palB = Bow.stage ? Bow.stage.skyOf(state) : { phase: "day", weatherKind: "clear" };
+        var bKey = state.player.location + "|" + palB.phase + "|" + palB.weatherKind;
+        var shell = page.querySelector(".bow-fight-live-shell");
+        if (!shell || shell.getAttribute("data-bg-key") !== bKey) {
+          page.innerHTML =
+            '<div class="bow-fight-page-inner bow-fight-live-shell" data-bg-key="' + esc(bKey) + '">' +
+              '<div class="bow-fight-head-slot">' + headHtml + '</div>' +
+              '<div class="bow-arena-wrap">' +
+                '<div class="bow-arena-scene">' +
+                  '<div class="bow-arena-backdrop">' + fld.bgHtml + '</div>' +
+                  '<div class="bow-arena-slot">' + fld.arenaHtml + '</div>' +
+                '</div>' +
+                '<div class="bow-roster">' + fld.rosterHtml + '</div>' +
+              '</div>' +
+              '<div class="bow-fight-controls-slot">' + body + '</div>' +
+            '</div>';
+        } else {
+          shell.querySelector(".bow-fight-head-slot").innerHTML = headHtml;
+          shell.querySelector(".bow-arena-slot").innerHTML = fld.arenaHtml;
+          shell.querySelector(".bow-roster").innerHTML = fld.rosterHtml;
+          shell.querySelector(".bow-fight-controls-slot").innerHTML = body;
+        }
         page.classList.add("bow-page-open");
         animateArenaMoves(page);
       }
