@@ -48,22 +48,25 @@
 
     <div class="bow-clock-controls" role="group" aria-label="Ход времени">
       <button class="bow-clock-btn" data-act="clock" data-scale="paused" title="Пауза">❙❙</button>
-      <button class="bow-clock-btn" data-act="clock" data-scale="1x" title="Обычный ход">▶</button>
-      <button class="bow-clock-btn" data-act="clock" data-scale="4x" title="Ускорить">▶▶</button>
+      <button class="bow-clock-btn" data-act="clock" data-scale="1x" title="Обычный ход (1 мин. = 2 сек.)">▶</button>
+      <button class="bow-clock-btn" data-act="clock" data-scale="4x" title="Быстрый ход (2 мин./сек.)">▶▶</button>
     </div>
   </header>
 
   <!-- ============================================================
-       ПЕРЕХОД МЕЖДУ ЛОКАЦИЯМИ
+       ПЕРЕХОД МЕЖДУ ЛОКАЦИЯМИ (с подписями точного времени пути)
        ============================================================ -->
   <section class="bow-places-bar" aria-label="Переход">
-    <div class="bow-places-head">Переход</div>
+    <div class="bow-places-head">
+      <span>Переход</span>
+      <button type="button" class="bow-map-open-btn" data-act="open-map" title="Открыть карту поселения и Хладных Ветров">◈ Карта</button>
+    </div>
     <div class="bow-actions bow-places-row">
-      <button class="bow-btn" data-act="move" data-loc="square">Площадь</button>
-      <button class="bow-btn" data-act="move" data-loc="tavern">Трактир</button>
-      <button class="bow-btn" data-act="move" data-loc="smithy">Кузница</button>
-      <button class="bow-btn" data-act="move" data-loc="outskirts">Околица</button>
-      <button class="bow-btn" data-act="move" data-loc="forest">Опушка тайги</button>
+      <button class="bow-btn" data-act="move" data-loc="square" data-label="Площадь">Площадь</button>
+      <button class="bow-btn" data-act="move" data-loc="tavern" data-label="Трактир">Трактир</button>
+      <button class="bow-btn" data-act="move" data-loc="smithy" data-label="Кузница">Кузница</button>
+      <button class="bow-btn" data-act="move" data-loc="outskirts" data-label="Околица">Околица</button>
+      <button class="bow-btn" data-act="move" data-loc="forest" data-label="Опушка тайги">Опушка тайги</button>
     </div>
   </section>
 
@@ -109,15 +112,15 @@
       <section id="bow-jail" class="bow-fight" aria-live="polite"></section>
       <section id="bow-dialog" class="bow-dialog" aria-live="polite"></section>
 
-      <!-- НИЖНИЙ БЛОК ДЕЙСТВИЙ ПО ВКЛАДКАМ -->
+      <!-- НИЖНИЙ БЛОК ДЕЙСТВИЙ ПО ВКЛАДКАМ (4 вкладки: Заработок, Карта, Товар и снедь, О месте) -->
       <section class="bow-panel">
         <h2 class="bow-h2">Действия</h2>
         <div class="bow-tabs" role="tablist" aria-label="Разделы места">
           <button class="bow-tab bow-tab-on" data-act="tab" data-tab="jobs" role="tab" aria-selected="true">
             <span>Заработок</span><b class="bow-fold-count" data-count-for="jobs">0</b>
           </button>
-          <button class="bow-tab" data-act="tab" data-tab="people" role="tab" aria-selected="false">
-            <span>Рядом</span><b class="bow-fold-count" data-count-for="people">0</b>
+          <button class="bow-tab" data-act="tab" data-tab="map" role="tab" aria-selected="false">
+            <span>Карта</span><b class="bow-fold-count" data-count-for="map">5</b>
           </button>
           <button class="bow-tab" data-act="tab" data-tab="trade" role="tab" aria-selected="false">
             <span>Товар и снедь</span><b class="bow-fold-count" data-count-for="trade">0</b>
@@ -131,8 +134,8 @@
           <div id="bow-jobs" class="bow-jobs"></div>
         </div>
 
-        <div class="bow-tab-pane" data-tab-pane="people">
-          <div id="bow-people" class="bow-people"></div>
+        <div class="bow-tab-pane" data-tab-pane="map">
+          <div id="bow-map" class="bow-map"></div>
         </div>
 
         <div class="bow-tab-pane" data-tab-pane="trade">
@@ -145,6 +148,9 @@
             <div id="bow-loc-text" class="bow-scene-text"></div>
           </section>
         </div>
+
+        <!-- Скрытый технический контейнер карточек локации для совместимости прямых вызовов -->
+        <div id="bow-people" class="bow-people bow-sr-only" aria-hidden="true"></div>
       </section>
 
     </main>
@@ -234,8 +240,8 @@
   <div id="bow-sheet" class="bow-sheet" aria-hidden="true"></div>
 
   <footer class="bow-footer">
-    <span>Blades Of War · прототип 0.0.7.2 · тестовая локация: Студёный Брод</span>
-    <span class="bow-dim">Текст мира — черновой, имена и место подлежат согласованию</span>
+    <span>Blades Of War · прототип 0.0.7.3 · Хладные Ветра · Студёный Брод</span>
+    <span class="bow-dim">Север Эдемских земель · малое поселение у переправы</span>
   </footer>
 
 </div>

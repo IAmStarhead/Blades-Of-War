@@ -35,56 +35,77 @@
     return "День " + t.day + ", " + monthName + " " + t.year + " г. · " + hh + ":" + mm;
   }
 
-  /* Продвинуть время. Возвращает отчёт о том, какие тики прошли. */
-  function advance(state, hours) {
-    if (!(hours > 0)) { return { hours: 0, hoursPassed: 0, daysPassed: 0, monthsPassed: 0, yearsPassed: 0 }; }
+  /* Один часовой рубеж: вызывается каждый раз, когда накоплено 60 минут. */
+  function stepOneHour(state, mood) {
+    state.time.hour += 1;
+    state.time.totalHours += 1;
+    state.stats.hoursPlayed += 1;
 
-    var mood = [];
+    if (state.time.hour >= 24) {
+      state.time.hour -= 24;
+      state.time.day += 1;
+      mood.push("day");
+      Bow.bus.emit("tick:day", state);
 
-    for (var i = 0; i < hours; i++) {
-      state.time.minute = 0;
-      state.time.hour += 1;
-      state.time.totalHours += 1;
-      state.stats.hoursPlayed += 1;
+      if (state.time.day > daysInMonth(Bow.data)) {
+        state.time.day = 1;
+        state.time.month += 1;
+        mood.push("month");
+        Bow.bus.emit("tick:month", state);
 
-      if (state.time.hour >= 24) {
-        state.time.hour -= 24;
-        state.time.day += 1;
-        mood.push("day");
-        Bow.bus.emit("tick:day", state);
-
-        if (state.time.day > daysInMonth(Bow.data)) {
-          state.time.day = 1;
-          state.time.month += 1;
-          mood.push("month");
-          Bow.bus.emit("tick:month", state);
-
-          if (state.time.month > 12) {
-            state.time.month = 1;
-            state.time.year += 1;
-            mood.push("year");
-            Bow.bus.emit("tick:year", state);
-          }
+        if (state.time.month > 12) {
+          state.time.month = 1;
+          state.time.year += 1;
+          mood.push("year");
+          Bow.bus.emit("tick:year", state);
         }
       }
-
-      Bow.bus.emit("tick:hour", state);
     }
 
+    Bow.bus.emit("tick:hour", state);
+  }
+
+  /* Продвинуть время на указанное число минут (единый владелец часов и минут). */
+  function advanceMinutes(state, minutes) {
+    var mins = Math.round(Number(minutes) || 0);
+    if (!(mins > 0)) {
+      return { minutesPassed: 0, hoursPassed: 0, dayChanged: false, monthChanged: false, yearChanged: false };
+    }
+    if (typeof state.time.minute !== "number" || isNaN(state.time.minute)) {
+      state.time.minute = 0;
+    }
+
+    var mood = [];
+    var hoursPassed = 0;
+    state.time.minute += mins;
+
+    while (state.time.minute >= 60) {
+      state.time.minute -= 60;
+      hoursPassed += 1;
+      stepOneHour(state, mood);
+    }
+
+    Bow.bus.emit("tick:minute", state);
+
     return {
-      hoursPassed: hours,
+      minutesPassed: mins,
+      hoursPassed: hoursPassed,
       dayChanged: mood.indexOf("day") !== -1,
       monthChanged: mood.indexOf("month") !== -1,
       yearChanged: mood.indexOf("year") !== -1
     };
   }
 
+  /* Продвинуть время в часах (через тот же минутный счётчик, не обнуляя текущие минуты). */
+  function advance(state, hours) {
+    if (!(hours > 0)) { return { hours: 0, hoursPassed: 0, daysPassed: 0, monthsPassed: 0, yearsPassed: 0 }; }
+    return advanceMinutes(state, Math.round(hours * 60));
+  }
+
   /* ---------- Живое время ----------
-     Отдельный шаг «один игровой час» для хода времени без действия.
-     Отличие от advance(1) только в ответе: здесь сообщаем смену
-     суток — на это подписан интерфейс.
-     Второго владельца часов нет: и действие, и живое время идут
-     через advance(), поэтому час не удваивается. */
+     tick(state) — шаг в 1 игровой час (60 мин.).
+     tickMinute(state) — плавный живой шаг в 1 игровую минуту (0.0.7.3:
+     на скорости 1x 1 минута проходит за 2 реальные секунды). */
   function tick(state) {
     var before = {
       day: state.time.day,
@@ -96,7 +117,25 @@
     return {
       dayChanged: state.time.day !== before.day || state.time.month !== before.month || state.time.year !== before.year,
       monthChanged: state.time.month !== before.month || state.time.year !== before.year,
+      hour: state.time.hour,
+      minute: state.time.minute
+    };
+  }
+
+  function tickMinute(state) {
+    var before = {
+      day: state.time.day,
+      month: state.time.month,
+      year: state.time.year,
       hour: state.time.hour
+    };
+    var res = advanceMinutes(state, 1);
+    return {
+      hourChanged: res.hoursPassed > 0 || state.time.hour !== before.hour,
+      dayChanged: state.time.day !== before.day || state.time.month !== before.month || state.time.year !== before.year,
+      monthChanged: state.time.month !== before.month || state.time.year !== before.year,
+      hour: state.time.hour,
+      minute: state.time.minute
     };
   }
 
@@ -110,17 +149,27 @@
     return scale;
   }
 
+  /* Сколько игровых минут проходит за одну реальную секунду (0.0.7.3):
+     1x = 0.5 мин./с (ровно 1 игровая минута за 2 реальные секунды),
+     4x = 2.0 мин./с (вчетверо быстрее: 1 минута за 0.5 секунды). */
+  function minutesPerSecond(scale) {
+    if (scale === "1x") { return 0.5; }
+    if (scale === "4x") { return 2.0; }
+    return 0;
+  }
+
   /* Сколько игровых часов проходит за одну реальную секунду. */
   function hoursPerSecond(scale) {
-    if (scale === "1x") { return 1 / 3; }   /* час игры за 3 секунды */
-    if (scale === "4x") { return 1; }        /* час игры за секунду */
-    return 0;
+    return minutesPerSecond(scale) / 60;
   }
 
   Bow.time = {
     advance: advance,
+    advanceMinutes: advanceMinutes,
     tick: tick,
+    tickMinute: tickMinute,
     setScale: setScale,
+    minutesPerSecond: minutesPerSecond,
     hoursPerSecond: hoursPerSecond,
     SCALES: SCALES,
     format: format,

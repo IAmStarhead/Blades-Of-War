@@ -448,28 +448,34 @@
     ]
   };
 
-  function npcSlotX(idx, count) {
+  function actorSlotX(idx, count) {
     if (count <= 1) { return 62; }
     if (count === 2) { return idx === 0 ? 50 : 74; }
-    if (count === 3) { return [44, 63, 82][idx]; }
-    var span = 44;
-    return Math.round(42 + (span * idx) / (count - 1));
+    if (count === 3) { return [43, 63, 83][idx]; }
+    if (count === 4) { return [36, 53, 70, 87][idx]; }
+    if (count === 5) { return [32, 46, 60, 74, 88][idx]; }
+    return Math.round(30 + (58 * idx) / (count - 1));
   }
 
   function renderHotspotsAndActors(state, selected) {
     var locKey = state.player.location;
     var props = STAGE_PROPS[locKey] || [];
     var people = Bow.actions.peopleAt(state, locKey);
+    var corpses = Bow.actions.corpsesAt ? Bow.actions.corpsesAt(state, locKey) : [];
+    var hasGuard = !!(state.guard && state.guard.arrived && state.guard.squad && state.guard.squad.length);
+    var hasRobber = !!(state.encounter && state.encounter.robber);
     var html = [];
 
-    /* 1. Точки интереса самой локации (верхний ярус) */
+    /* 1. Точки интереса самой локации (верхний ярус) с точным временем пути в минутах */
     props.forEach(function (pr) {
       if (pr.kind === "exit") {
+        var mins = Bow.actions.travelMinutes ? Bow.actions.travelMinutes(state, pr.loc) : 15;
+        var subDur = Bow.actions.formatDuration ? Bow.actions.formatDuration(mins) : pr.sub;
         html.push(
           '<button type="button" class="bow-spot bow-spot-exit" style="left:' + pr.x + '%;top:' + pr.y + '%" ' +
-            'data-act="move" data-loc="' + esc(pr.loc) + '" data-x="' + pr.x + '" title="Перейти: ' + esc(pr.label) + '">' +
+            'data-act="move" data-loc="' + esc(pr.loc) + '" data-x="' + pr.x + '" title="Перейти: ' + esc(pr.label) + ' (' + esc(subDur) + ')">' +
             '<span class="bow-spot-dot"></span>' +
-            '<span class="bow-spot-txt"><b>' + esc(pr.label) + '</b><i>' + esc(pr.sub) + '</i></span>' +
+            '<span class="bow-spot-txt"><b>' + esc(pr.label) + '</b><i>' + esc(subDur) + '</i></span>' +
           '</button>'
         );
         return;
@@ -494,20 +500,103 @@
       );
     });
 
-    /* 2. Фигурка самого игрока слева на переднем плане (нижний ярус) */
+    /* Собираем всех видимых участников на нижнем ярусе сцены:
+       пришедшая стража, уличный грабитель/вор, живые жители и лежащие трупы. */
+    var stageEntities = [];
+
+    if (hasGuard) {
+      var gSquad = state.guard.squad;
+      var showGuards = (people.length + corpses.length >= 4) ? gSquad.slice(0, 2) : gSquad.slice(0, 3);
+      showGuards.forEach(function (gu, gIdx) {
+        stageEntities.push({ kind: "guard", guardUnit: gu, guardIdx: gIdx });
+      });
+    }
+
+    if (hasRobber) {
+      stageEntities.push({ kind: "robber", robber: state.encounter.robber });
+    }
+
+    people.forEach(function (p) {
+      stageEntities.push({ kind: "person", person: p });
+    });
+
+    corpses.forEach(function (c) {
+      stageEntities.push({ kind: "corpse", corpse: c });
+    });
+
+    /* 2. Фигурка самого игрока слева на переднем плане */
+    var playerX = stageEntities.length >= 5 ? 16 : (stageEntities.length === 4 ? 18 : 20);
     var pWeapon = weaponKindOf(state, state.player);
     var selfActive = selected && selected.kind === "self" ? " bow-actor-on" : "";
     html.push(
-      '<button type="button" class="bow-actor bow-actor-player' + selfActive + '" style="left:20%;bottom:42px" ' +
-        'data-act="stage-select" data-kind="self" data-x="20" title="Вы — припасы, отдых и перевязка">' +
+      '<button type="button" class="bow-actor bow-actor-player' + selfActive + '" style="left:' + playerX + '%;bottom:42px" ' +
+        'data-act="stage-select" data-kind="self" data-x="' + playerX + '" title="Вы — припасы, отдых и перевязка">' +
         figureSvg({ roleKey: "player", side: "player", weapon: pWeapon }) +
         '<span class="bow-actor-tag"><b>Вы</b></span>' +
       '</button>'
     );
 
-    /* 3. Фигурки жителей (равномерно разнесены по правому/среднему плану) */
-    people.forEach(function (p, idx) {
-      var x = npcSlotX(idx, people.length);
+    /* 3. Остальные фигурки на сцене (стража, грабитель, жители, трупы) */
+    stageEntities.forEach(function (ent, idx) {
+      var x = actorSlotX(idx, stageEntities.length);
+
+      if (ent.kind === "guard") {
+        var gu = ent.guardUnit;
+        var gSel = selected && selected.kind === "guard";
+        html.push(
+          '<button type="button" class="bow-actor bow-actor-enemy bow-actor-guard' + (gSel ? " bow-actor-on" : "") + '" ' +
+            'style="left:' + x + '%;bottom:42px" ' +
+            'data-act="stage-select" data-kind="guard" data-x="' + x + '" ' +
+            'title="Стража Брода — ' + esc(gu.name) + ' (требуют ответа)">' +
+            figureSvg({ roleKey: "guard", side: "enemy", weapon: "axe", stance: "guard" }) +
+            '<span class="bow-actor-tag bow-actor-tag-threat">' +
+              '<b>⛨ ' + esc(gu.name) + '</b>' +
+              '<i class="bow-tone bow-cold">стража</i>' +
+            '</span>' +
+          '</button>'
+        );
+        return;
+      }
+
+      if (ent.kind === "robber") {
+        var rb = ent.robber;
+        var rSel = selected && selected.kind === "robber";
+        var rWeapon = weaponKindOf(state, rb);
+        html.push(
+          '<button type="button" class="bow-actor bow-actor-enemy bow-actor-robber' + (rSel ? " bow-actor-on" : "") + '" ' +
+            'style="left:' + x + '%;bottom:42px" ' +
+            'data-act="stage-select" data-kind="robber" data-x="' + x + '" ' +
+            'title="' + esc(rb.name) + ' — требует ' + rb.demand + ' м.">' +
+            figureSvg({ roleKey: "robber", side: "enemy", weapon: rWeapon }) +
+            '<span class="bow-actor-tag bow-actor-tag-threat">' +
+              '<b>⚔ ' + esc(rb.name) + '</b>' +
+              '<i class="bow-tone bow-cold">' + rb.demand + ' м.</i>' +
+            '</span>' +
+          '</button>'
+        );
+        return;
+      }
+
+      if (ent.kind === "corpse") {
+        var c = ent.corpse;
+        var cSel = selected && selected.kind === "corpse" && selected.corpseId === c.id;
+        var hasLoot = !c.looted && ((c.money || 0) > 0 || (c.items && c.items.length > 0));
+        html.push(
+          '<button type="button" class="bow-actor bow-actor-corpse' + (cSel ? " bow-actor-on" : "") + (hasLoot ? " bow-actor-corpse-loot" : "") + '" ' +
+            'style="left:' + x + '%;bottom:36px" ' +
+            'data-act="stage-select" data-kind="corpse" data-corpse="' + esc(c.id) + '" data-x="' + x + '" ' +
+            'title="' + esc("Труп: " + c.name + (hasLoot ? " (можно обыскать)" : " (обыскан)")) + '">' +
+            figureSvg({ roleKey: c.roleKey || "villager", side: "enemy", dead: true }) +
+            '<span class="bow-actor-tag bow-actor-tag-corpse">' +
+              '<b>☠ ' + esc(c.name) + '</b>' +
+              '<i class="bow-dim">' + (hasLoot ? "обыскать" : "пусто") + '</i>' +
+            '</span>' +
+          '</button>'
+        );
+        return;
+      }
+
+      var p = ent.person;
       var isSel = selected && selected.kind === "person" && selected.personId === p.id;
       var tone = p.attitude >= 20 ? "warm" : p.attitude <= -20 ? "cold" : "neutral";
       var wKind = weaponKindOf(state, p);
@@ -534,13 +623,206 @@
     return html.join("");
   }
 
+  /* ---------- Двухуровневая карта (0.0.7.3):
+     1) «local» — точный план поселения Студёный Брод с тропами и минутами пути;
+     2) «realm» — север Эдемских земель и Королевство Хладных Ветров («Хладные Ветра»). ---------- */
+  function renderMap(state, mapMode) {
+    var mode = mapMode === "realm" ? "realm" : "local";
+    var curKey = state.player.location;
+    var locs = Bow.data.locations;
+    var keys = ["forest", "outskirts", "smithy", "square", "tavern"];
+
+    var switchBar =
+      '<div class="bow-map-head">' +
+        '<div class="bow-map-switch" role="group" aria-label="Масштаб карты">' +
+          '<button type="button" class="bow-btn bow-btn-sm' + (mode === "local" ? " bow-order-on" : "") + '" ' +
+            'data-act="map-mode" data-mode="local">План Студёного Брода</button>' +
+          '<button type="button" class="bow-btn bow-btn-sm' + (mode === "realm" ? " bow-order-on" : "") + '" ' +
+            'data-act="map-mode" data-mode="realm">Север Эдема · Хладные Ветра</button>' +
+        '</div>' +
+        '<span class="bow-map-sub">' +
+          (mode === "local"
+            ? 'Нажмите на точку на плане, чтобы перейти туда'
+            : 'Крайний север Эдемских земель · владения вождя Норвинга IV') +
+        '</span>' +
+      '</div>';
+
+    if (mode === "realm") {
+      var realmSvg =
+        '<div class="bow-map-canvas bow-map-realm">' +
+          '<svg class="bow-map-svg" viewBox="0 0 760 360" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Карта севера Эдемских земель — Хладные Ветра">' +
+            '<defs>' +
+              '<linearGradient id="bowRealmBg" x1="0" y1="0" x2="0" y2="1">' +
+                '<stop offset="0%" stop-color="#0d1520"/>' +
+                '<stop offset="68%" stop-color="#15202b"/>' +
+                '<stop offset="100%" stop-color="#1d2420"/>' +
+              '</linearGradient>' +
+            '</defs>' +
+            '<rect width="760" height="360" fill="url(#bowRealmBg)"/>' +
+            /* Северный студёный берег и хребты */
+            '<path d="M0,48 Q140,26 290,44 T590,34 T760,52 L760,0 L0,0 Z" fill="#091019" stroke="#2d4156" stroke-width="1.2"/>' +
+            '<text x="380" y="24" text-anchor="middle" fill="#6f879e" font-size="11" letter-spacing="3">СТУДЁНЫЙ КРАЙ СЕВЕРА ЭДЕМСКИХ ЗЕМЕЛЬ</text>' +
+            /* Горная гряда Хладных Ветров */
+            '<path d="M70,92 L96,62 L122,92 M116,94 L148,56 L180,94 M480,88 L512,54 L544,88 M536,92 L566,64 L596,92" fill="none" stroke="#4c6073" stroke-width="1.8"/>' +
+            /* Массив Матери-Тайги */
+            '<ellipse cx="390" cy="168" rx="290" ry="74" fill="#122126" opacity="0.68"/>' +
+            '<text x="410" y="156" text-anchor="middle" fill="#7d9a95" font-size="13" letter-spacing="2.5">МАТЬ-ТАЙГА</text>' +
+            /* Подпись королевства Хладные Ветра */
+            '<text x="380" y="96" text-anchor="middle" fill="#cfd8e3" font-size="16" font-weight="bold" letter-spacing="2">КОРОЛЕВСТВО ХЛАДНЫХ ВЕТРОВ («ХЛАДНЫЕ ВЕТРА»)</text>' +
+            '<text x="380" y="114" text-anchor="middle" fill="#8ea1b2" font-size="11">Вождь Норвинг IV · земли северян-хладцев</text>' +
+            /* Река Студёная */
+            '<path d="M24,232 Q210,218 372,236 T736,226" fill="none" stroke="#395c78" stroke-width="6" opacity="0.8"/>' +
+            '<path d="M24,232 Q210,218 372,236 T736,226" fill="none" stroke="#7aa6c7" stroke-width="1.2" opacity="0.55"/>' +
+            /* Рубеж на юге с центральным королевством Златодвор */
+            '<line x1="40" y1="292" x2="720" y2="292" stroke="#5b5342" stroke-width="1.4" stroke-dasharray="6 5"/>' +
+            '<text x="380" y="318" text-anchor="middle" fill="#bfa67a" font-size="13" letter-spacing="2">ЮЖНЕЕ — ЗЕМЛИ ЗЛАТОДВОРА (ЦЕНТРАЛЬНЫЙ ЭДЕМ)</text>' +
+            '<text x="380" y="336" text-anchor="middle" fill="#8d826c" font-size="10.5">Король Родрик II · торговые тракты вглубь восьми королевств Эдема</text>' +
+            /* Дорога от ставки Норвинга IV через Студёный Брод на юг */
+            '<path d="M286,132 Q336,184 368,234 Q382,266 392,348" fill="none" stroke="#9d8d72" stroke-width="2.2" stroke-dasharray="4 4"/>' +
+            /* Ставка вождя Норвинга IV (столица королевства — отдельно от Брода!) */
+            '<g transform="translate(286,132)">' +
+              '<circle r="8" fill="#2a1d24" stroke="#d4b16a" stroke-width="2"/>' +
+              '<polygon points="-4,2 -4,-3 0,-1 4,-3 4,2" fill="#d4b16a"/>' +
+              '<text x="0" y="-14" text-anchor="middle" fill="#e5cf9c" font-size="12" font-weight="bold">Стужа-на-Тайге</text>' +
+              '<text x="0" y="21" text-anchor="middle" fill="#9fb0c0" font-size="10">ставка вождя Норвинга IV (столица)</text>' +
+            '</g>' +
+            /* Студёный Брод — малое поселение у переправы, где находится игрок */
+            '<g transform="translate(368,234)">' +
+              '<circle r="11" fill="rgba(143,179,217,0.18)"/>' +
+              '<circle r="5.5" fill="#8fb3d9" stroke="#eef4fa" stroke-width="1.8"/>' +
+              '<text x="16" y="-4" text-anchor="start" fill="#eef4fa" font-size="12.5" font-weight="bold">Студёный Брод (вы здесь)</text>' +
+              '<text x="16" y="11" text-anchor="start" fill="#9fb0c0" font-size="10.5">малое северное поселение у переправы · не столица</text>' +
+            '</g>' +
+            /* Роза ветров */
+            '<g transform="translate(698,76)" stroke="#7f93a6" fill="#9fb0c0">' +
+              '<line x1="0" y1="-20" x2="0" y2="20" stroke-width="1.3"/>' +
+              '<line x1="-20" y1="0" x2="20" y2="0" stroke-width="1.3"/>' +
+              '<text x="0" y="-25" text-anchor="middle" font-size="10" stroke="none">С</text>' +
+              '<text x="0" y="32" text-anchor="middle" font-size="9" stroke="none">Ю</text>' +
+            '</g>' +
+          '</svg>' +
+        '</div>' +
+        '<div class="bow-map-lore">' +
+          '<b>Хладные Ветра</b> лежат на самом севере <b>Эдемских земель</b> — среди долгой стужи и бескрайней матери-Тайги, под рукой вождя <b>Норвинга IV</b>. ' +
+          '<b>Студёный Брод</b> — не столица королевства, а небольшое пограничное поселение у каменной речной переправы, через которую солевые и пушные обозы идут на юг к <b>Златодвору</b>.' +
+        '</div>';
+
+      return '<div class="bow-map-wrap">' + switchBar + realmSvg + '</div>';
+    }
+
+    /* Локальный план Студёного Брода с точными координатами и временем переходов */
+    var sq = locs.square, tv = locs.tavern, sm = locs.smithy, out = locs.outskirts, fo = locs.forest;
+    var toSvgX = function (l) { return Math.round((l.mapX / 100) * 760); };
+    var toSvgY = function (l) { return Math.round((l.mapY / 100) * 340); };
+
+    var roadsSvg = [
+      [sq, tv], [sq, sm], [sq, out], [out, fo]
+    ].map(function (pair) {
+      return '<line x1="' + toSvgX(pair[0]) + '" y1="' + toSvgY(pair[0]) +
+        '" x2="' + toSvgX(pair[1]) + '" y2="' + toSvgY(pair[1]) +
+        '" stroke="#8e826b" stroke-width="3" stroke-dasharray="6 5" opacity="0.82"/>';
+    }).join("");
+
+    var pinsHtml = keys.map(function (k) {
+      var l = locs[k];
+      if (!l) { return ""; }
+      var isHere = k === curKey;
+      var mins = isHere ? 0 : Bow.actions.travelMinutes(state, k);
+      var dur = isHere ? "вы здесь" : Bow.actions.formatDuration(mins);
+      var ppl = Bow.actions.peopleAt(state, k);
+      var deadHere = Bow.actions.corpsesAt ? Bow.actions.corpsesAt(state, k) : [];
+      var badges = [];
+      if (ppl.length) { badges.push("◉ " + ppl.length); }
+      if (deadHere.length) { badges.push("☠ " + deadHere.length); }
+      if (isHere && state.guard && state.guard.arrived) { badges.push("⛨ стража"); }
+      if (isHere && state.encounter && state.encounter.robber) { badges.push("⚔ налётчик"); }
+
+      return '<button type="button" class="bow-map-pin' + (isHere ? " bow-map-pin-here" : "") + '" ' +
+        'style="left:' + l.mapX + '%;top:' + l.mapY + '%" ' +
+        'data-act="move" data-loc="' + esc(k) + '"' + (isHere ? ' aria-current="location"' : '') +
+        ' title="' + esc(l.name + " — " + (l.mapHint || l.sub) + " (" + dur + ")") + '">' +
+        '<span class="bow-map-pin-dot"></span>' +
+        '<span class="bow-map-pin-card">' +
+          '<b>' + esc(l.name) + '</b>' +
+          '<i>' + esc(dur) + (badges.length ? " · " + esc(badges.join(" ")) : "") + '</i>' +
+        '</span>' +
+      '</button>';
+    }).join("");
+
+    var directoryHtml = keys.map(function (k) {
+      var l = locs[k];
+      var isHere = k === curKey;
+      var mins = isHere ? 0 : Bow.actions.travelMinutes(state, k);
+      var dur = isHere ? "Вы здесь" : Bow.actions.formatDuration(mins);
+      var pplNames = Bow.actions.peopleAt(state, k).map(function (p) { return p.name; });
+      var deadHere = Bow.actions.corpsesAt ? Bow.actions.corpsesAt(state, k) : [];
+      var metaParts = [];
+      if (pplNames.length) { metaParts.push("люди: " + pplNames.join(", ")); }
+      if (deadHere.length) { metaParts.push("тел: " + deadHere.length); }
+      if (l.trades && l.trades.length) { metaParts.push("торг"); }
+      if (l.jobs && l.jobs.length) { metaParts.push("работа"); }
+
+      return '<div class="bow-map-row' + (isHere ? " bow-map-row-here" : "") + '">' +
+        '<div class="bow-map-row-main">' +
+          '<b>' + esc(l.name) + '</b>' +
+          '<span class="bow-dim">' + esc(l.mapHint || l.sub) + (metaParts.length ? " · " + esc(metaParts.join(" · ")) : "") + '</span>' +
+        '</div>' +
+        '<div class="bow-map-row-go">' +
+          '<span class="bow-map-time">' + esc(dur) + '</span>' +
+          (isHere
+            ? '<span class="bow-equip-tag">текущее место</span>'
+            : '<button type="button" class="bow-trade-btn" data-act="move" data-loc="' + esc(k) + '">Идти · ' + esc(dur) + '</button>') +
+        '</div>' +
+      '</div>';
+    }).join("");
+
+    var localSvg =
+      '<div class="bow-map-canvas bow-map-local">' +
+        '<svg class="bow-map-svg" viewBox="0 0 760 340" preserveAspectRatio="none" aria-hidden="true">' +
+          '<defs>' +
+            '<linearGradient id="bowLocalBg" x1="0" y1="0" x2="0" y2="1">' +
+              '<stop offset="0%" stop-color="#101c22"/>' +
+              '<stop offset="32%" stop-color="#17222c"/>' +
+              '<stop offset="100%" stop-color="#141d26"/>' +
+            '</linearGradient>' +
+          '</defs>' +
+          '<rect width="760" height="340" fill="url(#bowLocalBg)"/>' +
+          /* Полоса вековой Матери-Тайги на севере */
+          '<path d="M0,0 L760,0 L760,86 Q580,102 390,88 T0,96 Z" fill="#0e1a1e" opacity="0.9"/>' +
+          '<text x="148" y="34" fill="#6f8f8a" font-size="11" letter-spacing="2.2">МАТЬ-ТАЙГА (СЕВЕР)</text>' +
+          /* Кольцо бревенчатого частокола Студёного Брода */
+          '<ellipse cx="366" cy="196" rx="212" ry="78" fill="rgba(32,42,52,0.38)" stroke="#4c5b6b" stroke-width="2" stroke-dasharray="10 4"/>' +
+          '<text x="182" y="142" fill="#7d8e9f" font-size="10" letter-spacing="1.4">ЧАСТОКОЛ ПОСЕЛЕНИЯ</text>' +
+          /* Река Студёная и каменная переправа (сам Студёный Брод) */
+          '<path d="M0,288 Q210,272 365,286 T760,278" fill="none" stroke="#2c4c66" stroke-width="18" opacity="0.88"/>' +
+          '<path d="M0,288 Q210,272 365,286 T760,278" fill="none" stroke="#6c99bd" stroke-width="1.4" opacity="0.5"/>' +
+          /* Каменный брод и южный тракт */
+          '<rect x="348" y="274" width="34" height="26" rx="3" fill="#556270" stroke="#9fb0c0" stroke-width="1.2"/>' +
+          '<line x1="365" y1="212" x2="365" y2="338" stroke="#8e826b" stroke-width="3" stroke-dasharray="5 5"/>' +
+          '<text x="404" y="324" fill="#8f9aa5" font-size="10.5">Каменный брод → тракт на юг (к Златодвору)</text>' +
+          roadsSvg +
+          /* Роза ветров и линейка масштаба */
+          '<g transform="translate(706,48)" stroke="#7f93a6" fill="#9fb0c0">' +
+            '<line x1="0" y1="-16" x2="0" y2="16" stroke-width="1.2"/>' +
+            '<line x1="-16" y1="0" x2="16" y2="0" stroke-width="1.2"/>' +
+            '<text x="0" y="-21" text-anchor="middle" font-size="9.5" stroke="none">С</text>' +
+          '</g>' +
+        '</svg>' +
+        '<div class="bow-map-pins">' + pinsHtml + '</div>' +
+      '</div>' +
+      '<div class="bow-map-list">' + directoryHtml + '</div>';
+
+    return '<div class="bow-map-wrap">' + switchBar + localSvg + '</div>';
+  }
+
   Bow.stage = {
     skyOf: skyOf,
     figureSvg: figureSvg,
     weaponKindOf: weaponKindOf,
     backdropSvg: backdropSvg,
     weatherOverlayHtml: weatherOverlayHtml,
-    renderHotspotsAndActors: renderHotspotsAndActors
+    renderHotspotsAndActors: renderHotspotsAndActors,
+    renderMap: renderMap
   };
 
 })(typeof window !== "undefined" ? window : this);

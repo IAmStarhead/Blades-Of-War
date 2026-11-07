@@ -436,7 +436,6 @@
       f.heatTotal = 0;
       f.repTotal = 0;
       f.units = spawnUnits(state);
-      Bow.time.advance(state, R.hours);
       Bow.needs.applyChange(state.player, "fatigue", -2);
       log(f, "narr", f.enemies[0].name + " выходит на свет с ножом. Разговор кончился.");
       Bow.journal.add(state, "Грабитель ударил первым.", "danger");
@@ -470,8 +469,7 @@
 
     f.units = spawnUnits(state);
 
-    /* Час на весь бой: подход, первый удар и развязка. */
-    Bow.time.advance(state, R.hours);
+    /* В пошаговом бою мировые часы стоят на месте (0.0.7.3). */
     Bow.needs.applyChange(state.player, "fatigue", -2);
 
     if (mode === "crime") {
@@ -1221,7 +1219,30 @@
     return { ok: true, fled: false, message: "Уйти не вышло — " + damage + " урона." };
   }
 
-  /* ---------- Развязка после победы ---------- */
+  /* ---------- Развязка после победы и создание лутаемых трупов ---------- */
+  function spawnCorpse(state, opts) {
+    if (!Array.isArray(state.corpses)) { state.corpses = []; }
+    var items = [];
+    (opts.items || []).forEach(function (id) {
+      if (id) { items.push({ itemId: id, qty: 1 }); }
+    });
+    var cid = "corpse:" + (opts.personId || ((opts.roleKey || "foe") + ":" + state.time.totalHours + ":" + state.corpses.length));
+    var corpse = {
+      id: cid,
+      personId: opts.personId || null,
+      roleKey: opts.roleKey || "villager",
+      name: opts.name || "Неизвестный",
+      role: opts.role || "житель",
+      location: state.player.location,
+      killedAt: state.time.totalHours,
+      money: Math.max(0, Math.round(opts.money || 0)),
+      items: items,
+      looted: false
+    };
+    state.corpses.push(corpse);
+    return corpse;
+  }
+
   function decide(state, choice, rng) {
     var f = state.fight;
     if (!f || f.phase !== "aftermath") { return { ok: false, message: "Сейчас решать нечего." }; }
@@ -1229,27 +1250,87 @@
     var npc = state.people[f.personId];
     var player = state.player;
 
-    /* Грабитель — безликий: записи в людях у него нет. Его кошель
-       и память живут в фишке боя, поэтому развязка идёт по ней. */
+    /* 1. Грабитель на улице: записи в людях у него нет, но кошель и нож настоящие. */
     var faceless = !npc && f.mode === "robbery" ? f.enemies[0] : null;
     if (faceless) {
       var loot = Math.max(0, Math.round(faceless.money || 0));
       if (choice === "spare") {
+        log(f, "narr", faceless.name + " остаётся сидеть в снегу, зажимая бок.");
         finish(state, "win", {});
-        Bow.journal.add(state, "Вы оставили грабителя в снегу и ушли.", "danger");
+        Bow.journal.add(state, "Вы оставили грабителя в снегу.", "danger");
         return { ok: true, message: faceless.name + " остался сидеть в снегу." };
       }
       if (choice === "rob") {
         player.money += loot;
+        faceless.money = 0;
+        log(f, "narr", "Вы вытряхиваете из кошеля грабителя " + loot + " м.");
         finish(state, "win", {});
         Bow.journal.add(state, "Вы обобрали грабителя: +" + loot + " м.", "crime");
         return { ok: true, message: "В кошеле грабителя — " + loot + " м." };
       }
       if (choice === "kill") {
-        Bow.steal.addHeat(state, "org:guard", 12);
-        finish(state, "killed", {});
-        Bow.journal.add(state, "Вы добили грабителя на улице. Кто-нибудь найдёт тело.", "crime");
-        return { ok: true, message: "Он больше не встанет." };
+        (f.units || []).forEach(function (u) {
+          if (u.side === "enemy") { u.dead = true; u.down = false; u.hp = 0; }
+        });
+        var rCorpse = spawnCorpse(state, {
+          roleKey: "robber",
+          name: faceless.name,
+          role: "уличный налётчик",
+          money: loot,
+          items: faceless.weapon ? [faceless.weapon] : []
+        });
+        faceless.money = 0;
+        var gHeat = Bow.steal.addHeat(state, "org:guard", 12);
+        f.heatTotal += gHeat;
+        if (Bow.guard && Bow.guard.schedule) { Bow.guard.schedule(state); }
+        log(f, "narr", "Вы добиваете налётчика на снегу. Тело остаётся лежать у дороги.");
+        finish(state, "killed", { heat: gHeat, corpseIds: [rCorpse.id] });
+        Bow.journal.add(state, "Вы добили грабителя (" + faceless.name + "). Тело осталось на земле.", "crime");
+        return { ok: true, message: faceless.name + " мёртв. Тело можно обыскать.", corpseId: rCorpse.id };
+      }
+      return { ok: false, message: "Так нельзя." };
+    }
+
+    /* 2. Разгромленный патруль стражи (если игрок победил всех троих). */
+    if (!npc && f.mode === "guard") {
+      if (choice === "spare") {
+        var spHeat = Bow.steal.addHeat(state, "org:guard", 15);
+        f.heatTotal += spHeat;
+        log(f, "narr", "Поверженные стражники остаются лежать в снегу.");
+        finish(state, "win", { heat: spHeat });
+        Bow.journal.add(state, "Вы сбили патруль стражи с ног и пощадили их.", "crime");
+        return { ok: true, message: "Стражники повержены, но живы." };
+      }
+      if (choice === "rob") {
+        var gTake = 18 + Math.round(rollOf(rng) * 14);
+        player.money += gTake;
+        var rbHeat = Bow.steal.addHeat(state, "org:guard", 25);
+        f.heatTotal += rbHeat;
+        log(f, "narr", "Вы срезаете с поясов стражников " + gTake + " м.");
+        finish(state, "win", { heat: rbHeat });
+        Bow.journal.add(state, "Вы обобрали поверженный патруль стражи: +" + gTake + " м.", "crime");
+        return { ok: true, message: "Снято с поясов стражи: " + gTake + " м." };
+      }
+      if (choice === "kill") {
+        (f.units || []).forEach(function (u) {
+          if (u.side === "enemy") { u.dead = true; u.down = false; u.hp = 0; }
+        });
+        var gCorpseIds = (f.enemies || []).map(function (ge, idx) {
+          var gc = spawnCorpse(state, {
+            roleKey: "guard",
+            name: ge.name || ("Стражник " + (idx + 1)),
+            role: "стражник Брода",
+            money: 7 + idx * 3,
+            items: [ge.weapon, ge.armor]
+          });
+          return gc.id;
+        });
+        var klHeat = Bow.steal.addHeat(state, "org:guard", 45);
+        f.heatTotal += klHeat;
+        log(f, "narr", "Стражники добиты на снегу. За такое в Хладных Ветрах вешают без суда.");
+        finish(state, "killed", { heat: klHeat, corpseIds: gCorpseIds });
+        Bow.journal.add(state, "Вы перебили патруль стражи Брода. Тела остались лежать на снегу.", "crime");
+        return { ok: true, message: "Патруль стражи мёртв. Тела остались на месте боя.", corpseIds: gCorpseIds };
       }
       return { ok: false, message: "Так нельзя." };
     }
@@ -1260,6 +1341,7 @@
     var heat = 0;
     var rep = 0;
     var message = "";
+    var createdCorpses = [];
 
     if (choice === "spare") {
       heat = Bow.steal.addHeat(state, npc.org, R.spareHeat);
@@ -1293,11 +1375,24 @@
     } else if (choice === "kill") {
       npc.alive = false;
       npc.needs.health = 0;
-      /* Фишка на поле и в отчёте должна стать черепом, а не просто
-         исчезнуть: игрок только что видел, кого убил. */
+      /* Фишка на поле и в отчёте становится мёртвым телом на снегу. */
       (f.units || []).forEach(function (u) {
         if (u.side === "enemy" && u.refId === npc.id) { u.dead = true; u.down = false; u.hp = 0; }
       });
+      /* Всё, что было у убитого (кошель, оружие и одёжка/броня), остаётся на теле для обыска. */
+      var npcCorpse = spawnCorpse(state, {
+        personId: npc.id,
+        roleKey: npc.key,
+        name: npc.name,
+        role: npc.role,
+        money: npc.money,
+        items: [npc.weapon, npc.armor]
+      });
+      npc.money = 0;
+      npc.weapon = null;
+      npc.armor = null;
+      createdCorpses.push(npcCorpse.id);
+
       heat = Bow.steal.addHeat(state, npc.org, R.killHeat);
       rep = Bow.work.addReputation(state, npc.org, R.killRep);
       if (state.orgs[npc.org]) {
@@ -1305,8 +1400,9 @@
       }
       /* Убийство — прямой вызов страже. */
       Bow.steal.addHeat(state, "org:guard", Math.round(R.killHeat * 0.8));
-      log(f, "narr", "Вы делаете то, после чего в Броде не отмываются. " + npc.name + " больше не встанет.");
-      message = "Убийство: " + npc.name + ". Об этом узнают.";
+      if (Bow.guard && Bow.guard.schedule) { Bow.guard.schedule(state); }
+      log(f, "narr", "Вы делаете то, после чего в Броде не отмываются. " + npc.name + " остаётся лежать на земле.");
+      message = "Убийство: " + npc.name + ". Тело осталось лежать на земле.";
     } else {
       return { ok: false, message: "Так нельзя." };
     }
@@ -1315,8 +1411,19 @@
     f.repTotal += rep;
 
     Bow.journal.add(state, message, "crime");
-    finish(state, choice === "kill" ? "killed" : "win", { heat: heat, rep: rep, message: message });
-    return { ok: true, message: message, heat: heat, reputation: rep };
+    finish(state, choice === "kill" ? "killed" : "win", {
+      heat: heat,
+      rep: rep,
+      message: message,
+      corpseIds: createdCorpses
+    });
+    return {
+      ok: true,
+      message: message,
+      heat: heat,
+      reputation: rep,
+      corpseId: createdCorpses[0] || null
+    };
   }
 
   /* ---------- Итог боя ---------- */
@@ -1375,10 +1482,23 @@
       rep: f.repTotal || 0,
       note: note,
       lost: extraData.lost || 0,
+      corpseIds: (extraData.corpseIds || []).slice(),
+      aim: [],
+      target: null,
       units: (f.units || []).map(function (u) {
         return {
-          key: u.key, name: u.name, side: u.side, col: u.col, row: u.row,
-          hp: Math.round(u.hp), down: !!u.down, dead: !!u.dead
+          key: u.key,
+          refId: u.refId || null,
+          name: u.name,
+          side: u.side,
+          col: u.col,
+          row: u.row,
+          hp: Math.round(u.hp),
+          down: !!u.down,
+          dead: !!u.dead,
+          disarmed: !!u.disarmed,
+          weapon: u.weapon || null,
+          stance: u.stance || null
         };
       }),
       log: f.log.slice(-14)

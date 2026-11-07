@@ -18,6 +18,7 @@
       month: state.time.month,
       year: state.time.year,
       hour: state.time.hour,
+      minute: state.time.minute || 0,
       kind: kind || "info",
       text: text
     };
@@ -36,6 +37,7 @@
       month: state.time.month,
       year: state.time.year,
       hour: state.time.hour,
+      minute: state.time.minute || 0,
       kind: kind || "info",
       text: text,
       meta: meta || null

@@ -356,8 +356,8 @@
           '<button class="bow-trade-btn" data-act="inspect" data-person="' + esc(p.id) + '">Осмотреть</button>' +
           '<button class="bow-trade-btn bow-fight-btn" data-act="fight-open" data-person="' + esc(p.id) + '">' +
             (p.attitude >= Bow.data.fightRules.sparMinAttitude ? 'Бой' : 'Напасть') + '</button>' +
-          stealBtn +
         '</div>' +
+        stealBtn +
       '</div>';
     }).join("");
   }
@@ -486,8 +486,10 @@
 
     box.innerHTML = Bow.journal.recent(state, 16).map(function (e) {
       var hh = (e.hour < 10 ? "0" : "") + e.hour;
+      var minVal = typeof e.minute === "number" ? e.minute : 0;
+      var mm = (minVal < 10 ? "0" : "") + minVal;
       return '<div class="bow-jrow bow-kind-' + esc(e.kind) + '">' +
-        '<span class="bow-jtime">' + hh + ':00</span>' +
+        '<span class="bow-jtime">' + hh + ':' + mm + '</span>' +
         '<span class="bow-jtext">' + esc(e.text) + '</span>' +
       '</div>';
     }).join("");
@@ -496,10 +498,6 @@
   /* ---------- Сцена ----------
      Здесь только описание места и атмосфера. Бытовые зарисовки
      НЕ попадают в журнал: журнал — это история, а не фон. */
-  /* Завеса перехода. Живёт в каркасе, а не в пассаже: иначе при
-     смене места она бы исчезала вместе со старой разметкой.
-     Только прозрачность и никакого сдвига — так её видно и на
-     телефоне, и при включённом «уменьшить движение». */
   function runVeil() {
     var app = $("bow-app");
     if (!app) { return; }
@@ -515,14 +513,16 @@
     veil.classList.add("bow-veil-run");
   }
 
-  /* Выбор объекта или человека прямо внутри Главного окна. */
+  /* Выбор объекта или человека прямо внутри Главного окна и масштаб Карты. */
   var stageSelection = null;
   var activeTab = "jobs";
+  var activeMapMode = "local";
 
   function setStageSelection(sel) {
     if (!sel) { stageSelection = null; return null; }
     if (stageSelection && stageSelection.kind === sel.kind &&
-        (sel.kind !== "person" || stageSelection.personId === sel.personId)) {
+        (sel.kind !== "person" || stageSelection.personId === sel.personId) &&
+        (sel.kind !== "corpse" || stageSelection.corpseId === sel.corpseId)) {
       stageSelection = null;
       return null;
     }
@@ -530,8 +530,19 @@
     return stageSelection;
   }
 
+  function setMapMode(mode) {
+    if (mode === "local" || mode === "realm") { activeMapMode = mode; }
+    return activeMapMode;
+  }
+
+  function renderMapPane(state) {
+    var box = $("bow-map");
+    if (!box || !Bow.stage || !Bow.stage.renderMap) { return; }
+    box.innerHTML = Bow.stage.renderMap(state, activeMapMode);
+  }
+
   function setTab(key) {
-    if (["jobs", "people", "trade", "desc"].indexOf(key) === -1) { return activeTab; }
+    if (["jobs", "map", "trade", "desc"].indexOf(key) === -1) { return activeTab; }
     activeTab = key;
     var tabs = document.querySelectorAll('.bow-tabs [data-act="tab"]');
     for (var i = 0; i < tabs.length; i++) {
@@ -678,6 +689,94 @@
         '</div>' +
       '</div>';
       pop.classList.add("bow-stage-pop-open");
+      return;
+    }
+
+    if (sel.kind === "corpse") {
+      var corpse = null;
+      var cList = state.corpses || [];
+      for (var ci = 0; ci < cList.length; ci++) {
+        if (cList[ci] && cList[ci].id === sel.corpseId && cList[ci].location === state.player.location) {
+          corpse = cList[ci];
+          break;
+        }
+      }
+      if (!corpse) {
+        stageSelection = null;
+        pop.innerHTML = "";
+        pop.classList.remove("bow-stage-pop-open", "bow-stage-pop-left");
+        return;
+      }
+      var lootLines = [];
+      if ((corpse.money || 0) > 0) {
+        lootLines.push('<div class="bow-stage-mini-row"><span class="bow-stage-mini-name">Кошель</span><b class="bow-gold-txt">' + Math.round(corpse.money) + ' м.</b><span></span></div>');
+      }
+      (corpse.items || []).forEach(function (it) {
+        if (!it || !it.itemId) { return; }
+        var def = Bow.economy.findItemDef(it.itemId);
+        lootLines.push('<div class="bow-stage-mini-row"><span class="bow-stage-mini-name">' + esc(def ? def.name : it.itemId) + '</span><span class="bow-dim">' + (it.qty > 1 ? "×" + it.qty : "снаряжение") + '</span><span></span></div>');
+      });
+      var canLoot = !corpse.looted && lootLines.length > 0;
+
+      pop.innerHTML = '<div class="bow-stage-card">' +
+        '<div class="bow-stage-card-head">' +
+          '<div class="bow-stage-card-title"><b>☠ ' + esc(corpse.name) + '</b><span class="bow-dim">· ' + esc(corpse.role || "труп") + '</span></div>' +
+          closeBtn +
+        '</div>' +
+        (canLoot
+          ? '<div class="bow-stage-mini-list">' + lootLines.join("") + '</div>' +
+            '<div class="bow-person-acts" style="margin-top:8px">' +
+              '<button type="button" class="bow-trade-btn bow-fight-btn" data-act="loot-corpse" data-corpse="' + esc(corpse.id) + '">Обыскать и забрать всё</button>' +
+            '</div>'
+          : '<div class="bow-empty">Тело уже обыскано — карманы пусты.</div>') +
+      '</div>';
+      pop.classList.add("bow-stage-pop-open");
+      return;
+    }
+
+    if (sel.kind === "guard") {
+      if (!state.guard || !state.guard.arrived) {
+        stageSelection = null;
+        pop.innerHTML = "";
+        pop.classList.remove("bow-stage-pop-open", "bow-stage-pop-left");
+        return;
+      }
+      var gCost = Bow.guard.bribeCost(state);
+      var gCanPay = state.player.money >= gCost;
+      var gFlee = Math.round(Bow.guard.fleeChance(state) * 100);
+      pop.innerHTML = '<div class="bow-stage-card">' +
+        '<div class="bow-stage-card-head"><div class="bow-stage-card-title"><b>⛨ Стража Брода</b><span class="bow-dim">· их ' + state.guard.squad.length + '</span></div>' + closeBtn + '</div>' +
+        '<div class="bow-stage-card-meta">Десятник с топором преграждает дорогу. За вами числится розыск ' + Math.round(Bow.steal.heatOf(state, "org:guard")) + '.</div>' +
+        '<div class="bow-person-acts bow-self-acts">' +
+          '<button type="button" class="bow-trade-btn" data-act="guard-surrender">Сдаться</button>' +
+          '<button type="button" class="bow-trade-btn" data-act="guard-bribe"' + (gCanPay ? "" : " disabled") + '>Откуп · ' + gCost + ' м.</button>' +
+          '<button type="button" class="bow-trade-btn" data-act="guard-flee">Бежать · ' + gFlee + '%</button>' +
+          '<button type="button" class="bow-trade-btn bow-fight-btn" data-act="guard-fight">Драться</button>' +
+        '</div>' +
+      '</div>';
+      pop.classList.add("bow-stage-pop-open");
+      return;
+    }
+
+    if (sel.kind === "robber") {
+      if (!state.encounter || !state.encounter.robber) {
+        stageSelection = null;
+        pop.innerHTML = "";
+        pop.classList.remove("bow-stage-pop-open", "bow-stage-pop-left");
+        return;
+      }
+      var r = state.encounter.robber;
+      pop.innerHTML = '<div class="bow-stage-card">' +
+        '<div class="bow-stage-card-head"><div class="bow-stage-card-title"><b>⚔ ' + esc(r.name) + '</b><span class="bow-dim">· требует ' + r.demand + ' м.</span></div>' + closeBtn + '</div>' +
+        '<div class="bow-stage-card-meta">Нож у бедра. Ждёт вашего решения.</div>' +
+        '<div class="bow-person-acts bow-self-acts">' +
+          '<button type="button" class="bow-trade-btn" data-act="street-pay">Отдать ' + Math.min(state.player.money, r.demand) + ' м.</button>' +
+          '<button type="button" class="bow-trade-btn" data-act="street-scare">Припугнуть · ' + Math.round(Bow.street.scareChance(state) * 100) + '%</button>' +
+          '<button type="button" class="bow-trade-btn" data-act="street-flee">Бежать · ' + Math.round(Bow.street.fleeChance(state) * 100) + '%</button>' +
+          '<button type="button" class="bow-trade-btn bow-fight-btn" data-act="street-fight">Драться</button>' +
+        '</div>' +
+      '</div>';
+      pop.classList.add("bow-stage-pop-open");
     }
   }
 
@@ -745,18 +844,28 @@
       }
     }
 
-    /* Подсветка текущего места на кнопках перехода и счётчики на вкладках. */
-    var moveBtns = document.querySelectorAll('.bow-places-row [data-act="move"][data-loc], .bow-actions [data-act="move"][data-loc]');
+    /* Подсветка текущего места и подписи точного времени пути на кнопках перехода (0.0.7.3). */
+    var moveBtns = document.querySelectorAll('.bow-places-row [data-act="move"][data-loc]');
     for (var i = 0; i < moveBtns.length; i++) {
-      var here = moveBtns[i].getAttribute("data-loc") === state.player.location;
-      moveBtns[i].classList.toggle("bow-btn-here", here);
-      if (here) { moveBtns[i].setAttribute("aria-current", "location"); }
-      else { moveBtns[i].removeAttribute("aria-current"); }
+      var btn = moveBtns[i];
+      var locId = btn.getAttribute("data-loc");
+      var baseLabel = btn.getAttribute("data-label") || (Bow.data.locations[locId] ? Bow.data.locations[locId].name : locId);
+      var here = locId === state.player.location;
+      btn.classList.toggle("bow-btn-here", here);
+      if (here) {
+        btn.setAttribute("aria-current", "location");
+        btn.innerHTML = '<span>' + esc(baseLabel) + '</span><i class="bow-move-dur">здесь</i>';
+      } else {
+        btn.removeAttribute("aria-current");
+        var mins = Bow.actions.travelMinutes ? Bow.actions.travelMinutes(state, locId) : 10;
+        var dur = Bow.actions.formatDuration ? Bow.actions.formatDuration(mins) : (mins + " мин.");
+        btn.innerHTML = '<span>' + esc(baseLabel) + '</span><i class="bow-move-dur">' + esc(dur) + '</i>';
+      }
     }
 
     var tabCounts = {
       jobs: Bow.work.listAt(state).length,
-      people: Bow.actions.peopleAt(state, state.player.location).length,
+      map: Object.keys(Bow.data.locations || {}).length,
       trade: ((loc && loc.trades) ? loc.trades.length : 0)
     };
     Object.keys(tabCounts).forEach(function (key) {
@@ -765,6 +874,7 @@
     });
 
     renderStage(state);
+    renderMapPane(state);
 
     var res = $("bow-last");
     if (res) { res.textContent = lastMessage; }
@@ -1088,7 +1198,8 @@
     var page = $("bow-fight-page");
     var f = state.fight;
 
-    /* Отчёт после боя — на месте страницы. */
+    /* Итог боя — остаётся открытым прямо на поле боя (с лежащим врагом на земле),
+       пока игрок сам не нажмёт кнопку выхода (0.0.7.3). */
     if (!f) {
       lastFightPos = {};
       var last = state.flags.lastFight;
@@ -1096,18 +1207,70 @@
       if (!page) { return; }
       if (!last) { page.innerHTML = ""; page.classList.remove("bow-page-open"); return; }
 
-      page.innerHTML = '<div class="bow-fight-page-inner">' +
-        '<div class="bow-fight-head"><b>' + esc(last.name) + '</b>' +
-          '<span>' + esc(FIGHT_LABEL[last.outcome] || last.outcome) + '</span></div>' +
+      var hasArena = Array.isArray(last.units) && last.units.length > 0;
+      var lastHead = '<div class="bow-fight-head"><b>' + esc(last.name) + '</b>' +
+        '<span>' + esc(FIGHT_LABEL[last.outcome] || last.outcome) + '</span></div>';
+
+      var lootBtns = [];
+      (last.corpseIds || []).forEach(function (cid) {
+        var found = (state.corpses || []).filter(function (c) { return c && c.id === cid; })[0];
+        if (!found || found.looted) { return; }
+        var parts = [];
+        if ((found.money || 0) > 0) { parts.push(Math.round(found.money) + " м."); }
+        (found.items || []).forEach(function (it) {
+          var def = it && Bow.economy.findItemDef(it.itemId);
+          if (def) { parts.push(def.name.toLowerCase()); }
+        });
+        if (parts.length > 0) {
+          lootBtns.push(
+            '<button class="bow-btn bow-btn-sm bow-fight-danger" data-act="loot-corpse" data-corpse="' + esc(found.id) + '">' +
+              'Обыскать тело: ' + esc(found.name) + ' (' + esc(parts.join(", ")) + ')' +
+            '</button>'
+          );
+        }
+      });
+
+      var controlsAfter =
         (last.note ? '<div class="bow-fight-note">' + esc(last.note) + '</div>' : "") +
         (last.heat ? '<div class="bow-fight-note">розыск +' + last.heat + '</div>' : "") +
+        (last.outcome === "killed"
+          ? '<div class="bow-fight-note">Тело остаётся лежать на земле — его можно обыскать сейчас или позже на локации.</div>'
+          : "") +
         '<div class="bow-fight-log">' + (last.log || []).map(function (l) {
           return '<div class="bow-fight-line bow-fight-' + esc(l.who) + '">' + esc(l.text) + '</div>';
         }).join("") + '</div>' +
         '<div class="bow-fight-acts">' +
-          '<button class="bow-btn bow-btn-sm" data-act="fight-close">Вернуться</button>' +
-        '</div>' +
-      '</div>';
+          lootBtns.join("") +
+          '<button class="bow-btn bow-btn-sm" data-act="fight-close">Покинуть место боя · вернуться</button>' +
+        '</div>';
+
+      if (hasArena) {
+        var lastFld = fightField(last, state);
+        var palLast = Bow.stage ? Bow.stage.skyOf(state) : { phase: "day", weatherKind: "clear" };
+        var lastBKey = state.player.location + "|" + palLast.phase + "|" + palLast.weatherKind;
+        var shellLast = page.querySelector(".bow-fight-live-shell");
+        if (!shellLast || shellLast.getAttribute("data-bg-key") !== lastBKey) {
+          page.innerHTML =
+            '<div class="bow-fight-page-inner bow-fight-live-shell" data-bg-key="' + esc(lastBKey) + '">' +
+              '<div class="bow-fight-head-slot">' + lastHead + '</div>' +
+              '<div class="bow-arena-wrap">' +
+                '<div class="bow-arena-scene">' +
+                  '<div class="bow-arena-backdrop">' + lastFld.bgHtml + '</div>' +
+                  '<div class="bow-arena-slot">' + lastFld.arenaHtml + '</div>' +
+                '</div>' +
+                '<div class="bow-roster">' + lastFld.rosterHtml + '</div>' +
+              '</div>' +
+              '<div class="bow-fight-controls-slot">' + controlsAfter + '</div>' +
+            '</div>';
+        } else {
+          shellLast.querySelector(".bow-fight-head-slot").innerHTML = lastHead;
+          shellLast.querySelector(".bow-arena-slot").innerHTML = lastFld.arenaHtml;
+          shellLast.querySelector(".bow-roster").innerHTML = lastFld.rosterHtml;
+          shellLast.querySelector(".bow-fight-controls-slot").innerHTML = controlsAfter;
+        }
+      } else {
+        page.innerHTML = '<div class="bow-fight-page-inner">' + lastHead + controlsAfter + '</div>';
+      }
       page.classList.add("bow-page-open");
       return;
     }
@@ -1231,19 +1394,10 @@
         var foePerson = foeUnit ? (foeUnit.refId ? state.people[foeUnit.refId] : foeUnit) : null;
         var fleePct = Math.round(Bow.fight.fleeChance(state) * 100);
 
-        /* Полоса управления ходом схватки (как в Kenshi: живой бой + тактическая пауза). */
-        body += '<div class="bow-fight-clock">' +
-          '<div class="bow-fight-speeds" role="group" aria-label="Скорость боя">' +
-            '<button class="bow-clock-btn' + (speed === "paused" ? " bow-clock-on" : "") + '" data-act="fight-order" data-kind="speed" data-val="paused" title="Тактическая пауза (Пробел)">❙❙ Пауза</button>' +
-            '<button class="bow-clock-btn' + (speed === "1x" ? " bow-clock-on" : "") + '" data-act="fight-order" data-kind="speed" data-val="1x" title="Живой ход боя">▶ 1x</button>' +
-            '<button class="bow-clock-btn' + (speed === "2x" ? " bow-clock-on" : "") + '" data-act="fight-order" data-kind="speed" data-val="2x" title="Ускоренный ход боя">▶▶ 2x</button>' +
-            '<button class="bow-btn bow-btn-sm bow-step-btn" data-act="fight-step" title="Сделать ровно один обмен ударами">⏭ Шаг</button>' +
-          '</div>' +
-          '<span class="bow-fight-status">' +
-            (speed === "paused"
-              ? "Пауза · нажмите указку удара или «Шаг», либо пустите ▶"
-              : "Живой бой · приказы меняются прямо на ходу (Пробел — пауза)") +
-          '</span>' +
+        /* Чисто пошаговый бой (0.0.7.3): время остановлено, без авто-скорости. */
+        body += '<div class="bow-fight-clock bow-fight-turnbar">' +
+          '<span class="bow-fight-status">Пошаговый бой · мировое время стоит · выберите удар, позицию или нажмите «Сделать ход»</span>' +
+          '<button class="bow-btn bow-btn-sm bow-step-btn" data-act="fight-step" title="Выполнить ровно один ход по выбранным приказам">⏭ Сделать ход</button>' +
         '</div>';
 
         var aimOrder = ["head", "body", "legs", "arms"];
@@ -1458,7 +1612,10 @@
     renderScene(state, animate && (sceneChanged || (options && options.forceFade)));
     renderDialog(state);
     var app2 = $("bow-app");
-    if (app2) { app2.classList.toggle("bow-in-fight", !!(state.fight && state.fight.phase !== "choose")); }
+    if (app2) {
+      app2.classList.toggle("bow-in-fight",
+        !!((state.fight && state.fight.phase !== "choose") || (state.flags && state.flags.lastFight)));
+    }
 
     renderFight(state);
     renderGuard(state);
@@ -1571,14 +1728,14 @@
   /* ---------- Настройки игры и Меню (0.0.7.1) ---------- */
   var SETTINGS_KEY = "bow-settings-v1";
   var DEFAULT_SETTINGS = {
-    fightStart: "1x",
+    fightStart: "paused",
     font: "normal",
     motion: "full"
   };
 
   function getSettings() {
     var out = {
-      fightStart: DEFAULT_SETTINGS.fightStart,
+      fightStart: "paused",
       font: DEFAULT_SETTINGS.font,
       motion: DEFAULT_SETTINGS.motion
     };
@@ -1586,7 +1743,6 @@
       var raw = global.localStorage && global.localStorage.getItem(SETTINGS_KEY);
       if (raw) {
         var parsed = JSON.parse(raw);
-        if (parsed && ["paused", "1x", "2x"].indexOf(parsed.fightStart) !== -1) { out.fightStart = parsed.fightStart; }
         if (parsed && ["normal", "large"].indexOf(parsed.font) !== -1) { out.font = parsed.font; }
         if (parsed && ["full", "calm"].indexOf(parsed.motion) !== -1) { out.motion = parsed.motion; }
       }
@@ -1606,8 +1762,7 @@
 
   function setSetting(key, val) {
     var cur = getSettings();
-    if (key === "fightStart" && ["paused", "1x", "2x"].indexOf(val) !== -1) { cur.fightStart = val; }
-    else if (key === "font" && ["normal", "large"].indexOf(val) !== -1) { cur.font = val; }
+    if (key === "font" && ["normal", "large"].indexOf(val) !== -1) { cur.font = val; }
     else if (key === "motion" && ["full", "calm"].indexOf(val) !== -1) { cur.motion = val; }
     else { return { ok: false, message: "Неизвестная настройка." }; }
 
@@ -1625,11 +1780,9 @@
     var s = getSettings();
     box.innerHTML =
       '<div class="bow-setting-row">' +
-        '<div class="bow-setting-label"><b>Начало боя</b><span class="bow-dim">В каком темпе открывается схватка</span></div>' +
+        '<div class="bow-setting-label"><b>Режим схватки</b><span class="bow-dim">Пошаговый бой (мировое время стоит)</span></div>' +
         '<div class="bow-setting-opts">' +
-          '<button class="bow-btn bow-btn-sm' + (s.fightStart === "1x" ? " bow-order-on" : "") + '" data-act="setting" data-key="fightStart" data-val="1x">Живой 1x</button>' +
-          '<button class="bow-btn bow-btn-sm' + (s.fightStart === "2x" ? " bow-order-on" : "") + '" data-act="setting" data-key="fightStart" data-val="2x">Быстро 2x</button>' +
-          '<button class="bow-btn bow-btn-sm' + (s.fightStart === "paused" ? " bow-order-on" : "") + '" data-act="setting" data-key="fightStart" data-val="paused">На паузе</button>' +
+          '<span class="bow-equip-tag">Пошагово</span>' +
         '</div>' +
       '</div>' +
       '<div class="bow-setting-row">' +
@@ -1726,6 +1879,8 @@
     isDrawerOpen: isDrawerOpen,
     scrollDrawerTo: scrollDrawerTo,
     setTab: setTab,
+    setMapMode: setMapMode,
+    renderMapPane: renderMapPane,
     setStageSelection: setStageSelection,
     getSettings: getSettings,
     setSetting: setSetting,

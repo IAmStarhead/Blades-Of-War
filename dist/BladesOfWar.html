@@ -1021,46 +1021,46 @@ body {
 
 .bow-saves { display: flex; flex-direction: column; }
 
-/* --- Люди рядом --- */
-.bow-people { display: flex; flex-direction: column; gap: 5px; }
+/* --- Карточка жителя (исправлена вёрстка 0.0.7.3: на всю ширину без сжатия по центру) --- */
+.bow-people,
+.bow-all-people {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
 
 .bow-person {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 2px 10px;
-  align-items: center;
-  padding: 8px 9px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  width: 100%;
+  padding: 10px 12px;
   background: var(--bow-surface-2);
   border: 1px solid var(--bow-line-soft);
   border-left: 2px solid var(--bow-steel);
   border-radius: var(--bow-radius);
-  cursor: pointer;
+  cursor: default;
   box-shadow: var(--bow-shadow-sm);
-  /* Переход обязателен: без него подъём карточки при наведении
-     происходит рывком и выглядит как дрожание. */
-  transition: border-color 0.15s, background 0.15s, transform 0.12s, box-shadow 0.15s;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
 }
 
 .bow-person:hover {
   background: var(--bow-surface-3);
-  transform: translateY(-1px);
   box-shadow: var(--bow-shadow-md);
   border-color: var(--bow-line);
   border-left-color: var(--bow-silver);
 }
 
-.bow-person-name { font-size: 0.86rem; color: var(--bow-text); }
+.bow-person-name { font-size: 0.88rem; font-weight: 600; color: var(--bow-text); }
 
 .bow-person .bow-dim {
-  grid-column: 1;
   font-family: var(--bow-mono);
-  font-size: 0.66rem;
+  font-size: 0.68rem;
   color: var(--bow-faint);
 }
 
 .bow-tone {
-  grid-row: 1 / span 2;
-  grid-column: 2;
   font-family: var(--bow-mono);
   font-size: 0.74rem;
 }
@@ -1069,27 +1069,28 @@ body {
 .bow-neutral { color: var(--bow-dim); }
 .bow-cold { color: var(--bow-cold); }
 
-/* --- Карточка человека --- */
-.bow-person {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
 .bow-person-head {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
   gap: 8px;
+  width: 100%;
 }
 
 .bow-person-acts {
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
-  margin-top: 4px;
+  margin-top: 2px;
+  width: 100%;
 }
 
-.bow-person-acts .bow-trade-btn { flex: 1; }
+.bow-person-acts .bow-trade-btn {
+  flex: 1 1 92px;
+  min-height: 34px;
+  text-align: center;
+  justify-content: center;
+}
 
 /* --- Окно персонажа --- */
 .bow-sheet {
@@ -3917,6 +3918,296 @@ html.bow-motion-calm .bow-fog-band {
     right: 10px;
     width: auto;
   }
+}
+
+/* ============================================================
+   КРУГ 15 (0.0.7.3): ПОДПИСИ ВРЕМЕНИ ПУТИ, ТРУПЫ/СТРАЖА НА СЦЕНЕ,
+   ЧИСТО ПОШАГОВАЯ ПОЛОСА БОЯ И ИНТЕРАКТИВНАЯ КАРТА ХЛАДНЫХ ВЕТРОВ
+   ============================================================ */
+.bow-places-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bow-map-open-btn {
+  background: var(--bow-surface-2);
+  border: 1px solid var(--bow-line);
+  border-radius: var(--bow-radius);
+  color: var(--bow-silver);
+  font-family: var(--bow-mono);
+  font-size: 0.68rem;
+  padding: 4px 9px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color 0.14s, background 0.14s, color 0.14s;
+}
+
+.bow-map-open-btn:hover {
+  background: var(--bow-surface-3);
+  border-color: var(--bow-silver);
+  color: var(--bow-text);
+}
+
+.bow-places-row .bow-btn {
+  display: inline-flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 6px;
+}
+
+.bow-move-dur {
+  font-style: normal;
+  font-family: var(--bow-mono);
+  font-size: 0.64rem;
+  color: var(--bow-dim);
+  opacity: 0.92;
+}
+
+.bow-btn-here .bow-move-dur {
+  color: var(--bow-silver);
+}
+
+/* Фигурки стражи, грабителей и лежащих тел на Главном окне (#bow-stage) */
+.bow-actor-tag-threat {
+  border-color: rgba(204, 107, 118, 0.72) !important;
+  background: rgba(38, 17, 22, 0.92) !important;
+}
+
+.bow-actor-tag-threat b {
+  color: #efb2b9 !important;
+}
+
+.bow-actor-corpse .bow-fig-svg {
+  width: 68px;
+  height: 42px;
+}
+
+.bow-actor-tag-corpse {
+  border-color: rgba(154, 167, 180, 0.45) !important;
+  background: rgba(16, 20, 26, 0.9) !important;
+}
+
+.bow-actor-corpse-loot .bow-actor-tag-corpse {
+  border-color: var(--bow-silver) !important;
+}
+
+.bow-actor-corpse-loot .bow-actor-tag-corpse i {
+  color: var(--bow-silver);
+}
+
+/* Пошаговая полоса боя */
+.bow-fight-turnbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.bow-fight-turnbar .bow-step-btn {
+  width: auto;
+  display: inline-flex;
+  align-items: center;
+  margin-bottom: 0;
+  padding: 6px 12px;
+  min-height: 34px;
+}
+
+/* Двухуровневая интерактивная карта (Студёный Брод + Хладные Ветра) */
+.bow-map-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.bow-map-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.bow-map-switch {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.bow-map-switch .bow-btn-sm {
+  width: auto;
+  display: inline-flex;
+  align-items: center;
+  margin-bottom: 0;
+  min-height: 32px;
+  padding: 5px 11px;
+}
+
+.bow-map-sub {
+  font-family: var(--bow-mono);
+  font-size: 0.68rem;
+  color: var(--bow-dim);
+}
+
+.bow-map-canvas {
+  position: relative;
+  width: 100%;
+  border: 1px solid var(--bow-line);
+  border-radius: var(--bow-radius);
+  overflow: hidden;
+  background: #101820;
+  box-shadow: var(--bow-shadow-sm);
+}
+
+.bow-map-local {
+  height: 310px;
+}
+
+.bow-map-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.bow-map-realm .bow-map-svg {
+  height: auto;
+  max-height: 340px;
+}
+
+.bow-map-pins {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.bow-map-pin {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(15, 22, 30, 0.92);
+  border: 1px solid var(--bow-line);
+  border-radius: 6px;
+  padding: 4px 8px;
+  color: var(--bow-text);
+  cursor: pointer;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.48);
+  transition: border-color 0.14s, background 0.14s, transform 0.14s;
+}
+
+.bow-map-pin:hover {
+  border-color: var(--bow-silver);
+  background: rgba(24, 34, 46, 0.96);
+  transform: translate(-50%, calc(-50% - 1px));
+}
+
+.bow-map-pin-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--bow-steel);
+  border: 1px solid var(--bow-silver);
+  flex-shrink: 0;
+}
+
+.bow-map-pin-here {
+  border-color: var(--bow-silver);
+  background: rgba(31, 45, 60, 0.96);
+  z-index: 3;
+}
+
+.bow-map-pin-here .bow-map-pin-dot {
+  background: #8fb3d9;
+  box-shadow: 0 0 8px rgba(143, 179, 217, 0.85);
+}
+
+.bow-map-pin-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1.2;
+  text-align: left;
+}
+
+.bow-map-pin-card b {
+  font-size: 0.74rem;
+  color: var(--bow-text);
+  white-space: nowrap;
+}
+
+.bow-map-pin-card i {
+  font-style: normal;
+  font-family: var(--bow-mono);
+  font-size: 0.62rem;
+  color: var(--bow-dim);
+  white-space: nowrap;
+}
+
+.bow-map-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.bow-map-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 7px 10px;
+  background: var(--bow-surface-2);
+  border: 1px solid var(--bow-line-soft);
+  border-radius: var(--bow-radius);
+}
+
+.bow-map-row-here {
+  border-left: 2px solid var(--bow-silver);
+}
+
+.bow-map-row-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.bow-map-row-main b {
+  font-size: 0.82rem;
+  color: var(--bow-text);
+}
+
+.bow-map-row-go {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.bow-map-time {
+  font-family: var(--bow-mono);
+  font-size: 0.68rem;
+  color: var(--bow-dim);
+}
+
+.bow-map-lore {
+  padding: 10px 12px;
+  background: var(--bow-surface-2);
+  border: 1px solid var(--bow-line-soft);
+  border-left: 2px solid var(--bow-silver);
+  border-radius: var(--bow-radius);
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--bow-text);
+}
+
+@media (max-width: 720px) {
+  .bow-map-local { height: 270px; }
+  .bow-map-pin-card b { font-size: 0.68rem; }
+  .bow-map-row { flex-direction: column; align-items: stretch; }
+  .bow-map-row-go { justify-content: space-between; }
 }</style>
 	<script role="script" id="twine-user-script" type="text/twine-javascript">/* ============================================================
    BOW CORE — базовые утилиты, ГПСЧ, шина событий.
@@ -4028,11 +4319,12 @@ html.bow-motion-calm .bow-fog-band {
   Bow.data = {
 
     meta: {
-      version: "0.0.7.2",
+      version: "0.0.7.3",
       title: "Blades Of War",
       worldName: "Эдем · Королевство Хладных Ветров",
-      /* ВНИМАНИЕ: поселение ниже — тестовое, придумано разработчиком
-         для прототипа. Не является каноном. Меняется в одном месте. */
+      regionShort: "Хладные Ветра",
+      /* Студёный Брод — небольшое северное поселение у переправы на краю
+         матери-Тайги в землях Хладных Ветров (НЕ столица королевства). */
       settlementName: "Студёный Брод",
       startLocation: "square"
     },
@@ -4055,10 +4347,10 @@ html.bow-motion-calm .bow-fog-band {
         id: "org:coldwind",
         name: "Королевство Хладных Ветров",
         type: "kingdom",
-        short: "Хладные Ветры",
-        ruler: "Норвинг IV",
+        short: "Хладные Ветра",
+        ruler: "вождь Норвинг IV",
         seat: "Стужа-на-Тайге",
-        desc: "Северное королевство среди стужи и тайги. Здесь не терпят слабость, интриги и коварство.",
+        desc: "Крайний север Эдемских земель среди стужи и матери-Тайги. Хладцы не терпят слабости, интриг и коварства.",
         wealth: 62,
         unrest: 24,
         laws: [
@@ -4088,7 +4380,7 @@ html.bow-motion-calm .bow-fog-band {
         type: "settlement",
         short: "Брод",
         ruler: "староста Хаген",
-        desc: "Небольшое поселение на тракте. Живёт с торговли мехом, солью и перевозок.",
+        desc: "Небольшое северное поселение у каменной переправы в землях Хладных Ветров (не столица королевства). Живёт мехом, солью и обозами.",
         wealth: 38,
         unrest: 31,
         laws: []
@@ -4100,9 +4392,13 @@ html.bow-motion-calm .bow-fog-band {
       square: {
         id: "loc:square",
         name: "Торговая площадь",
-        sub: "Студёный Брод",
+        sub: "Студёный Брод · центр у переправы",
         org: "org:brod",
         travelHours: 0,
+        travelMinutes: 0,
+        mapX: 48,
+        mapY: 62,
+        mapHint: "Каменная площадь у солевых лавок и спуска к броду",
         desc: [
           "Площадь вымощена тёсаным камнем, между плитами пробивается ледяная крошка. Ветер гонит по камню солому и обрывки рогожи.",
           "Справа возвышается дощатый навес трактира, слева — торговые лавки. У колодца переминаются двое возчиков, лошади выдыхают пар."
@@ -4126,9 +4422,13 @@ html.bow-motion-calm .bow-fog-band {
       tavern: {
         id: "loc:tavern",
         name: "Трактир «Хромой олень»",
-        sub: "Студёный Брод",
+        sub: "Студёный Брод · восточный ряд",
         org: "org:brod",
         travelHours: 1,
+        travelMinutes: 10,
+        mapX: 61,
+        mapY: 58,
+        mapHint: "Тёплый сруб с очагом у восточного края площади",
         desc: [
           "Низкий потолок, тёмные балки, запах дыма и варёной репы. Над очагом висит вырезанный из дерева олень с треснувшим рогом.",
           "За стойкой протирает кружки хозяйка. Пара возчиков играет в кости у окна, негромко и без азарта."
@@ -4153,9 +4453,13 @@ html.bow-motion-calm .bow-fog-band {
       smithy: {
         id: "loc:smithy",
         name: "Кузница",
-        sub: "Студёный Брод",
+        sub: "Студёный Брод · западный двор",
         org: "org:brod",
         travelHours: 1,
+        travelMinutes: 11,
+        mapX: 34,
+        mapY: 60,
+        mapHint: "Горн и наковальня Тарна у западных ворот",
         desc: [
           "Жар и грохот. Горн раздут до белого, на наковальне лежит заготовка ножа. Стены увешаны клещами и старыми подковами.",
           "Хозяин работает молча. Он не любит, когда его отвлекают, но цену за работу называет честно."
@@ -4179,9 +4483,13 @@ html.bow-motion-calm .bow-fog-band {
       outskirts: {
         id: "loc:outskirts",
         name: "Околица",
-        sub: "Студёный Брод",
+        sub: "Студёный Брод · северный частокол",
         org: "org:brod",
         travelHours: 2,
+        travelMinutes: 19,
+        mapX: 51,
+        mapY: 37,
+        mapHint: "Крайние дворы, поленницы и северные ворота в частоколе",
         desc: [
           "Здесь кончаются дворы и начинается мокрая земля. Плетни стоят криво, за ними — сараи и поленницы.",
           "Следы на снегу ведут к частоколу, а от него — в тайгу. Кто-то ходил этой дорогой недавно."
@@ -4202,9 +4510,13 @@ html.bow-motion-calm .bow-fog-band {
       forest: {
         id: "loc:forest",
         name: "Опушка тайги",
-        sub: "За околицей",
+        sub: "За северным частоколом · Мать-Тайга",
         org: "org:brod",
         travelHours: 3,
+        travelMinutes: 37,
+        mapX: 57,
+        mapY: 14,
+        mapHint: "Кромка вековой тайги к северу от Студёного Брода",
         desc: [
           "Тайга дышит сыростью и смолой. Ветки смыкаются над головой, свет пробивается серыми полосами.",
           "Дальше в глубину идти без лыж и без провожатого не стоит: здесь легко обойти круг и не вернуться."
@@ -4495,13 +4807,13 @@ html.bow-motion-calm .bow-fog-band {
     needsRules: {
       /* Естественное заживление за час: сытый и отдохнувший
          затягивает раны сам. Лечение ускоряет это втрое. */
-      healPerHour: 0.4,
-      perHour: { hunger: -1.6, fatigue: -1.1, mood: -0.3 },
+      healPerHour: 0.45,
+      perHour: { hunger: -0.85, fatigue: -0.65, mood: -0.15 },
       hungerLow: 20,
       fatigueLow: 15,
-      healthPenalty: { hunger: -1.4, fatigue: -0.6, both: -2.4 },
-      moodPenaltyHunger: -0.8,
-      rest: { fatigue: 34, health: 4, mood: 6 },
+      healthPenalty: { hunger: -0.9, fatigue: -0.4, both: -1.6 },
+      moodPenaltyHunger: -0.5,
+      rest: { fatigue: 36, health: 5, mood: 7 },
       sleepHours: 7
     },
 
@@ -4907,6 +5219,18 @@ html.bow-motion-calm .bow-fog-band {
     "0.0.7.1": function (state) {
       state.version = "0.0.7.2";
       return state;
+    },
+
+    /* 0.0.7.2 → 0.0.7.3: минутное время, чисто пошаговый бой, лутаемые трупы и канон Хладных Ветров. */
+    "0.0.7.2": function (state) {
+      if (state.time && typeof state.time.minute !== "number") { state.time.minute = 0; }
+      if (!Array.isArray(state.corpses)) { state.corpses = []; }
+      if (state.fight && state.fight.orders) { state.fight.orders.speed = "paused"; }
+      if (state.orgs && state.orgs["org:coldwind"]) {
+        state.orgs["org:coldwind"].short = "Хладные Ветра";
+      }
+      state.version = "0.0.7.3";
+      return state;
     }
   };
 
@@ -4973,6 +5297,8 @@ html.bow-motion-calm .bow-fog-band {
       guard: null,
       /* Уличная встреча: { kind, robber, phase } */
       encounter: null,
+      /* Трупы на локациях: [{ id, personId, roleKey, name, role, location, money, items[], looted, killedAt }] */
+      corpses: [],
       /* Смерть: { cause, text, hours }. Игра после неё не продолжается. */
       dead: null,
       /* Счётчик визитов в локации — для сюжетных условий */
@@ -5191,56 +5517,77 @@ html.bow-motion-calm .bow-fog-band {
     return "День " + t.day + ", " + monthName + " " + t.year + " г. · " + hh + ":" + mm;
   }
 
-  /* Продвинуть время. Возвращает отчёт о том, какие тики прошли. */
-  function advance(state, hours) {
-    if (!(hours > 0)) { return { hours: 0, hoursPassed: 0, daysPassed: 0, monthsPassed: 0, yearsPassed: 0 }; }
+  /* Один часовой рубеж: вызывается каждый раз, когда накоплено 60 минут. */
+  function stepOneHour(state, mood) {
+    state.time.hour += 1;
+    state.time.totalHours += 1;
+    state.stats.hoursPlayed += 1;
 
-    var mood = [];
+    if (state.time.hour >= 24) {
+      state.time.hour -= 24;
+      state.time.day += 1;
+      mood.push("day");
+      Bow.bus.emit("tick:day", state);
 
-    for (var i = 0; i < hours; i++) {
-      state.time.minute = 0;
-      state.time.hour += 1;
-      state.time.totalHours += 1;
-      state.stats.hoursPlayed += 1;
+      if (state.time.day > daysInMonth(Bow.data)) {
+        state.time.day = 1;
+        state.time.month += 1;
+        mood.push("month");
+        Bow.bus.emit("tick:month", state);
 
-      if (state.time.hour >= 24) {
-        state.time.hour -= 24;
-        state.time.day += 1;
-        mood.push("day");
-        Bow.bus.emit("tick:day", state);
-
-        if (state.time.day > daysInMonth(Bow.data)) {
-          state.time.day = 1;
-          state.time.month += 1;
-          mood.push("month");
-          Bow.bus.emit("tick:month", state);
-
-          if (state.time.month > 12) {
-            state.time.month = 1;
-            state.time.year += 1;
-            mood.push("year");
-            Bow.bus.emit("tick:year", state);
-          }
+        if (state.time.month > 12) {
+          state.time.month = 1;
+          state.time.year += 1;
+          mood.push("year");
+          Bow.bus.emit("tick:year", state);
         }
       }
-
-      Bow.bus.emit("tick:hour", state);
     }
 
+    Bow.bus.emit("tick:hour", state);
+  }
+
+  /* Продвинуть время на указанное число минут (единый владелец часов и минут). */
+  function advanceMinutes(state, minutes) {
+    var mins = Math.round(Number(minutes) || 0);
+    if (!(mins > 0)) {
+      return { minutesPassed: 0, hoursPassed: 0, dayChanged: false, monthChanged: false, yearChanged: false };
+    }
+    if (typeof state.time.minute !== "number" || isNaN(state.time.minute)) {
+      state.time.minute = 0;
+    }
+
+    var mood = [];
+    var hoursPassed = 0;
+    state.time.minute += mins;
+
+    while (state.time.minute >= 60) {
+      state.time.minute -= 60;
+      hoursPassed += 1;
+      stepOneHour(state, mood);
+    }
+
+    Bow.bus.emit("tick:minute", state);
+
     return {
-      hoursPassed: hours,
+      minutesPassed: mins,
+      hoursPassed: hoursPassed,
       dayChanged: mood.indexOf("day") !== -1,
       monthChanged: mood.indexOf("month") !== -1,
       yearChanged: mood.indexOf("year") !== -1
     };
   }
 
+  /* Продвинуть время в часах (через тот же минутный счётчик, не обнуляя текущие минуты). */
+  function advance(state, hours) {
+    if (!(hours > 0)) { return { hours: 0, hoursPassed: 0, daysPassed: 0, monthsPassed: 0, yearsPassed: 0 }; }
+    return advanceMinutes(state, Math.round(hours * 60));
+  }
+
   /* ---------- Живое время ----------
-     Отдельный шаг «один игровой час» для хода времени без действия.
-     Отличие от advance(1) только в ответе: здесь сообщаем смену
-     суток — на это подписан интерфейс.
-     Второго владельца часов нет: и действие, и живое время идут
-     через advance(), поэтому час не удваивается. */
+     tick(state) — шаг в 1 игровой час (60 мин.).
+     tickMinute(state) — плавный живой шаг в 1 игровую минуту (0.0.7.3:
+     на скорости 1x 1 минута проходит за 2 реальные секунды). */
   function tick(state) {
     var before = {
       day: state.time.day,
@@ -5252,7 +5599,25 @@ html.bow-motion-calm .bow-fog-band {
     return {
       dayChanged: state.time.day !== before.day || state.time.month !== before.month || state.time.year !== before.year,
       monthChanged: state.time.month !== before.month || state.time.year !== before.year,
+      hour: state.time.hour,
+      minute: state.time.minute
+    };
+  }
+
+  function tickMinute(state) {
+    var before = {
+      day: state.time.day,
+      month: state.time.month,
+      year: state.time.year,
       hour: state.time.hour
+    };
+    var res = advanceMinutes(state, 1);
+    return {
+      hourChanged: res.hoursPassed > 0 || state.time.hour !== before.hour,
+      dayChanged: state.time.day !== before.day || state.time.month !== before.month || state.time.year !== before.year,
+      monthChanged: state.time.month !== before.month || state.time.year !== before.year,
+      hour: state.time.hour,
+      minute: state.time.minute
     };
   }
 
@@ -5266,17 +5631,27 @@ html.bow-motion-calm .bow-fog-band {
     return scale;
   }
 
+  /* Сколько игровых минут проходит за одну реальную секунду (0.0.7.3):
+     1x = 0.5 мин./с (ровно 1 игровая минута за 2 реальные секунды),
+     4x = 2.0 мин./с (вчетверо быстрее: 1 минута за 0.5 секунды). */
+  function minutesPerSecond(scale) {
+    if (scale === "1x") { return 0.5; }
+    if (scale === "4x") { return 2.0; }
+    return 0;
+  }
+
   /* Сколько игровых часов проходит за одну реальную секунду. */
   function hoursPerSecond(scale) {
-    if (scale === "1x") { return 1 / 3; }   /* час игры за 3 секунды */
-    if (scale === "4x") { return 1; }        /* час игры за секунду */
-    return 0;
+    return minutesPerSecond(scale) / 60;
   }
 
   Bow.time = {
     advance: advance,
+    advanceMinutes: advanceMinutes,
     tick: tick,
+    tickMinute: tickMinute,
     setScale: setScale,
+    minutesPerSecond: minutesPerSecond,
     hoursPerSecond: hoursPerSecond,
     SCALES: SCALES,
     format: format,
@@ -5687,6 +6062,7 @@ html.bow-motion-calm .bow-fog-band {
       month: state.time.month,
       year: state.time.year,
       hour: state.time.hour,
+      minute: state.time.minute || 0,
       kind: kind || "info",
       text: text
     };
@@ -5705,6 +6081,7 @@ html.bow-motion-calm .bow-fog-band {
       month: state.time.month,
       year: state.time.year,
       hour: state.time.hour,
+      minute: state.time.minute || 0,
       kind: kind || "info",
       text: text,
       meta: meta || null
@@ -6856,7 +7233,6 @@ html.bow-motion-calm .bow-fog-band {
       f.heatTotal = 0;
       f.repTotal = 0;
       f.units = spawnUnits(state);
-      Bow.time.advance(state, R.hours);
       Bow.needs.applyChange(state.player, "fatigue", -2);
       log(f, "narr", f.enemies[0].name + " выходит на свет с ножом. Разговор кончился.");
       Bow.journal.add(state, "Грабитель ударил первым.", "danger");
@@ -6890,8 +7266,7 @@ html.bow-motion-calm .bow-fog-band {
 
     f.units = spawnUnits(state);
 
-    /* Час на весь бой: подход, первый удар и развязка. */
-    Bow.time.advance(state, R.hours);
+    /* В пошаговом бою мировые часы стоят на месте (0.0.7.3). */
     Bow.needs.applyChange(state.player, "fatigue", -2);
 
     if (mode === "crime") {
@@ -7641,7 +8016,30 @@ html.bow-motion-calm .bow-fog-band {
     return { ok: true, fled: false, message: "Уйти не вышло — " + damage + " урона." };
   }
 
-  /* ---------- Развязка после победы ---------- */
+  /* ---------- Развязка после победы и создание лутаемых трупов ---------- */
+  function spawnCorpse(state, opts) {
+    if (!Array.isArray(state.corpses)) { state.corpses = []; }
+    var items = [];
+    (opts.items || []).forEach(function (id) {
+      if (id) { items.push({ itemId: id, qty: 1 }); }
+    });
+    var cid = "corpse:" + (opts.personId || ((opts.roleKey || "foe") + ":" + state.time.totalHours + ":" + state.corpses.length));
+    var corpse = {
+      id: cid,
+      personId: opts.personId || null,
+      roleKey: opts.roleKey || "villager",
+      name: opts.name || "Неизвестный",
+      role: opts.role || "житель",
+      location: state.player.location,
+      killedAt: state.time.totalHours,
+      money: Math.max(0, Math.round(opts.money || 0)),
+      items: items,
+      looted: false
+    };
+    state.corpses.push(corpse);
+    return corpse;
+  }
+
   function decide(state, choice, rng) {
     var f = state.fight;
     if (!f || f.phase !== "aftermath") { return { ok: false, message: "Сейчас решать нечего." }; }
@@ -7649,27 +8047,87 @@ html.bow-motion-calm .bow-fog-band {
     var npc = state.people[f.personId];
     var player = state.player;
 
-    /* Грабитель — безликий: записи в людях у него нет. Его кошель
-       и память живут в фишке боя, поэтому развязка идёт по ней. */
+    /* 1. Грабитель на улице: записи в людях у него нет, но кошель и нож настоящие. */
     var faceless = !npc && f.mode === "robbery" ? f.enemies[0] : null;
     if (faceless) {
       var loot = Math.max(0, Math.round(faceless.money || 0));
       if (choice === "spare") {
+        log(f, "narr", faceless.name + " остаётся сидеть в снегу, зажимая бок.");
         finish(state, "win", {});
-        Bow.journal.add(state, "Вы оставили грабителя в снегу и ушли.", "danger");
+        Bow.journal.add(state, "Вы оставили грабителя в снегу.", "danger");
         return { ok: true, message: faceless.name + " остался сидеть в снегу." };
       }
       if (choice === "rob") {
         player.money += loot;
+        faceless.money = 0;
+        log(f, "narr", "Вы вытряхиваете из кошеля грабителя " + loot + " м.");
         finish(state, "win", {});
         Bow.journal.add(state, "Вы обобрали грабителя: +" + loot + " м.", "crime");
         return { ok: true, message: "В кошеле грабителя — " + loot + " м." };
       }
       if (choice === "kill") {
-        Bow.steal.addHeat(state, "org:guard", 12);
-        finish(state, "killed", {});
-        Bow.journal.add(state, "Вы добили грабителя на улице. Кто-нибудь найдёт тело.", "crime");
-        return { ok: true, message: "Он больше не встанет." };
+        (f.units || []).forEach(function (u) {
+          if (u.side === "enemy") { u.dead = true; u.down = false; u.hp = 0; }
+        });
+        var rCorpse = spawnCorpse(state, {
+          roleKey: "robber",
+          name: faceless.name,
+          role: "уличный налётчик",
+          money: loot,
+          items: faceless.weapon ? [faceless.weapon] : []
+        });
+        faceless.money = 0;
+        var gHeat = Bow.steal.addHeat(state, "org:guard", 12);
+        f.heatTotal += gHeat;
+        if (Bow.guard && Bow.guard.schedule) { Bow.guard.schedule(state); }
+        log(f, "narr", "Вы добиваете налётчика на снегу. Тело остаётся лежать у дороги.");
+        finish(state, "killed", { heat: gHeat, corpseIds: [rCorpse.id] });
+        Bow.journal.add(state, "Вы добили грабителя (" + faceless.name + "). Тело осталось на земле.", "crime");
+        return { ok: true, message: faceless.name + " мёртв. Тело можно обыскать.", corpseId: rCorpse.id };
+      }
+      return { ok: false, message: "Так нельзя." };
+    }
+
+    /* 2. Разгромленный патруль стражи (если игрок победил всех троих). */
+    if (!npc && f.mode === "guard") {
+      if (choice === "spare") {
+        var spHeat = Bow.steal.addHeat(state, "org:guard", 15);
+        f.heatTotal += spHeat;
+        log(f, "narr", "Поверженные стражники остаются лежать в снегу.");
+        finish(state, "win", { heat: spHeat });
+        Bow.journal.add(state, "Вы сбили патруль стражи с ног и пощадили их.", "crime");
+        return { ok: true, message: "Стражники повержены, но живы." };
+      }
+      if (choice === "rob") {
+        var gTake = 18 + Math.round(rollOf(rng) * 14);
+        player.money += gTake;
+        var rbHeat = Bow.steal.addHeat(state, "org:guard", 25);
+        f.heatTotal += rbHeat;
+        log(f, "narr", "Вы срезаете с поясов стражников " + gTake + " м.");
+        finish(state, "win", { heat: rbHeat });
+        Bow.journal.add(state, "Вы обобрали поверженный патруль стражи: +" + gTake + " м.", "crime");
+        return { ok: true, message: "Снято с поясов стражи: " + gTake + " м." };
+      }
+      if (choice === "kill") {
+        (f.units || []).forEach(function (u) {
+          if (u.side === "enemy") { u.dead = true; u.down = false; u.hp = 0; }
+        });
+        var gCorpseIds = (f.enemies || []).map(function (ge, idx) {
+          var gc = spawnCorpse(state, {
+            roleKey: "guard",
+            name: ge.name || ("Стражник " + (idx + 1)),
+            role: "стражник Брода",
+            money: 7 + idx * 3,
+            items: [ge.weapon, ge.armor]
+          });
+          return gc.id;
+        });
+        var klHeat = Bow.steal.addHeat(state, "org:guard", 45);
+        f.heatTotal += klHeat;
+        log(f, "narr", "Стражники добиты на снегу. За такое в Хладных Ветрах вешают без суда.");
+        finish(state, "killed", { heat: klHeat, corpseIds: gCorpseIds });
+        Bow.journal.add(state, "Вы перебили патруль стражи Брода. Тела остались лежать на снегу.", "crime");
+        return { ok: true, message: "Патруль стражи мёртв. Тела остались на месте боя.", corpseIds: gCorpseIds };
       }
       return { ok: false, message: "Так нельзя." };
     }
@@ -7680,6 +8138,7 @@ html.bow-motion-calm .bow-fog-band {
     var heat = 0;
     var rep = 0;
     var message = "";
+    var createdCorpses = [];
 
     if (choice === "spare") {
       heat = Bow.steal.addHeat(state, npc.org, R.spareHeat);
@@ -7713,11 +8172,24 @@ html.bow-motion-calm .bow-fog-band {
     } else if (choice === "kill") {
       npc.alive = false;
       npc.needs.health = 0;
-      /* Фишка на поле и в отчёте должна стать черепом, а не просто
-         исчезнуть: игрок только что видел, кого убил. */
+      /* Фишка на поле и в отчёте становится мёртвым телом на снегу. */
       (f.units || []).forEach(function (u) {
         if (u.side === "enemy" && u.refId === npc.id) { u.dead = true; u.down = false; u.hp = 0; }
       });
+      /* Всё, что было у убитого (кошель, оружие и одёжка/броня), остаётся на теле для обыска. */
+      var npcCorpse = spawnCorpse(state, {
+        personId: npc.id,
+        roleKey: npc.key,
+        name: npc.name,
+        role: npc.role,
+        money: npc.money,
+        items: [npc.weapon, npc.armor]
+      });
+      npc.money = 0;
+      npc.weapon = null;
+      npc.armor = null;
+      createdCorpses.push(npcCorpse.id);
+
       heat = Bow.steal.addHeat(state, npc.org, R.killHeat);
       rep = Bow.work.addReputation(state, npc.org, R.killRep);
       if (state.orgs[npc.org]) {
@@ -7725,8 +8197,9 @@ html.bow-motion-calm .bow-fog-band {
       }
       /* Убийство — прямой вызов страже. */
       Bow.steal.addHeat(state, "org:guard", Math.round(R.killHeat * 0.8));
-      log(f, "narr", "Вы делаете то, после чего в Броде не отмываются. " + npc.name + " больше не встанет.");
-      message = "Убийство: " + npc.name + ". Об этом узнают.";
+      if (Bow.guard && Bow.guard.schedule) { Bow.guard.schedule(state); }
+      log(f, "narr", "Вы делаете то, после чего в Броде не отмываются. " + npc.name + " остаётся лежать на земле.");
+      message = "Убийство: " + npc.name + ". Тело осталось лежать на земле.";
     } else {
       return { ok: false, message: "Так нельзя." };
     }
@@ -7735,8 +8208,19 @@ html.bow-motion-calm .bow-fog-band {
     f.repTotal += rep;
 
     Bow.journal.add(state, message, "crime");
-    finish(state, choice === "kill" ? "killed" : "win", { heat: heat, rep: rep, message: message });
-    return { ok: true, message: message, heat: heat, reputation: rep };
+    finish(state, choice === "kill" ? "killed" : "win", {
+      heat: heat,
+      rep: rep,
+      message: message,
+      corpseIds: createdCorpses
+    });
+    return {
+      ok: true,
+      message: message,
+      heat: heat,
+      reputation: rep,
+      corpseId: createdCorpses[0] || null
+    };
   }
 
   /* ---------- Итог боя ---------- */
@@ -7795,10 +8279,23 @@ html.bow-motion-calm .bow-fog-band {
       rep: f.repTotal || 0,
       note: note,
       lost: extraData.lost || 0,
+      corpseIds: (extraData.corpseIds || []).slice(),
+      aim: [],
+      target: null,
       units: (f.units || []).map(function (u) {
         return {
-          key: u.key, name: u.name, side: u.side, col: u.col, row: u.row,
-          hp: Math.round(u.hp), down: !!u.down, dead: !!u.dead
+          key: u.key,
+          refId: u.refId || null,
+          name: u.name,
+          side: u.side,
+          col: u.col,
+          row: u.row,
+          hp: Math.round(u.hp),
+          down: !!u.down,
+          dead: !!u.dead,
+          disarmed: !!u.disarmed,
+          weapon: u.weapon || null,
+          stance: u.stance || null
         };
       }),
       log: f.log.slice(-14)
@@ -7891,28 +8388,67 @@ html.bow-motion-calm .bow-fog-band {
       .filter(function (p) { return p.alive && p.location === locationId; });
   }
 
+  function corpsesAt(state, locationId) {
+    return (state.corpses || []).filter(function (c) {
+      return c && c.location === locationId;
+    });
+  }
+
+  function formatDuration(mins) {
+    var m = Math.max(1, Math.round(mins || 0));
+    if (m < 60) { return m + " мин."; }
+    var h = Math.floor(m / 60);
+    var rem = m % 60;
+    return rem ? (h + " ч. " + rem + " мин.") : (h + " ч.");
+  }
+
+  /* Честное время пути между двумя точками поселения в минутах:
+     зависит от реального расстояния на плане Студёного Брода и травмы ноги. */
+  function travelMinutes(state, toKey) {
+    var target = Bow.data.locations[toKey];
+    if (!target) { return 0; }
+    if (!state || !state.player || state.player.location === toKey) { return 0; }
+
+    var from = loc(state);
+    var base;
+    if (from && typeof from.mapX === "number" && typeof target.mapX === "number") {
+      var dx = target.mapX - from.mapX;
+      var dy = target.mapY - from.mapY;
+      base = Math.max(6, Math.round(Math.sqrt(dx * dx + dy * dy) * 0.75));
+    } else if (typeof target.travelMinutes === "number" && target.travelMinutes > 0) {
+      base = target.travelMinutes;
+    } else {
+      base = Math.max(10, (target.travelHours || 1) * 15);
+    }
+
+    var legPenalty = 1;
+    var inj = (state.player && state.player.injuries) || [];
+    for (var i = 0; i < inj.length; i++) {
+      if (inj[i] && inj[i].key === "leg") {
+        legPenalty = (Bow.data.fightRules && Bow.data.fightRules.injuries &&
+          Bow.data.fightRules.injuries.leg && Bow.data.fightRules.injuries.leg.travel) || 1.5;
+        break;
+      }
+    }
+
+    return Math.max(5, Math.round(base * legPenalty));
+  }
+
   /* ---------- Перемещение ---------- */
   function move(state, toKey) {
     var target = Bow.data.locations[toKey];
     if (!target) { return { ok: false, message: "Такого места нет." }; }
     if (state.player.location === toKey) { return { ok: false, message: "Вы уже здесь." }; }
 
-    /* Время в пути: суммарно от текущего места до целевого через площадь
-       (площадь — центр поселения). Это честная модель, а не «1 час всегда». */
-    var from = loc(state);
-    var hours;
-    if (!from || toKey === "square" || from.id === target.id) {
-      hours = Math.max(1, target.travelHours);
-    } else {
-      hours = Math.max(1, Math.round((from.travelHours + target.travelHours) / 2) + 1);
-    }
+    var minutes = travelMinutes(state, toKey);
+    var durText = formatDuration(minutes);
 
     var firstVisit = !state.visits[toKey];
     state.player.location = toKey;
     state.visits[toKey] = (state.visits[toKey] || 0) + 1;
     state.stats.actionsTaken += 1;
 
-    Bow.time.advance(state, hours);
+    Bow.time.advanceMinutes(state, minutes);
 
     /* Погода пересчитывается при смене сцены: она часть атмосферы. */
     state.flags.weather = Bow.events.weatherOf(state, Bow.adapter ? Bow.adapter.rng : Math.random);
@@ -7921,16 +8457,74 @@ html.bow-motion-calm .bow-fog-band {
     state.flags.sceneChanged = (state.flags.sceneChanged || 0) + 1;
 
     var arrival = firstVisit
-      ? "Вы впервые пришли: " + target.name + " (в пути " + hours + " ч.)."
-      : "Вы пришли: " + target.name + " (в пути " + hours + " ч.).";
+      ? "Вы впервые пришли: " + target.name + " (в пути " + durText + ")."
+      : "Вы пришли: " + target.name + " (в пути " + durText + ").";
     Bow.journal.add(state, arrival, "move");
 
     /* Атмосфера новой сцены — сразу, чтобы экран не был пустым. */
     state.flags.ambience = Bow.events.ambience(state, Bow.adapter ? Bow.adapter.rng : Math.random);
 
-    Bow.bus.emit("player:moved", { state: state, location: toKey, hours: hours });
+    var hours = Math.round((minutes / 60) * 100) / 100;
+    Bow.bus.emit("player:moved", { state: state, location: toKey, minutes: minutes, hours: hours });
 
-    return { ok: true, message: target.name, hours: hours, firstVisit: firstVisit };
+    return {
+      ok: true,
+      message: target.name + " · в пути " + durText,
+      minutes: minutes,
+      hours: hours,
+      firstVisit: firstVisit
+    };
+  }
+
+  /* ---------- Обыск тела ---------- */
+  function lootCorpse(state, corpseId) {
+    if (!Array.isArray(state.corpses)) { state.corpses = []; }
+    var corpse = null;
+    for (var i = 0; i < state.corpses.length; i++) {
+      if (state.corpses[i] && state.corpses[i].id === corpseId) {
+        corpse = state.corpses[i];
+        break;
+      }
+    }
+    if (!corpse) { return { ok: false, message: "Тела здесь уже нет." }; }
+    if (corpse.location !== state.player.location) {
+      return { ok: false, message: "Это тело лежит в другом месте." };
+    }
+    if (corpse.looted || ((corpse.money || 0) <= 0 && (!corpse.items || !corpse.items.length))) {
+      corpse.looted = true;
+      return { ok: false, message: "У " + corpse.name + " больше нечего взять." };
+    }
+
+    var taken = [];
+    var coins = Math.max(0, Math.round(corpse.money || 0));
+    if (coins > 0) {
+      state.player.money += coins;
+      corpse.money = 0;
+      taken.push(coins + " м.");
+    }
+
+    (corpse.items || []).forEach(function (entry) {
+      if (!entry || !entry.itemId || !(entry.qty > 0)) { return; }
+      Bow.economy.addItem(state.player, entry.itemId, entry.qty);
+      var def = Bow.economy.findItemDef(entry.itemId);
+      taken.push((def ? def.name : entry.itemId) + (entry.qty > 1 ? " ×" + entry.qty : ""));
+    });
+    corpse.items = [];
+    corpse.looted = true;
+    state.stats.actionsTaken += 1;
+
+    if (!(state.flags && state.flags.lastFight)) {
+      Bow.time.advanceMinutes(state, 5);
+    }
+
+    var summary = taken.length ? taken.join(", ") : "ничего ценного";
+    Bow.journal.add(state, "Обыскали тело (" + corpse.name + "): " + summary + ".", "crime");
+    return {
+      ok: true,
+      coins: coins,
+      taken: taken,
+      message: "С тела (" + corpse.name + ") забрано: " + summary + "."
+    };
   }
 
   /* ---------- Еда ---------- */
@@ -7946,8 +8540,8 @@ html.bow-motion-calm .bow-fog-band {
     if (def.mood) { Bow.needs.applyChange(state.player, "mood", def.mood); }
     state.stats.actionsTaken += 1;
 
-    /* Приём пищи занимает полчаса-час: время идёт, но немного. */
-    Bow.time.advance(state, 1);
+    /* Перекус занимает четверть часа, а не целый час. */
+    Bow.time.advanceMinutes(state, 15);
 
     Bow.journal.add(state, "Вы съели: " + def.name + ".", "eat");
     return { ok: true, message: "Съедено: " + def.name + ". Сытость +" + def.food + "." };
@@ -7968,7 +8562,7 @@ html.bow-motion-calm .bow-fog-band {
     Bow.needs.applyChange(state.player, "hunger", -2);
     state.stats.actionsTaken += 1;
 
-    Bow.time.advance(state, 1);
+    Bow.time.advanceMinutes(state, 15);
     Bow.journal.add(state, "Вы выпили: " + def.name + ".", "drink");
     return { ok: true, message: "Выпито: " + def.name + ". Настроение +" + def.mood + "." };
   }
@@ -8060,6 +8654,10 @@ html.bow-motion-calm .bow-fog-band {
 
   Bow.actions = {
     move: move,
+    travelMinutes: travelMinutes,
+    formatDuration: formatDuration,
+    corpsesAt: corpsesAt,
+    lootCorpse: lootCorpse,
     eat: eat,
     drink: drink,
     rest: rest,
@@ -8069,11 +8667,18 @@ html.bow-motion-calm .bow-fog-band {
     location: loc
   };
 
-  /* Сброс суточных счётчиков разговоров на новом дне. */
+  /* Сброс суточных счётчиков разговоров и уборка старых обобранных тел через трое суток. */
   Bow.bus.on("tick:day", function (state) {
     Object.keys(state.people).forEach(function (id) {
       state.people[id].talkedToday = 0;
     });
+    if (Array.isArray(state.corpses)) {
+      state.corpses = state.corpses.filter(function (c) {
+        if (!c) { return false; }
+        if (!c.looted) { return true; }
+        return (state.time.totalHours - (c.killedAt || 0)) < 72;
+      });
+    }
   });
 
 })(typeof window !== "undefined" ? window : this);/* ============================================================
@@ -8853,11 +9458,11 @@ html.bow-motion-calm .bow-fog-band {
       return { ok: true, scared: true, message: "Он отступил. В этот раз — без драки." };
     }
 
-    /* Не испугался — сразу бьёт. */
-    Bow.needs.applyChange(state.player, "health", -8);
+    /* Не испугался — сразу бьёт (оставляя минимум 5 здор. до начала боя). */
+    state.player.needs.health = Math.max(5, Bow.util.round1(state.player.needs.health - 8));
     e.phase = "fight";
     Bow.journal.add(state, "Грабитель не испугался и ударил первым.", "danger");
-    return { ok: true, scared: false, message: "Он ударил первым: −8 здор." };
+    return { ok: true, scared: false, message: "Он ударил первым: −8 здор. Придётся драться." };
   }
 
   /* ---------- Драка ---------- */
@@ -8924,7 +9529,8 @@ html.bow-motion-calm .bow-fog-band {
       return { ok: true, escaped: true, message: "Вы ушли — правда, не туда, куда шли." };
     }
 
-    Bow.needs.applyChange(state.player, "health", -7);
+    state.player.needs.health = Math.max(5, Bow.util.round1(state.player.needs.health - 7));
+    e.phase = "fight";
     Bow.journal.add(state, "Грабитель догнал вас на бегу.", "danger");
     return { ok: true, escaped: false, message: "Он догнал: −7 здор. Придётся драться." };
   }
@@ -9233,6 +9839,16 @@ html.bow-motion-calm .bow-fog-band {
     drink: function (state, key) {
       var res = Bow.actions.drink(state, key);
       if (res.ok) { Bow.events.afterAction(state, rng); }
+      return res;
+    },
+    lootCorpse: function (state, corpseId) {
+      var res = Bow.actions.lootCorpse(state, corpseId);
+      if (res.ok) {
+        Bow.needs.ensure(state.player);
+        if (!(state.flags && state.flags.lastFight)) {
+          Bow.events.afterAction(state, rng);
+        }
+      }
       return res;
     },
     rest: function (state) {
@@ -9873,28 +10489,34 @@ html.bow-motion-calm .bow-fog-band {
     ]
   };
 
-  function npcSlotX(idx, count) {
+  function actorSlotX(idx, count) {
     if (count <= 1) { return 62; }
     if (count === 2) { return idx === 0 ? 50 : 74; }
-    if (count === 3) { return [44, 63, 82][idx]; }
-    var span = 44;
-    return Math.round(42 + (span * idx) / (count - 1));
+    if (count === 3) { return [43, 63, 83][idx]; }
+    if (count === 4) { return [36, 53, 70, 87][idx]; }
+    if (count === 5) { return [32, 46, 60, 74, 88][idx]; }
+    return Math.round(30 + (58 * idx) / (count - 1));
   }
 
   function renderHotspotsAndActors(state, selected) {
     var locKey = state.player.location;
     var props = STAGE_PROPS[locKey] || [];
     var people = Bow.actions.peopleAt(state, locKey);
+    var corpses = Bow.actions.corpsesAt ? Bow.actions.corpsesAt(state, locKey) : [];
+    var hasGuard = !!(state.guard && state.guard.arrived && state.guard.squad && state.guard.squad.length);
+    var hasRobber = !!(state.encounter && state.encounter.robber);
     var html = [];
 
-    /* 1. Точки интереса самой локации (верхний ярус) */
+    /* 1. Точки интереса самой локации (верхний ярус) с точным временем пути в минутах */
     props.forEach(function (pr) {
       if (pr.kind === "exit") {
+        var mins = Bow.actions.travelMinutes ? Bow.actions.travelMinutes(state, pr.loc) : 15;
+        var subDur = Bow.actions.formatDuration ? Bow.actions.formatDuration(mins) : pr.sub;
         html.push(
           '<button type="button" class="bow-spot bow-spot-exit" style="left:' + pr.x + '%;top:' + pr.y + '%" ' +
-            'data-act="move" data-loc="' + esc(pr.loc) + '" data-x="' + pr.x + '" title="Перейти: ' + esc(pr.label) + '">' +
+            'data-act="move" data-loc="' + esc(pr.loc) + '" data-x="' + pr.x + '" title="Перейти: ' + esc(pr.label) + ' (' + esc(subDur) + ')">' +
             '<span class="bow-spot-dot"></span>' +
-            '<span class="bow-spot-txt"><b>' + esc(pr.label) + '</b><i>' + esc(pr.sub) + '</i></span>' +
+            '<span class="bow-spot-txt"><b>' + esc(pr.label) + '</b><i>' + esc(subDur) + '</i></span>' +
           '</button>'
         );
         return;
@@ -9919,20 +10541,103 @@ html.bow-motion-calm .bow-fog-band {
       );
     });
 
-    /* 2. Фигурка самого игрока слева на переднем плане (нижний ярус) */
+    /* Собираем всех видимых участников на нижнем ярусе сцены:
+       пришедшая стража, уличный грабитель/вор, живые жители и лежащие трупы. */
+    var stageEntities = [];
+
+    if (hasGuard) {
+      var gSquad = state.guard.squad;
+      var showGuards = (people.length + corpses.length >= 4) ? gSquad.slice(0, 2) : gSquad.slice(0, 3);
+      showGuards.forEach(function (gu, gIdx) {
+        stageEntities.push({ kind: "guard", guardUnit: gu, guardIdx: gIdx });
+      });
+    }
+
+    if (hasRobber) {
+      stageEntities.push({ kind: "robber", robber: state.encounter.robber });
+    }
+
+    people.forEach(function (p) {
+      stageEntities.push({ kind: "person", person: p });
+    });
+
+    corpses.forEach(function (c) {
+      stageEntities.push({ kind: "corpse", corpse: c });
+    });
+
+    /* 2. Фигурка самого игрока слева на переднем плане */
+    var playerX = stageEntities.length >= 5 ? 16 : (stageEntities.length === 4 ? 18 : 20);
     var pWeapon = weaponKindOf(state, state.player);
     var selfActive = selected && selected.kind === "self" ? " bow-actor-on" : "";
     html.push(
-      '<button type="button" class="bow-actor bow-actor-player' + selfActive + '" style="left:20%;bottom:42px" ' +
-        'data-act="stage-select" data-kind="self" data-x="20" title="Вы — припасы, отдых и перевязка">' +
+      '<button type="button" class="bow-actor bow-actor-player' + selfActive + '" style="left:' + playerX + '%;bottom:42px" ' +
+        'data-act="stage-select" data-kind="self" data-x="' + playerX + '" title="Вы — припасы, отдых и перевязка">' +
         figureSvg({ roleKey: "player", side: "player", weapon: pWeapon }) +
         '<span class="bow-actor-tag"><b>Вы</b></span>' +
       '</button>'
     );
 
-    /* 3. Фигурки жителей (равномерно разнесены по правому/среднему плану) */
-    people.forEach(function (p, idx) {
-      var x = npcSlotX(idx, people.length);
+    /* 3. Остальные фигурки на сцене (стража, грабитель, жители, трупы) */
+    stageEntities.forEach(function (ent, idx) {
+      var x = actorSlotX(idx, stageEntities.length);
+
+      if (ent.kind === "guard") {
+        var gu = ent.guardUnit;
+        var gSel = selected && selected.kind === "guard";
+        html.push(
+          '<button type="button" class="bow-actor bow-actor-enemy bow-actor-guard' + (gSel ? " bow-actor-on" : "") + '" ' +
+            'style="left:' + x + '%;bottom:42px" ' +
+            'data-act="stage-select" data-kind="guard" data-x="' + x + '" ' +
+            'title="Стража Брода — ' + esc(gu.name) + ' (требуют ответа)">' +
+            figureSvg({ roleKey: "guard", side: "enemy", weapon: "axe", stance: "guard" }) +
+            '<span class="bow-actor-tag bow-actor-tag-threat">' +
+              '<b>⛨ ' + esc(gu.name) + '</b>' +
+              '<i class="bow-tone bow-cold">стража</i>' +
+            '</span>' +
+          '</button>'
+        );
+        return;
+      }
+
+      if (ent.kind === "robber") {
+        var rb = ent.robber;
+        var rSel = selected && selected.kind === "robber";
+        var rWeapon = weaponKindOf(state, rb);
+        html.push(
+          '<button type="button" class="bow-actor bow-actor-enemy bow-actor-robber' + (rSel ? " bow-actor-on" : "") + '" ' +
+            'style="left:' + x + '%;bottom:42px" ' +
+            'data-act="stage-select" data-kind="robber" data-x="' + x + '" ' +
+            'title="' + esc(rb.name) + ' — требует ' + rb.demand + ' м.">' +
+            figureSvg({ roleKey: "robber", side: "enemy", weapon: rWeapon }) +
+            '<span class="bow-actor-tag bow-actor-tag-threat">' +
+              '<b>⚔ ' + esc(rb.name) + '</b>' +
+              '<i class="bow-tone bow-cold">' + rb.demand + ' м.</i>' +
+            '</span>' +
+          '</button>'
+        );
+        return;
+      }
+
+      if (ent.kind === "corpse") {
+        var c = ent.corpse;
+        var cSel = selected && selected.kind === "corpse" && selected.corpseId === c.id;
+        var hasLoot = !c.looted && ((c.money || 0) > 0 || (c.items && c.items.length > 0));
+        html.push(
+          '<button type="button" class="bow-actor bow-actor-corpse' + (cSel ? " bow-actor-on" : "") + (hasLoot ? " bow-actor-corpse-loot" : "") + '" ' +
+            'style="left:' + x + '%;bottom:36px" ' +
+            'data-act="stage-select" data-kind="corpse" data-corpse="' + esc(c.id) + '" data-x="' + x + '" ' +
+            'title="' + esc("Труп: " + c.name + (hasLoot ? " (можно обыскать)" : " (обыскан)")) + '">' +
+            figureSvg({ roleKey: c.roleKey || "villager", side: "enemy", dead: true }) +
+            '<span class="bow-actor-tag bow-actor-tag-corpse">' +
+              '<b>☠ ' + esc(c.name) + '</b>' +
+              '<i class="bow-dim">' + (hasLoot ? "обыскать" : "пусто") + '</i>' +
+            '</span>' +
+          '</button>'
+        );
+        return;
+      }
+
+      var p = ent.person;
       var isSel = selected && selected.kind === "person" && selected.personId === p.id;
       var tone = p.attitude >= 20 ? "warm" : p.attitude <= -20 ? "cold" : "neutral";
       var wKind = weaponKindOf(state, p);
@@ -9959,13 +10664,206 @@ html.bow-motion-calm .bow-fog-band {
     return html.join("");
   }
 
+  /* ---------- Двухуровневая карта (0.0.7.3):
+     1) «local» — точный план поселения Студёный Брод с тропами и минутами пути;
+     2) «realm» — север Эдемских земель и Королевство Хладных Ветров («Хладные Ветра»). ---------- */
+  function renderMap(state, mapMode) {
+    var mode = mapMode === "realm" ? "realm" : "local";
+    var curKey = state.player.location;
+    var locs = Bow.data.locations;
+    var keys = ["forest", "outskirts", "smithy", "square", "tavern"];
+
+    var switchBar =
+      '<div class="bow-map-head">' +
+        '<div class="bow-map-switch" role="group" aria-label="Масштаб карты">' +
+          '<button type="button" class="bow-btn bow-btn-sm' + (mode === "local" ? " bow-order-on" : "") + '" ' +
+            'data-act="map-mode" data-mode="local">План Студёного Брода</button>' +
+          '<button type="button" class="bow-btn bow-btn-sm' + (mode === "realm" ? " bow-order-on" : "") + '" ' +
+            'data-act="map-mode" data-mode="realm">Север Эдема · Хладные Ветра</button>' +
+        '</div>' +
+        '<span class="bow-map-sub">' +
+          (mode === "local"
+            ? 'Нажмите на точку на плане, чтобы перейти туда'
+            : 'Крайний север Эдемских земель · владения вождя Норвинга IV') +
+        '</span>' +
+      '</div>';
+
+    if (mode === "realm") {
+      var realmSvg =
+        '<div class="bow-map-canvas bow-map-realm">' +
+          '<svg class="bow-map-svg" viewBox="0 0 760 360" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Карта севера Эдемских земель — Хладные Ветра">' +
+            '<defs>' +
+              '<linearGradient id="bowRealmBg" x1="0" y1="0" x2="0" y2="1">' +
+                '<stop offset="0%" stop-color="#0d1520"/>' +
+                '<stop offset="68%" stop-color="#15202b"/>' +
+                '<stop offset="100%" stop-color="#1d2420"/>' +
+              '</linearGradient>' +
+            '</defs>' +
+            '<rect width="760" height="360" fill="url(#bowRealmBg)"/>' +
+            /* Северный студёный берег и хребты */
+            '<path d="M0,48 Q140,26 290,44 T590,34 T760,52 L760,0 L0,0 Z" fill="#091019" stroke="#2d4156" stroke-width="1.2"/>' +
+            '<text x="380" y="24" text-anchor="middle" fill="#6f879e" font-size="11" letter-spacing="3">СТУДЁНЫЙ КРАЙ СЕВЕРА ЭДЕМСКИХ ЗЕМЕЛЬ</text>' +
+            /* Горная гряда Хладных Ветров */
+            '<path d="M70,92 L96,62 L122,92 M116,94 L148,56 L180,94 M480,88 L512,54 L544,88 M536,92 L566,64 L596,92" fill="none" stroke="#4c6073" stroke-width="1.8"/>' +
+            /* Массив Матери-Тайги */
+            '<ellipse cx="390" cy="168" rx="290" ry="74" fill="#122126" opacity="0.68"/>' +
+            '<text x="410" y="156" text-anchor="middle" fill="#7d9a95" font-size="13" letter-spacing="2.5">МАТЬ-ТАЙГА</text>' +
+            /* Подпись королевства Хладные Ветра */
+            '<text x="380" y="96" text-anchor="middle" fill="#cfd8e3" font-size="16" font-weight="bold" letter-spacing="2">КОРОЛЕВСТВО ХЛАДНЫХ ВЕТРОВ («ХЛАДНЫЕ ВЕТРА»)</text>' +
+            '<text x="380" y="114" text-anchor="middle" fill="#8ea1b2" font-size="11">Вождь Норвинг IV · земли северян-хладцев</text>' +
+            /* Река Студёная */
+            '<path d="M24,232 Q210,218 372,236 T736,226" fill="none" stroke="#395c78" stroke-width="6" opacity="0.8"/>' +
+            '<path d="M24,232 Q210,218 372,236 T736,226" fill="none" stroke="#7aa6c7" stroke-width="1.2" opacity="0.55"/>' +
+            /* Рубеж на юге с центральным королевством Златодвор */
+            '<line x1="40" y1="292" x2="720" y2="292" stroke="#5b5342" stroke-width="1.4" stroke-dasharray="6 5"/>' +
+            '<text x="380" y="318" text-anchor="middle" fill="#bfa67a" font-size="13" letter-spacing="2">ЮЖНЕЕ — ЗЕМЛИ ЗЛАТОДВОРА (ЦЕНТРАЛЬНЫЙ ЭДЕМ)</text>' +
+            '<text x="380" y="336" text-anchor="middle" fill="#8d826c" font-size="10.5">Король Родрик II · торговые тракты вглубь восьми королевств Эдема</text>' +
+            /* Дорога от ставки Норвинга IV через Студёный Брод на юг */
+            '<path d="M286,132 Q336,184 368,234 Q382,266 392,348" fill="none" stroke="#9d8d72" stroke-width="2.2" stroke-dasharray="4 4"/>' +
+            /* Ставка вождя Норвинга IV (столица королевства — отдельно от Брода!) */
+            '<g transform="translate(286,132)">' +
+              '<circle r="8" fill="#2a1d24" stroke="#d4b16a" stroke-width="2"/>' +
+              '<polygon points="-4,2 -4,-3 0,-1 4,-3 4,2" fill="#d4b16a"/>' +
+              '<text x="0" y="-14" text-anchor="middle" fill="#e5cf9c" font-size="12" font-weight="bold">Стужа-на-Тайге</text>' +
+              '<text x="0" y="21" text-anchor="middle" fill="#9fb0c0" font-size="10">ставка вождя Норвинга IV (столица)</text>' +
+            '</g>' +
+            /* Студёный Брод — малое поселение у переправы, где находится игрок */
+            '<g transform="translate(368,234)">' +
+              '<circle r="11" fill="rgba(143,179,217,0.18)"/>' +
+              '<circle r="5.5" fill="#8fb3d9" stroke="#eef4fa" stroke-width="1.8"/>' +
+              '<text x="16" y="-4" text-anchor="start" fill="#eef4fa" font-size="12.5" font-weight="bold">Студёный Брод (вы здесь)</text>' +
+              '<text x="16" y="11" text-anchor="start" fill="#9fb0c0" font-size="10.5">малое северное поселение у переправы · не столица</text>' +
+            '</g>' +
+            /* Роза ветров */
+            '<g transform="translate(698,76)" stroke="#7f93a6" fill="#9fb0c0">' +
+              '<line x1="0" y1="-20" x2="0" y2="20" stroke-width="1.3"/>' +
+              '<line x1="-20" y1="0" x2="20" y2="0" stroke-width="1.3"/>' +
+              '<text x="0" y="-25" text-anchor="middle" font-size="10" stroke="none">С</text>' +
+              '<text x="0" y="32" text-anchor="middle" font-size="9" stroke="none">Ю</text>' +
+            '</g>' +
+          '</svg>' +
+        '</div>' +
+        '<div class="bow-map-lore">' +
+          '<b>Хладные Ветра</b> лежат на самом севере <b>Эдемских земель</b> — среди долгой стужи и бескрайней матери-Тайги, под рукой вождя <b>Норвинга IV</b>. ' +
+          '<b>Студёный Брод</b> — не столица королевства, а небольшое пограничное поселение у каменной речной переправы, через которую солевые и пушные обозы идут на юг к <b>Златодвору</b>.' +
+        '</div>';
+
+      return '<div class="bow-map-wrap">' + switchBar + realmSvg + '</div>';
+    }
+
+    /* Локальный план Студёного Брода с точными координатами и временем переходов */
+    var sq = locs.square, tv = locs.tavern, sm = locs.smithy, out = locs.outskirts, fo = locs.forest;
+    var toSvgX = function (l) { return Math.round((l.mapX / 100) * 760); };
+    var toSvgY = function (l) { return Math.round((l.mapY / 100) * 340); };
+
+    var roadsSvg = [
+      [sq, tv], [sq, sm], [sq, out], [out, fo]
+    ].map(function (pair) {
+      return '<line x1="' + toSvgX(pair[0]) + '" y1="' + toSvgY(pair[0]) +
+        '" x2="' + toSvgX(pair[1]) + '" y2="' + toSvgY(pair[1]) +
+        '" stroke="#8e826b" stroke-width="3" stroke-dasharray="6 5" opacity="0.82"/>';
+    }).join("");
+
+    var pinsHtml = keys.map(function (k) {
+      var l = locs[k];
+      if (!l) { return ""; }
+      var isHere = k === curKey;
+      var mins = isHere ? 0 : Bow.actions.travelMinutes(state, k);
+      var dur = isHere ? "вы здесь" : Bow.actions.formatDuration(mins);
+      var ppl = Bow.actions.peopleAt(state, k);
+      var deadHere = Bow.actions.corpsesAt ? Bow.actions.corpsesAt(state, k) : [];
+      var badges = [];
+      if (ppl.length) { badges.push("◉ " + ppl.length); }
+      if (deadHere.length) { badges.push("☠ " + deadHere.length); }
+      if (isHere && state.guard && state.guard.arrived) { badges.push("⛨ стража"); }
+      if (isHere && state.encounter && state.encounter.robber) { badges.push("⚔ налётчик"); }
+
+      return '<button type="button" class="bow-map-pin' + (isHere ? " bow-map-pin-here" : "") + '" ' +
+        'style="left:' + l.mapX + '%;top:' + l.mapY + '%" ' +
+        'data-act="move" data-loc="' + esc(k) + '"' + (isHere ? ' aria-current="location"' : '') +
+        ' title="' + esc(l.name + " — " + (l.mapHint || l.sub) + " (" + dur + ")") + '">' +
+        '<span class="bow-map-pin-dot"></span>' +
+        '<span class="bow-map-pin-card">' +
+          '<b>' + esc(l.name) + '</b>' +
+          '<i>' + esc(dur) + (badges.length ? " · " + esc(badges.join(" ")) : "") + '</i>' +
+        '</span>' +
+      '</button>';
+    }).join("");
+
+    var directoryHtml = keys.map(function (k) {
+      var l = locs[k];
+      var isHere = k === curKey;
+      var mins = isHere ? 0 : Bow.actions.travelMinutes(state, k);
+      var dur = isHere ? "Вы здесь" : Bow.actions.formatDuration(mins);
+      var pplNames = Bow.actions.peopleAt(state, k).map(function (p) { return p.name; });
+      var deadHere = Bow.actions.corpsesAt ? Bow.actions.corpsesAt(state, k) : [];
+      var metaParts = [];
+      if (pplNames.length) { metaParts.push("люди: " + pplNames.join(", ")); }
+      if (deadHere.length) { metaParts.push("тел: " + deadHere.length); }
+      if (l.trades && l.trades.length) { metaParts.push("торг"); }
+      if (l.jobs && l.jobs.length) { metaParts.push("работа"); }
+
+      return '<div class="bow-map-row' + (isHere ? " bow-map-row-here" : "") + '">' +
+        '<div class="bow-map-row-main">' +
+          '<b>' + esc(l.name) + '</b>' +
+          '<span class="bow-dim">' + esc(l.mapHint || l.sub) + (metaParts.length ? " · " + esc(metaParts.join(" · ")) : "") + '</span>' +
+        '</div>' +
+        '<div class="bow-map-row-go">' +
+          '<span class="bow-map-time">' + esc(dur) + '</span>' +
+          (isHere
+            ? '<span class="bow-equip-tag">текущее место</span>'
+            : '<button type="button" class="bow-trade-btn" data-act="move" data-loc="' + esc(k) + '">Идти · ' + esc(dur) + '</button>') +
+        '</div>' +
+      '</div>';
+    }).join("");
+
+    var localSvg =
+      '<div class="bow-map-canvas bow-map-local">' +
+        '<svg class="bow-map-svg" viewBox="0 0 760 340" preserveAspectRatio="none" aria-hidden="true">' +
+          '<defs>' +
+            '<linearGradient id="bowLocalBg" x1="0" y1="0" x2="0" y2="1">' +
+              '<stop offset="0%" stop-color="#101c22"/>' +
+              '<stop offset="32%" stop-color="#17222c"/>' +
+              '<stop offset="100%" stop-color="#141d26"/>' +
+            '</linearGradient>' +
+          '</defs>' +
+          '<rect width="760" height="340" fill="url(#bowLocalBg)"/>' +
+          /* Полоса вековой Матери-Тайги на севере */
+          '<path d="M0,0 L760,0 L760,86 Q580,102 390,88 T0,96 Z" fill="#0e1a1e" opacity="0.9"/>' +
+          '<text x="148" y="34" fill="#6f8f8a" font-size="11" letter-spacing="2.2">МАТЬ-ТАЙГА (СЕВЕР)</text>' +
+          /* Кольцо бревенчатого частокола Студёного Брода */
+          '<ellipse cx="366" cy="196" rx="212" ry="78" fill="rgba(32,42,52,0.38)" stroke="#4c5b6b" stroke-width="2" stroke-dasharray="10 4"/>' +
+          '<text x="182" y="142" fill="#7d8e9f" font-size="10" letter-spacing="1.4">ЧАСТОКОЛ ПОСЕЛЕНИЯ</text>' +
+          /* Река Студёная и каменная переправа (сам Студёный Брод) */
+          '<path d="M0,288 Q210,272 365,286 T760,278" fill="none" stroke="#2c4c66" stroke-width="18" opacity="0.88"/>' +
+          '<path d="M0,288 Q210,272 365,286 T760,278" fill="none" stroke="#6c99bd" stroke-width="1.4" opacity="0.5"/>' +
+          /* Каменный брод и южный тракт */
+          '<rect x="348" y="274" width="34" height="26" rx="3" fill="#556270" stroke="#9fb0c0" stroke-width="1.2"/>' +
+          '<line x1="365" y1="212" x2="365" y2="338" stroke="#8e826b" stroke-width="3" stroke-dasharray="5 5"/>' +
+          '<text x="404" y="324" fill="#8f9aa5" font-size="10.5">Каменный брод → тракт на юг (к Златодвору)</text>' +
+          roadsSvg +
+          /* Роза ветров и линейка масштаба */
+          '<g transform="translate(706,48)" stroke="#7f93a6" fill="#9fb0c0">' +
+            '<line x1="0" y1="-16" x2="0" y2="16" stroke-width="1.2"/>' +
+            '<line x1="-16" y1="0" x2="16" y2="0" stroke-width="1.2"/>' +
+            '<text x="0" y="-21" text-anchor="middle" font-size="9.5" stroke="none">С</text>' +
+          '</g>' +
+        '</svg>' +
+        '<div class="bow-map-pins">' + pinsHtml + '</div>' +
+      '</div>' +
+      '<div class="bow-map-list">' + directoryHtml + '</div>';
+
+    return '<div class="bow-map-wrap">' + switchBar + localSvg + '</div>';
+  }
+
   Bow.stage = {
     skyOf: skyOf,
     figureSvg: figureSvg,
     weaponKindOf: weaponKindOf,
     backdropSvg: backdropSvg,
     weatherOverlayHtml: weatherOverlayHtml,
-    renderHotspotsAndActors: renderHotspotsAndActors
+    renderHotspotsAndActors: renderHotspotsAndActors,
+    renderMap: renderMap
   };
 
 })(typeof window !== "undefined" ? window : this);/* ============================================================
@@ -10325,8 +11223,8 @@ html.bow-motion-calm .bow-fog-band {
           '<button class="bow-trade-btn" data-act="inspect" data-person="' + esc(p.id) + '">Осмотреть</button>' +
           '<button class="bow-trade-btn bow-fight-btn" data-act="fight-open" data-person="' + esc(p.id) + '">' +
             (p.attitude >= Bow.data.fightRules.sparMinAttitude ? 'Бой' : 'Напасть') + '</button>' +
-          stealBtn +
         '</div>' +
+        stealBtn +
       '</div>';
     }).join("");
   }
@@ -10455,8 +11353,10 @@ html.bow-motion-calm .bow-fog-band {
 
     box.innerHTML = Bow.journal.recent(state, 16).map(function (e) {
       var hh = (e.hour < 10 ? "0" : "") + e.hour;
+      var minVal = typeof e.minute === "number" ? e.minute : 0;
+      var mm = (minVal < 10 ? "0" : "") + minVal;
       return '<div class="bow-jrow bow-kind-' + esc(e.kind) + '">' +
-        '<span class="bow-jtime">' + hh + ':00</span>' +
+        '<span class="bow-jtime">' + hh + ':' + mm + '</span>' +
         '<span class="bow-jtext">' + esc(e.text) + '</span>' +
       '</div>';
     }).join("");
@@ -10465,10 +11365,6 @@ html.bow-motion-calm .bow-fog-band {
   /* ---------- Сцена ----------
      Здесь только описание места и атмосфера. Бытовые зарисовки
      НЕ попадают в журнал: журнал — это история, а не фон. */
-  /* Завеса перехода. Живёт в каркасе, а не в пассаже: иначе при
-     смене места она бы исчезала вместе со старой разметкой.
-     Только прозрачность и никакого сдвига — так её видно и на
-     телефоне, и при включённом «уменьшить движение». */
   function runVeil() {
     var app = $("bow-app");
     if (!app) { return; }
@@ -10484,14 +11380,16 @@ html.bow-motion-calm .bow-fog-band {
     veil.classList.add("bow-veil-run");
   }
 
-  /* Выбор объекта или человека прямо внутри Главного окна. */
+  /* Выбор объекта или человека прямо внутри Главного окна и масштаб Карты. */
   var stageSelection = null;
   var activeTab = "jobs";
+  var activeMapMode = "local";
 
   function setStageSelection(sel) {
     if (!sel) { stageSelection = null; return null; }
     if (stageSelection && stageSelection.kind === sel.kind &&
-        (sel.kind !== "person" || stageSelection.personId === sel.personId)) {
+        (sel.kind !== "person" || stageSelection.personId === sel.personId) &&
+        (sel.kind !== "corpse" || stageSelection.corpseId === sel.corpseId)) {
       stageSelection = null;
       return null;
     }
@@ -10499,8 +11397,19 @@ html.bow-motion-calm .bow-fog-band {
     return stageSelection;
   }
 
+  function setMapMode(mode) {
+    if (mode === "local" || mode === "realm") { activeMapMode = mode; }
+    return activeMapMode;
+  }
+
+  function renderMapPane(state) {
+    var box = $("bow-map");
+    if (!box || !Bow.stage || !Bow.stage.renderMap) { return; }
+    box.innerHTML = Bow.stage.renderMap(state, activeMapMode);
+  }
+
   function setTab(key) {
-    if (["jobs", "people", "trade", "desc"].indexOf(key) === -1) { return activeTab; }
+    if (["jobs", "map", "trade", "desc"].indexOf(key) === -1) { return activeTab; }
     activeTab = key;
     var tabs = document.querySelectorAll('.bow-tabs [data-act="tab"]');
     for (var i = 0; i < tabs.length; i++) {
@@ -10647,6 +11556,94 @@ html.bow-motion-calm .bow-fog-band {
         '</div>' +
       '</div>';
       pop.classList.add("bow-stage-pop-open");
+      return;
+    }
+
+    if (sel.kind === "corpse") {
+      var corpse = null;
+      var cList = state.corpses || [];
+      for (var ci = 0; ci < cList.length; ci++) {
+        if (cList[ci] && cList[ci].id === sel.corpseId && cList[ci].location === state.player.location) {
+          corpse = cList[ci];
+          break;
+        }
+      }
+      if (!corpse) {
+        stageSelection = null;
+        pop.innerHTML = "";
+        pop.classList.remove("bow-stage-pop-open", "bow-stage-pop-left");
+        return;
+      }
+      var lootLines = [];
+      if ((corpse.money || 0) > 0) {
+        lootLines.push('<div class="bow-stage-mini-row"><span class="bow-stage-mini-name">Кошель</span><b class="bow-gold-txt">' + Math.round(corpse.money) + ' м.</b><span></span></div>');
+      }
+      (corpse.items || []).forEach(function (it) {
+        if (!it || !it.itemId) { return; }
+        var def = Bow.economy.findItemDef(it.itemId);
+        lootLines.push('<div class="bow-stage-mini-row"><span class="bow-stage-mini-name">' + esc(def ? def.name : it.itemId) + '</span><span class="bow-dim">' + (it.qty > 1 ? "×" + it.qty : "снаряжение") + '</span><span></span></div>');
+      });
+      var canLoot = !corpse.looted && lootLines.length > 0;
+
+      pop.innerHTML = '<div class="bow-stage-card">' +
+        '<div class="bow-stage-card-head">' +
+          '<div class="bow-stage-card-title"><b>☠ ' + esc(corpse.name) + '</b><span class="bow-dim">· ' + esc(corpse.role || "труп") + '</span></div>' +
+          closeBtn +
+        '</div>' +
+        (canLoot
+          ? '<div class="bow-stage-mini-list">' + lootLines.join("") + '</div>' +
+            '<div class="bow-person-acts" style="margin-top:8px">' +
+              '<button type="button" class="bow-trade-btn bow-fight-btn" data-act="loot-corpse" data-corpse="' + esc(corpse.id) + '">Обыскать и забрать всё</button>' +
+            '</div>'
+          : '<div class="bow-empty">Тело уже обыскано — карманы пусты.</div>') +
+      '</div>';
+      pop.classList.add("bow-stage-pop-open");
+      return;
+    }
+
+    if (sel.kind === "guard") {
+      if (!state.guard || !state.guard.arrived) {
+        stageSelection = null;
+        pop.innerHTML = "";
+        pop.classList.remove("bow-stage-pop-open", "bow-stage-pop-left");
+        return;
+      }
+      var gCost = Bow.guard.bribeCost(state);
+      var gCanPay = state.player.money >= gCost;
+      var gFlee = Math.round(Bow.guard.fleeChance(state) * 100);
+      pop.innerHTML = '<div class="bow-stage-card">' +
+        '<div class="bow-stage-card-head"><div class="bow-stage-card-title"><b>⛨ Стража Брода</b><span class="bow-dim">· их ' + state.guard.squad.length + '</span></div>' + closeBtn + '</div>' +
+        '<div class="bow-stage-card-meta">Десятник с топором преграждает дорогу. За вами числится розыск ' + Math.round(Bow.steal.heatOf(state, "org:guard")) + '.</div>' +
+        '<div class="bow-person-acts bow-self-acts">' +
+          '<button type="button" class="bow-trade-btn" data-act="guard-surrender">Сдаться</button>' +
+          '<button type="button" class="bow-trade-btn" data-act="guard-bribe"' + (gCanPay ? "" : " disabled") + '>Откуп · ' + gCost + ' м.</button>' +
+          '<button type="button" class="bow-trade-btn" data-act="guard-flee">Бежать · ' + gFlee + '%</button>' +
+          '<button type="button" class="bow-trade-btn bow-fight-btn" data-act="guard-fight">Драться</button>' +
+        '</div>' +
+      '</div>';
+      pop.classList.add("bow-stage-pop-open");
+      return;
+    }
+
+    if (sel.kind === "robber") {
+      if (!state.encounter || !state.encounter.robber) {
+        stageSelection = null;
+        pop.innerHTML = "";
+        pop.classList.remove("bow-stage-pop-open", "bow-stage-pop-left");
+        return;
+      }
+      var r = state.encounter.robber;
+      pop.innerHTML = '<div class="bow-stage-card">' +
+        '<div class="bow-stage-card-head"><div class="bow-stage-card-title"><b>⚔ ' + esc(r.name) + '</b><span class="bow-dim">· требует ' + r.demand + ' м.</span></div>' + closeBtn + '</div>' +
+        '<div class="bow-stage-card-meta">Нож у бедра. Ждёт вашего решения.</div>' +
+        '<div class="bow-person-acts bow-self-acts">' +
+          '<button type="button" class="bow-trade-btn" data-act="street-pay">Отдать ' + Math.min(state.player.money, r.demand) + ' м.</button>' +
+          '<button type="button" class="bow-trade-btn" data-act="street-scare">Припугнуть · ' + Math.round(Bow.street.scareChance(state) * 100) + '%</button>' +
+          '<button type="button" class="bow-trade-btn" data-act="street-flee">Бежать · ' + Math.round(Bow.street.fleeChance(state) * 100) + '%</button>' +
+          '<button type="button" class="bow-trade-btn bow-fight-btn" data-act="street-fight">Драться</button>' +
+        '</div>' +
+      '</div>';
+      pop.classList.add("bow-stage-pop-open");
     }
   }
 
@@ -10714,18 +11711,28 @@ html.bow-motion-calm .bow-fog-band {
       }
     }
 
-    /* Подсветка текущего места на кнопках перехода и счётчики на вкладках. */
-    var moveBtns = document.querySelectorAll('.bow-places-row [data-act="move"][data-loc], .bow-actions [data-act="move"][data-loc]');
+    /* Подсветка текущего места и подписи точного времени пути на кнопках перехода (0.0.7.3). */
+    var moveBtns = document.querySelectorAll('.bow-places-row [data-act="move"][data-loc]');
     for (var i = 0; i < moveBtns.length; i++) {
-      var here = moveBtns[i].getAttribute("data-loc") === state.player.location;
-      moveBtns[i].classList.toggle("bow-btn-here", here);
-      if (here) { moveBtns[i].setAttribute("aria-current", "location"); }
-      else { moveBtns[i].removeAttribute("aria-current"); }
+      var btn = moveBtns[i];
+      var locId = btn.getAttribute("data-loc");
+      var baseLabel = btn.getAttribute("data-label") || (Bow.data.locations[locId] ? Bow.data.locations[locId].name : locId);
+      var here = locId === state.player.location;
+      btn.classList.toggle("bow-btn-here", here);
+      if (here) {
+        btn.setAttribute("aria-current", "location");
+        btn.innerHTML = '<span>' + esc(baseLabel) + '</span><i class="bow-move-dur">здесь</i>';
+      } else {
+        btn.removeAttribute("aria-current");
+        var mins = Bow.actions.travelMinutes ? Bow.actions.travelMinutes(state, locId) : 10;
+        var dur = Bow.actions.formatDuration ? Bow.actions.formatDuration(mins) : (mins + " мин.");
+        btn.innerHTML = '<span>' + esc(baseLabel) + '</span><i class="bow-move-dur">' + esc(dur) + '</i>';
+      }
     }
 
     var tabCounts = {
       jobs: Bow.work.listAt(state).length,
-      people: Bow.actions.peopleAt(state, state.player.location).length,
+      map: Object.keys(Bow.data.locations || {}).length,
       trade: ((loc && loc.trades) ? loc.trades.length : 0)
     };
     Object.keys(tabCounts).forEach(function (key) {
@@ -10734,6 +11741,7 @@ html.bow-motion-calm .bow-fog-band {
     });
 
     renderStage(state);
+    renderMapPane(state);
 
     var res = $("bow-last");
     if (res) { res.textContent = lastMessage; }
@@ -11057,7 +12065,8 @@ html.bow-motion-calm .bow-fog-band {
     var page = $("bow-fight-page");
     var f = state.fight;
 
-    /* Отчёт после боя — на месте страницы. */
+    /* Итог боя — остаётся открытым прямо на поле боя (с лежащим врагом на земле),
+       пока игрок сам не нажмёт кнопку выхода (0.0.7.3). */
     if (!f) {
       lastFightPos = {};
       var last = state.flags.lastFight;
@@ -11065,18 +12074,70 @@ html.bow-motion-calm .bow-fog-band {
       if (!page) { return; }
       if (!last) { page.innerHTML = ""; page.classList.remove("bow-page-open"); return; }
 
-      page.innerHTML = '<div class="bow-fight-page-inner">' +
-        '<div class="bow-fight-head"><b>' + esc(last.name) + '</b>' +
-          '<span>' + esc(FIGHT_LABEL[last.outcome] || last.outcome) + '</span></div>' +
+      var hasArena = Array.isArray(last.units) && last.units.length > 0;
+      var lastHead = '<div class="bow-fight-head"><b>' + esc(last.name) + '</b>' +
+        '<span>' + esc(FIGHT_LABEL[last.outcome] || last.outcome) + '</span></div>';
+
+      var lootBtns = [];
+      (last.corpseIds || []).forEach(function (cid) {
+        var found = (state.corpses || []).filter(function (c) { return c && c.id === cid; })[0];
+        if (!found || found.looted) { return; }
+        var parts = [];
+        if ((found.money || 0) > 0) { parts.push(Math.round(found.money) + " м."); }
+        (found.items || []).forEach(function (it) {
+          var def = it && Bow.economy.findItemDef(it.itemId);
+          if (def) { parts.push(def.name.toLowerCase()); }
+        });
+        if (parts.length > 0) {
+          lootBtns.push(
+            '<button class="bow-btn bow-btn-sm bow-fight-danger" data-act="loot-corpse" data-corpse="' + esc(found.id) + '">' +
+              'Обыскать тело: ' + esc(found.name) + ' (' + esc(parts.join(", ")) + ')' +
+            '</button>'
+          );
+        }
+      });
+
+      var controlsAfter =
         (last.note ? '<div class="bow-fight-note">' + esc(last.note) + '</div>' : "") +
         (last.heat ? '<div class="bow-fight-note">розыск +' + last.heat + '</div>' : "") +
+        (last.outcome === "killed"
+          ? '<div class="bow-fight-note">Тело остаётся лежать на земле — его можно обыскать сейчас или позже на локации.</div>'
+          : "") +
         '<div class="bow-fight-log">' + (last.log || []).map(function (l) {
           return '<div class="bow-fight-line bow-fight-' + esc(l.who) + '">' + esc(l.text) + '</div>';
         }).join("") + '</div>' +
         '<div class="bow-fight-acts">' +
-          '<button class="bow-btn bow-btn-sm" data-act="fight-close">Вернуться</button>' +
-        '</div>' +
-      '</div>';
+          lootBtns.join("") +
+          '<button class="bow-btn bow-btn-sm" data-act="fight-close">Покинуть место боя · вернуться</button>' +
+        '</div>';
+
+      if (hasArena) {
+        var lastFld = fightField(last, state);
+        var palLast = Bow.stage ? Bow.stage.skyOf(state) : { phase: "day", weatherKind: "clear" };
+        var lastBKey = state.player.location + "|" + palLast.phase + "|" + palLast.weatherKind;
+        var shellLast = page.querySelector(".bow-fight-live-shell");
+        if (!shellLast || shellLast.getAttribute("data-bg-key") !== lastBKey) {
+          page.innerHTML =
+            '<div class="bow-fight-page-inner bow-fight-live-shell" data-bg-key="' + esc(lastBKey) + '">' +
+              '<div class="bow-fight-head-slot">' + lastHead + '</div>' +
+              '<div class="bow-arena-wrap">' +
+                '<div class="bow-arena-scene">' +
+                  '<div class="bow-arena-backdrop">' + lastFld.bgHtml + '</div>' +
+                  '<div class="bow-arena-slot">' + lastFld.arenaHtml + '</div>' +
+                '</div>' +
+                '<div class="bow-roster">' + lastFld.rosterHtml + '</div>' +
+              '</div>' +
+              '<div class="bow-fight-controls-slot">' + controlsAfter + '</div>' +
+            '</div>';
+        } else {
+          shellLast.querySelector(".bow-fight-head-slot").innerHTML = lastHead;
+          shellLast.querySelector(".bow-arena-slot").innerHTML = lastFld.arenaHtml;
+          shellLast.querySelector(".bow-roster").innerHTML = lastFld.rosterHtml;
+          shellLast.querySelector(".bow-fight-controls-slot").innerHTML = controlsAfter;
+        }
+      } else {
+        page.innerHTML = '<div class="bow-fight-page-inner">' + lastHead + controlsAfter + '</div>';
+      }
       page.classList.add("bow-page-open");
       return;
     }
@@ -11200,19 +12261,10 @@ html.bow-motion-calm .bow-fog-band {
         var foePerson = foeUnit ? (foeUnit.refId ? state.people[foeUnit.refId] : foeUnit) : null;
         var fleePct = Math.round(Bow.fight.fleeChance(state) * 100);
 
-        /* Полоса управления ходом схватки (как в Kenshi: живой бой + тактическая пауза). */
-        body += '<div class="bow-fight-clock">' +
-          '<div class="bow-fight-speeds" role="group" aria-label="Скорость боя">' +
-            '<button class="bow-clock-btn' + (speed === "paused" ? " bow-clock-on" : "") + '" data-act="fight-order" data-kind="speed" data-val="paused" title="Тактическая пауза (Пробел)">❙❙ Пауза</button>' +
-            '<button class="bow-clock-btn' + (speed === "1x" ? " bow-clock-on" : "") + '" data-act="fight-order" data-kind="speed" data-val="1x" title="Живой ход боя">▶ 1x</button>' +
-            '<button class="bow-clock-btn' + (speed === "2x" ? " bow-clock-on" : "") + '" data-act="fight-order" data-kind="speed" data-val="2x" title="Ускоренный ход боя">▶▶ 2x</button>' +
-            '<button class="bow-btn bow-btn-sm bow-step-btn" data-act="fight-step" title="Сделать ровно один обмен ударами">⏭ Шаг</button>' +
-          '</div>' +
-          '<span class="bow-fight-status">' +
-            (speed === "paused"
-              ? "Пауза · нажмите указку удара или «Шаг», либо пустите ▶"
-              : "Живой бой · приказы меняются прямо на ходу (Пробел — пауза)") +
-          '</span>' +
+        /* Чисто пошаговый бой (0.0.7.3): время остановлено, без авто-скорости. */
+        body += '<div class="bow-fight-clock bow-fight-turnbar">' +
+          '<span class="bow-fight-status">Пошаговый бой · мировое время стоит · выберите удар, позицию или нажмите «Сделать ход»</span>' +
+          '<button class="bow-btn bow-btn-sm bow-step-btn" data-act="fight-step" title="Выполнить ровно один ход по выбранным приказам">⏭ Сделать ход</button>' +
         '</div>';
 
         var aimOrder = ["head", "body", "legs", "arms"];
@@ -11427,7 +12479,10 @@ html.bow-motion-calm .bow-fog-band {
     renderScene(state, animate && (sceneChanged || (options && options.forceFade)));
     renderDialog(state);
     var app2 = $("bow-app");
-    if (app2) { app2.classList.toggle("bow-in-fight", !!(state.fight && state.fight.phase !== "choose")); }
+    if (app2) {
+      app2.classList.toggle("bow-in-fight",
+        !!((state.fight && state.fight.phase !== "choose") || (state.flags && state.flags.lastFight)));
+    }
 
     renderFight(state);
     renderGuard(state);
@@ -11540,14 +12595,14 @@ html.bow-motion-calm .bow-fog-band {
   /* ---------- Настройки игры и Меню (0.0.7.1) ---------- */
   var SETTINGS_KEY = "bow-settings-v1";
   var DEFAULT_SETTINGS = {
-    fightStart: "1x",
+    fightStart: "paused",
     font: "normal",
     motion: "full"
   };
 
   function getSettings() {
     var out = {
-      fightStart: DEFAULT_SETTINGS.fightStart,
+      fightStart: "paused",
       font: DEFAULT_SETTINGS.font,
       motion: DEFAULT_SETTINGS.motion
     };
@@ -11555,7 +12610,6 @@ html.bow-motion-calm .bow-fog-band {
       var raw = global.localStorage && global.localStorage.getItem(SETTINGS_KEY);
       if (raw) {
         var parsed = JSON.parse(raw);
-        if (parsed && ["paused", "1x", "2x"].indexOf(parsed.fightStart) !== -1) { out.fightStart = parsed.fightStart; }
         if (parsed && ["normal", "large"].indexOf(parsed.font) !== -1) { out.font = parsed.font; }
         if (parsed && ["full", "calm"].indexOf(parsed.motion) !== -1) { out.motion = parsed.motion; }
       }
@@ -11575,8 +12629,7 @@ html.bow-motion-calm .bow-fog-band {
 
   function setSetting(key, val) {
     var cur = getSettings();
-    if (key === "fightStart" && ["paused", "1x", "2x"].indexOf(val) !== -1) { cur.fightStart = val; }
-    else if (key === "font" && ["normal", "large"].indexOf(val) !== -1) { cur.font = val; }
+    if (key === "font" && ["normal", "large"].indexOf(val) !== -1) { cur.font = val; }
     else if (key === "motion" && ["full", "calm"].indexOf(val) !== -1) { cur.motion = val; }
     else { return { ok: false, message: "Неизвестная настройка." }; }
 
@@ -11594,11 +12647,9 @@ html.bow-motion-calm .bow-fog-band {
     var s = getSettings();
     box.innerHTML =
       '<div class="bow-setting-row">' +
-        '<div class="bow-setting-label"><b>Начало боя</b><span class="bow-dim">В каком темпе открывается схватка</span></div>' +
+        '<div class="bow-setting-label"><b>Режим схватки</b><span class="bow-dim">Пошаговый бой (мировое время стоит)</span></div>' +
         '<div class="bow-setting-opts">' +
-          '<button class="bow-btn bow-btn-sm' + (s.fightStart === "1x" ? " bow-order-on" : "") + '" data-act="setting" data-key="fightStart" data-val="1x">Живой 1x</button>' +
-          '<button class="bow-btn bow-btn-sm' + (s.fightStart === "2x" ? " bow-order-on" : "") + '" data-act="setting" data-key="fightStart" data-val="2x">Быстро 2x</button>' +
-          '<button class="bow-btn bow-btn-sm' + (s.fightStart === "paused" ? " bow-order-on" : "") + '" data-act="setting" data-key="fightStart" data-val="paused">На паузе</button>' +
+          '<span class="bow-equip-tag">Пошагово</span>' +
         '</div>' +
       '</div>' +
       '<div class="bow-setting-row">' +
@@ -11695,6 +12746,8 @@ html.bow-motion-calm .bow-fog-band {
     isDrawerOpen: isDrawerOpen,
     scrollDrawerTo: scrollDrawerTo,
     setTab: setTab,
+    setMapMode: setMapMode,
+    renderMapPane: renderMapPane,
     setStageSelection: setStageSelection,
     getSettings: getSettings,
     setSetting: setSetting,
@@ -11773,7 +12826,24 @@ html.bow-motion-calm .bow-fog-band {
       Bow.time.setScale(state, scale);
       startClock();
       return { ok: true, message: scale === "paused" ? "Время остановлено." :
-        scale === "1x" ? "Время идёт." : "Время идёт быстрее." };
+        scale === "1x" ? "Время идёт (1 мин. = 2 сек.)." : "Время идёт вчетверо быстрее." };
+    },
+    "loot-corpse": function (el) {
+      var res = Bow.adapter.act.lootCorpse(getState(), el.getAttribute("data-corpse"));
+      return res;
+    },
+    "open-map": function () {
+      Bow.ui.setTab("map");
+      var mapEl = document.getElementById("bow-map");
+      if (mapEl && mapEl.scrollIntoView) {
+        mapEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }
+      return { ok: true, message: "" };
+    },
+    "map-mode": function (el) {
+      Bow.ui.setMapMode(el.getAttribute("data-mode"));
+      Bow.ui.renderMapPane(getState());
+      return { ok: true, message: "" };
     },
     steal: function (el) {
       return Bow.adapter.act.steal(getState(), el.getAttribute("data-person"));
@@ -11811,9 +12881,7 @@ html.bow-motion-calm .bow-fog-band {
       var state = getState();
       var res = Bow.adapter.act.fightStart(state, el.getAttribute("data-mode"));
       if (res && res.ok && state.fight && state.fight.phase === "exchange") {
-        var spd = (Bow.ui.getSettings && Bow.ui.getSettings().fightStart) || "1x";
-        Bow.fight.setOrder(state, "speed", spd);
-        startFightClock();
+        Bow.fight.setOrder(state, "speed", "paused");
       }
       return res;
     },
@@ -11821,9 +12889,7 @@ html.bow-motion-calm .bow-fog-band {
       var state = getState();
       var kind = el.getAttribute("data-kind");
       var val = el.getAttribute("data-val");
-      var res = Bow.adapter.act.fightOrder(state, kind, val);
-      if (kind === "speed") { startFightClock(); }
-      return res;
+      return Bow.adapter.act.fightOrder(state, kind, val);
     },
     "fight-step": function () {
       var state = getState();
@@ -11844,16 +12910,6 @@ html.bow-motion-calm .bow-fog-band {
         var o = Bow.fight.ensureOrders(state.fight);
         if (stance && stance !== "flee" && stance !== "back") { o.stance = stance; }
         if (aim) { o.aim = aim; }
-        /* На живом ходу (1x / 2x) смена места удара или удержания позиции
-           меняет приказ на лету. Побег и шаг назад выполняются сразу. */
-        if (o.speed !== "paused" && stance !== "flee" && stance !== "back") {
-          return {
-            ok: true,
-            message: stance === "guard"
-              ? "Держите позицию в защите."
-              : ("Сближаетесь · метите " + Bow.fight.aimDef(aim || o.aim).short + ".")
-          };
-        }
       }
       return Bow.adapter.act.fightMove(state, stance, target, aim);
     },
@@ -11877,9 +12933,7 @@ html.bow-motion-calm .bow-fog-band {
       var state = getState();
       var res = Bow.adapter.act.guardFight(state);
       if (res && res.ok && state.fight && state.fight.phase === "exchange") {
-        var spd = (Bow.ui.getSettings && Bow.ui.getSettings().fightStart) || "1x";
-        Bow.fight.setOrder(state, "speed", spd);
-        startFightClock();
+        Bow.fight.setOrder(state, "speed", "paused");
       }
       return res;
     },
@@ -11896,9 +12950,7 @@ html.bow-motion-calm .bow-fog-band {
       var state = getState();
       var res = Bow.adapter.act.streetFight(state);
       if (res && res.ok && state.fight && state.fight.phase === "exchange") {
-        var spd = (Bow.ui.getSettings && Bow.ui.getSettings().fightStart) || "1x";
-        Bow.fight.setOrder(state, "speed", spd);
-        startFightClock();
+        Bow.fight.setOrder(state, "speed", "paused");
       }
       return res;
     },
@@ -11949,14 +13001,15 @@ html.bow-motion-calm .bow-fog-band {
     "stage-select": function (el) {
       var kind = el.getAttribute("data-kind");
       var personId = el.getAttribute("data-person");
+      var corpseId = el.getAttribute("data-corpse");
       var xVal = parseFloat(el.getAttribute("data-x"));
       Bow.ui.setStageSelection({
         kind: kind,
         personId: personId,
+        corpseId: corpseId,
         x: isNaN(xVal) ? null : xVal
       });
       if (kind === "jobs" || kind === "trade") { Bow.ui.setTab(kind); }
-      if (kind === "person") { Bow.ui.setTab("people"); }
       return { ok: true, message: "" };
     },
     "stage-close": function () {
@@ -12027,6 +13080,10 @@ html.bow-motion-calm .bow-fog-band {
      иначе после поражения страже невозможно закрыть отчёт боя перед клеткой. */
   var ALWAYS_ALLOWED = {
     "fight-close": true,
+    "loot-corpse": true,
+    "open-map": true,
+    "map-mode": true,
+    "stage-select": true,
     "close-panel": true,
     "close-sheet": true,
     "close-dialog": true,
@@ -12147,8 +13204,9 @@ html.bow-motion-calm .bow-fog-band {
     if (!state || !state.time) { return false; }
     if (state.time.scale === "paused") { return false; }
     if (state.dialog) { return false; }
-    /* Бой — пошаговый: часы не должны тикать между ударами. */
+    /* Бой и его незакрытый итог — пошаговые: часы не тикают во время схватки. */
     if (state.fight) { return false; }
+    if (state.flags && state.flags.lastFight) { return false; }
     /* Стража, грабитель и клетка ждут решения игрока, а не фоновых часов. */
     if (state.guard || state.encounter || state.jail) { return false; }
     if (state.dead) { return false; }
@@ -12157,17 +13215,11 @@ html.bow-motion-calm .bow-fog-band {
     return true;
   }
 
-  /* ---------- Таймер полуручного боя (0.0.7 — как в Kenshi) ---------- */
+  /* ---------- Бой чисто пошаговый (0.0.7.3): авто-таймер схватки отключён ---------- */
   var fightTimer = null;
 
-  function fightShouldRun(state) {
-    if (!state || !state.fight) { return false; }
-    if (state.fight.phase !== "exchange") { return false; }
-    var o = Bow.fight.ensureOrders(state.fight);
-    if (!o || o.speed === "paused") { return false; }
-    if (Bow.ui.isDrawerOpen()) { return false; }
-    if (openPersonId) { return false; }
-    return true;
+  function fightShouldRun() {
+    return false;
   }
 
   function stopFightClock() {
@@ -12179,26 +13231,6 @@ html.bow-motion-calm .bow-fog-band {
 
   function startFightClock() {
     stopFightClock();
-    var state = getState();
-    if (!state || !state.fight || state.fight.phase !== "exchange") { return; }
-    var o = Bow.fight.ensureOrders(state.fight);
-    if (!o || o.speed === "paused") { return; }
-
-    var ms = o.speed === "2x" ? 550 : 1100;
-    fightTimer = global.setInterval(function () {
-      var st = getState();
-      if (!st.fight || st.fight.phase !== "exchange") {
-        stopFightClock();
-        refresh(true);
-        return;
-      }
-      var cur = Bow.fight.ensureOrders(st.fight);
-      if (cur.speed === "paused") { stopFightClock(); return; }
-      if (!fightShouldRun(st)) { return; }
-
-      Bow.adapter.act.fightStep(st);
-      refresh(true);
-    }, ms);
   }
 
   function stopClock() {
@@ -12215,21 +13247,24 @@ html.bow-motion-calm .bow-fog-band {
     var scale = state.time.scale || "paused";
     if (scale === "paused") { return; }
 
-    var perSecond = Bow.time.hoursPerSecond(scale);
-    if (!perSecond) { return; }
+    var perSec = Bow.time.minutesPerSecond ? Bow.time.minutesPerSecond(scale) : 0;
+    if (!perSec) { return; }
 
-    /* Тик раз в 500 мс: час на 1x — за 3 секунды, на 4x — за секунду. */
+    /* Шаг проверки — раз в 500 мс:
+       на 1x (0.5 мин./с) 1 игровая минута проходит ровно за 2000 мс (2 секунды),
+       на 4x (2.0 мин./с) 1 игровая минута проходит за 500 мс (0.5 секунды). */
     clockTimer = global.setInterval(function () {
       var st = getState();
       if (st.time.scale === "paused") { stopClock(); return; }
 
       if (!clockShouldRun(st)) { return; }
 
-      clockAccum += Bow.time.hoursPerSecond(st.time.scale) * 0.5;
+      var rate = Bow.time.minutesPerSecond ? Bow.time.minutesPerSecond(st.time.scale) : 0;
+      clockAccum += rate * 0.5;
       var steps = 0;
-      while (clockAccum >= 1 && steps < 6) {
+      while (clockAccum >= 1 && steps < 12) {
         clockAccum -= 1;
-        Bow.time.tick(st);
+        Bow.time.tickMinute(st);
         steps += 1;
       }
       if (steps > 0) { refresh(true); }
@@ -12392,20 +13427,8 @@ html.bow-motion-calm .bow-fog-band {
       });
     }
 
-    /* Escape закрывает модальное окно/карточку, а Пробел в бою ставит тактическую паузу. */
+    /* Escape закрывает модальное окно или карточку сцены. */
     document.addEventListener("keydown", function (event) {
-      if (event.key === " " || event.code === "Space") {
-        var st = getState();
-        if (st && st.fight && st.fight.phase === "exchange" && !Bow.ui.isDrawerOpen() && !openPersonId) {
-          event.preventDefault();
-          var ord = Bow.fight.ensureOrders(st.fight);
-          var next = ord.speed === "paused" ? "1x" : "paused";
-          Bow.fight.setOrder(st, "speed", next);
-          startFightClock();
-          refresh(true);
-          return;
-        }
-      }
       if (event.key !== "Escape") { return; }
       if (Bow.ui.isDrawerOpen()) { Bow.ui.setDrawer(false); return; }
       if (openPersonId) { openSheet(null); return; }
@@ -12516,22 +13539,25 @@ html.bow-motion-calm .bow-fog-band {
 
     &lt;div class=&quot;bow-clock-controls&quot; role=&quot;group&quot; aria-label=&quot;Ход времени&quot;&gt;
       &lt;button class=&quot;bow-clock-btn&quot; data-act=&quot;clock&quot; data-scale=&quot;paused&quot; title=&quot;Пауза&quot;&gt;❙❙&lt;/button&gt;
-      &lt;button class=&quot;bow-clock-btn&quot; data-act=&quot;clock&quot; data-scale=&quot;1x&quot; title=&quot;Обычный ход&quot;&gt;▶&lt;/button&gt;
-      &lt;button class=&quot;bow-clock-btn&quot; data-act=&quot;clock&quot; data-scale=&quot;4x&quot; title=&quot;Ускорить&quot;&gt;▶▶&lt;/button&gt;
+      &lt;button class=&quot;bow-clock-btn&quot; data-act=&quot;clock&quot; data-scale=&quot;1x&quot; title=&quot;Обычный ход (1 мин. = 2 сек.)&quot;&gt;▶&lt;/button&gt;
+      &lt;button class=&quot;bow-clock-btn&quot; data-act=&quot;clock&quot; data-scale=&quot;4x&quot; title=&quot;Быстрый ход (2 мин./сек.)&quot;&gt;▶▶&lt;/button&gt;
     &lt;/div&gt;
   &lt;/header&gt;
 
   &lt;!-- ============================================================
-       ПЕРЕХОД МЕЖДУ ЛОКАЦИЯМИ
+       ПЕРЕХОД МЕЖДУ ЛОКАЦИЯМИ (с подписями точного времени пути)
        ============================================================ --&gt;
   &lt;section class=&quot;bow-places-bar&quot; aria-label=&quot;Переход&quot;&gt;
-    &lt;div class=&quot;bow-places-head&quot;&gt;Переход&lt;/div&gt;
+    &lt;div class=&quot;bow-places-head&quot;&gt;
+      &lt;span&gt;Переход&lt;/span&gt;
+      &lt;button type=&quot;button&quot; class=&quot;bow-map-open-btn&quot; data-act=&quot;open-map&quot; title=&quot;Открыть карту поселения и Хладных Ветров&quot;&gt;◈ Карта&lt;/button&gt;
+    &lt;/div&gt;
     &lt;div class=&quot;bow-actions bow-places-row&quot;&gt;
-      &lt;button class=&quot;bow-btn&quot; data-act=&quot;move&quot; data-loc=&quot;square&quot;&gt;Площадь&lt;/button&gt;
-      &lt;button class=&quot;bow-btn&quot; data-act=&quot;move&quot; data-loc=&quot;tavern&quot;&gt;Трактир&lt;/button&gt;
-      &lt;button class=&quot;bow-btn&quot; data-act=&quot;move&quot; data-loc=&quot;smithy&quot;&gt;Кузница&lt;/button&gt;
-      &lt;button class=&quot;bow-btn&quot; data-act=&quot;move&quot; data-loc=&quot;outskirts&quot;&gt;Околица&lt;/button&gt;
-      &lt;button class=&quot;bow-btn&quot; data-act=&quot;move&quot; data-loc=&quot;forest&quot;&gt;Опушка тайги&lt;/button&gt;
+      &lt;button class=&quot;bow-btn&quot; data-act=&quot;move&quot; data-loc=&quot;square&quot; data-label=&quot;Площадь&quot;&gt;Площадь&lt;/button&gt;
+      &lt;button class=&quot;bow-btn&quot; data-act=&quot;move&quot; data-loc=&quot;tavern&quot; data-label=&quot;Трактир&quot;&gt;Трактир&lt;/button&gt;
+      &lt;button class=&quot;bow-btn&quot; data-act=&quot;move&quot; data-loc=&quot;smithy&quot; data-label=&quot;Кузница&quot;&gt;Кузница&lt;/button&gt;
+      &lt;button class=&quot;bow-btn&quot; data-act=&quot;move&quot; data-loc=&quot;outskirts&quot; data-label=&quot;Околица&quot;&gt;Околица&lt;/button&gt;
+      &lt;button class=&quot;bow-btn&quot; data-act=&quot;move&quot; data-loc=&quot;forest&quot; data-label=&quot;Опушка тайги&quot;&gt;Опушка тайги&lt;/button&gt;
     &lt;/div&gt;
   &lt;/section&gt;
 
@@ -12577,15 +13603,15 @@ html.bow-motion-calm .bow-fog-band {
       &lt;section id=&quot;bow-jail&quot; class=&quot;bow-fight&quot; aria-live=&quot;polite&quot;&gt;&lt;/section&gt;
       &lt;section id=&quot;bow-dialog&quot; class=&quot;bow-dialog&quot; aria-live=&quot;polite&quot;&gt;&lt;/section&gt;
 
-      &lt;!-- НИЖНИЙ БЛОК ДЕЙСТВИЙ ПО ВКЛАДКАМ --&gt;
+      &lt;!-- НИЖНИЙ БЛОК ДЕЙСТВИЙ ПО ВКЛАДКАМ (4 вкладки: Заработок, Карта, Товар и снедь, О месте) --&gt;
       &lt;section class=&quot;bow-panel&quot;&gt;
         &lt;h2 class=&quot;bow-h2&quot;&gt;Действия&lt;/h2&gt;
         &lt;div class=&quot;bow-tabs&quot; role=&quot;tablist&quot; aria-label=&quot;Разделы места&quot;&gt;
           &lt;button class=&quot;bow-tab bow-tab-on&quot; data-act=&quot;tab&quot; data-tab=&quot;jobs&quot; role=&quot;tab&quot; aria-selected=&quot;true&quot;&gt;
             &lt;span&gt;Заработок&lt;/span&gt;&lt;b class=&quot;bow-fold-count&quot; data-count-for=&quot;jobs&quot;&gt;0&lt;/b&gt;
           &lt;/button&gt;
-          &lt;button class=&quot;bow-tab&quot; data-act=&quot;tab&quot; data-tab=&quot;people&quot; role=&quot;tab&quot; aria-selected=&quot;false&quot;&gt;
-            &lt;span&gt;Рядом&lt;/span&gt;&lt;b class=&quot;bow-fold-count&quot; data-count-for=&quot;people&quot;&gt;0&lt;/b&gt;
+          &lt;button class=&quot;bow-tab&quot; data-act=&quot;tab&quot; data-tab=&quot;map&quot; role=&quot;tab&quot; aria-selected=&quot;false&quot;&gt;
+            &lt;span&gt;Карта&lt;/span&gt;&lt;b class=&quot;bow-fold-count&quot; data-count-for=&quot;map&quot;&gt;5&lt;/b&gt;
           &lt;/button&gt;
           &lt;button class=&quot;bow-tab&quot; data-act=&quot;tab&quot; data-tab=&quot;trade&quot; role=&quot;tab&quot; aria-selected=&quot;false&quot;&gt;
             &lt;span&gt;Товар и снедь&lt;/span&gt;&lt;b class=&quot;bow-fold-count&quot; data-count-for=&quot;trade&quot;&gt;0&lt;/b&gt;
@@ -12599,8 +13625,8 @@ html.bow-motion-calm .bow-fog-band {
           &lt;div id=&quot;bow-jobs&quot; class=&quot;bow-jobs&quot;&gt;&lt;/div&gt;
         &lt;/div&gt;
 
-        &lt;div class=&quot;bow-tab-pane&quot; data-tab-pane=&quot;people&quot;&gt;
-          &lt;div id=&quot;bow-people&quot; class=&quot;bow-people&quot;&gt;&lt;/div&gt;
+        &lt;div class=&quot;bow-tab-pane&quot; data-tab-pane=&quot;map&quot;&gt;
+          &lt;div id=&quot;bow-map&quot; class=&quot;bow-map&quot;&gt;&lt;/div&gt;
         &lt;/div&gt;
 
         &lt;div class=&quot;bow-tab-pane&quot; data-tab-pane=&quot;trade&quot;&gt;
@@ -12613,6 +13639,9 @@ html.bow-motion-calm .bow-fog-band {
             &lt;div id=&quot;bow-loc-text&quot; class=&quot;bow-scene-text&quot;&gt;&lt;/div&gt;
           &lt;/section&gt;
         &lt;/div&gt;
+
+        &lt;!-- Скрытый технический контейнер карточек локации для совместимости прямых вызовов --&gt;
+        &lt;div id=&quot;bow-people&quot; class=&quot;bow-people bow-sr-only&quot; aria-hidden=&quot;true&quot;&gt;&lt;/div&gt;
       &lt;/section&gt;
 
     &lt;/main&gt;
@@ -12702,8 +13731,8 @@ html.bow-motion-calm .bow-fog-band {
   &lt;div id=&quot;bow-sheet&quot; class=&quot;bow-sheet&quot; aria-hidden=&quot;true&quot;&gt;&lt;/div&gt;
 
   &lt;footer class=&quot;bow-footer&quot;&gt;
-    &lt;span&gt;Blades Of War · прототип 0.0.7.2 · тестовая локация: Студёный Брод&lt;/span&gt;
-    &lt;span class=&quot;bow-dim&quot;&gt;Текст мира — черновой, имена и место подлежат согласованию&lt;/span&gt;
+    &lt;span&gt;Blades Of War · прототип 0.0.7.3 · Хладные Ветра · Студёный Брод&lt;/span&gt;
+    &lt;span class=&quot;bow-dim&quot;&gt;Север Эдемских земель · малое поселение у переправы&lt;/span&gt;
   &lt;/footer&gt;
 
 &lt;/div&gt;</tw-passagedata>

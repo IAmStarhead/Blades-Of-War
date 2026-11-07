@@ -134,11 +134,11 @@
       return { ok: true, scared: true, message: "Он отступил. В этот раз — без драки." };
     }
 
-    /* Не испугался — сразу бьёт. */
-    Bow.needs.applyChange(state.player, "health", -8);
+    /* Не испугался — сразу бьёт (оставляя минимум 5 здор. до начала боя). */
+    state.player.needs.health = Math.max(5, Bow.util.round1(state.player.needs.health - 8));
     e.phase = "fight";
     Bow.journal.add(state, "Грабитель не испугался и ударил первым.", "danger");
-    return { ok: true, scared: false, message: "Он ударил первым: −8 здор." };
+    return { ok: true, scared: false, message: "Он ударил первым: −8 здор. Придётся драться." };
   }
 
   /* ---------- Драка ---------- */
@@ -205,7 +205,8 @@
       return { ok: true, escaped: true, message: "Вы ушли — правда, не туда, куда шли." };
     }
 
-    Bow.needs.applyChange(state.player, "health", -7);
+    state.player.needs.health = Math.max(5, Bow.util.round1(state.player.needs.health - 7));
+    e.phase = "fight";
     Bow.journal.add(state, "Грабитель догнал вас на бегу.", "danger");
     return { ok: true, escaped: false, message: "Он догнал: −7 здор. Придётся драться." };
   }

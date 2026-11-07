@@ -234,6 +234,18 @@
     "0.0.7.1": function (state) {
       state.version = "0.0.7.2";
       return state;
+    },
+
+    /* 0.0.7.2 → 0.0.7.3: минутное время, чисто пошаговый бой, лутаемые трупы и канон Хладных Ветров. */
+    "0.0.7.2": function (state) {
+      if (state.time && typeof state.time.minute !== "number") { state.time.minute = 0; }
+      if (!Array.isArray(state.corpses)) { state.corpses = []; }
+      if (state.fight && state.fight.orders) { state.fight.orders.speed = "paused"; }
+      if (state.orgs && state.orgs["org:coldwind"]) {
+        state.orgs["org:coldwind"].short = "Хладные Ветра";
+      }
+      state.version = "0.0.7.3";
+      return state;
     }
   };
 
@@ -300,6 +312,8 @@
       guard: null,
       /* Уличная встреча: { kind, robber, phase } */
       encounter: null,
+      /* Трупы на локациях: [{ id, personId, roleKey, name, role, location, money, items[], looted, killedAt }] */
+      corpses: [],
       /* Смерть: { cause, text, hours }. Игра после неё не продолжается. */
       dead: null,
       /* Счётчик визитов в локации — для сюжетных условий */

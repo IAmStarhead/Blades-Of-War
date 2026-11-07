@@ -808,7 +808,7 @@ function byAct(act, key) {
 
     const back = win.Bow.save.deserialize(win.Bow.save.serialize(g, 1));
     assert(back.ok, "старое сохранение не загрузилось: " + back.reason);
-    eq(back.state.version, "0.0.7.2", "версия после миграции");
+    eq(back.state.version, "0.0.7.3", "версия после миграции");
     assert(back.state.fight === null, "после миграции нет пустого слота боя");
     assert(back.state.people["person:tarn"].weapon, "кузнец остался без топора");
     return "0.0.5 → " + back.state.version + ", топор кузнеца на месте";
@@ -1005,7 +1005,7 @@ function byAct(act, key) {
     delete g.flags.huntedHeat;
 
     const back = win.Bow.save.deserialize(win.Bow.save.serialize(g, 1));
-    eq(back.state.version, "0.0.7.2", "версия после миграции");
+    eq(back.state.version, "0.0.7.3", "версия после миграции");
     assert(back.state.guard && back.state.guard.arrived === true,
       "стража из старого сохранения осталась «непришедшей» — из неё не выбраться");
     eq(back.state.flags.huntedUntil, null, "поле срока розыска");
@@ -1763,7 +1763,7 @@ function byAct(act, key) {
 
     const back = win.Bow.save.deserialize(win.Bow.save.serialize(g, 1));
     assert(back.ok, "сохранение 0.0.6.2 не загрузилось: " + back.reason);
-    eq(back.state.version, "0.0.7.2", "версия после миграции");
+    eq(back.state.version, "0.0.7.3", "версия после миграции");
     assert(back.state.steal && typeof back.state.steal === "object", "нет слота подготовки кражи");
     eq(back.state.player.lastTreat, null, "lastTreat после миграции");
     assert(typeof back.state.player.skills.medicine === "number", "навык лечения не восстановлен");
@@ -1929,19 +1929,15 @@ function byAct(act, key) {
     const guardTaken = win.Bow.fight.damageRoll(attacker, g.player, "guard", "guard", seq([0.5]), "body");
     assert(guardTaken < pressTaken, "стойка защиты не снижает урон: " + guardTaken + " vs " + pressTaken);
 
-    /* 3. Таймер боя крутится только на 1x/2x в фазе exchange и замирает на паузе и при открытом окне. */
+    /* 3. С 0.0.7.3 бой чисто пошаговый: авто-таймер схватки отключён на любом приказе. */
     const live = game();
     const snap = clone(live);
     try {
       live.fight = g.fight;
       win.Bow.fight.setOrder(live, "speed", "1x");
-      win.Bow.ui.setDrawer(false);
-      assert(win.BowGame.fightShouldRun(live), "таймер боя не идёт на 1x");
-      win.Bow.ui.setDrawer(true, "state");
-      assert(!win.BowGame.fightShouldRun(live), "таймер боя не замер при открытом модальном окне");
-      win.Bow.ui.setDrawer(false);
+      assert(!win.BowGame.fightShouldRun(live), "авто-таймер боя всё ещё крутится вопреки пошаговому режиму 0.0.7.3");
       win.Bow.fight.setOrder(live, "speed", "paused");
-      assert(!win.BowGame.fightShouldRun(live), "таймер боя не замер на паузе");
+      assert(!win.BowGame.fightShouldRun(live), "таймер боя активен на паузе");
     } finally {
       win.BowGame.stopFightClock();
       win.Bow.ui.setDrawer(false);
@@ -1949,7 +1945,7 @@ function byAct(act, key) {
       win.BowGame.refresh(true);
     }
 
-    return "вольный отряд → слабейший, защита −" + pressTaken + "→−" + guardTaken + ", пауза работает";
+    return "вольный отряд → слабейший, защита −" + pressTaken + "→−" + guardTaken + ", пошаговый режим";
   });
 
   check("Миграция 0.0.6.3 → 0.0.7 добавляет тактические приказы активному бою", () => {
@@ -1961,9 +1957,9 @@ function byAct(act, key) {
     };
     const back = win.Bow.save.deserialize(win.Bow.save.serialize(g, 1));
     assert(back.ok, "сохранение 0.0.6.3 не загрузилось: " + back.reason);
-    eq(back.state.version, "0.0.7.2", "версия после миграции");
+    eq(back.state.version, "0.0.7.3", "версия после миграции");
     assert(back.state.fight.orders && back.state.fight.orders.aim === "body", "приказы боя созданы при миграции");
-    return "0.0.6.3 → 0.0.7.1, приказы боя созданы";
+    return "0.0.6.3 → 0.0.7.3, приказы боя созданы";
   });
 
   /* 8н. Круг 13 (0.0.7.1): фикс зависания в клетке, честная дистанция боя, логотип и Меню игры */
@@ -2245,6 +2241,288 @@ function byAct(act, key) {
     return "центровка 100vw + компактные inline-flex кнопки в окнах";
   });
 
+  /* 8п. Круг 15 (0.0.7.3): минутное время (1 мин. = 2 сек.), чисто пошаговый бой,
+         лежащие и лутаемые трупы, визуальная стража/грабители на сцене, переходы и Карта Хладных Ветров */
+  check("Минутный ход времени 0.0.7.3: на 1x идёт по 1 минуте за 2 сек., а не прыгает сразу на час", () => {
+    eq(win.Bow.time.minutesPerSecond("1x"), 0.5, "на 1x должно быть 0.5 мин./сек. (1 мин. за 2 сек.)");
+    eq(win.Bow.time.minutesPerSecond("4x"), 2.0, "на 4x должно быть 2.0 мин./сек.");
+
+    const g = clone(game());
+    g.time.hour = 8;
+    g.time.minute = 0;
+    const h0 = g.time.totalHours;
+
+    win.Bow.time.tickMinute(g);
+    eq(g.time.hour, 8, "час изменился после одной минуты");
+    eq(g.time.minute, 1, "минута не сдвинулась на +1");
+    eq(g.time.totalHours, h0, "totalHours прыгнул раньше 60 минут");
+
+    const cross = win.Bow.time.advanceMinutes(g, 60);
+    eq(cross.hoursPassed, 1, "переход через 60 минут должен дать ровно 1 час");
+    eq(g.time.hour, 9, "час после +61 минуты");
+    eq(g.time.minute, 1, "остаток минут после перехода часа");
+    eq(g.time.totalHours, h0 + 1, "totalHours после полного часа");
+    return "1x = 0.5 мин./с (1 мин. за 2 с), 08:00 → 08:01 → 09:01";
+  });
+
+  check("Пошаговый бой 0.0.7.3: выбор скорости убран, а мировое время стоит до закрытия окна боя", () => {
+    const g = game();
+    const snap = clone(g);
+    try {
+      g.fight = null;
+      g.flags.lastFight = null;
+      g.player.location = "square";
+      g.time.hour = 11;
+      g.time.minute = 23;
+      g.time.scale = "1x";
+      g.people["person:liva"].location = "square";
+      g.people["person:liva"].alive = true;
+      g.people["person:liva"].needs.health = 100;
+
+      win.Bow.fight.open(g, "person:liva");
+      win.Bow.fight.start(g, "crime", seq([0.5]));
+      win.BowGame.refresh(true);
+
+      const page = doc().getElementById("bow-fight-page");
+      assert(!page.querySelector(".bow-fight-speeds"), "в окне боя остались кнопки выбора скорости!");
+      assert(page.querySelector(".bow-fight-turnbar"), "нет пошаговой полосы управления боем");
+      assert(!win.BowGame.fightShouldRun(g), "авто-таймер боя не отключён");
+      assert(!win.BowGame.clockShouldRun(g), "мировые часы идут во время боя");
+
+      win.Bow.fight.move(g, "press", seq([0.2, 0.4]));
+      eq(g.time.hour, 11, "час сдвинулся во время боя");
+      eq(g.time.minute, 23, "минуты сдвинулись во время боя");
+      return "скорость убрана, время 11:23 стоит неподвижно весь бой";
+    } finally {
+      Object.keys(snap).forEach((k) => { g[k] = snap[k]; });
+      win.BowGame.refresh(true);
+    }
+  });
+
+  check("Вкладка «Рядом» убрана в пользу «Карты», а карточки жителей растянуты без сжатия (фикс image-7)", () => {
+    const visibleTabs = [...doc().querySelectorAll('.bow-tabs [data-act="tab"]')];
+    eq(visibleTabs.length, 4, "видимых вкладок в блоке «Действия»");
+    assert(!visibleTabs.some((t) => t.getAttribute("data-tab") === "people"), "вкладка «Рядом» всё ещё торчит в интерфейсе!");
+    assert(visibleTabs.some((t) => t.getAttribute("data-tab") === "map"), "нет вкладки «Карта»");
+
+    const styles = [...doc().querySelectorAll("style")].map((x) => x.textContent).join("\n");
+    assert(/\.bow-person\s*\{[^}]*align-items:\s*stretch/.test(styles) &&
+           /\.bow-person\s*\{[^}]*width:\s*100%/.test(styles),
+      "карточка .bow-person не растянута по ширине (align-items: stretch; width: 100%)");
+    return "«Рядом» убрана → «Карта», .bow-person выровнена на 100%";
+  });
+
+  check("После «Добить» враг лежит на поле боя, окно НЕ закрывается само, а труп остаётся на локации для лута", () => {
+    const g = game();
+    const snap = clone(g);
+    try {
+      g.fight = null;
+      g.flags.lastFight = null;
+      g.corpses = [];
+      g.player.location = "smithy";
+      g.player.skills.combat = 95;
+      g.player.needs.health = 100;
+      g.player.needs.fatigue = 100;
+      const moneyBefore = g.player.money;
+      const axesBefore = win.Bow.economy.countItem(g.player, "item:axe");
+
+      const tarn = g.people["person:tarn"];
+      tarn.alive = true;
+      tarn.location = "smithy";
+      tarn.money = 35;
+      tarn.weapon = "item:axe";
+      tarn.armor = "item:padded";
+      tarn.needs.health = 30;
+
+      win.Bow.fight.open(g, "person:tarn");
+      win.Bow.fight.start(g, "crime", seq([0.1]));
+      let guard = 0;
+      while (g.fight && g.fight.phase === "exchange" && guard++ < 15) {
+        win.Bow.fight.move(g, "press", seq([0.05, 0.1, 0.2]));
+      }
+      assert(g.fight && g.fight.phase === "aftermath", "бой с Тарном не дошёл до развязки");
+      win.BowGame.refresh(true);
+
+      const page = doc().getElementById("bow-fight-page");
+      const killBtn = page.querySelector('[data-act="fight-decide"][data-choice="kill"]');
+      assert(killBtn, "нет кнопки «Добить»");
+      click(killBtn);
+
+      /* 1. Окно боя НЕ закрылось само, а прямо на поле боя лежит труп с черепом! */
+      assert(page.classList.contains("bow-page-open"), "окно боя закрылось само после «Добить»!");
+      assert(!win.BowGame.clockShouldRun(g), "мировые часы пошли до закрытия экрана боя!");
+      const deadChip = page.querySelector(".bow-arena .bow-chip-dead");
+      assert(deadChip, "на поле боя не показан убитый противник лежащим на земле!");
+      assert(deadChip.querySelector(".bow-fig-fallen"), "силуэт убитого на поле боя не лежит на земле");
+
+      /* 2. Закрываем окно боя вручную кнопкой выхода — труп остаётся лежать на сцене локации! */
+      const exitBtn = page.querySelector('[data-act="fight-close"]');
+      assert(exitBtn, "нет кнопки выхода с поля боя");
+      click(exitBtn);
+      assert(!page.classList.contains("bow-page-open"), "окно боя не закрылось по кнопке выхода");
+
+      const stageCorpse = doc().querySelector('#bow-stage .bow-actor-corpse[data-act="stage-select"][data-kind="corpse"]');
+      assert(stageCorpse, "после боя труп не остался лежать визуально на сцене локации!");
+
+      /* 3. Нажимаем на лежащий труп на сцене и облутываем его (деньги + топор + стёганка) */
+      click(stageCorpse);
+      const pop = doc().getElementById("bow-stage-pop");
+      assert(pop.classList.contains("bow-stage-pop-open"), "клик по трупу не открыл карточку осмотра тела");
+      const lootBtn = pop.querySelector('[data-act="loot-corpse"]');
+      assert(lootBtn, "в карточке трупа нет кнопки обыска");
+      click(lootBtn);
+
+      eq(g.player.money, moneyBefore + 35, "деньги убитого не перешли игроку при обыске трупа");
+      eq(win.Bow.economy.countItem(g.player, "item:axe"), axesBefore + 1, "топор убитого не перешёл в инвентарь");
+      assert(win.Bow.economy.countItem(g.player, "item:padded") >= 1, "стёганка убитого не перешла в инвентарь");
+      assert(g.corpses[0].looted === true, "труп не помечен обысканным");
+
+      return "труп лежит на поле боя до клика выхода, остаётся на сцене и отдаёт +35 м., топор и стёганку";
+    } finally {
+      Object.keys(snap).forEach((k) => { g[k] = snap[k]; });
+      win.Bow.ui.setStageSelection(null);
+      win.BowGame.refresh(true);
+    }
+  });
+
+  check("Стража и уличные грабители отображаются визуально фигурками на Главном окне (#bow-stage)", () => {
+    const g = game();
+    const snap = clone(g);
+    try {
+      g.fight = null;
+      g.jail = null;
+      g.player.location = "outskirts";
+
+      /* 1. Приход стражи рисует вооружённых стражников прямо на сцене */
+      g.guard = { phase: "demand", arrived: true, squad: win.Bow.guard.squad(g), heatAt: 75 };
+      g.encounter = null;
+      win.BowGame.refresh(true);
+
+      const guardActors = doc().querySelectorAll("#bow-stage .bow-actor-guard");
+      assert(guardActors.length >= 2, "пришедшая стража не отрисована фигурками на сцене: " + guardActors.length);
+      click(guardActors[0]);
+      assert(doc().getElementById("bow-stage-pop").textContent.indexOf("Стража Брода") !== -1,
+        "клик по фигурке стражника на сцене не открыл карточку стражи");
+
+      /* 2. Выход уличного грабителя рисует фигурку налётчика прямо на сцене */
+      g.guard = null;
+      win.Bow.ui.setStageSelection(null);
+      g.player.money = 80;
+      let tries = 0;
+      while (!g.encounter && tries++ < 50) { win.Bow.street.maybeRob(g, () => 0.001); }
+      assert(g.encounter && g.encounter.robber, "грабитель не появился");
+      win.BowGame.refresh(true);
+
+      const robberActor = doc().querySelector("#bow-stage .bow-actor-robber");
+      assert(robberActor, "уличный грабитель не отрисован фигуркой на сцене!");
+      assert(robberActor.textContent.indexOf(g.encounter.robber.name) !== -1, "на фигурке грабителя нет его имени");
+      click(robberActor);
+      assert(doc().getElementById("bow-stage-pop").textContent.indexOf("требует") !== -1,
+        "клик по фигурке грабителя не открыл карточку встречи");
+
+      return "стражники (" + guardActors.length + " фиг.) и грабитель («" + g.encounter.robber.name + "») стоят на сцене";
+    } finally {
+      Object.keys(snap).forEach((k) => { g[k] = snap[k]; });
+      win.Bow.ui.setStageSelection(null);
+      win.BowGame.refresh(true);
+    }
+  });
+
+  check("Переходы занимают минуты (с подписями на кнопках), травма ноги замедляет путь, а статы падают мягче", () => {
+    const g = game();
+    const snap = clone(g);
+    try {
+      g.player.location = "square";
+      g.player.injuries = [];
+      g.time.hour = 10;
+      g.time.minute = 0;
+      win.BowGame.refresh(true);
+
+      /* На всех не-текущих кнопках перехода подписаны точные минуты */
+      const moveBtns = [...doc().querySelectorAll('.bow-places-row [data-act="move"]')];
+      const otherBtns = moveBtns.filter((b) => b.getAttribute("data-loc") !== "square");
+      eq(otherBtns.length, 4, "кнопок соседних мест");
+      otherBtns.forEach((b) => {
+        assert(/\d+\s*мин\./.test(b.textContent), "на кнопке перехода не подписано время в минутах: " + b.textContent);
+      });
+
+      const baseTavern = win.Bow.actions.travelMinutes(g, "tavern");
+      assert(baseTavern >= 5 && baseTavern <= 25, "переход в соседний трактир должен занимать минуты, а не часы: " + baseTavern);
+
+      /* Перебитая нога честно увеличивает время пешего перехода */
+      g.player.injuries = [{ key: "leg", at: 1 }];
+      const hurtTavern = win.Bow.actions.travelMinutes(g, "tavern");
+      assert(hurtTavern > baseTavern, "перебитая нога не замедлила переход: " + baseTavern + " vs " + hurtTavern);
+      g.player.injuries = [];
+
+      const res = win.Bow.actions.move(g, "tavern");
+      assert(res.ok && res.minutes === baseTavern, "переход прошёл не за расчётные минуты");
+      eq(g.time.hour, 10, "короткий переход по посёлку не должен сдвигать целый час");
+      eq(g.time.minute, baseTavern, "минуты на часах после перехода в трактир");
+
+      /* Темп падения статов смягчён */
+      const perH = win.Bow.data.needsRules.perHour;
+      assert(Math.abs(perH.hunger) <= 1.0 && Math.abs(perH.fatigue) <= 0.8,
+        "падение потребностей в час всё ещё слишком резкое: " + JSON.stringify(perH));
+
+      return "трактир " + baseTavern + " мин. (с раной ноги " + hurtTavern + " мин.), голод " + perH.hunger + "/ч";
+    } finally {
+      Object.keys(snap).forEach((k) => { g[k] = snap[k]; });
+      win.BowGame.refresh(true);
+    }
+  });
+
+  check("Канон «Хладные Ветра» (север Эдемских земель, Брод — не столица) и двухуровневая интерактивная Карта", () => {
+    const g = game();
+    const snap = clone(g);
+    try {
+      eq(win.Bow.data.orgs["org:coldwind"].short, "Хладные Ветра", "название северного края в именительном падеже");
+      const rawData = JSON.stringify(win.Bow.data);
+      assert(rawData.indexOf("Хладные Ветры") === -1, "в данных осталась форма «Хладные Ветры»!");
+
+      g.player.location = "square";
+      win.BowGame.refresh(true);
+
+      /* Открываем вкладку «Карта» кнопкой в полосе переходов */
+      const openMapBtn = doc().querySelector('[data-act="open-map"]');
+      assert(openMapBtn, "нет кнопки быстрого открытия Карты");
+      click(openMapBtn);
+
+      const mapPane = doc().querySelector('.bow-tab-pane[data-tab-pane="map"]');
+      assert(mapPane && mapPane.classList.contains("bow-tab-pane-on"), "панель Карты не открылась");
+
+      const pins = mapPane.querySelectorAll(".bow-map-pin[data-act='move']");
+      eq(pins.length, 5, "на плане Студёного Брода должны быть все 5 точек локаций");
+
+      /* Клик прямо по точке Кузницы на плане переводит игрока в Кузницу */
+      const smithyPin = mapPane.querySelector('.bow-map-pin[data-loc="smithy"]');
+      assert(smithyPin && /\d+\s*мин\./.test(smithyPin.textContent), "на метке Кузницы нет минут пути");
+      click(smithyPin);
+      eq(g.player.location, "smithy", "клик по метке на Карте не перевёл игрока в Кузницу");
+
+      /* Переключаем масштаб на «Север Эдема · Хладные Ветра» */
+      const realmBtn = mapPane.querySelector('[data-act="map-mode"][data-mode="realm"]');
+      assert(realmBtn, "нет переключателя на обзорную карту Хладных Ветров");
+      click(realmBtn);
+
+      const mapText = mapPane.textContent;
+      assert(/Хладные Ветра/.test(mapText) && /Эдемских земель/.test(mapText),
+        "на обзорной карте не указаны Хладные Ветра на севере Эдемских земель");
+      assert(/Норвинг IV/.test(mapText) && /не столица/i.test(mapText) && /Златодвор/.test(mapText),
+        "на обзорной карте не отражён канон: ставка Норвинга IV отдельно, Студёный Брод — не столица, южнее Златодвор");
+
+      /* Возвращаем локальный план и первую вкладку */
+      click(mapPane.querySelector('[data-act="map-mode"][data-mode="local"]'));
+      click(doc().querySelector('.bow-tabs [data-act="tab"][data-tab="jobs"]'));
+      return "«Хладные Ветра» исправлены, план Брода (5 меток с переходом) + карта севера Эдема работают";
+    } finally {
+      Object.keys(snap).forEach((k) => { g[k] = snap[k]; });
+      win.Bow.ui.setMapMode("local");
+      win.Bow.ui.setTab("jobs");
+      win.BowGame.refresh(true);
+    }
+  });
+
   check("Оскорбление короля заканчивает игру", () => {
     const g = clone(game());
     g.jail = null;
@@ -2509,7 +2787,7 @@ function byAct(act, key) {
     assert(!doc().querySelector('.bow-tab-pane[data-tab-pane="jobs"]').classList.contains("bow-tab-pane-on"),
       "предыдущая вкладка не скрылась");
     click(doc().querySelector('.bow-tabs [data-act="tab"][data-tab="jobs"]'));
-    return "4 вкладки: заработок, рядом, товар, о месте";
+    return "4 вкладки: заработок, карта, товар, о месте";
   });
 
   check("В панели есть раздел «Общины», а в сцене — заработок", () => {

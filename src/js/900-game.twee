@@ -67,7 +67,24 @@
       Bow.time.setScale(state, scale);
       startClock();
       return { ok: true, message: scale === "paused" ? "Время остановлено." :
-        scale === "1x" ? "Время идёт." : "Время идёт быстрее." };
+        scale === "1x" ? "Время идёт (1 мин. = 2 сек.)." : "Время идёт вчетверо быстрее." };
+    },
+    "loot-corpse": function (el) {
+      var res = Bow.adapter.act.lootCorpse(getState(), el.getAttribute("data-corpse"));
+      return res;
+    },
+    "open-map": function () {
+      Bow.ui.setTab("map");
+      var mapEl = document.getElementById("bow-map");
+      if (mapEl && mapEl.scrollIntoView) {
+        mapEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }
+      return { ok: true, message: "" };
+    },
+    "map-mode": function (el) {
+      Bow.ui.setMapMode(el.getAttribute("data-mode"));
+      Bow.ui.renderMapPane(getState());
+      return { ok: true, message: "" };
     },
     steal: function (el) {
       return Bow.adapter.act.steal(getState(), el.getAttribute("data-person"));
@@ -105,9 +122,7 @@
       var state = getState();
       var res = Bow.adapter.act.fightStart(state, el.getAttribute("data-mode"));
       if (res && res.ok && state.fight && state.fight.phase === "exchange") {
-        var spd = (Bow.ui.getSettings && Bow.ui.getSettings().fightStart) || "1x";
-        Bow.fight.setOrder(state, "speed", spd);
-        startFightClock();
+        Bow.fight.setOrder(state, "speed", "paused");
       }
       return res;
     },
@@ -115,9 +130,7 @@
       var state = getState();
       var kind = el.getAttribute("data-kind");
       var val = el.getAttribute("data-val");
-      var res = Bow.adapter.act.fightOrder(state, kind, val);
-      if (kind === "speed") { startFightClock(); }
-      return res;
+      return Bow.adapter.act.fightOrder(state, kind, val);
     },
     "fight-step": function () {
       var state = getState();
@@ -138,16 +151,6 @@
         var o = Bow.fight.ensureOrders(state.fight);
         if (stance && stance !== "flee" && stance !== "back") { o.stance = stance; }
         if (aim) { o.aim = aim; }
-        /* На живом ходу (1x / 2x) смена места удара или удержания позиции
-           меняет приказ на лету. Побег и шаг назад выполняются сразу. */
-        if (o.speed !== "paused" && stance !== "flee" && stance !== "back") {
-          return {
-            ok: true,
-            message: stance === "guard"
-              ? "Держите позицию в защите."
-              : ("Сближаетесь · метите " + Bow.fight.aimDef(aim || o.aim).short + ".")
-          };
-        }
       }
       return Bow.adapter.act.fightMove(state, stance, target, aim);
     },
@@ -171,9 +174,7 @@
       var state = getState();
       var res = Bow.adapter.act.guardFight(state);
       if (res && res.ok && state.fight && state.fight.phase === "exchange") {
-        var spd = (Bow.ui.getSettings && Bow.ui.getSettings().fightStart) || "1x";
-        Bow.fight.setOrder(state, "speed", spd);
-        startFightClock();
+        Bow.fight.setOrder(state, "speed", "paused");
       }
       return res;
     },
@@ -190,9 +191,7 @@
       var state = getState();
       var res = Bow.adapter.act.streetFight(state);
       if (res && res.ok && state.fight && state.fight.phase === "exchange") {
-        var spd = (Bow.ui.getSettings && Bow.ui.getSettings().fightStart) || "1x";
-        Bow.fight.setOrder(state, "speed", spd);
-        startFightClock();
+        Bow.fight.setOrder(state, "speed", "paused");
       }
       return res;
     },
@@ -243,14 +242,15 @@
     "stage-select": function (el) {
       var kind = el.getAttribute("data-kind");
       var personId = el.getAttribute("data-person");
+      var corpseId = el.getAttribute("data-corpse");
       var xVal = parseFloat(el.getAttribute("data-x"));
       Bow.ui.setStageSelection({
         kind: kind,
         personId: personId,
+        corpseId: corpseId,
         x: isNaN(xVal) ? null : xVal
       });
       if (kind === "jobs" || kind === "trade") { Bow.ui.setTab(kind); }
-      if (kind === "person") { Bow.ui.setTab("people"); }
       return { ok: true, message: "" };
     },
     "stage-close": function () {
@@ -321,6 +321,10 @@
      иначе после поражения страже невозможно закрыть отчёт боя перед клеткой. */
   var ALWAYS_ALLOWED = {
     "fight-close": true,
+    "loot-corpse": true,
+    "open-map": true,
+    "map-mode": true,
+    "stage-select": true,
     "close-panel": true,
     "close-sheet": true,
     "close-dialog": true,
@@ -441,8 +445,9 @@
     if (!state || !state.time) { return false; }
     if (state.time.scale === "paused") { return false; }
     if (state.dialog) { return false; }
-    /* Бой — пошаговый: часы не должны тикать между ударами. */
+    /* Бой и его незакрытый итог — пошаговые: часы не тикают во время схватки. */
     if (state.fight) { return false; }
+    if (state.flags && state.flags.lastFight) { return false; }
     /* Стража, грабитель и клетка ждут решения игрока, а не фоновых часов. */
     if (state.guard || state.encounter || state.jail) { return false; }
     if (state.dead) { return false; }
@@ -451,17 +456,11 @@
     return true;
   }
 
-  /* ---------- Таймер полуручного боя (0.0.7 — как в Kenshi) ---------- */
+  /* ---------- Бой чисто пошаговый (0.0.7.3): авто-таймер схватки отключён ---------- */
   var fightTimer = null;
 
-  function fightShouldRun(state) {
-    if (!state || !state.fight) { return false; }
-    if (state.fight.phase !== "exchange") { return false; }
-    var o = Bow.fight.ensureOrders(state.fight);
-    if (!o || o.speed === "paused") { return false; }
-    if (Bow.ui.isDrawerOpen()) { return false; }
-    if (openPersonId) { return false; }
-    return true;
+  function fightShouldRun() {
+    return false;
   }
 
   function stopFightClock() {
@@ -473,26 +472,6 @@
 
   function startFightClock() {
     stopFightClock();
-    var state = getState();
-    if (!state || !state.fight || state.fight.phase !== "exchange") { return; }
-    var o = Bow.fight.ensureOrders(state.fight);
-    if (!o || o.speed === "paused") { return; }
-
-    var ms = o.speed === "2x" ? 550 : 1100;
-    fightTimer = global.setInterval(function () {
-      var st = getState();
-      if (!st.fight || st.fight.phase !== "exchange") {
-        stopFightClock();
-        refresh(true);
-        return;
-      }
-      var cur = Bow.fight.ensureOrders(st.fight);
-      if (cur.speed === "paused") { stopFightClock(); return; }
-      if (!fightShouldRun(st)) { return; }
-
-      Bow.adapter.act.fightStep(st);
-      refresh(true);
-    }, ms);
   }
 
   function stopClock() {
@@ -509,21 +488,24 @@
     var scale = state.time.scale || "paused";
     if (scale === "paused") { return; }
 
-    var perSecond = Bow.time.hoursPerSecond(scale);
-    if (!perSecond) { return; }
+    var perSec = Bow.time.minutesPerSecond ? Bow.time.minutesPerSecond(scale) : 0;
+    if (!perSec) { return; }
 
-    /* Тик раз в 500 мс: час на 1x — за 3 секунды, на 4x — за секунду. */
+    /* Шаг проверки — раз в 500 мс:
+       на 1x (0.5 мин./с) 1 игровая минута проходит ровно за 2000 мс (2 секунды),
+       на 4x (2.0 мин./с) 1 игровая минута проходит за 500 мс (0.5 секунды). */
     clockTimer = global.setInterval(function () {
       var st = getState();
       if (st.time.scale === "paused") { stopClock(); return; }
 
       if (!clockShouldRun(st)) { return; }
 
-      clockAccum += Bow.time.hoursPerSecond(st.time.scale) * 0.5;
+      var rate = Bow.time.minutesPerSecond ? Bow.time.minutesPerSecond(st.time.scale) : 0;
+      clockAccum += rate * 0.5;
       var steps = 0;
-      while (clockAccum >= 1 && steps < 6) {
+      while (clockAccum >= 1 && steps < 12) {
         clockAccum -= 1;
-        Bow.time.tick(st);
+        Bow.time.tickMinute(st);
         steps += 1;
       }
       if (steps > 0) { refresh(true); }
@@ -686,20 +668,8 @@
       });
     }
 
-    /* Escape закрывает модальное окно/карточку, а Пробел в бою ставит тактическую паузу. */
+    /* Escape закрывает модальное окно или карточку сцены. */
     document.addEventListener("keydown", function (event) {
-      if (event.key === " " || event.code === "Space") {
-        var st = getState();
-        if (st && st.fight && st.fight.phase === "exchange" && !Bow.ui.isDrawerOpen() && !openPersonId) {
-          event.preventDefault();
-          var ord = Bow.fight.ensureOrders(st.fight);
-          var next = ord.speed === "paused" ? "1x" : "paused";
-          Bow.fight.setOrder(st, "speed", next);
-          startFightClock();
-          refresh(true);
-          return;
-        }
-      }
       if (event.key !== "Escape") { return; }
       if (Bow.ui.isDrawerOpen()) { Bow.ui.setDrawer(false); return; }
       if (openPersonId) { openSheet(null); return; }

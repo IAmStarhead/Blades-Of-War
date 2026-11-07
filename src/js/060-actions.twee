@@ -20,28 +20,67 @@
       .filter(function (p) { return p.alive && p.location === locationId; });
   }
 
+  function corpsesAt(state, locationId) {
+    return (state.corpses || []).filter(function (c) {
+      return c && c.location === locationId;
+    });
+  }
+
+  function formatDuration(mins) {
+    var m = Math.max(1, Math.round(mins || 0));
+    if (m < 60) { return m + " мин."; }
+    var h = Math.floor(m / 60);
+    var rem = m % 60;
+    return rem ? (h + " ч. " + rem + " мин.") : (h + " ч.");
+  }
+
+  /* Честное время пути между двумя точками поселения в минутах:
+     зависит от реального расстояния на плане Студёного Брода и травмы ноги. */
+  function travelMinutes(state, toKey) {
+    var target = Bow.data.locations[toKey];
+    if (!target) { return 0; }
+    if (!state || !state.player || state.player.location === toKey) { return 0; }
+
+    var from = loc(state);
+    var base;
+    if (from && typeof from.mapX === "number" && typeof target.mapX === "number") {
+      var dx = target.mapX - from.mapX;
+      var dy = target.mapY - from.mapY;
+      base = Math.max(6, Math.round(Math.sqrt(dx * dx + dy * dy) * 0.75));
+    } else if (typeof target.travelMinutes === "number" && target.travelMinutes > 0) {
+      base = target.travelMinutes;
+    } else {
+      base = Math.max(10, (target.travelHours || 1) * 15);
+    }
+
+    var legPenalty = 1;
+    var inj = (state.player && state.player.injuries) || [];
+    for (var i = 0; i < inj.length; i++) {
+      if (inj[i] && inj[i].key === "leg") {
+        legPenalty = (Bow.data.fightRules && Bow.data.fightRules.injuries &&
+          Bow.data.fightRules.injuries.leg && Bow.data.fightRules.injuries.leg.travel) || 1.5;
+        break;
+      }
+    }
+
+    return Math.max(5, Math.round(base * legPenalty));
+  }
+
   /* ---------- Перемещение ---------- */
   function move(state, toKey) {
     var target = Bow.data.locations[toKey];
     if (!target) { return { ok: false, message: "Такого места нет." }; }
     if (state.player.location === toKey) { return { ok: false, message: "Вы уже здесь." }; }
 
-    /* Время в пути: суммарно от текущего места до целевого через площадь
-       (площадь — центр поселения). Это честная модель, а не «1 час всегда». */
-    var from = loc(state);
-    var hours;
-    if (!from || toKey === "square" || from.id === target.id) {
-      hours = Math.max(1, target.travelHours);
-    } else {
-      hours = Math.max(1, Math.round((from.travelHours + target.travelHours) / 2) + 1);
-    }
+    var minutes = travelMinutes(state, toKey);
+    var durText = formatDuration(minutes);
 
     var firstVisit = !state.visits[toKey];
     state.player.location = toKey;
     state.visits[toKey] = (state.visits[toKey] || 0) + 1;
     state.stats.actionsTaken += 1;
 
-    Bow.time.advance(state, hours);
+    Bow.time.advanceMinutes(state, minutes);
 
     /* Погода пересчитывается при смене сцены: она часть атмосферы. */
     state.flags.weather = Bow.events.weatherOf(state, Bow.adapter ? Bow.adapter.rng : Math.random);
@@ -50,16 +89,74 @@
     state.flags.sceneChanged = (state.flags.sceneChanged || 0) + 1;
 
     var arrival = firstVisit
-      ? "Вы впервые пришли: " + target.name + " (в пути " + hours + " ч.)."
-      : "Вы пришли: " + target.name + " (в пути " + hours + " ч.).";
+      ? "Вы впервые пришли: " + target.name + " (в пути " + durText + ")."
+      : "Вы пришли: " + target.name + " (в пути " + durText + ").";
     Bow.journal.add(state, arrival, "move");
 
     /* Атмосфера новой сцены — сразу, чтобы экран не был пустым. */
     state.flags.ambience = Bow.events.ambience(state, Bow.adapter ? Bow.adapter.rng : Math.random);
 
-    Bow.bus.emit("player:moved", { state: state, location: toKey, hours: hours });
+    var hours = Math.round((minutes / 60) * 100) / 100;
+    Bow.bus.emit("player:moved", { state: state, location: toKey, minutes: minutes, hours: hours });
 
-    return { ok: true, message: target.name, hours: hours, firstVisit: firstVisit };
+    return {
+      ok: true,
+      message: target.name + " · в пути " + durText,
+      minutes: minutes,
+      hours: hours,
+      firstVisit: firstVisit
+    };
+  }
+
+  /* ---------- Обыск тела ---------- */
+  function lootCorpse(state, corpseId) {
+    if (!Array.isArray(state.corpses)) { state.corpses = []; }
+    var corpse = null;
+    for (var i = 0; i < state.corpses.length; i++) {
+      if (state.corpses[i] && state.corpses[i].id === corpseId) {
+        corpse = state.corpses[i];
+        break;
+      }
+    }
+    if (!corpse) { return { ok: false, message: "Тела здесь уже нет." }; }
+    if (corpse.location !== state.player.location) {
+      return { ok: false, message: "Это тело лежит в другом месте." };
+    }
+    if (corpse.looted || ((corpse.money || 0) <= 0 && (!corpse.items || !corpse.items.length))) {
+      corpse.looted = true;
+      return { ok: false, message: "У " + corpse.name + " больше нечего взять." };
+    }
+
+    var taken = [];
+    var coins = Math.max(0, Math.round(corpse.money || 0));
+    if (coins > 0) {
+      state.player.money += coins;
+      corpse.money = 0;
+      taken.push(coins + " м.");
+    }
+
+    (corpse.items || []).forEach(function (entry) {
+      if (!entry || !entry.itemId || !(entry.qty > 0)) { return; }
+      Bow.economy.addItem(state.player, entry.itemId, entry.qty);
+      var def = Bow.economy.findItemDef(entry.itemId);
+      taken.push((def ? def.name : entry.itemId) + (entry.qty > 1 ? " ×" + entry.qty : ""));
+    });
+    corpse.items = [];
+    corpse.looted = true;
+    state.stats.actionsTaken += 1;
+
+    if (!(state.flags && state.flags.lastFight)) {
+      Bow.time.advanceMinutes(state, 5);
+    }
+
+    var summary = taken.length ? taken.join(", ") : "ничего ценного";
+    Bow.journal.add(state, "Обыскали тело (" + corpse.name + "): " + summary + ".", "crime");
+    return {
+      ok: true,
+      coins: coins,
+      taken: taken,
+      message: "С тела (" + corpse.name + ") забрано: " + summary + "."
+    };
   }
 
   /* ---------- Еда ---------- */
@@ -75,8 +172,8 @@
     if (def.mood) { Bow.needs.applyChange(state.player, "mood", def.mood); }
     state.stats.actionsTaken += 1;
 
-    /* Приём пищи занимает полчаса-час: время идёт, но немного. */
-    Bow.time.advance(state, 1);
+    /* Перекус занимает четверть часа, а не целый час. */
+    Bow.time.advanceMinutes(state, 15);
 
     Bow.journal.add(state, "Вы съели: " + def.name + ".", "eat");
     return { ok: true, message: "Съедено: " + def.name + ". Сытость +" + def.food + "." };
@@ -97,7 +194,7 @@
     Bow.needs.applyChange(state.player, "hunger", -2);
     state.stats.actionsTaken += 1;
 
-    Bow.time.advance(state, 1);
+    Bow.time.advanceMinutes(state, 15);
     Bow.journal.add(state, "Вы выпили: " + def.name + ".", "drink");
     return { ok: true, message: "Выпито: " + def.name + ". Настроение +" + def.mood + "." };
   }
@@ -189,6 +286,10 @@
 
   Bow.actions = {
     move: move,
+    travelMinutes: travelMinutes,
+    formatDuration: formatDuration,
+    corpsesAt: corpsesAt,
+    lootCorpse: lootCorpse,
     eat: eat,
     drink: drink,
     rest: rest,
@@ -198,11 +299,18 @@
     location: loc
   };
 
-  /* Сброс суточных счётчиков разговоров на новом дне. */
+  /* Сброс суточных счётчиков разговоров и уборка старых обобранных тел через трое суток. */
   Bow.bus.on("tick:day", function (state) {
     Object.keys(state.people).forEach(function (id) {
       state.people[id].talkedToday = 0;
     });
+    if (Array.isArray(state.corpses)) {
+      state.corpses = state.corpses.filter(function (c) {
+        if (!c) { return false; }
+        if (!c.looted) { return true; }
+        return (state.time.totalHours - (c.killedAt || 0)) < 72;
+      });
+    }
   });
 
 })(typeof window !== "undefined" ? window : this);

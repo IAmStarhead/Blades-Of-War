@@ -63,6 +63,16 @@
       if (res.ok) { Bow.events.afterAction(state, rng); }
       return res;
     },
+    lootCorpse: function (state, corpseId) {
+      var res = Bow.actions.lootCorpse(state, corpseId);
+      if (res.ok) {
+        Bow.needs.ensure(state.player);
+        if (!(state.flags && state.flags.lastFight)) {
+          Bow.events.afterAction(state, rng);
+        }
+      }
+      return res;
+    },
     rest: function (state) {
       var res = Bow.actions.rest(state);
       if (res.ok) { Bow.events.afterAction(state, rng); }
