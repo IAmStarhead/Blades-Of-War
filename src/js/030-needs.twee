@@ -61,6 +61,18 @@
              драка оставляла игрока калекой до конца игры. */
           n.health += healRate(person);
         }
+        /* Заживление раненых (но не отрубленных) конечностей за час. */
+        if (!hungry && !tired && person.body) {
+          var limbHeal = healRate(person) * 1.4;
+          Object.keys(person.body).forEach(function (bk) {
+            var limb = person.body[bk];
+            if (limb && !limb.lost && limb.hp < limb.max) {
+              var bonus = limb.bandaged ? 1.6 : 1.0;
+              limb.hp = Math.min(limb.max, Bow.util.round1(limb.hp + limbHeal * bonus));
+              if (limb.hp >= limb.max) { limb.bandaged = false; }
+            }
+          });
+        }
         if (hungry) {
           n.mood += rules.moodPenaltyHunger;
         }
@@ -98,10 +110,19 @@
 
      Навык лечения решает, сколько вернётся. Без навыка почти
      ничего: «полежать» умеют все, «перевязать» — нет. */
+  function hasWoundedLimbs(person) {
+    if (!person || !person.body) { return false; }
+    return Object.keys(person.body).some(function (k) {
+      var l = person.body[k];
+      return l && !l.lost && l.hp < l.max;
+    });
+  }
+
   function treat(state, rng) {
     var p = state.player;
     var n = p.needs;
-    if (n.health >= 100) { return { ok: false, message: "Вы целы. Лечить нечего." }; }
+    var limbHurt = hasWoundedLimbs(p);
+    if (n.health >= 100 && !limbHurt) { return { ok: false, message: "Вы целы. Лечить нечего." }; }
     if (n.fatigue < 8) { return { ok: false, message: "Руки не держат бинт. Нужен отдых." }; }
 
     /* lastTreat = 0 значит «ещё не лечили», а не «лечили в нулевой
@@ -115,13 +136,25 @@
 
     var medicine = p.skills.medicine || 0;
     /* Без навыка — 4, с сотней навыка — 22. Разница в пять раз. */
-    var gain = Math.round(4 + medicine * 0.18 + (rng ? rng() : Math.random()) * 3);
+    var rawGain = Math.round(4 + medicine * 0.18 + (rng ? rng() : Math.random()) * 3);
     /* Больше, чем не хватает, не вернёшь, и потолок — 30 за раз. */
-    gain = Math.max(1, Math.min(gain, 30, 100 - n.health));
+    var gain = n.health < 100 ? Math.max(1, Math.min(rawGain, 30, 100 - n.health)) : 0;
 
     Bow.time.advance(state, 1);
     Bow.needs.applyChange(p, "fatigue", -3);
-    Bow.needs.applyChange(p, "health", gain);
+    if (gain > 0) {
+      Bow.needs.applyChange(p, "health", gain);
+    }
+    if (p.body) {
+      var limbRestore = Math.round(12 + medicine * 0.28);
+      Object.keys(p.body).forEach(function (bk) {
+        var limb = p.body[bk];
+        if (limb && !limb.lost && limb.hp < limb.max) {
+          limb.hp = Math.min(limb.max, limb.hp + limbRestore);
+          limb.bandaged = limb.hp < limb.max;
+        }
+      });
+    }
     p.lastTreat = Math.max(1, state.time.totalHours);
 
     /* Навык растёт от дела, а не от чтения. */
@@ -136,9 +169,58 @@
       ok: true,
       healed: gain,
       medicine: p.skills.medicine,
-      message: "Вы промыли и перевязали: +" + gain + " здор. Лечение " +
+      message: "Вы промыли и перевязали раны: +" + gain + " здор. Лечение " +
         before.toFixed(1) + " → " + p.skills.medicine + "."
     };
+  }
+
+  /* ---------- Авто-еда (как в Kenshi, 0.0.7.4) ----------
+     Если у героя в сумке есть съестное, а сытость опустилась до порога,
+     он сам съедает порцию без лишних кликов. */
+  var AUTO_EAT_ORDER = ["berries", "bread", "raw_meat", "stew"];
+
+  function autoEatCheck(state) {
+    if (!state || !state.player || state.dead || state.fight || state.jail) { return null; }
+    var p = state.player;
+    if (p.autoEat === false) { return null; }
+    var threshold = (Bow.data.needsRules && Bow.data.needsRules.autoEatBelow) || 52;
+    if (p.needs.hunger > threshold) { return null; }
+
+    /* Выбираем съестной предмет из сумки (сначала простые дорожные припасы). */
+    var chosenDef = null;
+    for (var i = 0; i < AUTO_EAT_ORDER.length; i++) {
+      var k = AUTO_EAT_ORDER[i];
+      var d = Bow.data.items[k];
+      if (d && d.food && Bow.economy.countItem(p, d.id) > 0) {
+        chosenDef = d;
+        break;
+      }
+    }
+    if (!chosenDef) {
+      (p.inventory || []).forEach(function (entry) {
+        if (chosenDef || entry.qty <= 0) { return; }
+        var def = Bow.economy.findItemDef(entry.itemId);
+        if (def && def.food) { chosenDef = def; }
+      });
+    }
+    if (!chosenDef) { return null; }
+
+    if (!Bow.economy.removeItem(p, chosenDef.id, 1)) { return null; }
+    applyChange(p, "hunger", chosenDef.food);
+    applyChange(p, "mood", 1);
+    var msg = "Авто-перекус из сумки: " + chosenDef.name + " (+" + chosenDef.food + " сытости).";
+    state.flags = state.flags || {};
+    state.flags.lastAutoEat = msg;
+    if (Bow.journal && Bow.journal.add) {
+      Bow.journal.add(state, msg, "food");
+    }
+    return { ate: chosenDef.id, name: chosenDef.name, food: chosenDef.food, message: msg };
+  }
+
+  function toggleAutoEat(state) {
+    if (!state || !state.player) { return false; }
+    state.player.autoEat = state.player.autoEat === false ? true : false;
+    return state.player.autoEat;
   }
 
   function applyChange(person, key, delta) {
@@ -161,6 +243,9 @@
 
   Bow.needs = {
     treat: treat,
+    hasWoundedLimbs: hasWoundedLimbs,
+    autoEatCheck: autoEatCheck,
+    toggleAutoEat: toggleAutoEat,
     healRate: healRate,
     KEYS: KEYS,
     hourly: hourly,

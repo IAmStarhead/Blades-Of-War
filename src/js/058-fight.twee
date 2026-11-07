@@ -95,34 +95,77 @@
   /* Нанести постоянную травму по месту удара (голова → глаз, руки → рука,
      ноги → колено, корпус → рёбра). Если такая травма уже есть — берём свободную. */
   var AIM_INJURY = { head: "eye", arms: "arm", legs: "leg", body: "ribs" };
+  var BASE_INJURY_KEYS = ["arm", "eye", "leg", "ribs"];
 
-  function maim(person, rng, aimKey) {
+  function applyInjuryAnatomy(person, key) {
+    if (!person) { return; }
+    if (Bow.state && Bow.state.ensureAnatomy) { Bow.state.ensureAnatomy(person); }
+    person.organs = person.organs || { left_eye: true, right_eye: true, left_ear: true, right_ear: true };
+    if (key === "eye") {
+      if (person.organs.left_eye !== false) { person.organs.left_eye = false; }
+      else { person.organs.right_eye = false; }
+    } else if (key === "ear") {
+      if (person.organs.left_ear !== false) { person.organs.left_ear = false; }
+      else { person.organs.right_ear = false; }
+    } else if (key === "arm_lost" && person.body) {
+      var armKey = (person.body.left_arm && !person.body.left_arm.lost) ? "left_arm" : "right_arm";
+      if (person.body[armKey]) { person.body[armKey].lost = true; person.body[armKey].hp = 0; }
+    } else if (key === "leg_lost" && person.body) {
+      var legKey = (person.body.left_leg && !person.body.left_leg.lost) ? "left_leg" : "right_leg";
+      if (person.body[legKey]) { person.body[legKey].lost = true; person.body[legKey].hp = 0; }
+    }
+  }
+
+  function maim(person, rng, aimKey, exactKey) {
     var defs = injuryDefs();
-    var keys = Object.keys(defs);
-    var free = keys.filter(function (k) { return !hasInjury(person, k); });
-    if (!free.length) { return null; }
-    var preferred = aimKey && AIM_INJURY[aimKey];
-    var key = (preferred && free.indexOf(preferred) !== -1)
-      ? preferred
-      : free[Math.floor(rollOf(rng) * free.length) % free.length];
+    var key = null;
+    if (exactKey && defs[exactKey] && !hasInjury(person, exactKey)) {
+      key = exactKey;
+    } else {
+      var freeBase = BASE_INJURY_KEYS.filter(function (k) { return defs[k] && !hasInjury(person, k); });
+      var pool = freeBase.length ? freeBase : Object.keys(defs).filter(function (k) { return !hasInjury(person, k); });
+      if (!pool.length) { return null; }
+      var preferred = aimKey && AIM_INJURY[aimKey];
+      key = (preferred && pool.indexOf(preferred) !== -1)
+        ? preferred
+        : pool[Math.floor(rollOf(rng) * pool.length) % pool.length];
+    }
     var def = defs[key];
     person.injuries = person.injuries || [];
     person.injuries.push({ key: key, at: null });
+    applyInjuryAnatomy(person, key);
     return def;
   }
 
   /* ---------- Сила ---------- */
+  function weaponSkillOf(person, weapon) {
+    if (!person || !person.skills) { return 0; }
+    if (!weapon) { return person.skills.unarmed || 0; }
+    var cls = weapon.weaponClass || (/axe/.test(weapon.id) ? "axes" : /knife|sword/.test(weapon.id) ? "blades" : "blunt");
+    return person.skills[cls] || 0;
+  }
+
   function attackPower(person, mode) {
     var weapon = mode === "spar" ? null : weaponOf(person);
     var skill = (person.skills && person.skills.combat) || 0;
-    var raw = 12 + skill / 5.5 + (weapon ? (weapon.attack || 0) * 1.6 : 0);
-    return raw * (1 - injuryPenalty(person, "power"));
+    var wSkill = weaponSkillOf(person, weapon);
+    var str = (Bow.state && Bow.state.effectiveAttr && person.attrs)
+      ? Bow.state.effectiveAttr(person, "strength")
+      : 14;
+    var raw = 12 + skill / 5.5 + wSkill / 22 + (str - 14) * 0.18 + (weapon ? (weapon.attack || 0) * 1.6 : 0);
+    return Math.max(3, raw * (1 - injuryPenalty(person, "power")));
   }
 
   function defenseOf(person, mode) {
     var armor = mode === "spar" ? null : armorOf(person);
     var skill = (person.skills && person.skills.combat) || 0;
-    return skill / 28 + (armor ? (armor.defense || 0) * 1.1 : 0);
+    var defSkill = armor
+      ? ((person.skills && person.skills.melee_defense) || 0)
+      : ((person.skills && person.skills.dodge) || 0);
+    var tough = (Bow.state && Bow.state.effectiveAttr && person.attrs)
+      ? Bow.state.effectiveAttr(person, "toughness")
+      : 12;
+    return skill / 28 + defSkill / 65 + Math.max(0, (tough - 12) * 0.08) + (armor ? (armor.defense || 0) * 1.1 : 0);
   }
 
   function aimDef(key) {
@@ -375,7 +418,7 @@
       allies: [],
       enemies: [],
       units: [],
-      orders: { stance: "press", aim: "body", squad: "focus", speed: "paused" },
+      orders: { stance: "press", aim: "body", squad: "focus", speed: "auto" },
       heatTotal: 0,
       repTotal: 0
     };
@@ -535,13 +578,13 @@
         stance: "press",
         aim: "body",
         squad: "free",
-        speed: "paused"
+        speed: "auto"
       };
     }
     if (!f.orders.stance) { f.orders.stance = "press"; }
     if (!f.orders.aim) { f.orders.aim = "body"; }
     if (!f.orders.squad) { f.orders.squad = "free"; }
-    if (!f.orders.speed) { f.orders.speed = "paused"; }
+    if (!f.orders.speed) { f.orders.speed = "auto"; }
     return f.orders;
   }
 
@@ -582,11 +625,11 @@
     }
 
     if (kind === "speed") {
-      if (["paused", "1x", "2x"].indexOf(value) === -1) {
+      if (["paused", "auto", "1x", "2x"].indexOf(value) === -1) {
         return { ok: false, message: "Неизвестная скорость." };
       }
-      o.speed = value;
-      return { ok: true, orders: o, message: "" };
+      o.speed = value === "paused" ? "paused" : "auto";
+      return { ok: true, orders: o, message: o.speed === "paused" ? "Бой на паузе." : "Автобой включён." };
     }
 
     return { ok: false, message: "Неизвестный приказ." };
@@ -761,6 +804,10 @@
     if (stance === "flee") { return flee(state, rng); }
     if (stance === "back") { return stepBack(state, rng); }
     if (stance !== "press" && stance !== "guard") { return { ok: false, message: "Так не дерутся." }; }
+
+    var ordM = ensureOrders(f);
+    ordM.stance = stance;
+    if (aimKey && R.aims && R.aims[aimKey]) { ordM.aim = aimKey; }
 
     f.units.forEach(function (u) { syncUnit(state, u); });
     var playerUnit = unitByKey(f, "player");
@@ -1028,15 +1075,57 @@
       }
     }
 
-    /* Тяжёлый удар может оставить след навсегда. Только по-настоящему:
-       в спарринге не калечат, а удар должен быть весомым. До 0.0.6.2
-       этого не было, хотя хроника обещала «кому оторвало конечность». */
+    /* Попадание бьёт в конкретную конечность или часть тела. */
+    var sideParity = (((f.round || 0) + (attacker.col || 0)) % 2) === 0;
+    var hitPartKey = aimKey === "head" ? "head"
+      : aimKey === "arms" ? (sideParity ? "right_arm" : "left_arm")
+      : aimKey === "legs" ? (sideParity ? "left_leg" : "right_leg")
+      : (sideParity ? "chest" : "stomach");
+
+    if (dP.body && dP.body[hitPartKey] && !dP.body[hitPartKey].lost && mode !== "spar") {
+      dP.body[hitPartKey].hp = clamp(Math.round(dP.body[hitPartKey].hp - damage * 1.15), 0, dP.body[hitPartKey].max || 100);
+    }
+
+    /* Рост боевых навыков и Крепости от реального дела (как в Kenshi). */
+    if (Bow.work && Bow.work.growSkill) {
+      if (attacker.key === "player") {
+        var atkWep = mode === "spar" ? null : weaponOf(aP);
+        if (!atkWep) { Bow.work.growSkill(aP, "unarmed", 0.14); }
+        else if (atkWep.weaponClass) { Bow.work.growSkill(aP, atkWep.weaponClass, 0.14); }
+        if (aimKey === "head" || aimKey === "legs") { Bow.work.growSkill(aP, "precision", 0.08); }
+      }
+      if (defender.key === "player") {
+        if ((defender.stance || "press") === "guard") { Bow.work.growSkill(dP, "melee_defense", 0.16); }
+        else if (!armorOf(dP)) { Bow.work.growSkill(dP, "dodge", 0.12); }
+        if (Bow.work.growAttr && damage > 0) { Bow.work.growAttr(dP, "toughness", 0.15); }
+      }
+    }
+
+    /* Увечье, потеря глаза/уха или конечности — ОЧЕНЬ редкое явление (0.0.7.4):
+       как в Kenshi, отсечь конечность или лишить глаза/уха может только опытный боец
+       (combat >= 52) острым оружием, когда эта часть тела уже сильно измочалена. */
     var maimed = null;
-    if (mode !== "spar" && damage >= R.maimAt) {
-      /* Шанс растёт с силой удара и с тем, куда бьёте: в голову
-         калечит чаще, по рукам — реже. Остаётся шансом. */
-      var injuryRoll = Math.min(0.34, (0.06 + (damage - R.maimAt) * 0.008) * aim.maim);
-      if (rollOf(rng) < injuryRoll) { maimed = maim(dP, rng, aimKey); }
+    var atkWeapon = mode === "spar" ? null : weaponOf(aP);
+    var isSharp = !!(atkWeapon && atkWeapon.sharp !== false);
+    var atkCombat = (aP.skills && aP.skills.combat) || 0;
+    var partHpNow = (dP.body && dP.body[hitPartKey]) ? dP.body[hitPartKey].hp : 50;
+
+    if (mode !== "spar" && isSharp && atkCombat >= 52 && damage >= R.maimAt && partHpNow <= 38) {
+      var defTough = (Bow.state && Bow.state.effectiveAttr && dP.attrs)
+        ? Bow.state.effectiveAttr(dP, "toughness")
+        : 12;
+      var toughMit = Math.max(0.35, 1 - (defTough - 12) * 0.012);
+      var baseMaim = (0.03 + (atkCombat - 52) * 0.0028 + (damage - R.maimAt) * 0.005) * aim.maim * toughMit;
+      var injuryRoll = Math.min(0.30, baseMaim);
+      if (rollOf(rng) < injuryRoll) {
+        var exactInj = null;
+        if ((aimKey === "arms" || aimKey === "legs") && partHpNow <= 8 && atkCombat >= 60 && /axe|sword/.test(atkWeapon.id)) {
+          exactInj = aimKey === "arms" ? "arm_lost" : "leg_lost";
+        } else if (aimKey === "head" && hasInjury(dP, "eye") && !hasInjury(dP, "ear")) {
+          exactInj = "ear";
+        }
+        maimed = maim(dP, rng, aimKey, exactInj);
+      }
     }
 
     /* Сбить с ног можно и не убивая: удар в голову или по ногам
@@ -1263,10 +1352,18 @@
       if (choice === "rob") {
         player.money += loot;
         faceless.money = 0;
-        log(f, "narr", "Вы вытряхиваете из кошеля грабителя " + loot + " м.");
+        var robTaken = [loot + " м."];
+        if (faceless.weapon) {
+          Bow.economy.addItem(player, faceless.weapon, 1);
+          var rwDef = Bow.economy.findItemDef(faceless.weapon);
+          robTaken.push(rwDef ? rwDef.name : faceless.weapon);
+          faceless.weapon = null;
+        }
+        var robText = robTaken.join(", ");
+        log(f, "narr", "Вы забираете у поверженного налётчика: " + robText + ".");
         finish(state, "win", {});
-        Bow.journal.add(state, "Вы обобрали грабителя: +" + loot + " м.", "crime");
-        return { ok: true, message: "В кошеле грабителя — " + loot + " м." };
+        Bow.journal.add(state, "Вы обобрали грабителя: +" + robText + ".", "crime");
+        return { ok: true, message: "Забрано у грабителя: " + robText + "." };
       }
       if (choice === "kill") {
         (f.units || []).forEach(function (u) {
@@ -1277,9 +1374,10 @@
           name: faceless.name,
           role: "уличный налётчик",
           money: loot,
-          items: faceless.weapon ? [faceless.weapon] : []
+          items: [faceless.weapon, faceless.armor].concat(faceless.pouch || [])
         });
         faceless.money = 0;
+        faceless.weapon = null;
         var gHeat = Bow.steal.addHeat(state, "org:guard", 12);
         f.heatTotal += gHeat;
         if (Bow.guard && Bow.guard.schedule) { Bow.guard.schedule(state); }
@@ -1304,12 +1402,27 @@
       if (choice === "rob") {
         var gTake = 18 + Math.round(rollOf(rng) * 14);
         player.money += gTake;
+        var gGearTaken = [gTake + " м."];
+        (f.enemies || []).forEach(function (ge) {
+          if (ge.weapon) {
+            Bow.economy.addItem(player, ge.weapon, 1);
+            var gw = Bow.economy.findItemDef(ge.weapon);
+            gGearTaken.push(gw ? gw.name : ge.weapon);
+            ge.weapon = null;
+          }
+          if (ge.armor) {
+            Bow.economy.addItem(player, ge.armor, 1);
+            var ga = Bow.economy.findItemDef(ge.armor);
+            gGearTaken.push(ga ? ga.name : ge.armor);
+            ge.armor = null;
+          }
+        });
         var rbHeat = Bow.steal.addHeat(state, "org:guard", 25);
         f.heatTotal += rbHeat;
-        log(f, "narr", "Вы срезаете с поясов стражников " + gTake + " м.");
+        log(f, "narr", "Вы снимаете со стражников монеты и снаряжение: " + gGearTaken.join(", ") + ".");
         finish(state, "win", { heat: rbHeat });
-        Bow.journal.add(state, "Вы обобрали поверженный патруль стражи: +" + gTake + " м.", "crime");
-        return { ok: true, message: "Снято с поясов стражи: " + gTake + " м." };
+        Bow.journal.add(state, "Вы обобрали патруль стражи: +" + gTake + " м. и снаряжение.", "crime");
+        return { ok: true, message: "Снято со стражи: " + gGearTaken.join(", ") + "." };
       }
       if (choice === "kill") {
         (f.units || []).forEach(function (u) {
@@ -1321,7 +1434,7 @@
             name: ge.name || ("Стражник " + (idx + 1)),
             role: "стражник Брода",
             money: 7 + idx * 3,
-            items: [ge.weapon, ge.armor]
+            items: [ge.weapon, ge.armor].concat(ge.pouch || [])
           });
           return gc.id;
         });
@@ -1360,18 +1473,39 @@
       var take = Math.min(npc.money, Math.max(1, Math.round(npc.money * (0.6 + rollOf(rng) * 0.35))));
       npc.money -= take;
       player.money += take;
+      var stripped = [];
+      if (npc.weapon) {
+        Bow.economy.addItem(player, npc.weapon, 1);
+        var nwDef = Bow.economy.findItemDef(npc.weapon);
+        stripped.push(nwDef ? nwDef.name : npc.weapon);
+        npc.weapon = null;
+      }
+      if (npc.armor) {
+        Bow.economy.addItem(player, npc.armor, 1);
+        var naDef = Bow.economy.findItemDef(npc.armor);
+        stripped.push(naDef ? naDef.name : npc.armor);
+        npc.armor = null;
+      }
+      (npc.pouch || []).forEach(function (pid) {
+        Bow.economy.addItem(player, pid, 1);
+        var pDef = Bow.economy.findItemDef(pid);
+        stripped.push(pDef ? pDef.name : pid);
+      });
+      npc.pouch = [];
+
       heat = Bow.steal.addHeat(state, npc.org, R.robHeat);
       rep = Bow.work.addReputation(state, npc.org, R.robRep);
       npc.attitude = clamp(npc.attitude - 35, -100, 100);
       npc.memory.push({
         kind: "robbed",
-        text: player.name + " избил меня и выгреб из кошеля " + take + " м.",
+        text: player.name + " избил меня и забрал " + take + " м." + (stripped.length ? (" и " + stripped.join(", ")) : "") + ".",
         weight: 9,
         totalHours: state.time.totalHours
       });
       Bow.util.trim(npc.memory, 40);
-      log(f, "narr", "Вы вытряхиваете из " + his(npc) + " кошеля " + take + " м.");
-      message = "Обирание: " + npc.name + ", взято " + take + " м.";
+      var lootSummary = take + " м." + (stripped.length ? (", " + stripped.join(", ")) : "");
+      log(f, "narr", "Вы забираете у " + npc.name + ": " + lootSummary + ".");
+      message = "Обирание: " + npc.name + ", взято " + lootSummary + ".";
     } else if (choice === "kill") {
       npc.alive = false;
       npc.needs.health = 0;
@@ -1379,18 +1513,20 @@
       (f.units || []).forEach(function (u) {
         if (u.side === "enemy" && u.refId === npc.id) { u.dead = true; u.down = false; u.hp = 0; }
       });
-      /* Всё, что было у убитого (кошель, оружие и одёжка/броня), остаётся на теле для обыска. */
+      /* Всё, что было у убитого (кошель, оружие, броня и припасы в котомке), остаётся на теле для обыска. */
+      var corpseLoot = [npc.weapon, npc.armor].concat(npc.pouch || []);
       var npcCorpse = spawnCorpse(state, {
         personId: npc.id,
         roleKey: npc.key,
         name: npc.name,
         role: npc.role,
         money: npc.money,
-        items: [npc.weapon, npc.armor]
+        items: corpseLoot
       });
       npc.money = 0;
       npc.weapon = null;
       npc.armor = null;
+      npc.pouch = [];
       createdCorpses.push(npcCorpse.id);
 
       heat = Bow.steal.addHeat(state, npc.org, R.killHeat);

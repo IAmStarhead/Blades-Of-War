@@ -60,6 +60,8 @@
         needs: { health: 84, fatigue: 70, hunger: 60, mood: 55 },
         weapon: cfg.gear.weapon,
         armor: cfg.gear.armor,
+        money: 10 + i * 4,
+        pouch: i === 0 ? ["item:bandage"] : [],
         hp: 84
       });
     }
@@ -83,6 +85,7 @@
     if (state.time.totalHours < state.flags.guardAt) { return false; }
 
     state.flags.guardAt = null;
+    if (state.task) { state.task = null; }
     state.guard = {
       phase: "demand",
       arrived: true,

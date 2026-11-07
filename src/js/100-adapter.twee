@@ -147,6 +147,16 @@
       }
       return res;
     },
+    taskStart: function (state, taskKey) {
+      return Bow.work.startTask(state, taskKey);
+    },
+    taskStop: function (state) {
+      return Bow.work.stopTask(state);
+    },
+    toggleAutoEat: function (state) {
+      var on = Bow.needs.toggleAutoEat(state);
+      return { ok: true, message: on ? "Авто-еда включена: герой сам перекусит из сумки." : "Авто-еда выключена." };
+    },
     sell: function (state, key, qty) {
       var res = Bow.economy.sell(state, state.player.location, key, qty);
       if (res.ok) { Bow.events.afterAction(state, rng); }

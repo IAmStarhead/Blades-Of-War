@@ -808,7 +808,7 @@ function byAct(act, key) {
 
     const back = win.Bow.save.deserialize(win.Bow.save.serialize(g, 1));
     assert(back.ok, "старое сохранение не загрузилось: " + back.reason);
-    eq(back.state.version, "0.0.7.3", "версия после миграции");
+    eq(back.state.version, "0.0.7.4", "версия после миграции");
     assert(back.state.fight === null, "после миграции нет пустого слота боя");
     assert(back.state.people["person:tarn"].weapon, "кузнец остался без топора");
     return "0.0.5 → " + back.state.version + ", топор кузнеца на месте";
@@ -1005,7 +1005,7 @@ function byAct(act, key) {
     delete g.flags.huntedHeat;
 
     const back = win.Bow.save.deserialize(win.Bow.save.serialize(g, 1));
-    eq(back.state.version, "0.0.7.3", "версия после миграции");
+    eq(back.state.version, "0.0.7.4", "версия после миграции");
     assert(back.state.guard && back.state.guard.arrived === true,
       "стража из старого сохранения осталась «непришедшей» — из неё не выбраться");
     eq(back.state.flags.huntedUntil, null, "поле срока розыска");
@@ -1646,11 +1646,11 @@ function byAct(act, key) {
     win.BowGame.refresh(true);
     const box = doc().getElementById("bow-skills");
     const rows = [...box.querySelectorAll(".bow-skill")];
-    eq(rows.length, 6, "строк умений");
+    eq(rows.length, 27, "строк умений");
     const noHint = rows.filter((r) => !r.getAttribute("title"));
     eq(noHint.length, 0, "умений без подсказки");
     assert(box.querySelector(".bow-skill-bar"), "нет полосы умения");
-    return rows.map((r) => r.querySelector(".bow-skill-name").textContent).join(", ");
+    return rows.length + " навыков, все с подсказками";
   });
 
   check("Клик по кнопке прицела бьёт именно в выбранное место", () => {
@@ -1763,7 +1763,7 @@ function byAct(act, key) {
 
     const back = win.Bow.save.deserialize(win.Bow.save.serialize(g, 1));
     assert(back.ok, "сохранение 0.0.6.2 не загрузилось: " + back.reason);
-    eq(back.state.version, "0.0.7.3", "версия после миграции");
+    eq(back.state.version, "0.0.7.4", "версия после миграции");
     assert(back.state.steal && typeof back.state.steal === "object", "нет слота подготовки кражи");
     eq(back.state.player.lastTreat, null, "lastTreat после миграции");
     assert(typeof back.state.player.skills.medicine === "number", "навык лечения не восстановлен");
@@ -1776,12 +1776,12 @@ function byAct(act, key) {
     const topbar = doc().querySelector("header.bow-topbar");
     assert(topbar, "нет верхней шапки");
     const navBtns = topbar.querySelectorAll(".bow-rail-btn");
-    eq(navBtns.length, 7, "кнопок разделов в шапке");
+    eq(navBtns.length, 6, "кнопок разделов в шапке (Меню вынесено на логотип с ☰)");
     assert(topbar.querySelector(".bow-clock-controls"), "часы не в шапке");
     const places = doc().querySelector(".bow-places-bar");
     assert(places && places.querySelectorAll('[data-act="move"]').length === 5,
       "нет отдельной полосы из 5 переходов");
-    return "7 кнопок разделов в шапке + полоса Переход";
+    return "6 кнопок разделов в шапке + полоса Переход";
   });
 
   check("Кнопки шапки открывают отдельное модальное окно выбранной вкладки поверх игры", () => {
@@ -1929,13 +1929,13 @@ function byAct(act, key) {
     const guardTaken = win.Bow.fight.damageRoll(attacker, g.player, "guard", "guard", seq([0.5]), "body");
     assert(guardTaken < pressTaken, "стойка защиты не снижает урон: " + guardTaken + " vs " + pressTaken);
 
-    /* 3. С 0.0.7.3 бой чисто пошаговый: авто-таймер схватки отключён на любом приказе. */
+    /* 3. С 0.0.7.4 бой идёт спокойным автобоем (speed = "auto", 2600 мс) и ставится на паузу. */
     const live = game();
     const snap = clone(live);
     try {
       live.fight = g.fight;
-      win.Bow.fight.setOrder(live, "speed", "1x");
-      assert(!win.BowGame.fightShouldRun(live), "авто-таймер боя всё ещё крутится вопреки пошаговому режиму 0.0.7.3");
+      win.Bow.fight.setOrder(live, "speed", "auto");
+      assert(win.BowGame.fightShouldRun(live), "спокойный автобой не активен при speed='auto'");
       win.Bow.fight.setOrder(live, "speed", "paused");
       assert(!win.BowGame.fightShouldRun(live), "таймер боя активен на паузе");
     } finally {
@@ -1945,7 +1945,7 @@ function byAct(act, key) {
       win.BowGame.refresh(true);
     }
 
-    return "вольный отряд → слабейший, защита −" + pressTaken + "→−" + guardTaken + ", пошаговый режим";
+    return "вольный отряд → слабейший, защита −" + pressTaken + "→−" + guardTaken + ", спокойный автобой";
   });
 
   check("Миграция 0.0.6.3 → 0.0.7 добавляет тактические приказы активному бою", () => {
@@ -1957,9 +1957,9 @@ function byAct(act, key) {
     };
     const back = win.Bow.save.deserialize(win.Bow.save.serialize(g, 1));
     assert(back.ok, "сохранение 0.0.6.3 не загрузилось: " + back.reason);
-    eq(back.state.version, "0.0.7.3", "версия после миграции");
+    eq(back.state.version, "0.0.7.4", "версия после миграции");
     assert(back.state.fight.orders && back.state.fight.orders.aim === "body", "приказы боя созданы при миграции");
-    return "0.0.6.3 → 0.0.7.3, приказы боя созданы";
+    return "0.0.6.3 → 0.0.7.4, приказы боя созданы";
   });
 
   /* 8н. Круг 13 (0.0.7.1): фикс зависания в клетке, честная дистанция боя, логотип и Меню игры */
@@ -2265,7 +2265,7 @@ function byAct(act, key) {
     return "1x = 0.5 мин./с (1 мин. за 2 с), 08:00 → 08:01 → 09:01";
   });
 
-  check("Пошаговый бой 0.0.7.3: выбор скорости убран, а мировое время стоит до закрытия окна боя", () => {
+  check("Спокойный автобой 0.0.7.4: размеренный темп 2.6 сек. с паузой, а мировое время стоит весь бой", () => {
     const g = game();
     const snap = clone(g);
     try {
@@ -2284,16 +2284,20 @@ function byAct(act, key) {
       win.BowGame.refresh(true);
 
       const page = doc().getElementById("bow-fight-page");
-      assert(!page.querySelector(".bow-fight-speeds"), "в окне боя остались кнопки выбора скорости!");
-      assert(page.querySelector(".bow-fight-turnbar"), "нет пошаговой полосы управления боем");
-      assert(!win.BowGame.fightShouldRun(g), "авто-таймер боя не отключён");
+      assert(page.querySelector(".bow-fight-turnbar"), "нет полосы управления автобоем");
+      eq(win.Bow.data.fightRules.autoTickMs, 2600, "интервал спокойного автобоя должен быть 2600 мс");
+      assert(win.BowGame.fightShouldRun(g), "при старте боя должен быть включён спокойный автобой");
       assert(!win.BowGame.clockShouldRun(g), "мировые часы идут во время боя");
+
+      win.Bow.fight.setOrder(g, "speed", "paused");
+      assert(!win.BowGame.fightShouldRun(g), "на паузе автобой должен останавливаться");
 
       win.Bow.fight.move(g, "press", seq([0.2, 0.4]));
       eq(g.time.hour, 11, "час сдвинулся во время боя");
       eq(g.time.minute, 23, "минуты сдвинулись во время боя");
-      return "скорость убрана, время 11:23 стоит неподвижно весь бой";
+      return "автобой 2600 мс + пауза работают, мировое время 11:23 стоит неподвижно";
     } finally {
+      win.BowGame.stopFightClock();
       Object.keys(snap).forEach((k) => { g[k] = snap[k]; });
       win.BowGame.refresh(true);
     }
@@ -2521,6 +2525,276 @@ function byAct(act, key) {
       win.Bow.ui.setTab("jobs");
       win.BowGame.refresh(true);
     }
+  });
+
+  /* 8р. Круг 16 (0.0.7.4): посадка поверженных на землю, полный лут оружия/брони, чистая шапка,
+     лист Kenshi (4 атрибута + 27 навыков + конечности/органы), автозадачи, авто-еда и эмбиент */
+  check("Поверженные и убитые бойцы лежат на линии снега, а не висят в воздухе (фикс image-8 и image-9)", () => {
+    const styles = [...doc().querySelectorAll("style")].map((x) => x.textContent).join("\n");
+    assert(/\.bow-arena-scene\s+\.bow-chip\.bow-chip-down[\s\S]*?translate\(-50%,\s*30px\)/.test(styles),
+      "поверженные и убитые бойцы на арене не опущены на уровень земли (+30px)");
+
+    const g = game();
+    const snap = clone(g);
+    try {
+      g.corpses = [{
+        id: "corpse:test", name: "Налётчик", roleKey: "robber",
+        location: "square", money: 5, items: ["item:knife"], looted: false
+      }];
+      g.player.location = "square";
+      win.BowGame.refresh(true);
+      const stageCorpse = doc().querySelector("#bow-stage .bow-actor-corpse");
+      assert(stageCorpse && /bottom:\s*42px/.test(stageCorpse.getAttribute("style") || ""),
+        "труп на Главном окне не выровнен по линии земли (bottom:42px)");
+      return "арена translate(-50%, 30px) + сцена bottom:42px — тела лежат на земле";
+    } finally {
+      Object.keys(snap).forEach((k) => { g[k] = snap[k]; });
+      win.BowGame.refresh(true);
+    }
+  });
+
+  check("Полный лут 0.0.7.4: при «Обобрать» и «Добить» забираются оружие, броня и припасы врага (фикс image-9)", () => {
+    const g = game();
+    const snap = clone(g);
+    try {
+      /* 1. «Обобрать» (без убийства) снимает с поверженного оружие, броню и котомку, даже если оружие выбили */
+      g.fight = null;
+      g.flags.lastFight = null;
+      g.player.location = "smithy";
+      const tarn = g.people["person:tarn"];
+      tarn.alive = true;
+      tarn.location = "smithy";
+      tarn.weapon = "item:axe";
+      tarn.armor = "item:padded";
+      tarn.pouch = ["item:iron_ore"];
+      tarn.money = 20;
+      tarn.needs.health = 10;
+
+      const axes0 = win.Bow.economy.countItem(g.player, "item:axe");
+      const pad0 = win.Bow.economy.countItem(g.player, "item:padded");
+      const ore0 = win.Bow.economy.countItem(g.player, "item:iron_ore");
+
+      win.Bow.fight.open(g, "person:tarn");
+      win.Bow.fight.start(g, "crime", seq([0.1]));
+      const foeU = g.fight.units.find((u) => u.side === "enemy");
+      foeU.disarmed = true;
+      g.fight.phase = "aftermath";
+
+      const robRes = win.Bow.fight.decide(g, "rob", seq([0.4]));
+      assert(robRes.ok, "«Обобрать» не сработало");
+      eq(win.Bow.economy.countItem(g.player, "item:axe"), axes0 + 1, "топор не забрался при «Обобрать»");
+      eq(win.Bow.economy.countItem(g.player, "item:padded"), pad0 + 1, "стёганка не забралась при «Обобрать»");
+      eq(win.Bow.economy.countItem(g.player, "item:iron_ore"), ore0 + 1, "руда из котомки не забралась при «Обобрать»");
+      eq(tarn.weapon, null, "у обобранного Тарна остался дубликат топора");
+
+      /* 2. У налётчика всегда есть оружие, а у Ливы — товары в котомке при обыске тела */
+      g.fight = null;
+      g.flags.lastFight = null;
+      g.corpses = [];
+      g.player.location = "square";
+      const liva = g.people["person:liva"];
+      liva.alive = true;
+      liva.location = "square";
+      liva.pouch = ["item:bread", "item:salt"];
+      win.Bow.fight.open(g, "person:liva");
+      win.Bow.fight.start(g, "crime", seq([0.1]));
+      g.fight.phase = "aftermath";
+      win.Bow.fight.decide(g, "kill", seq([0.2]));
+      assert(g.corpses.length === 1 && g.corpses[0].items.some((x) => x.itemId === "item:salt"),
+        "в теле Ливы нет товаров из её котомки");
+
+      return "«Обобрать» снимает топор+стёганку+котомку, тела хранят снаряжение и припасы";
+    } finally {
+      Object.keys(snap).forEach((k) => { g[k] = snap[k]; });
+      win.BowGame.refresh(true);
+    }
+  });
+
+  check("Чистая шапка и переходы 0.0.7.4: логотип с ☰ без «меню», сезон перенесён, нет вкладки «Меню» и слова «здесь»", () => {
+    const logoBtn = doc().getElementById("bow-logo-btn");
+    assert(logoBtn, "нет кнопки логотипа");
+    assert(logoBtn.querySelector(".bow-logo-bars"), "на кнопке логотипа нет знака трёх полос ☰");
+    assert(!/меню/i.test(logoBtn.textContent), "на кнопке логотипа осталось слово «меню»: " + logoBtn.textContent);
+    assert(!logoBtn.querySelector("#bow-season"), "#bow-season всё ещё внутри кнопки логотипа");
+
+    const seasonInPlaces = doc().querySelector(".bow-places-head #bow-season");
+    assert(seasonInPlaces && /Студёный Брод/.test(seasonInPlaces.textContent),
+      "надпись сезона и поселения не перенесена в шапку переходов");
+
+    assert(!doc().querySelector('#bow-rail [data-panel="save"]'),
+      "в ряду кнопок разделов осталась дублирующая вкладка «Меню»!");
+
+    const hereBtn = doc().querySelector('.bow-places-row .bow-btn-here');
+    assert(hereBtn, "текущая локация не подсвечена классом .bow-btn-here");
+    assert(!/здесь/i.test(hereBtn.textContent),
+      "на кнопке текущего места осталась лишняя надпись «здесь»: " + hereBtn.textContent);
+
+    /* Проверка пояснения частокола */
+    const outskirtsDesc = (win.Bow.data.locations.outskirts.desc || []).join(" ");
+    assert(/плотной стеной из вкопанных заострённых брёвен/i.test(outskirtsDesc),
+      "в описании Околицы нет простого и наглядного объяснения частокола");
+
+    return "☰ + Blades Of War, сезон перенесён, вкладка Меню и слово «здесь» убраны, частокол пояснён";
+  });
+
+  check("Лист персонажа в духе Kenshi (image-10): 4 характеристики + 7 категорий (27 навыков), рост оружия и перегруз", () => {
+    const g = game();
+    const snap = clone(g);
+    try {
+      win.BowGame.refresh(true);
+      const box = doc().getElementById("bow-skills");
+      const attrCards = box.querySelectorAll(".bow-attr-card");
+      const catCards = box.querySelectorAll(".bow-skill-cat");
+      const skillRows = box.querySelectorAll(".bow-skill");
+      eq(attrCards.length, 4, "должно быть 4 основные характеристики");
+      eq(catCards.length, 7, "должно быть 7 категорий навыков");
+      eq(skillRows.length, 27, "должно быть 27 навыков");
+
+      /* Удар топором прокачивает навык «Топоры» и «Атака» (combat) */
+      win.Bow.economy.addItem(g.player, "item:axe", 1);
+      const axesSkill0 = g.player.skills.axes;
+      const atkSkill0 = g.player.skills.combat;
+      g.fight = null;
+      g.player.location = "square";
+      g.people["person:liva"].alive = true;
+      g.people["person:liva"].location = "square";
+      g.people["person:liva"].needs.health = 28;
+      win.Bow.fight.open(g, "person:liva");
+      win.Bow.fight.start(g, "crime", seq([0.2]));
+      for (let r = 0; r < 5 && g.fight && g.fight.phase === "exchange"; r++) {
+        win.Bow.fight.move(g, "press", seq([0.05, 0.2]));
+      }
+      if (g.fight && g.fight.phase === "aftermath") {
+        win.Bow.fight.decide(g, "spare", seq([0.2]));
+      }
+      assert(g.player.skills.axes > axesSkill0, "бой топором не растит навык «Топоры»");
+      assert(g.player.skills.combat > atkSkill0, "завершение боя не растит навык «Атака»");
+
+      /* Перегруз замедляет переход и качает Силу при ходьбе */
+      g.fight = null;
+      const normalMin = win.Bow.actions.travelMinutes(g, "forest");
+      win.Bow.economy.addItem(g.player, "item:iron_ore", 12); // +36 кг
+      const heavyMin = win.Bow.actions.travelMinutes(g, "forest");
+      assert(heavyMin > normalMin, "перегруз сумки не замедляет переход: " + heavyMin + " vs " + normalMin);
+      const str0 = g.player.attrs.strength;
+      win.Bow.actions.move(g, "forest");
+      assert(g.player.attrs.strength > str0, "ходьба с перегрузом не тренирует Силу (как в Kenshi)");
+
+      return "4 атрибута + 27 навыков в 7 категориях, рост Топоров и Силы от перегруза работает";
+    } finally {
+      Object.keys(snap).forEach((k) => { g[k] = snap[k]; });
+      win.BowGame.refresh(true);
+    }
+  });
+
+  check("Конечности и органы 0.0.7.4: тупое оружие и слабые бойцы НЕ отсекают части тела, а травмы дают честные штрафы", () => {
+    const g = game();
+    const snap = clone(g);
+    try {
+      win.Bow.state.ensureAnatomy(g.player);
+      const parts = Object.keys(g.player.body);
+      const organs = Object.keys(g.player.organs);
+      eq(parts.length, 7, "7 частей тела (голова, грудь, живот, 2 руки, 2 ноги)");
+      eq(organs.length, 4, "4 органа чувств (2 глаза, 2 уха)");
+
+      /* Неопытный боец или боец с дубиной не оставляет вечных увечий даже при сильном ударе */
+      g.fight = null;
+      g.player.injuries = [];
+      g.player.body.left_arm.hp = 15;
+      g.player.location = "square";
+      const liva = g.people["person:liva"]; // combat 14 < 52
+      liva.alive = true;
+      liva.location = "square";
+      liva.weapon = "item:club"; // тупое оружие
+      win.Bow.fight.open(g, "person:liva");
+      win.Bow.fight.start(g, "crime", seq([0.1]));
+      for (let i = 0; i < 6 && g.fight && g.fight.phase === "exchange"; i++) {
+        win.Bow.fight.move(g, "guard", seq([0.01, 0.01, 0.01]));
+      }
+      eq(g.player.injuries.length, 0, "слабый враг с дубиной не должен отсекать конечности или выбивать органы!");
+
+      /* Прямое увечье ноги/глаза честно снижает характеристики и замедляет шаг */
+      g.fight = null;
+      const perBefore = win.Bow.state.effectiveAttr(g.player, "perception");
+      win.Bow.fight.maim(g.player, () => 0.01, "head"); // выбитый глаз
+      assert(g.player.organs.left_eye === false, "потеря глаза не отразилась в organs");
+      assert(win.Bow.state.effectiveAttr(g.player, "perception") < perBefore,
+        "потеря глаза не снизила Восприятие");
+
+      win.BowGame.refresh(true);
+      const injBox = doc().getElementById("bow-injuries");
+      assert(injBox.querySelectorAll(".bow-limb-row").length === 7, "в окне состояния не показаны полосы 7 частей тела");
+      assert(injBox.querySelectorAll(".bow-organ-chip").length === 4, "в окне состояния не показаны 4 органа");
+
+      return "7 конечностей + 4 органа, защита от случайных ампутаций и штрафы работают";
+    } finally {
+      Object.keys(snap).forEach((k) => { g[k] = snap[k]; });
+      win.BowGame.refresh(true);
+    }
+  });
+
+  check("Автозадачи Kenshi и авто-еда 0.0.7.4: добыча руды/тайги идёт сама по минутам, а герой сам ест из сумки", () => {
+    const g = game();
+    const snap = clone(g);
+    try {
+      g.fight = null;
+      g.player.location = "smithy";
+      g.player.needs.fatigue = 90;
+      g.player.needs.hunger = 45; // проголодался (< 52)
+      g.player.autoEat = true;
+      const breadBefore = win.Bow.economy.countItem(g.player, "item:bread");
+      assert(breadBefore >= 1, "у героя должен быть стартовый хлеб");
+
+      /* Назначаем постоянную задачу «Дробить руду у отвала» */
+      const startRes = win.Bow.adapter.act.taskStart(g, "mine_ore");
+      assert(startRes.ok, "не удалось запустить автозадачу: " + startRes.message);
+      eq(g.time.scale, "1x", "старт автозадачи должен включать ход времени 1x");
+
+      const oreBefore = win.Bow.economy.countItem(g.player, "item:iron_ore");
+      const labourBefore = g.player.skills.labouring;
+
+      /* Прокручиваем 35 игровых минут: должен сработать авто-перекус и завершиться 1 цикл добычи руды (30 мин.) */
+      for (let m = 0; m < 35; m++) {
+        win.Bow.time.tickMinute(g);
+      }
+
+      assert(win.Bow.economy.countItem(g.player, "item:bread") < breadBefore,
+        "герой не съел хлеб автоматически при голоде");
+      assert(g.player.needs.hunger > 52, "авто-еда не восстановила сытость: " + g.player.needs.hunger);
+      assert(win.Bow.economy.countItem(g.player, "item:iron_ore") > oreBefore,
+        "автозадача добычи не принесла железную руду за 30 минут");
+      assert(g.player.skills.labouring > labourBefore,
+        "автозадача не прокачала навык «Чёрная работа»");
+
+      win.Bow.adapter.act.taskStop(g);
+      eq(g.task, null, "остановка задачи не очистила state.task");
+
+      return "авто-еда съела хлеб при голоде, автозадача добыла руду и качнула Чёрную работу";
+    } finally {
+      win.BowGame.stopClock();
+      Object.keys(snap).forEach((k) => { g[k] = snap[k]; });
+      win.BowGame.refresh(true);
+    }
+  });
+
+  check("Смягчён темп потери статов и усталости в бою, а северный эмбиент включается офлайн без ошибок", () => {
+    const nr = win.Bow.data.needsRules.perHour;
+    assert(Math.abs(nr.hunger) <= 0.6 && Math.abs(nr.fatigue) <= 0.5 && Math.abs(nr.mood) <= 0.1,
+      "почасовое падение показателей слишком быстрое: " + JSON.stringify(nr));
+    assert(win.Bow.data.fightRules.fatiguePerExchange <= 1.6,
+      "усталость за раунд боя слишком велика: " + win.Bow.data.fightRules.fatiguePerExchange);
+
+    assert(win.Bow.audio && typeof win.Bow.audio.toggle === "function", "модуль Bow.audio не подключён");
+    const audioBtn = doc().getElementById("bow-audio-btn");
+    assert(audioBtn, "в шапке нет кнопки включения музыки ♪");
+    win.Bow.audio.setVolume(0.35);
+    eq(win.Bow.audio.getVolume(), 0.35, "громкость эмбиента не сохранилась");
+    win.Bow.audio.toggle();
+    assert(win.Bow.audio.isEnabled() === true, "эмбиент не переключился во включённое состояние");
+    win.Bow.audio.stop();
+    assert(win.Bow.audio.isEnabled() === false, "эмбиент не выключился");
+
+    return "статы падают мягко (-0.55/-0.45/-0.08 в час, бой -1.5), офлайн-эмбиент работает";
   });
 
   check("Оскорбление короля заканчивает игру", () => {
@@ -3241,7 +3515,7 @@ function byAct(act, key) {
     const panels = doc().querySelectorAll("#bow-drawer .bow-dpanel");
     assert(panels.length >= 5, "разделов меньше пяти: " + panels.length);
     const text = doc().getElementById("bow-drawer").textContent;
-    ["Состояние", "Умения", "При себе", "Хроника", "Память игры"].forEach((name) => {
+    ["Состояние", "Характеристики и навыки", "При себе", "Хроника", "Память игры"].forEach((name) => {
       assert(text.indexOf(name) !== -1, "в панели нет раздела: " + name);
     });
     return panels.length + " разделов";

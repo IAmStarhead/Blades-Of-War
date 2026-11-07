@@ -56,14 +56,32 @@
     var legPenalty = 1;
     var inj = (state.player && state.player.injuries) || [];
     for (var i = 0; i < inj.length; i++) {
-      if (inj[i] && inj[i].key === "leg") {
-        legPenalty = (Bow.data.fightRules && Bow.data.fightRules.injuries &&
+      if (inj[i] && inj[i].key === "leg_lost") {
+        legPenalty = Math.max(legPenalty, 2.1);
+      } else if (inj[i] && inj[i].key === "leg") {
+        var tr = (Bow.data.fightRules && Bow.data.fightRules.injuries &&
           Bow.data.fightRules.injuries.leg && Bow.data.fightRules.injuries.leg.travel) || 1.5;
-        break;
+        legPenalty = Math.max(legPenalty, tr);
+      }
+    }
+    var b = state.player && state.player.body;
+    if (b && ((b.left_leg && b.left_leg.lost) || (b.right_leg && b.right_leg.lost))) {
+      legPenalty = Math.max(legPenalty, 2.1);
+    }
+
+    var ath = (state.player && state.player.skills && state.player.skills.athletics) || 22;
+    var athFactor = ath > 25 ? (1 - Math.min(0.30, (ath - 22) * 0.004)) : 1;
+
+    var encFactor = 1;
+    if (Bow.economy && Bow.economy.totalWeight && Bow.economy.maxWeight) {
+      var curW = Bow.economy.totalWeight(state.player);
+      var maxW = Bow.economy.maxWeight(state.player);
+      if (curW > maxW && maxW > 0) {
+        encFactor = 1 + Math.min(1.2, (curW - maxW) / maxW);
       }
     }
 
-    return Math.max(5, Math.round(base * legPenalty));
+    return Math.max(4, Math.round(base * legPenalty * athFactor * encFactor));
   }
 
   /* ---------- Перемещение ---------- */
@@ -72,6 +90,8 @@
     if (!target) { return { ok: false, message: "Такого места нет." }; }
     if (state.player.location === toKey) { return { ok: false, message: "Вы уже здесь." }; }
 
+    if (state.task) { state.task = null; }
+
     var minutes = travelMinutes(state, toKey);
     var durText = formatDuration(minutes);
 
@@ -79,8 +99,19 @@
     state.player.location = toKey;
     state.visits[toKey] = (state.visits[toKey] || 0) + 1;
     state.stats.actionsTaken += 1;
+    if (Bow.work && Bow.work.growSkill) {
+      Bow.work.growSkill(state.player, "athletics", 0.2);
+      if (Bow.economy && Bow.economy.totalWeight && Bow.economy.maxWeight &&
+          Bow.economy.totalWeight(state.player) > Bow.economy.maxWeight(state.player) &&
+          Bow.work.growAttr) {
+        Bow.work.growAttr(state.player, "strength", 0.25);
+      }
+    }
 
     Bow.time.advanceMinutes(state, minutes);
+    if (Bow.needs && Bow.needs.autoEatCheck) {
+      Bow.needs.autoEatCheck(state);
+    }
 
     /* Погода пересчитывается при смене сцены: она часть атмосферы. */
     state.flags.weather = Bow.events.weatherOf(state, Bow.adapter ? Bow.adapter.rng : Math.random);
@@ -207,10 +238,20 @@
 
     var hours = allowed ? rules.sleepHours : Math.max(2, Math.round(rules.sleepHours / 2));
 
+    if (state.task) { state.task = null; }
     Bow.time.advance(state, hours);
     Bow.needs.applyChange(state.player, "fatigue", allowed ? rules.rest.fatigue : Math.round(rules.rest.fatigue / 2));
     Bow.needs.applyChange(state.player, "health", allowed ? rules.rest.health : 1);
     Bow.needs.applyChange(state.player, "mood", allowed ? rules.rest.mood : 2);
+    if (state.player.body) {
+      var limbRest = allowed ? 18 : 7;
+      Object.keys(state.player.body).forEach(function (bk) {
+        var limb = state.player.body[bk];
+        if (limb && !limb.lost && limb.hp < limb.max) {
+          limb.hp = Math.min(limb.max, limb.hp + limbRest);
+        }
+      });
+    }
     state.stats.actionsTaken += 1;
 
     if (allowed) {

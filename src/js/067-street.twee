@@ -46,8 +46,9 @@
       person: false,
       skills: { combat: strength, survival: 30, stealth: 20 },
       needs: { health: 70, fatigue: 65, hunger: 40, mood: 50 },
-      weapon: rnd(rng) < 0.5 ? "item:knife" : null,
-      armor: null,
+      weapon: rnd(rng) < 0.65 ? "item:knife" : "item:club",
+      armor: strength >= 56 ? "item:coat" : null,
+      pouch: ["item:bread"],
       hp: 70,
       demand: 6 + Math.round(rnd(rng) * 10),
       /* Свой кошель у него тоже есть — иначе «обобрать» было бы

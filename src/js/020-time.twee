@@ -130,6 +130,12 @@
       hour: state.time.hour
     };
     var res = advanceMinutes(state, 1);
+    if (Bow.needs && Bow.needs.autoEatCheck) {
+      Bow.needs.autoEatCheck(state);
+    }
+    if (Bow.work && Bow.work.tickTask) {
+      Bow.work.tickTask(state, 1);
+    }
     return {
       hourChanged: res.hoursPassed > 0 || state.time.hour !== before.hour,
       dayChanged: state.time.day !== before.day || state.time.month !== before.month || state.time.year !== before.year,

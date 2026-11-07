@@ -26,6 +26,7 @@
   function refresh(quiet) {
     var state = getState();
     Bow.ui.render(state);
+    if (Bow.audio && Bow.audio.syncMood) { Bow.audio.syncMood(state); }
     try {
       global.localStorage.setItem(AUTOSAVE_KEY, Bow.save.serialize(state, Date.now()));
     } catch (err) {
@@ -122,7 +123,8 @@
       var state = getState();
       var res = Bow.adapter.act.fightStart(state, el.getAttribute("data-mode"));
       if (res && res.ok && state.fight && state.fight.phase === "exchange") {
-        Bow.fight.setOrder(state, "speed", "paused");
+        Bow.fight.setOrder(state, "speed", "auto");
+        startFightClock();
       }
       return res;
     },
@@ -130,7 +132,9 @@
       var state = getState();
       var kind = el.getAttribute("data-kind");
       var val = el.getAttribute("data-val");
-      return Bow.adapter.act.fightOrder(state, kind, val);
+      var res = Bow.adapter.act.fightOrder(state, kind, val);
+      startFightClock();
+      return res;
     },
     "fight-step": function () {
       var state = getState();
@@ -174,7 +178,8 @@
       var state = getState();
       var res = Bow.adapter.act.guardFight(state);
       if (res && res.ok && state.fight && state.fight.phase === "exchange") {
-        Bow.fight.setOrder(state, "speed", "paused");
+        Bow.fight.setOrder(state, "speed", "auto");
+        startFightClock();
       }
       return res;
     },
@@ -191,7 +196,8 @@
       var state = getState();
       var res = Bow.adapter.act.streetFight(state);
       if (res && res.ok && state.fight && state.fight.phase === "exchange") {
-        Bow.fight.setOrder(state, "speed", "paused");
+        Bow.fight.setOrder(state, "speed", "auto");
+        startFightClock();
       }
       return res;
     },
@@ -202,7 +208,27 @@
       return { ok: true, message: "" };
     },
     work: function (el) {
-      return Bow.adapter.act.work(getState(), el.getAttribute("data-job"));
+      var st = getState();
+      if (st.task) { st.task = null; }
+      return Bow.adapter.act.work(st, el.getAttribute("data-job"));
+    },
+    "task-start": function (el) {
+      var state = getState();
+      var res = Bow.adapter.act.taskStart(state, el.getAttribute("data-task"));
+      if (res && res.ok) { startClock(); }
+      return res;
+    },
+    "task-stop": function () {
+      return Bow.adapter.act.taskStop(getState());
+    },
+    "toggle-autoeat": function () {
+      return Bow.adapter.act.toggleAutoEat(getState());
+    },
+    "audio-toggle": function () {
+      if (!Bow.audio) { return { ok: true, message: "" }; }
+      var on = Bow.audio.toggle();
+      if (Bow.ui.renderSettings) { Bow.ui.renderSettings(); }
+      return { ok: true, message: on ? "Включён северный средневековый эмбиент." : "Музыка выключена." };
     },
     buy: function (el) { return Bow.adapter.act.buy(getState(), el.getAttribute("data-key"), 1); },
     sell: function (el) { return Bow.adapter.act.sell(getState(), el.getAttribute("data-key"), 1); },
@@ -331,6 +357,9 @@
     "stage-close": true,
     "panel": true,
     "setting": true,
+    "audio-toggle": true,
+    "toggle-autoeat": true,
+    "task-stop": true,
     "tab": true
   };
 
@@ -380,6 +409,7 @@
   }
 
   function onClick(event) {
+    if (Bow.audio && Bow.audio.wakeOnGesture) { Bow.audio.wakeOnGesture(); }
     var el = event.target.closest("[data-act]");
     if (!el) {
       /* Клик по пустому фону Главного окна закрывает всплывающую карточку сцены. */
@@ -456,11 +486,16 @@
     return true;
   }
 
-  /* ---------- Бой чисто пошаговый (0.0.7.3): авто-таймер схватки отключён ---------- */
+  /* ---------- Спокойный автобой (0.0.7.4): ~2.6 сек. на круг, мировое время стоит ---------- */
   var fightTimer = null;
 
-  function fightShouldRun() {
-    return false;
+  function fightShouldRun(state) {
+    var st = state || getState();
+    if (!st || st.dead) { return false; }
+    if (!st.fight || st.fight.phase !== "exchange") { return false; }
+    if (Bow.ui.isDrawerOpen() || openPersonId) { return false; }
+    var ord = Bow.fight.ensureOrders ? Bow.fight.ensureOrders(st.fight) : st.fight.orders;
+    return !!(ord && ord.speed === "auto");
   }
 
   function stopFightClock() {
@@ -472,6 +507,20 @@
 
   function startFightClock() {
     stopFightClock();
+    var state = getState();
+    if (!fightShouldRun(state)) { return; }
+    var intervalMs = (Bow.data && Bow.data.fightRules && Bow.data.fightRules.autoTickMs) || 2600;
+    fightTimer = global.setInterval(function () {
+      var st = getState();
+      if (!fightShouldRun(st)) {
+        if (!st || !st.fight || st.fight.phase !== "exchange") { stopFightClock(); }
+        return;
+      }
+      var res = Bow.adapter.act.fightStep(st);
+      if (res && res.message) { Bow.ui.setMessage(res.message); }
+      refresh(true);
+      if (!st.fight || st.fight.phase !== "exchange") { stopFightClock(); }
+    }, intervalMs);
   }
 
   function stopClock() {
@@ -659,6 +708,12 @@
     if (!document.getElementById("bow-app")) { return; }
 
     document.getElementById("bow-app").addEventListener("click", onClick);
+    document.getElementById("bow-app").addEventListener("input", function (event) {
+      var target = event.target;
+      if (target && target.getAttribute && target.getAttribute("data-act") === "audio-vol" && Bow.audio) {
+        Bow.audio.setVolume(parseFloat(target.value) / 100);
+      }
+    });
 
     /* Клик по тёмному фону закрывает окно персонажа. */
     var sheet = document.getElementById("bow-sheet");
@@ -668,11 +723,22 @@
       });
     }
 
-    /* Escape закрывает модальное окно или карточку сцены. */
+    /* Escape закрывает модальное окно или карточку сцены; Пробел в бою ставит/снимает паузу. */
     document.addEventListener("keydown", function (event) {
+      if (event.key === " " || event.code === "Space") {
+        var st = getState();
+        if (st && st.fight && st.fight.phase === "exchange" && !Bow.ui.isDrawerOpen()) {
+          event.preventDefault();
+          var ord = Bow.fight.ensureOrders(st.fight);
+          Bow.fight.setOrder(st, "speed", ord.speed === "auto" ? "paused" : "auto");
+          startFightClock();
+          refresh(true);
+          return;
+        }
+      }
       if (event.key !== "Escape") { return; }
-      if (Bow.ui.isDrawerOpen()) { Bow.ui.setDrawer(false); return; }
-      if (openPersonId) { openSheet(null); return; }
+      if (Bow.ui.isDrawerOpen()) { Bow.ui.setDrawer(false); startFightClock(); return; }
+      if (openPersonId) { openSheet(null); startFightClock(); return; }
       Bow.ui.setStageSelection(null);
       refresh(true);
     });

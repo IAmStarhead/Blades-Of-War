@@ -9,7 +9,151 @@
 
   var Bow = global.Bow = global.Bow || {};
 
-  /* Порядок применения миграций. Ключ — версия, ИЗ которой мигрируем. */
+  function freshBody() {
+    var b = {};
+    (Bow.data.bodyParts || [
+      { key: "head" }, { key: "chest" }, { key: "stomach" },
+      { key: "left_arm" }, { key: "right_arm" }, { key: "left_leg" }, { key: "right_leg" }
+    ]).forEach(function (part) {
+      b[part.key] = { hp: 100, max: 100, bandaged: false, lost: false };
+    });
+    return b;
+  }
+
+  function freshOrgans() {
+    var o = {};
+    (Bow.data.organs || [
+      { key: "left_eye" }, { key: "right_eye" }, { key: "left_ear" }, { key: "right_ear" }
+    ]).forEach(function (org) {
+      o[org.key] = true;
+    });
+    return o;
+  }
+
+  function ensureAnatomy(person, defAttrs, defSkills) {
+    if (!person) { return person; }
+    if (!Bow.util.isPlainObject(person.attrs)) {
+      person.attrs = Bow.util.clone(defAttrs || { strength: 12, toughness: 12, dexterity: 12, perception: 14 });
+    } else {
+      var baseA = defAttrs || { strength: 12, toughness: 12, dexterity: 12, perception: 14 };
+      ["strength", "toughness", "dexterity", "perception"].forEach(function (k) {
+        if (typeof person.attrs[k] !== "number") { person.attrs[k] = baseA[k] || 12; }
+      });
+    }
+    if (!Bow.util.isPlainObject(person.skills)) { person.skills = {}; }
+    var baseS = defSkills || (Bow.data.player && Bow.data.player.skills) || {};
+    Object.keys(baseS).forEach(function (sk) {
+      if (typeof person.skills[sk] !== "number") {
+        person.skills[sk] = baseS[sk];
+      }
+    });
+    if (!Bow.util.isPlainObject(person.body)) {
+      person.body = freshBody();
+    } else {
+      var fb = freshBody();
+      Object.keys(fb).forEach(function (bk) {
+        if (!Bow.util.isPlainObject(person.body[bk])) { person.body[bk] = fb[bk]; }
+      });
+    }
+    if (!Bow.util.isPlainObject(person.organs)) {
+      person.organs = freshOrgans();
+    } else {
+      var fo = freshOrgans();
+      Object.keys(fo).forEach(function (ok) {
+        if (typeof person.organs[ok] !== "boolean") { person.organs[ok] = true; }
+      });
+    }
+    /* Синхронизируем постоянные травмы с конечностями и органами. */
+    (person.injuries || []).forEach(function (inj) {
+      if (inj.key === "eye") { person.organs.left_eye = false; }
+      if (inj.key === "ear") { person.organs.left_ear = false; }
+      if (inj.key === "arm_lost" && person.body.left_arm) {
+        person.body.left_arm.lost = true;
+        person.body.left_arm.hp = 0;
+      }
+      if (inj.key === "leg_lost" && person.body.left_leg) {
+        person.body.left_leg.lost = true;
+        person.body.left_leg.hp = 0;
+      }
+    });
+    return person;
+  }
+
+  /* Эффективное значение характеристики с учётом ран конечностей и утраты органов (как в Kenshi). */
+  function effectiveAttr(person, key) {
+    if (!person) { return 10; }
+    ensureAnatomy(person);
+    var base = (person.attrs && typeof person.attrs[key] === "number") ? person.attrs[key] : 12;
+    var pen = 0;
+    var b = person.body || {};
+    var o = person.organs || {};
+    if (key === "strength") {
+      if (b.left_arm && b.left_arm.lost) { pen += base * 0.35 + 4; }
+      else if (b.left_arm && b.left_arm.hp < 60) { pen += (60 - b.left_arm.hp) * 0.08; }
+      if (b.right_arm && b.right_arm.lost) { pen += base * 0.40 + 5; }
+      else if (b.right_arm && b.right_arm.hp < 60) { pen += (60 - b.right_arm.hp) * 0.09; }
+      if (b.chest && b.chest.hp < 55) { pen += (55 - b.chest.hp) * 0.08; }
+    } else if (key === "dexterity") {
+      if (b.right_arm && b.right_arm.lost) { pen += base * 0.45 + 6; }
+      else if (b.right_arm && b.right_arm.hp < 65) { pen += (65 - b.right_arm.hp) * 0.10; }
+      if (b.left_arm && b.left_arm.lost) { pen += base * 0.25 + 3; }
+      else if (b.left_arm && b.left_arm.hp < 65) { pen += (65 - b.left_arm.hp) * 0.07; }
+    } else if (key === "perception") {
+      if (o.left_eye === false) { pen += 16; }
+      if (o.right_eye === false) { pen += 18; }
+      if (o.left_ear === false) { pen += 7; }
+      if (o.right_ear === false) { pen += 7; }
+      if (b.head && b.head.hp < 60) { pen += (60 - b.head.hp) * 0.12; }
+    } else if (key === "toughness") {
+      if (b.stomach && b.stomach.hp < 45) { pen += (45 - b.stomach.hp) * 0.06; }
+    }
+    return Math.max(1, Math.round((base - pen) * 10) / 10);
+  }
+
+  /* Эффективный навык с учётом травм конечностей и органов (для UI в стиле Kenshi и расчётов). */
+  function effectiveSkill(person, key) {
+    if (!person || !person.skills) { return 0; }
+    ensureAnatomy(person);
+    var base = typeof person.skills[key] === "number" ? person.skills[key] : 0;
+    var b = person.body || {};
+    var o = person.organs || {};
+    var mult = 1;
+    var flat = 0;
+
+    var armHurt = (b.right_arm && b.right_arm.lost) || (b.left_arm && b.left_arm.lost);
+    var legHurt = (b.right_leg && b.right_leg.lost) || (b.left_leg && b.left_leg.lost);
+    var eyeLost = (o.left_eye === false ? 1 : 0) + (o.right_eye === false ? 1 : 0);
+    var earLost = (o.left_ear === false ? 1 : 0) + (o.right_ear === false ? 1 : 0);
+
+    if (["blades", "axes", "blunt", "polearms", "heavy_weapons", "combat", "melee_defense", "weaponsmith", "armorsmith"].indexOf(key) !== -1) {
+      if (b.right_arm && b.right_arm.lost) { mult *= 0.55; }
+      else if (b.right_arm && b.right_arm.hp < 60) { mult *= (0.72 + (b.right_arm.hp / 60) * 0.28); }
+      if (b.left_arm && b.left_arm.lost) { mult *= (key === "heavy_weapons" || key === "polearms" ? 0.35 : 0.78); }
+    }
+    if (["bows", "precision"].indexOf(key) !== -1) {
+      if (armHurt) { mult *= 0.35; }
+      if (eyeLost === 1) { mult *= 0.68; }
+      if (eyeLost >= 2) { mult *= 0.15; }
+    }
+    if (["athletics", "dodge", "swimming", "stealth"].indexOf(key) !== -1) {
+      if (legHurt) { mult *= 0.42; }
+      else {
+        var minLeg = Math.min((b.left_leg ? b.left_leg.hp : 100), (b.right_leg ? b.right_leg.hp : 100));
+        if (minLeg < 65) { mult *= (0.65 + (minLeg / 65) * 0.35); }
+      }
+      if (earLost > 0 && key === "dodge") { flat += earLost * 3; }
+    }
+    if (["thievery_pick", "lockpicking", "medicine", "cooking", "engineering"].indexOf(key) !== -1) {
+      if (b.right_arm && b.right_arm.lost) { mult *= 0.52; }
+    }
+    return Math.max(0, Math.round((base * mult - flat) * 10) / 10);
+  }
+
+  /* Переносимый вес зависит от Силы (как в Kenshi). */
+  function maxCarryWeight(person) {
+    var str = effectiveAttr(person, "strength");
+    return Math.round((16 + str * 0.55) * 10) / 10;
+  }
   var MIGRATIONS = {
     /* 0.0.2 → 0.0.3: добавлены диалоги, визиты, погода.
        Старые сохранения продолжают работать: недостающие поля
@@ -246,6 +390,28 @@
       }
       state.version = "0.0.7.3";
       return state;
+    },
+
+    /* 0.0.7.3 → 0.0.7.4: характеристики и древо навыков в духе Kenshi, конечности и органы,
+       автономные постоянные задачи, авто-еда и спокойный автобой. */
+    "0.0.7.3": function (state) {
+      if (state.player) {
+        ensureAnatomy(state.player, Bow.data.player.attrs, Bow.data.player.skills);
+        if (typeof state.player.autoEat !== "boolean") { state.player.autoEat = true; }
+      }
+      if (!("task" in state)) { state.task = null; }
+      var fresh = Bow.state.create(Bow.data, state.seed || 1);
+      Object.keys(state.people || {}).forEach(function (id) {
+        var p = state.people[id];
+        var f = fresh.people[id];
+        ensureAnatomy(p, f ? f.attrs : null, f ? f.skills : null);
+        if (!Array.isArray(p.pouch)) { p.pouch = f && Array.isArray(f.pouch) ? f.pouch.slice() : []; }
+      });
+      if (state.fight && state.fight.orders && state.fight.orders.speed === "paused") {
+        state.fight.orders.speed = "auto";
+      }
+      state.version = "0.0.7.4";
+      return state;
     }
   };
 
@@ -276,8 +442,12 @@
         role: data.player.role,
         status: data.player.status,
         location: data.meta.startLocation,
+        attrs: Bow.util.clone(data.player.attrs || { strength: 14, toughness: 12, dexterity: 15, perception: 16 }),
         skills: Bow.util.clone(data.player.skills),
         needs: Bow.util.clone(data.player.needs),
+        body: freshBody(),
+        organs: freshOrgans(),
+        autoEat: true,
         money: data.player.money,
         inventory: Bow.util.clone(data.player.inventory),
         conditions: [],
@@ -302,6 +472,8 @@
       journal: [],
       events: [],
       flags: {},
+      /* Текущая автономная задача (как в Kenshi): { key, location, elapsedMin, cycles, itemsGained, moneyGained } */
+      task: null,
       /* Текущий разговор: { personId, nodeId, visited[], startedAt } */
       dialog: null,
       /* Текущий бой: { personId, mode, phase, round, log[], witnesses[], units[] } */
@@ -364,8 +536,18 @@
            отобрали топор — он и в бою стал слабее. */
         weapon: (p.gear && p.gear.weapon) || null,
         armor: (p.gear && p.gear.armor) || null,
+        pouch: Array.isArray(p.pouch) ? p.pouch.slice() : [],
+        attrs: {
+          strength: Math.max(8, Math.round(10 + (p.skills.combat || 10) * 0.35)),
+          toughness: Math.max(8, Math.round(10 + (p.skills.combat || 10) * 0.3 + (p.skills.survival || 10) * 0.15)),
+          dexterity: Math.max(8, Math.round(10 + (p.skills.stealth || 10) * 0.3 + (p.skills.combat || 10) * 0.2)),
+          perception: Math.max(8, Math.round(10 + (p.skills.survival || 10) * 0.35))
+        },
+        body: freshBody(),
+        organs: freshOrgans(),
         talkedToday: 0
       };
+      ensureAnatomy(state.people[p.id]);
     });
 
     /* Все общины начинают с нейтрального отношения, розыска нет. */
@@ -491,6 +673,10 @@
     create: create,
     validate: validate,
     migrate: migrate,
+    ensureAnatomy: ensureAnatomy,
+    effectiveAttr: effectiveAttr,
+    effectiveSkill: effectiveSkill,
+    maxCarryWeight: maxCarryWeight,
     isCurrentVersion: function (state) {
       return state && state.version === Bow.data.meta.version;
     }

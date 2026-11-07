@@ -1,0 +1,404 @@
+:: bow-audio [script]
+/* ============================================================
+   BOW AUDIO — спокойный средневековый северный эмбиент (Web Audio API).
+   Работает полностью офлайн внутри одного HTML без внешних файлов:
+     • глубокий тёплый бурдон квинты (виола / тальхарпа в ре-дорийском ладу);
+     • неспешный мягкий перебор лютни / северных гуслей с живыми паузами;
+     • редкое дыхание продольной деревянной флейты;
+     • процедурная пространственная реверберация деревянного зала.
+   Безопасно деградирует в средах без Web Audio (например, JSDOM-тесты).
+   ============================================================ */
+(function (global) {
+  "use strict";
+
+  var Bow = global.Bow = global.Bow || {};
+  var STORAGE_KEY = "bow-audio-v1";
+
+  var state = {
+    enabled: false,
+    volume: 0.45,
+    mood: "calm" // calm | tavern | wild | combat
+  };
+
+  var ctx = null;
+  var masterGain = null;
+  var reverbNode = null;
+  var dryGain = null;
+  var wetGain = null;
+  var droneNodes = null;
+  var phraseTimer = null;
+  var stepIdx = 0;
+
+  /* Ре-дорийский северный средневековый звукоряд (D Dorian, тёплый строй) */
+  var DORIAN_LUTE = [
+    146.83, // D3
+    164.81, // E3
+    174.61, // F3
+    196.00, // G3
+    220.00, // A3
+    246.94, // B3
+    261.63, // C4
+    293.66, // D4
+    329.63, // E4
+    349.23, // F4
+    392.00, // G4
+    440.00  // A4
+  ];
+
+  /* Спокойные средневековые фразы (индексы в DORIAN_LUTE, -1 = пауза дыхания) */
+  var PHRASES = [
+    [0, 4, 7, 6, 4, -1, -1],
+    [2, 4, 7, 9, 7, -1, -1],
+    [0, 3, 4, 7, -1, 4, -1],
+    [4, 7, 8, 7, 4, 2, -1],
+    [0, 4, 6, 7, -1, -1, -1],
+    [3, 6, 7, 10, 7, 4, -1]
+  ];
+
+  function loadPrefs() {
+    try {
+      var raw = global.localStorage && global.localStorage.getItem(STORAGE_KEY);
+      if (!raw) { return; }
+      var parsed = JSON.parse(raw);
+      if (parsed && typeof parsed.volume === "number") {
+        state.volume = Math.max(0, Math.min(1, parsed.volume));
+      }
+      if (parsed && typeof parsed.enabled === "boolean") {
+        state.enabled = parsed.enabled;
+      }
+    } catch (e) {}
+  }
+
+  function savePrefs() {
+    try {
+      if (global.localStorage) {
+        global.localStorage.setItem(STORAGE_KEY, JSON.stringify({
+          enabled: state.enabled,
+          volume: state.volume
+        }));
+      }
+    } catch (e) {}
+  }
+
+  function hasWebAudio() {
+    return !!(global.AudioContext || global.webkitAudioContext);
+  }
+
+  /* Создаём мягкий импульс деревянного зала / северного сруба для ConvolverNode */
+  function buildReverbImpulse(audioCtx) {
+    var rate = audioCtx.sampleRate || 44100;
+    var seconds = 2.6;
+    var len = Math.floor(rate * seconds);
+    var impulse = audioCtx.createBuffer(2, len, rate);
+    var seed = 918273;
+    function nextRand() {
+      seed = (seed * 1664525 + 1013904223) >>> 0;
+      return (seed / 4294967296) * 2 - 1;
+    }
+    for (var ch = 0; ch < 2; ch++) {
+      var data = impulse.getChannelData(ch);
+      var prev = 0;
+      for (var i = 0; i < len; i++) {
+        var t = i / len;
+        var env = Math.pow(1 - t, 2.8);
+        /* Мягкая фильтрация ВЧ, чтобы эхо было тёплым, как дерево и камень */
+        var white = nextRand();
+        prev = prev * 0.72 + white * 0.28;
+        data[i] = prev * env * 0.55;
+      }
+    }
+    return impulse;
+  }
+
+  function ensureContext() {
+    if (ctx) { return ctx; }
+    var Ctor = global.AudioContext || global.webkitAudioContext;
+    if (!Ctor) { return null; }
+    try {
+      ctx = new Ctor();
+      masterGain = ctx.createGain();
+      masterGain.gain.value = 0.0001;
+
+      dryGain = ctx.createGain();
+      dryGain.gain.value = 0.52;
+
+      wetGain = ctx.createGain();
+      wetGain.gain.value = 0.58;
+
+      reverbNode = ctx.createConvolver();
+      reverbNode.buffer = buildReverbImpulse(ctx);
+
+      dryGain.connect(masterGain);
+      wetGain.connect(reverbNode);
+      reverbNode.connect(masterGain);
+      masterGain.connect(ctx.destination);
+    } catch (e) {
+      ctx = null;
+    }
+    return ctx;
+  }
+
+  function startDrone() {
+    if (!ctx || droneNodes) { return; }
+    var now = ctx.currentTime;
+
+    var rootOsc = ctx.createOscillator();
+    var fifthOsc = ctx.createOscillator();
+    var lfo = ctx.createOscillator();
+    var lfoGain = ctx.createGain();
+    var filter = ctx.createBiquadFilter();
+    var gain = ctx.createGain();
+
+    rootOsc.type = "triangle";
+    rootOsc.frequency.setValueAtTime(73.42, now); // D2
+
+    fifthOsc.type = "sine";
+    fifthOsc.frequency.setValueAtTime(110.00, now); // A2
+
+    filter.type = "lowpass";
+    filter.frequency.setValueAtTime(210, now);
+    filter.Q.value = 0.7;
+
+    lfo.type = "sine";
+    lfo.frequency.setValueAtTime(0.065, now);
+    lfoGain.gain.value = 42;
+    lfo.connect(lfoGain);
+    lfoGain.connect(filter.frequency);
+
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.linearRampToValueAtTime(0.055, now + 2.4);
+
+    rootOsc.connect(filter);
+    fifthOsc.connect(filter);
+    filter.connect(gain);
+    gain.connect(dryGain);
+    gain.connect(wetGain);
+
+    rootOsc.start(now);
+    fifthOsc.start(now);
+    lfo.start(now);
+
+    droneNodes = { rootOsc: rootOsc, fifthOsc: fifthOsc, lfo: lfo, filter: filter, gain: gain };
+  }
+
+  function stopDrone() {
+    if (!droneNodes || !ctx) { droneNodes = null; return; }
+    var n = droneNodes;
+    droneNodes = null;
+    try {
+      var now = ctx.currentTime;
+      n.gain.gain.cancelScheduledValues(now);
+      n.gain.gain.setValueAtTime(n.gain.gain.value || 0.03, now);
+      n.gain.gain.linearRampToValueAtTime(0.0001, now + 0.8);
+      global.setTimeout(function () {
+        try { n.rootOsc.stop(); n.fifthOsc.stop(); n.lfo.stop(); } catch (e) {}
+      }, 900);
+    } catch (e) {}
+  }
+
+  /* Мягкий щипок деревянной лютни / гуслей */
+  function pluckNote(freq, delaySec, velocity) {
+    if (!ctx || !state.enabled) { return; }
+    var t0 = ctx.currentTime + (delaySec || 0);
+    var vel = (velocity || 0.5) * 0.11;
+
+    var osc1 = ctx.createOscillator();
+    var osc2 = ctx.createOscillator();
+    var filter = ctx.createBiquadFilter();
+    var env = ctx.createGain();
+
+    osc1.type = "triangle";
+    osc1.frequency.setValueAtTime(freq, t0);
+
+    osc2.type = "sine";
+    osc2.frequency.setValueAtTime(freq * 2, t0);
+
+    var g2 = ctx.createGain();
+    g2.gain.value = 0.24;
+
+    filter.type = "lowpass";
+    filter.frequency.setValueAtTime(Math.min(1300, freq * 4.2), t0);
+    filter.frequency.exponentialRampToValueAtTime(Math.max(220, freq * 1.3), t0 + 2.2);
+
+    env.gain.setValueAtTime(0.0001, t0);
+    env.gain.linearRampToValueAtTime(vel, t0 + 0.028);
+    env.gain.exponentialRampToValueAtTime(0.0004, t0 + 3.1);
+
+    osc1.connect(filter);
+    osc2.connect(g2);
+    g2.connect(filter);
+    filter.connect(env);
+    env.connect(dryGain);
+    env.connect(wetGain);
+
+    osc1.start(t0);
+    osc2.start(t0);
+    osc1.stop(t0 + 3.25);
+    osc2.stop(t0 + 3.25);
+  }
+
+  /* Редкое мягкое дыхание деревянной продольной флейты */
+  function fluteBreath(freq, delaySec) {
+    if (!ctx || !state.enabled) { return; }
+    var t0 = ctx.currentTime + (delaySec || 0);
+
+    var osc = ctx.createOscillator();
+    var vibrato = ctx.createOscillator();
+    var vibGain = ctx.createGain();
+    var filter = ctx.createBiquadFilter();
+    var env = ctx.createGain();
+
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(freq, t0);
+
+    vibrato.type = "sine";
+    vibrato.frequency.setValueAtTime(4.2, t0);
+    vibGain.gain.value = freq * 0.006;
+    vibrato.connect(vibGain);
+    vibGain.connect(osc.frequency);
+
+    filter.type = "lowpass";
+    filter.frequency.value = 950;
+
+    env.gain.setValueAtTime(0.0001, t0);
+    env.gain.linearRampToValueAtTime(0.042, t0 + 1.1);
+    env.gain.setValueAtTime(0.038, t0 + 2.2);
+    env.gain.exponentialRampToValueAtTime(0.0002, t0 + 4.4);
+
+    osc.connect(filter);
+    filter.connect(env);
+    env.connect(wetGain);
+    env.connect(dryGain);
+
+    osc.start(t0);
+    vibrato.start(t0);
+    osc.stop(t0 + 4.55);
+    vibrato.stop(t0 + 4.55);
+  }
+
+  function scheduleNextPhrase() {
+    if (phraseTimer) {
+      global.clearTimeout(phraseTimer);
+      phraseTimer = null;
+    }
+    if (!state.enabled || !ctx) { return; }
+
+    var phrase = PHRASES[stepIdx % PHRASES.length];
+    stepIdx += 1;
+
+    var beatSec = state.mood === "combat" ? 0.95 : (state.mood === "tavern" ? 1.12 : 1.32);
+    for (var i = 0; i < phrase.length; i++) {
+      var noteIdx = phrase[i];
+      if (noteIdx >= 0 && DORIAN_LUTE[noteIdx]) {
+        var jitter = ((i * 37 + stepIdx * 13) % 11) * 0.012;
+        var accent = (i === 0) ? 0.72 : 0.48;
+        pluckNote(DORIAN_LUTE[noteIdx], i * beatSec + jitter, accent);
+        /* Мягкая квинта на сильной доле через раз */
+        if (i === 0 && stepIdx % 2 === 0 && DORIAN_LUTE[0]) {
+          pluckNote(DORIAN_LUTE[0] * 0.5, jitter + 0.03, 0.42);
+        }
+      }
+    }
+
+    /* Каждую третью фразу — тихий вздох деревянной флейты на высокой ноте */
+    if (stepIdx % 3 === 0) {
+      var fluteNotes = [293.66, 349.23, 440.00, 329.63];
+      var fn = fluteNotes[(stepIdx / 3) % fluteNotes.length | 0];
+      fluteBreath(fn, beatSec * 1.5);
+    }
+
+    var pauseExtra = state.mood === "combat" ? 1400 : 2800;
+    var nextMs = Math.round(phrase.length * beatSec * 1000 + pauseExtra);
+    phraseTimer = global.setTimeout(scheduleNextPhrase, nextMs);
+  }
+
+  function applyMasterGain() {
+    if (!ctx || !masterGain) { return; }
+    var now = ctx.currentTime;
+    var target = state.enabled ? Math.max(0.0001, state.volume * 0.85) : 0.0001;
+    masterGain.gain.cancelScheduledValues(now);
+    masterGain.gain.setValueAtTime(Math.max(0.0001, masterGain.gain.value || 0.0001), now);
+    masterGain.gain.linearRampToValueAtTime(target, now + 0.6);
+  }
+
+  function start() {
+    state.enabled = true;
+    savePrefs();
+    if (!ensureContext()) { return false; }
+    if (ctx.state === "suspended" && typeof ctx.resume === "function") {
+      ctx.resume();
+    }
+    applyMasterGain();
+    startDrone();
+    if (!phraseTimer) {
+      scheduleNextPhrase();
+    }
+    return true;
+  }
+
+  function stop() {
+    state.enabled = false;
+    savePrefs();
+    if (phraseTimer) {
+      global.clearTimeout(phraseTimer);
+      phraseTimer = null;
+    }
+    applyMasterGain();
+    stopDrone();
+    return false;
+  }
+
+  function toggle() {
+    return state.enabled ? stop() : start();
+  }
+
+  function setVolume(vol) {
+    var v = Number(vol);
+    if (isNaN(v)) { return state.volume; }
+    state.volume = Math.max(0, Math.min(1, v));
+    savePrefs();
+    applyMasterGain();
+    return state.volume;
+  }
+
+  function syncMood(gameState) {
+    if (!gameState) { return; }
+    var next = "calm";
+    if (gameState.fight) { next = "combat"; }
+    else if (gameState.player && gameState.player.location === "tavern") { next = "tavern"; }
+    else if (gameState.player && gameState.player.location === "forest") { next = "wild"; }
+    state.mood = next;
+
+    if (droneNodes && ctx) {
+      var cutoff = next === "tavern" ? 260 : next === "combat" ? 185 : 210;
+      try {
+        droneNodes.filter.frequency.setTargetAtTime(cutoff, ctx.currentTime, 0.8);
+      } catch (e) {}
+    }
+  }
+
+  /* Если музыка была включена ранее, пробуждаем AudioContext при первом клике игрока */
+  function wakeOnGesture() {
+    if (!state.enabled) { return; }
+    if (!ctx) {
+      start();
+    } else if (ctx.state === "suspended" && typeof ctx.resume === "function") {
+      ctx.resume();
+    }
+  }
+
+  loadPrefs();
+
+  Bow.audio = {
+    start: start,
+    stop: stop,
+    toggle: toggle,
+    setVolume: setVolume,
+    syncMood: syncMood,
+    wakeOnGesture: wakeOnGesture,
+    isEnabled: function () { return !!state.enabled; },
+    getVolume: function () { return state.volume; },
+    isSupported: hasWebAudio
+  };
+
+})(typeof window !== "undefined" ? window : this);

@@ -25,6 +25,35 @@
 
   var REP_LIMIT = 100;
 
+  function skillLabel(key) {
+    var cats = Bow.data.skillCategories || [];
+    for (var i = 0; i < cats.length; i++) {
+      var list = cats[i].skills || [];
+      for (var j = 0; j < list.length; j++) {
+        if (list[j].key === key) { return list[j].name; }
+      }
+    }
+    return { combat: "Бой", trade: "Торг", survival: "Выживание", medicine: "Лечение", leadership: "Власть", stealth: "Скрытность" }[key] || key;
+  }
+
+  function growSkill(person, key, amount) {
+    if (!person || !person.skills) { return 0; }
+    var cur = person.skills[key] || 0;
+    var mult = cur < 25 ? 1.0 : cur < 60 ? 0.65 : 0.35;
+    var next = Math.min(100, Math.round((cur + amount * mult) * 10) / 10);
+    person.skills[key] = next;
+    return Math.round((next - cur) * 10) / 10;
+  }
+
+  function growAttr(person, key, amount) {
+    if (!person || !person.attrs) { return 0; }
+    var cur = person.attrs[key] || 10;
+    var mult = cur < 30 ? 1.0 : cur < 65 ? 0.6 : 0.3;
+    var next = Math.min(100, Math.round((cur + amount * mult) * 10) / 10);
+    person.attrs[key] = next;
+    return Math.round((next - cur) * 10) / 10;
+  }
+
   function jobDefs(locationId) {
     var loc = Bow.data.locations[locationId];
     return (loc && loc.jobs) ? loc.jobs : [];
@@ -138,11 +167,21 @@
     state.stats.actionsTaken += 1;
     state.stats.jobsMade = (state.stats.jobsMade || 0) + 1;
     state.stats.moneyEarned = (state.stats.moneyEarned || 0) + pay;
+    if (job.key === "porter" || job.key === "firewood" || job.key === "bellows") {
+      growSkill(state.player, "labouring", 0.8);
+      growAttr(state.player, "strength", 0.25);
+    } else if (job.key === "grind") {
+      growSkill(state.player, "blades", 0.5);
+      growAttr(state.player, "dexterity", 0.2);
+    } else if (job.key === "scout" || job.key === "deadwood") {
+      growSkill(state.player, "athletics", 0.6);
+      growAttr(state.player, "perception", 0.2);
+    }
 
-    var skillName = { combat: "Бой", trade: "Торг", survival: "Выживание", medicine: "Лечение", leadership: "Власть" }[skillKey] || skillKey;
+    var sLabel = skillLabel(skillKey);
 
     if (success) {
-      Bow.journal.add(state, "Работа: " + job.title + " — " + pay + " м. (" + skillName + " +" +
+      Bow.journal.add(state, "Работа: " + job.title + " — " + pay + " м. (" + sLabel + " +" +
         (state.player.skills[skillKey] - before).toFixed(1) + ")", "work");
       return {
         ok: true,
@@ -151,7 +190,7 @@
         skill: skillKey,
         skillGain: state.player.skills[skillKey] - before,
         reputation: repDelta,
-        message: job.title + ": удалось. " + pay + " м. " + skillName + " " +
+        message: job.title + ": удалось. " + pay + " м. " + sLabel + " " +
           (state.player.skills[skillKey]) + "."
       };
     }
@@ -166,6 +205,180 @@
       reputation: 0,
       message: job.title + ": не вышло. Заплатили " + pay + " м. — половину."
     };
+  }
+
+  /* ---------- Автономные постоянные задачи (в духе Kenshi, 0.0.7.4) ----------
+     Игрок назначает задачу (сбор в тайге, силки, добыча руды, дрова и т.д.),
+     и персонаж сам трудится цикл за циклом, складывая добычу в сумку и
+     перекусывая из припасов, пока не устанет или не заполнит сумку. */
+  function taskByKey(key) {
+    var all = Bow.data.tasks || [];
+    for (var i = 0; i < all.length; i++) {
+      if (all[i].key === key) { return all[i]; }
+    }
+    return null;
+  }
+
+  function tasksAt(state) {
+    var loc = state && state.player ? state.player.location : null;
+    return (Bow.data.tasks || []).filter(function (t) { return t.location === loc; });
+  }
+
+  function startTask(state, key) {
+    var def = taskByKey(key);
+    if (!def) { return { ok: false, message: "Такой задачи нет." }; }
+    if (state.player.location !== def.location) {
+      return { ok: false, message: "Для этой задачи нужно быть на месте." };
+    }
+    if (state.player.needs.fatigue < 12) {
+      return { ok: false, message: "Вы слишком измотаны — сначала отдохните." };
+    }
+    if ((def.yields || []).length > 0 && Bow.state.maxCarryWeight) {
+      var curW = Bow.economy.totalWeight(state.player);
+      var maxW = Bow.state.maxCarryWeight(state.player);
+      if (curW >= maxW) {
+        return { ok: false, message: "Сумка уже полна (" + curW.toFixed(1) + " / " + maxW.toFixed(1) + " кг). Сначала сбейте товар." };
+      }
+    }
+
+    state.task = {
+      key: def.key,
+      location: def.location,
+      elapsedMin: 0,
+      cycleMinutes: def.cycleMinutes || 30,
+      cycles: 0,
+      itemsGained: 0,
+      moneyGained: 0,
+      lastNote: "Начато: " + def.title
+    };
+
+    /* Если часы стояли на паузе — включаем живой ход 1x, чтобы герой сразу работал сам. */
+    if (state.time.scale === "paused") {
+      Bow.time.setScale(state, "1x");
+    }
+
+    return {
+      ok: true,
+      task: state.task,
+      message: "Задача назначена: «" + def.title + "» (цикл " + def.cycleMinutes + " мин.). Герой работает сам."
+    };
+  }
+
+  function stopTask(state, reason) {
+    if (!state || !state.task) { return { ok: false, message: "Активной задачи нет." }; }
+    var def = taskByKey(state.task.key);
+    var title = def ? def.title : state.task.key;
+    var cycles = state.task.cycles || 0;
+    state.task = null;
+    var msg = reason || ("Задача «" + title + "» остановлена (циклов выполнено: " + cycles + ").");
+    return { ok: true, message: msg };
+  }
+
+  function tickTask(state, minutes, rng) {
+    if (!state || !state.task) { return null; }
+    if (state.dead || state.fight || state.jail || state.guard || state.encounter || state.dialog) {
+      return null;
+    }
+    var t = state.task;
+    var def = taskByKey(t.key);
+    if (!def || state.player.location !== t.location) {
+      state.task = null;
+      return null;
+    }
+
+    var p = state.player;
+    var r = rng || (Bow.adapter ? Bow.adapter.rng : Math.random);
+
+    /* Проверка усталости перед новым шагом */
+    if (p.needs.fatigue < 10) {
+      var stopTired = "Вы выбились из сил — задача «" + def.short + "» приостановлена.";
+      state.task = null;
+      Bow.time.setScale(state, "paused");
+      Bow.journal.add(state, stopTired, "work");
+      state.flags.lastTaskStop = stopTired;
+      return { stopped: true, message: stopTired };
+    }
+
+    /* Проверка перегруза сумки для собирательских/рудных задач */
+    if ((def.yields || []).length > 0 && Bow.state.maxCarryWeight) {
+      if (Bow.economy.totalWeight(p) >= Bow.state.maxCarryWeight(p)) {
+        var stopBag = "Сумка заполнена до предела — задача «" + def.short + "» завершена.";
+        state.task = null;
+        Bow.time.setScale(state, "paused");
+        Bow.journal.add(state, stopBag, "work");
+        state.flags.lastTaskStop = stopBag;
+        return { stopped: true, message: stopBag };
+      }
+    }
+
+    t.elapsedMin += (minutes || 1);
+    var completed = [];
+
+    while (t.elapsedMin >= (def.cycleMinutes || 30)) {
+      t.elapsedMin -= (def.cycleMinutes || 30);
+      t.cycles += 1;
+
+      Bow.needs.applyChange(p, "fatigue", -(def.fatigue || 3.5));
+      if (Bow.needs.autoEatCheck) { Bow.needs.autoEatCheck(state); }
+
+      var mainSkillKey = (def.skills && def.skills[0]) || "labouring";
+      var effSkill = Bow.state.effectiveSkill ? Bow.state.effectiveSkill(p, mainSkillKey) : (p.skills[mainSkillKey] || 0);
+      var effAttr = (def.attr && Bow.state.effectiveAttr) ? Bow.state.effectiveAttr(p, def.attr) : 12;
+      var bonus = Math.min(0.22, effSkill * 0.002 + effAttr * 0.0015);
+
+      var lootedNames = [];
+      (def.yields || []).forEach(function (y) {
+        var itemDef = Bow.data.items[y.itemKey];
+        if (!itemDef) { return; }
+        if (r() < (y.chance + bonus)) {
+          Bow.economy.addItem(p, itemDef.id, 1);
+          t.itemsGained += 1;
+          lootedNames.push(itemDef.name);
+        }
+      });
+
+      /* Чтобы цикл сбора почти никогда не был «пустым» при старательной работе */
+      if (!lootedNames.length && (def.yields || []).length > 0 && r() < 0.75) {
+        var firstDef = Bow.data.items[def.yields[0].itemKey];
+        if (firstDef) {
+          Bow.economy.addItem(p, firstDef.id, 1);
+          t.itemsGained += 1;
+          lootedNames.push(firstDef.name);
+        }
+      }
+
+      var earned = 0;
+      if (def.pay && def.pay[1] > 0) {
+        var span = Math.max(0, def.pay[1] - def.pay[0]);
+        earned = def.pay[0] + Math.round(r() * span);
+        if (earned > 0) {
+          p.money += earned;
+          t.moneyGained += earned;
+          state.stats.moneyEarned = (state.stats.moneyEarned || 0) + earned;
+        }
+      }
+
+      /* Плавный рост профильных навыков и характеристики (как в Kenshi) */
+      (def.skills || []).forEach(function (sk, idx) {
+        growSkill(p, sk, idx === 0 ? 0.5 : 0.25);
+      });
+      if (def.attr) {
+        growAttr(p, def.attr, 0.18);
+      }
+
+      var summaryParts = [];
+      if (lootedNames.length) { summaryParts.push("+" + lootedNames.join(", +")); }
+      if (earned > 0) { summaryParts.push("+" + earned + " м."); }
+      var cycleNote = def.short + ": " + (summaryParts.length ? summaryParts.join(", ") : "пустой обход");
+      t.lastNote = cycleNote;
+      completed.push(cycleNote);
+
+      if (lootedNames.length || earned > 0) {
+        Bow.journal.add(state, "Задача (" + def.short + "): " + summaryParts.join(", ") + ".", "work");
+      }
+    }
+
+    return completed.length ? { completed: completed, message: completed[completed.length - 1] } : null;
   }
 
   /* Описание условий для интерфейса: игрок должен видеть риск. */
@@ -243,7 +456,15 @@
     orgName: orgName,
     worldTick: worldTick,
     jobByKey: jobByKey,
-    jobAvailable: jobAvailable
+    jobAvailable: jobAvailable,
+    skillLabel: skillLabel,
+    growSkill: growSkill,
+    growAttr: growAttr,
+    tasksAt: tasksAt,
+    taskByKey: taskByKey,
+    startTask: startTask,
+    stopTask: stopTask,
+    tickTask: tickTask
   };
 
   /* Молва меняется раз в сутки — не каждый час. */

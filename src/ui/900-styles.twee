@@ -4103,3 +4103,339 @@ html.bow-motion-calm .bow-fog-band {
   .bow-map-row { flex-direction: column; align-items: stretch; }
   .bow-map-row-go { justify-content: space-between; }
 }
+
+
+/* ============================================================
+   КРУГ 16 (0.0.7.4) — ПОСАДКА ПОВЕРЖЕННЫХ БОЙЦОВ НА ЗЕМЛЮ,
+   ЧИСТАЯ ШАПКА С ☰, ЛИСТ KENSHI (АТРИБУТЫ + 27 НАВЫКОВ + КОНЕЧНОСТИ),
+   АВТОЗАДАЧИ, АВТО-ЕДА И СРЕДНЕВЕКОВЫЙ ЭМБИЕНТ
+   ============================================================ */
+
+/* --- 1. Фикс левитации поверженных и убитых бойцов в окне боя ---
+   У стоячего бойца: overhead (~18px) + фигура (66px) = 84px от top до земли.
+   У лежачего (.bow-fig-fallen 36px): 18 + 36 = 54px → смещаем ровно на +30px вниз,
+   чтобы спина/тело лежало прямо на снегу на уровне ног стоячих бойцов. */
+.bow-arena-scene .bow-chip.bow-chip-down,
+.bow-arena-scene .bow-chip.bow-chip-dead {
+  transform: translate(-50%, 30px);
+  opacity: 0.92;
+}
+
+.bow-arena-scene .bow-chip-down .bow-chip-mark,
+.bow-arena-scene .bow-chip-dead .bow-chip-mark {
+  position: static;
+  transform: none;
+  font-size: 0.64rem;
+  line-height: 1;
+  margin-top: 1px;
+}
+
+/* --- 2. Шапка: кнопка логотипа с ☰ без слова «меню», кнопка музыки ♪ и перенесённый сезон --- */
+.bow-logo-bars {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.15rem;
+  line-height: 1;
+  color: var(--bow-silver);
+  opacity: 0.86;
+  padding: 0 2px 0 3px;
+  transition: color 0.15s ease, transform 0.15s ease;
+}
+
+.bow-topbar .bow-logo-btn:hover .bow-logo-bars {
+  color: var(--bow-gold);
+  opacity: 1;
+}
+
+.bow-topbar-right {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex-shrink: 0;
+}
+
+.bow-audio-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 28px;
+  padding: 0;
+  border-radius: var(--bow-radius);
+  border: 1px solid var(--bow-line);
+  background: var(--bow-surface-2);
+  color: var(--bow-dim);
+  font-size: 0.92rem;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+.bow-audio-btn:hover {
+  border-color: var(--bow-silver);
+  color: var(--bow-silver);
+}
+
+.bow-audio-btn.bow-audio-on {
+  border-color: var(--bow-gold);
+  background: rgba(201, 169, 97, 0.16);
+  color: var(--bow-gold);
+  box-shadow: 0 0 8px rgba(201, 169, 97, 0.22);
+}
+
+.bow-places-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.bow-season-tag {
+  font-family: var(--bow-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.05em;
+  color: var(--bow-silver);
+  text-transform: none;
+}
+
+/* --- 3. Широкое окно листа персонажа в духе Kenshi (Характеристики + 7 колонок Навыков) --- */
+#bow-drawer.bow-modal.bow-modal-wide .bow-modal-box {
+  width: min(860px, calc(100vw - 24px));
+  max-width: 860px;
+}
+
+.bow-kenshi-sec-title {
+  font-family: var(--bow-mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--bow-gold);
+  padding-bottom: 5px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--bow-line-soft);
+}
+
+.bow-sec-spaced {
+  margin-top: 14px;
+}
+
+.bow-kenshi-attrs {
+  margin-bottom: 14px;
+}
+
+.bow-attrs-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.bow-attr-card {
+  padding: 7px 9px;
+  background: #10161d;
+  border: 1px solid var(--bow-line-soft);
+  border-radius: var(--bow-radius);
+}
+
+.bow-attr-card.bow-attr-penalized {
+  border-color: rgba(185, 74, 72, 0.55);
+}
+
+.bow-attr-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 5px;
+}
+
+.bow-attr-name {
+  font-size: 0.78rem;
+  color: var(--bow-silver);
+}
+
+.bow-attr-val {
+  font-family: var(--bow-mono);
+  font-size: 0.84rem;
+  color: var(--bow-gold);
+}
+
+.bow-attr-card.bow-attr-penalized .bow-attr-val {
+  color: #d97b78;
+}
+
+.bow-attr-val small {
+  font-size: 0.66rem;
+  color: var(--bow-dim);
+  font-weight: 400;
+}
+
+.bow-attr-bar {
+  height: 4px;
+  background: #090d12;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.bow-attr-bar i {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #6e88a1 0%, #c9a961 100%);
+}
+
+.bow-skill-cats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.bow-skill-cat {
+  padding: 8px 10px;
+  background: #10161d;
+  border: 1px solid var(--bow-line-soft);
+  border-radius: var(--bow-radius);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.bow-skill-cat-h {
+  margin: 0 0 3px;
+  font-family: var(--bow-mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--bow-silver);
+  border-bottom: 1px solid rgba(168, 182, 196, 0.12);
+  padding-bottom: 3px;
+}
+
+.bow-skill-cat .bow-skill {
+  font-size: 0.75rem;
+  gap: 6px;
+}
+
+.bow-skill.bow-skill-pen b {
+  color: #d97b78;
+}
+
+/* --- 4. Здоровье конечностей и статус органов (Состояние и тело) --- */
+.bow-limbs-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+  margin-bottom: 10px;
+}
+
+.bow-limb-row {
+  padding: 6px 8px;
+  background: #10161d;
+  border: 1px solid var(--bow-line-soft);
+  border-radius: var(--bow-radius);
+}
+
+.bow-limb-row.bow-limb-lost {
+  border-color: rgba(185, 74, 72, 0.72);
+  background: rgba(65, 22, 26, 0.35);
+}
+
+.bow-limb-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.76rem;
+  margin-bottom: 4px;
+}
+
+.bow-limb-head b {
+  font-family: var(--bow-mono);
+  font-size: 0.7rem;
+}
+
+.bow-limb-bar {
+  height: 5px;
+  background: #090d12;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.bow-limb-bar i {
+  display: block;
+  height: 100%;
+}
+
+.bow-organs-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.bow-organ-chip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 5px 8px;
+  background: #121922;
+  border: 1px solid var(--bow-line-soft);
+  border-radius: var(--bow-radius);
+  font-size: 0.73rem;
+}
+
+.bow-organ-chip b {
+  font-family: var(--bow-mono);
+  font-size: 0.68rem;
+  font-weight: 600;
+}
+
+/* --- 5. Постоянные задачи Kenshi и панель скорости спокойного автобоя --- */
+.bow-task-live {
+  padding: 9px 11px;
+  margin-bottom: 10px;
+  background: rgba(31, 48, 42, 0.42);
+  border: 1px solid rgba(127, 181, 154, 0.48);
+  border-radius: var(--bow-radius);
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.bow-task-live-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 0.8rem;
+}
+
+.bow-task-card.bow-task-on {
+  border-color: rgba(127, 181, 154, 0.55);
+  background: rgba(26, 40, 36, 0.36);
+}
+
+.bow-actor-working .bow-actor-tag {
+  border-color: rgba(201, 169, 97, 0.55);
+}
+
+.bow-fight-speed-btns {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.bow-vol-range {
+  width: 110px;
+  accent-color: #c9a961;
+  cursor: pointer;
+}
+
+@media (max-width: 780px) {
+  .bow-attrs-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .bow-skill-cats { grid-template-columns: 1fr; }
+  .bow-limbs-grid,
+  .bow-organs-row { grid-template-columns: 1fr; }
+}
+

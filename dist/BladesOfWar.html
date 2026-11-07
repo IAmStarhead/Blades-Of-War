@@ -4208,6 +4208,341 @@ html.bow-motion-calm .bow-fog-band {
   .bow-map-pin-card b { font-size: 0.68rem; }
   .bow-map-row { flex-direction: column; align-items: stretch; }
   .bow-map-row-go { justify-content: space-between; }
+}
+
+
+/* ============================================================
+   КРУГ 16 (0.0.7.4) — ПОСАДКА ПОВЕРЖЕННЫХ БОЙЦОВ НА ЗЕМЛЮ,
+   ЧИСТАЯ ШАПКА С ☰, ЛИСТ KENSHI (АТРИБУТЫ + 27 НАВЫКОВ + КОНЕЧНОСТИ),
+   АВТОЗАДАЧИ, АВТО-ЕДА И СРЕДНЕВЕКОВЫЙ ЭМБИЕНТ
+   ============================================================ */
+
+/* --- 1. Фикс левитации поверженных и убитых бойцов в окне боя ---
+   У стоячего бойца: overhead (~18px) + фигура (66px) = 84px от top до земли.
+   У лежачего (.bow-fig-fallen 36px): 18 + 36 = 54px → смещаем ровно на +30px вниз,
+   чтобы спина/тело лежало прямо на снегу на уровне ног стоячих бойцов. */
+.bow-arena-scene .bow-chip.bow-chip-down,
+.bow-arena-scene .bow-chip.bow-chip-dead {
+  transform: translate(-50%, 30px);
+  opacity: 0.92;
+}
+
+.bow-arena-scene .bow-chip-down .bow-chip-mark,
+.bow-arena-scene .bow-chip-dead .bow-chip-mark {
+  position: static;
+  transform: none;
+  font-size: 0.64rem;
+  line-height: 1;
+  margin-top: 1px;
+}
+
+/* --- 2. Шапка: кнопка логотипа с ☰ без слова «меню», кнопка музыки ♪ и перенесённый сезон --- */
+.bow-logo-bars {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.15rem;
+  line-height: 1;
+  color: var(--bow-silver);
+  opacity: 0.86;
+  padding: 0 2px 0 3px;
+  transition: color 0.15s ease, transform 0.15s ease;
+}
+
+.bow-topbar .bow-logo-btn:hover .bow-logo-bars {
+  color: var(--bow-gold);
+  opacity: 1;
+}
+
+.bow-topbar-right {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex-shrink: 0;
+}
+
+.bow-audio-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 28px;
+  padding: 0;
+  border-radius: var(--bow-radius);
+  border: 1px solid var(--bow-line);
+  background: var(--bow-surface-2);
+  color: var(--bow-dim);
+  font-size: 0.92rem;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+.bow-audio-btn:hover {
+  border-color: var(--bow-silver);
+  color: var(--bow-silver);
+}
+
+.bow-audio-btn.bow-audio-on {
+  border-color: var(--bow-gold);
+  background: rgba(201, 169, 97, 0.16);
+  color: var(--bow-gold);
+  box-shadow: 0 0 8px rgba(201, 169, 97, 0.22);
+}
+
+.bow-places-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.bow-season-tag {
+  font-family: var(--bow-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.05em;
+  color: var(--bow-silver);
+  text-transform: none;
+}
+
+/* --- 3. Широкое окно листа персонажа в духе Kenshi (Характеристики + 7 колонок Навыков) --- */
+#bow-drawer.bow-modal.bow-modal-wide .bow-modal-box {
+  width: min(860px, calc(100vw - 24px));
+  max-width: 860px;
+}
+
+.bow-kenshi-sec-title {
+  font-family: var(--bow-mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--bow-gold);
+  padding-bottom: 5px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--bow-line-soft);
+}
+
+.bow-sec-spaced {
+  margin-top: 14px;
+}
+
+.bow-kenshi-attrs {
+  margin-bottom: 14px;
+}
+
+.bow-attrs-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.bow-attr-card {
+  padding: 7px 9px;
+  background: #10161d;
+  border: 1px solid var(--bow-line-soft);
+  border-radius: var(--bow-radius);
+}
+
+.bow-attr-card.bow-attr-penalized {
+  border-color: rgba(185, 74, 72, 0.55);
+}
+
+.bow-attr-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 5px;
+}
+
+.bow-attr-name {
+  font-size: 0.78rem;
+  color: var(--bow-silver);
+}
+
+.bow-attr-val {
+  font-family: var(--bow-mono);
+  font-size: 0.84rem;
+  color: var(--bow-gold);
+}
+
+.bow-attr-card.bow-attr-penalized .bow-attr-val {
+  color: #d97b78;
+}
+
+.bow-attr-val small {
+  font-size: 0.66rem;
+  color: var(--bow-dim);
+  font-weight: 400;
+}
+
+.bow-attr-bar {
+  height: 4px;
+  background: #090d12;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.bow-attr-bar i {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #6e88a1 0%, #c9a961 100%);
+}
+
+.bow-skill-cats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.bow-skill-cat {
+  padding: 8px 10px;
+  background: #10161d;
+  border: 1px solid var(--bow-line-soft);
+  border-radius: var(--bow-radius);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.bow-skill-cat-h {
+  margin: 0 0 3px;
+  font-family: var(--bow-mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--bow-silver);
+  border-bottom: 1px solid rgba(168, 182, 196, 0.12);
+  padding-bottom: 3px;
+}
+
+.bow-skill-cat .bow-skill {
+  font-size: 0.75rem;
+  gap: 6px;
+}
+
+.bow-skill.bow-skill-pen b {
+  color: #d97b78;
+}
+
+/* --- 4. Здоровье конечностей и статус органов (Состояние и тело) --- */
+.bow-limbs-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+  margin-bottom: 10px;
+}
+
+.bow-limb-row {
+  padding: 6px 8px;
+  background: #10161d;
+  border: 1px solid var(--bow-line-soft);
+  border-radius: var(--bow-radius);
+}
+
+.bow-limb-row.bow-limb-lost {
+  border-color: rgba(185, 74, 72, 0.72);
+  background: rgba(65, 22, 26, 0.35);
+}
+
+.bow-limb-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.76rem;
+  margin-bottom: 4px;
+}
+
+.bow-limb-head b {
+  font-family: var(--bow-mono);
+  font-size: 0.7rem;
+}
+
+.bow-limb-bar {
+  height: 5px;
+  background: #090d12;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.bow-limb-bar i {
+  display: block;
+  height: 100%;
+}
+
+.bow-organs-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.bow-organ-chip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 5px 8px;
+  background: #121922;
+  border: 1px solid var(--bow-line-soft);
+  border-radius: var(--bow-radius);
+  font-size: 0.73rem;
+}
+
+.bow-organ-chip b {
+  font-family: var(--bow-mono);
+  font-size: 0.68rem;
+  font-weight: 600;
+}
+
+/* --- 5. Постоянные задачи Kenshi и панель скорости спокойного автобоя --- */
+.bow-task-live {
+  padding: 9px 11px;
+  margin-bottom: 10px;
+  background: rgba(31, 48, 42, 0.42);
+  border: 1px solid rgba(127, 181, 154, 0.48);
+  border-radius: var(--bow-radius);
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.bow-task-live-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 0.8rem;
+}
+
+.bow-task-card.bow-task-on {
+  border-color: rgba(127, 181, 154, 0.55);
+  background: rgba(26, 40, 36, 0.36);
+}
+
+.bow-actor-working .bow-actor-tag {
+  border-color: rgba(201, 169, 97, 0.55);
+}
+
+.bow-fight-speed-btns {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.bow-vol-range {
+  width: 110px;
+  accent-color: #c9a961;
+  cursor: pointer;
+}
+
+@media (max-width: 780px) {
+  .bow-attrs-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .bow-skill-cats { grid-template-columns: 1fr; }
+  .bow-limbs-grid,
+  .bow-organs-row { grid-template-columns: 1fr; }
 }</style>
 	<script role="script" id="twine-user-script" type="text/twine-javascript">/* ============================================================
    BOW CORE — базовые утилиты, ГПСЧ, шина событий.
@@ -4319,7 +4654,7 @@ html.bow-motion-calm .bow-fog-band {
   Bow.data = {
 
     meta: {
-      version: "0.0.7.3",
+      version: "0.0.7.4",
       title: "Blades Of War",
       worldName: "Эдем · Королевство Хладных Ветров",
       regionShort: "Хладные Ветра",
@@ -4416,7 +4751,7 @@ html.bow-motion-calm .bow-fog-band {
             desc: "Постоять за прилавок, пока хозяин ушёл. Надо считать и не путать сдачу.",
             hours: 4, pay: [6, 12], fatigue: 6, hunger: 5, rep: 2, minRep: 0 }
         ],
-        trades: ["bread", "salt", "fur", "rope"],
+        trades: ["bread", "salt", "fur", "rope", "berries", "firewood", "raw_meat"],
         people: ["sigi", "liva"]
       },
       tavern: {
@@ -4443,11 +4778,11 @@ html.bow-motion-calm .bow-fog-band {
           { key: "taproom", title: "Помочь в трактире", org: "org:brod", skill: "trade",
             desc: "Носить кружки, вытирать столы, слушать, о чём спорят возчики.",
             hours: 4, pay: [3, 7], fatigue: 8, hunger: 5, rep: 2, minRep: -25 },
-          { key: "cook", title: "Постоять у котла", org: "org:brod", skill: "medicine",
+          { key: "cook", title: "Постоять у котла", org: "org:brod", skill: "cooking",
             desc: "Резать репу, следить за огнём и не дать похлёбке подгореть.",
             hours: 3, pay: [4, 9], fatigue: 9, hunger: 4, rep: 1, minRep: 10 }
         ],
-        trades: ["stew", "ale", "bread"],
+        trades: ["stew", "ale", "bread", "berries", "raw_meat"],
         people: ["sigi", "tarn"]
       },
       smithy: {
@@ -4459,10 +4794,10 @@ html.bow-motion-calm .bow-fog-band {
         travelMinutes: 11,
         mapX: 34,
         mapY: 60,
-        mapHint: "Горн и наковальня Тарна у западных ворот",
+        mapHint: "Горн, рудная куча и наковальня Тарна у западных ворот",
         desc: [
           "Жар и грохот. Горн раздут до белого, на наковальне лежит заготовка ножа. Стены увешаны клещами и старыми подковами.",
-          "Хозяин работает молча. Он не любит, когда его отвлекают, но цену за работу называет честно."
+          "Хозяин работает молча. Он не любит, когда его отвлекают, но цену за работу и принесённую болотную руду называет честно."
         ],
         ambience: [
           "Молот бьёт ровно, как сердце. Между ударами слышно, как гудит воздух в мехах.",
@@ -4470,37 +4805,37 @@ html.bow-motion-calm .bow-fog-band {
           "Искры улетают в темноту и гаснут, не долетая до стены."
         ],
         jobs: [
-          { key: "bellows", title: "Поработать мехами", org: "org:brod", skill: "combat",
+          { key: "bellows", title: "Поработать мехами", org: "org:brod", skill: "labouring",
             desc: "Держать мехи, пока Тарн кует. Жар, грохот, окалина на руках.",
             hours: 4, pay: [5, 11], fatigue: 16, hunger: 8, rep: 2, minRep: -30 },
-          { key: "grind", title: "Точить и править железо", org: "org:brod", skill: "combat",
+          { key: "grind", title: "Точить и править железо", org: "org:brod", skill: "weaponsmith",
             desc: "Работа для тех, кто уже понимает, где у клинка край.",
             hours: 3, pay: [7, 14], fatigue: 10, hunger: 6, rep: 2, minRep: 25 }
         ],
-        trades: ["knife", "axe", "padded", "rope", "tool"],
+        trades: ["knife", "club", "spear", "axe", "sword", "bow", "padded", "rope", "tool", "iron_ore"],
         people: ["tarn"]
       },
       outskirts: {
         id: "loc:outskirts",
         name: "Околица",
-        sub: "Студёный Брод · северный частокол",
+        sub: "Студёный Брод · край дворов у бревенчатой стены",
         org: "org:brod",
         travelHours: 2,
         travelMinutes: 19,
         mapX: 51,
         mapY: 37,
-        mapHint: "Крайние дворы, поленницы и северные ворота в частоколе",
+        mapHint: "Крайние дворы, поленницы и северные ворота в бревенчатом частоколе",
         desc: [
-          "Здесь кончаются дворы и начинается мокрая земля. Плетни стоят криво, за ними — сараи и поленницы.",
-          "Следы на снегу ведут к частоколу, а от него — в тайгу. Кто-то ходил этой дорогой недавно."
+          "Здесь кончаются дворы и начинается мёрзлая земля. По краю поселение обнесено частоколом — плотной стеной из вкопанных заострённых брёвен, защищающей избы от волков и лихих людей.",
+          "У северных ворот стоят поленницы и сараи. Следы на снегу уходят за бревенчатую ограду прямо в тайгу."
         ],
         ambience: [
           "Где-то за сараями лает собака — коротко, дважды, и замолкает.",
           "Из трубы крайней избы идёт дым, но окна тёмные. Хозяева либо спят, либо их нет.",
-          "Ветер приносит запах мокрой коры — значит, кто-то недавно рубил дрова за околицей."
+          "Ветер гудит в щелях бревенчатого частокола и приносит запах мокрой коры."
         ],
         jobs: [
-          { key: "firewood", title: "Наколоть дров", org: "org:brod", skill: "survival",
+          { key: "firewood", title: "Наколоть дров", org: "org:brod", skill: "labouring",
             desc: "За околицей стоят поленницы. Работа простая, но спину ломит.",
             hours: 3, pay: [3, 7], fatigue: 15, hunger: 7, rep: 1, minRep: -50 }
         ],
@@ -4510,16 +4845,16 @@ html.bow-motion-calm .bow-fog-band {
       forest: {
         id: "loc:forest",
         name: "Опушка тайги",
-        sub: "За северным частоколом · Мать-Тайга",
+        sub: "За северными воротами · Мать-Тайга",
         org: "org:brod",
         travelHours: 3,
         travelMinutes: 37,
         mapX: 57,
         mapY: 14,
-        mapHint: "Кромка вековой тайги к северу от Студёного Брода",
+        mapHint: "Кромка вековой тайги к северу от Студёного Брода: сбор, дрова и силки",
         desc: [
           "Тайга дышит сыростью и смолой. Ветки смыкаются над головой, свет пробивается серыми полосами.",
-          "Дальше в глубину идти без лыж и без провожатого не стоит: здесь легко обойти круг и не вернуться."
+          "У кромки леса под снегом прячется мёрзлая брусника, коренья и сухостой, а на звериных тропах можно ставить силки."
         ],
         ambience: [
           "Снег на ветках держится тяжело. Где-то в глубине срывается пласт — глухой хлопок, и снова тишина.",
@@ -4539,18 +4874,26 @@ html.bow-motion-calm .bow-fog-band {
       }
     },
 
-    /* ---------- Товары ---------- */
+    /* ---------- Товары, оружие и добыча ---------- */
     items: {
-      bread:  { id: "item:bread",  name: "Хлеб",            weight: 0.5, food: 18, base: 3,  desc: "Ржаной, тёмный, чёрствый по краям." },
-      stew:   { id: "item:stew",   name: "Похлёбка",        weight: 0.6, food: 34, base: 6,  desc: "Горячая, с репой и мясной закваской." },
-      ale:    { id: "item:ale",    name: "Кружка пива",     weight: 0.4, mood: 8,  base: 4,  desc: "Жидкое, но согревает." },
-      salt:   { id: "item:salt",   name: "Мешочек соли",    weight: 1.0, base: 9,  desc: "Северная соль, крупная и серая. Ходовой товар." },
-      fur:    { id: "item:fur",    name: "Шкура",           weight: 1.6, base: 14, desc: "Выделанная лисья шкура. Тепло и цена." },
-      rope:   { id: "item:rope",   name: "Верёвка",         weight: 1.2, base: 5,  desc: "Пеньковая, сажени три." },
-      knife:  { id: "item:knife",  name: "Нож",             weight: 0.3, equip: "weapon", attack: 4, base: 15, desc: "Простой кованый нож в деревянных ножнах." },
-      axe:    { id: "item:axe",    name: "Топор",           weight: 2.4, equip: "weapon", attack: 10, base: 34, desc: "Плотницкий топор с коротким топорищем. Тяжёлый, зато не подводит." },
-      padded: { id: "item:padded", name: "Стёганка",        weight: 2.2, equip: "armor", defense: 4, base: 26, desc: "Прошитая в несколько слоёв куртка. От ножа держит, от топора — не очень." },
-      tool:   { id: "item:tool",   name: "Инструмент",      weight: 1.8, base: 22, desc: "Клещи и молоток кузнечной работы." }
+      bread:    { id: "item:bread",    name: "Хлеб",             weight: 0.5, food: 18, base: 3,  desc: "Ржаной, тёмный, чёрствый по краям." },
+      berries:  { id: "item:berries",  name: "Таёжная ягода",    weight: 0.3, food: 12, base: 3,  desc: "Мёрзлая брусника и коренья из-под снега. Утоляет голод в дороге." },
+      raw_meat: { id: "item:raw_meat", name: "Пайка дичи",       weight: 0.5, food: 25, base: 7,  desc: "Подвяленная на морозе зайчатина и боровая дичь." },
+      stew:     { id: "item:stew",     name: "Похлёбка",         weight: 0.6, food: 34, base: 6,  desc: "Горячая, с репой и мясной закваской." },
+      ale:      { id: "item:ale",      name: "Кружка пива",      weight: 0.4, mood: 8,  base: 4,  desc: "Жидкое, но согревает." },
+      salt:     { id: "item:salt",     name: "Мешочек соли",     weight: 1.0, base: 9,  desc: "Северная соль, крупная и серая. Ходовой товар." },
+      fur:      { id: "item:fur",      name: "Шкура",            weight: 1.6, base: 14, desc: "Выделанная лисья шкура. Тепло и цена." },
+      firewood: { id: "item:firewood", name: "Смолистые дрова",  weight: 1.4, base: 4,  desc: "Сухая таёжная вязанка — берут и на площади, и в домах." },
+      iron_ore: { id: "item:iron_ore", name: "Болотная руда",    weight: 1.8, base: 8,  desc: "Бурые комья железняка для кузнечного горна Тарна." },
+      rope:     { id: "item:rope",     name: "Верёвка",          weight: 1.2, base: 5,  desc: "Пеньковая, сажени три." },
+      knife:    { id: "item:knife",    name: "Нож",              weight: 0.3, equip: "weapon", weaponClass: "blades",   sharp: true,  attack: 4,  base: 15, desc: "Простой кованый нож в деревянных ножнах." },
+      club:     { id: "item:club",     name: "Окованная дубина", weight: 1.7, equip: "weapon", weaponClass: "blunt",    sharp: false, attack: 6,  base: 18, desc: "Тяжёлое берёзовое корье с железным обручем. Оглушает, но не режет." },
+      spear:    { id: "item:spear",    name: "Рогатина",         weight: 2.3, equip: "weapon", weaponClass: "polearms", sharp: true,  attack: 8,  base: 26, desc: "Северное древковое копьё с перекладиной на зверя и человека." },
+      axe:      { id: "item:axe",      name: "Топор",            weight: 2.4, equip: "weapon", weaponClass: "axes",     sharp: true,  attack: 10, base: 34, desc: "Плотницкий топор с коротким топорищем. Тяжёлый, зато не подводит." },
+      sword:    { id: "item:sword",    name: "Северный тесак",   weight: 1.9, equip: "weapon", weaponClass: "blades",   sharp: true,  attack: 12, base: 48, desc: "Широкий однолезвийный клинок хладцев — режет стёганку и кость." },
+      bow:      { id: "item:bow",      name: "Охотничий лук",    weight: 1.4, equip: "weapon", weaponClass: "bows",     sharp: true,  attack: 9,  base: 38, desc: "Клееный таёжный лук из ели и берёзы с костяными накладками." },
+      padded:   { id: "item:padded",   name: "Стёганка",         weight: 2.2, equip: "armor",  defense: 4, base: 26, desc: "Прошитая в несколько слоёв куртка. От ножа держит, от топора — не очень." },
+      tool:     { id: "item:tool",     name: "Инструмент",       weight: 1.8, base: 22, desc: "Клещи и молоток кузнечной работы." }
     },
 
     /* ---------- Персонажи ----------
@@ -4566,6 +4909,7 @@ html.bow-motion-calm .bow-fog-band {
         /* gear — id предметов (item:…), а не ключи товаров:
            мы ищем их тем же findItemDef, что и инвентарь игрока. */
         gear: { weapon: "item:knife" },
+        pouch: ["item:bread"],
         needs: { health: 82, hunger: 68, fatigue: 55, mood: 61 },
         traits: ["практичная", "памятливая", "не любит долгов"],
         about: "Держит трактир «Хромой олень» уже девятнадцать лет. Знает, кто в округе чем дышит, и помнит каждую неоплаченную кружку пива.",
@@ -4626,6 +4970,7 @@ html.bow-motion-calm .bow-fog-band {
         role: "кузнец", location: "smithy", org: "org:brod",
         skills: { combat: 44, trade: 26, survival: 35, medicine: 6, leadership: 12, stealth: 18 },
         gear: { weapon: "item:axe", armor: "item:padded" },
+        pouch: ["item:iron_ore"],
         needs: { health: 88, hunger: 62, fatigue: 48, mood: 44 },
         traits: ["молчаливый", "упрямый", "честный в работе"],
         about: "Пришёл в Брод десять лет назад с войны и остался. Кует всё, от гвоздей до наконечников, и не любит разговаривать о прошлом.",
@@ -4685,6 +5030,7 @@ html.bow-motion-calm .bow-fog-band {
         role: "дочь торговца", location: "square", org: "org:brod",
         skills: { combat: 5, trade: 31, survival: 12, medicine: 14, leadership: 9, stealth: 22 },
         gear: {},
+        pouch: ["item:bread", "item:salt"],
         needs: { health: 94, hunger: 76, fatigue: 39, mood: 72 },
         traits: ["любопытная", "доверчивая", "хочет уехать на юг"],
         about: "Дочь торговца припасами. Считает, что жизнь в Броде слишком мала для неё, и говорит об этом вслух.",
@@ -4731,6 +5077,7 @@ html.bow-motion-calm .bow-fog-band {
         role: "охотник", location: "outskirts", org: "org:brod",
         skills: { combat: 41, trade: 15, survival: 64, medicine: 22, leadership: 8, stealth: 46 },
         gear: { weapon: "item:axe" },
+        pouch: ["item:fur", "item:raw_meat"],
         needs: { health: 66, hunger: 58, fatigue: 62, mood: 37 },
         traits: ["нелюдимый", "осторожный", "знает тайгу"],
         about: "Живёт на околице, промышляет охотой. В поселение заходит редко и разговаривает ещё реже.",
@@ -4794,7 +5141,48 @@ html.bow-motion-calm .bow-fog-band {
       pron: "m",
       role: "странник",
       status: "free",
-      skills: { combat: 15, trade: 20, survival: 25, medicine: 10, leadership: 5, stealth: 10 },
+      attrs: {
+        strength: 14,
+        toughness: 12,
+        dexterity: 15,
+        perception: 16
+      },
+      skills: {
+        /* Шесть опорных умений (совместимость со всеми модулями) */
+        combat: 15,
+        trade: 20,
+        survival: 25,
+        medicine: 10,
+        leadership: 5,
+        stealth: 10,
+        /* Оружейные специализации */
+        blades: 16,
+        axes: 8,
+        blunt: 10,
+        polearms: 6,
+        heavy_weapons: 3,
+        /* Ближний бой и защита */
+        melee_defense: 12,
+        dodge: 14,
+        unarmed: 12,
+        /* Дальний бой */
+        bows: 8,
+        precision: 11,
+        /* Тень и воровство */
+        thievery_pick: 10,
+        lockpicking: 5,
+        assassination: 4,
+        /* Движение */
+        athletics: 22,
+        swimming: 9,
+        /* Знания и ремёсла */
+        engineering: 6,
+        lore: 12,
+        weaponsmith: 4,
+        armorsmith: 4,
+        labouring: 18,
+        cooking: 11
+      },
       needs: { health: 85, hunger: 70, fatigue: 60, mood: 65 },
       money: 18,
       inventory: [
@@ -4803,17 +5191,208 @@ html.bow-motion-calm .bow-fog-band {
       ]
     },
 
+    /* ---------- Характеристики и древо навыков в духе Kenshi ---------- */
+    attributes: [
+      { key: "strength",   name: "Сила",       hint: "Переносимый вес, мощь рубящего/дробящего удара и тяжёлый труд (руда, дрова)." },
+      { key: "toughness",  name: "Крепость",   hint: "Закалка тела: снижает входящий урон, бережёт конечности и растёт под ударами." },
+      { key: "dexterity",  name: "Ловкость",   hint: "Скорость и точность клинков, древкового оружия, защиты и тонкой работы." },
+      { key: "perception", name: "Восприятие", hint: "Зоркость и слух: меткость ударов/стрельбы, сбор в тайге и чутьё на засаду." }
+    ],
+
+    skillCategories: [
+      {
+        key: "weapons",
+        title: "-Оружие-",
+        skills: [
+          { key: "blades",        name: "Клинки",         hint: "Ножи, кинжалы и северные тесаки: точность и режущий урон." },
+          { key: "axes",          name: "Топоры",         hint: "Плотницкие и боевые топоры: пробивание стёганок и щитов." },
+          { key: "blunt",         name: "Дробящее",       hint: "Окованные дубины, палицы и молоты: оглушает без кровопотери." },
+          { key: "polearms",      name: "Древковое",      hint: "Рогатины, копья и посохи: удержание дистанции." },
+          { key: "heavy_weapons", name: "Тяжёлое оружие", hint: "Двуручные секиры и колуны — требуют высокой Силы." }
+        ]
+      },
+      {
+        key: "combat_cat",
+        title: "-Бой-",
+        skills: [
+          { key: "combat",        name: "Атака",          hint: "Умение находить брешь и попадать в ближнем бою." },
+          { key: "melee_defense", name: "Защита",         hint: "Парирование и глухая оборона с оружием в руках." },
+          { key: "dodge",         name: "Уклонение",      hint: "Уход с линии удара на ногах без тяжёлого доспеха." },
+          { key: "unarmed",       name: "Рукопашный бой", hint: "Кулаки, захваты и борьба без оружия." }
+        ]
+      },
+      {
+        key: "ranged",
+        title: "-Стрельба-",
+        skills: [
+          { key: "bows",          name: "Луки",           hint: "Таёжные и охотничьи луки, самострелы." },
+          { key: "precision",     name: "Меткость",       hint: "Прицельные удары и выстрелы в голову, глаза и ноги." }
+        ]
+      },
+      {
+        key: "thievery",
+        title: "-Воровство-",
+        skills: [
+          { key: "stealth",       name: "Скрытность",     hint: "Бесшумный шаг, ночные вылазки и уход от стражи." },
+          { key: "thievery_pick", name: "Воровство",      hint: "Срезание кошелей и шаренье по карманам." },
+          { key: "lockpicking",   name: "Взлом",          hint: "Замки, засовы и побег из клетки." },
+          { key: "assassination", name: "Оглушение",      hint: "Тихий удар исподтишка без лишнего шума." }
+        ]
+      },
+      {
+        key: "athletics_cat",
+        title: "-Движение-",
+        skills: [
+          { key: "athletics",     name: "Атлетика",       hint: "Скорость пеших переходов по снегу и отрыв от погони." },
+          { key: "swimming",      name: "Плавание",       hint: "Ледяные броды, течение и переправы." },
+          { key: "survival",      name: "Выживание",      hint: "Тайга, чтение следов, сбор припасов и силки." }
+        ]
+      },
+      {
+        key: "sciences",
+        title: "-Знания-",
+        skills: [
+          { key: "medicine",      name: "Полев. медицина", hint: "Перевязка ран и повреждённых конечностей." },
+          { key: "engineering",   name: "Плотницкое дело", hint: "Починка строений, частокола и снастей." },
+          { key: "lore",          name: "Грамота и счёт",  hint: "Чтение накладных, законов и знание земель Эдема." }
+        ]
+      },
+      {
+        key: "trades",
+        title: "-Ремёсла-",
+        skills: [
+          { key: "weaponsmith",   name: "Оруж. ковка",    hint: "Ковка и правка клинков и топоров у горна." },
+          { key: "armorsmith",    name: "Бронное дело",   hint: "Стёганки, кожа и починка доспеха." },
+          { key: "labouring",     name: "Чёрная работа",  hint: "Добыча болотной руды, рубка дров и переноска тюков." },
+          { key: "cooking",       name: "Стряпня",        hint: "Похлёбка, дичь на углях и заготовка снеди." },
+          { key: "trade",         name: "Торг",           hint: "Дешевле покупать и дороже сбывать добычу." },
+          { key: "leadership",    name: "Власть",         hint: "Вес слова: отряд идёт за вами, а грабители пасуют." }
+        ]
+      }
+    ],
+
+    /* ---------- Конечности и органы персонажа ---------- */
+    bodyParts: [
+      { key: "head",      name: "Голова",      aim: "head", canSever: false },
+      { key: "chest",     name: "Грудь",       aim: "body", canSever: false },
+      { key: "stomach",   name: "Живот",       aim: "body", canSever: false },
+      { key: "left_arm",  name: "Левая рука",  aim: "arms", canSever: true  },
+      { key: "right_arm", name: "Правая рука", aim: "arms", canSever: true  },
+      { key: "left_leg",  name: "Левая нога",  aim: "legs", canSever: true  },
+      { key: "right_leg", name: "Правая нога", aim: "legs", canSever: true  }
+    ],
+
+    organs: [
+      { key: "left_eye",  name: "Левый глаз",  sense: "vision" },
+      { key: "right_eye", name: "Правый глаз", sense: "vision" },
+      { key: "left_ear",  name: "Левое ухо",   sense: "hearing" },
+      { key: "right_ear", name: "Правое ухо",  sense: "hearing" }
+    ],
+
+    /* ---------- Автономные постоянные задачи (как копка руды в Kenshi) ---------- */
+    tasks: [
+      {
+        key: "forage_taiga",
+        location: "forest",
+        title: "Собирать дары тайги",
+        short: "Сбор в тайге",
+        desc: "Бродить у кромки леса, собирая мёрзлую ягоду, коренья и смолистый сушняк в сумку, пока есть силы и место.",
+        cycleMinutes: 25,
+        fatigue: 3.2,
+        skills: ["survival", "labouring"],
+        attr: "perception",
+        yields: [
+          { itemKey: "berries",  chance: 0.72 },
+          { itemKey: "firewood", chance: 0.48 }
+        ],
+        pay: [0, 0]
+      },
+      {
+        key: "snare_taiga",
+        location: "forest",
+        title: "Проверять силки и звериные тропы",
+        short: "Силки в тайге",
+        desc: "Ставить и обходить петли у опушки — добывает пайки дичи и изредка пушную шкуру.",
+        cycleMinutes: 35,
+        fatigue: 4.0,
+        skills: ["survival", "stealth"],
+        attr: "perception",
+        yields: [
+          { itemKey: "raw_meat", chance: 0.62 },
+          { itemKey: "fur",      chance: 0.22 }
+        ],
+        pay: [0, 0]
+      },
+      {
+        key: "mine_ore",
+        location: "smithy",
+        title: "Дробить и отбирать болотную руду",
+        short: "Добыча руды",
+        desc: "Разбивать мёрзлые глыбы железняка у кузни — руда складывается в сумку, её сразу покупает Тарн.",
+        cycleMinutes: 30,
+        fatigue: 4.5,
+        skills: ["labouring", "weaponsmith"],
+        attr: "strength",
+        yields: [
+          { itemKey: "iron_ore", chance: 0.80 }
+        ],
+        pay: [0, 0]
+      },
+      {
+        key: "chop_logs",
+        location: "outskirts",
+        title: "Заготавливать дрова у частокола",
+        short: "Заготовка дров",
+        desc: "Колоть кряжи у северной бревенчатой стены — в сумку идут вязанки дров на продажу.",
+        cycleMinutes: 28,
+        fatigue: 4.0,
+        skills: ["labouring", "axes"],
+        attr: "strength",
+        yields: [
+          { itemKey: "firewood", chance: 0.82 }
+        ],
+        pay: [0, 1]
+      },
+      {
+        key: "haul_square",
+        location: "square",
+        title: "Таскать тюки у солевых возов",
+        short: "Носка грузов",
+        desc: "Непрерывная подённая работа на площади — качает спину, ноги и приносит мелкую монету за каждый круг.",
+        cycleMinutes: 30,
+        fatigue: 3.8,
+        skills: ["labouring", "athletics"],
+        attr: "strength",
+        yields: [],
+        pay: [1, 3]
+      },
+      {
+        key: "help_hearth",
+        location: "tavern",
+        title: "Работать у котла и очага",
+        short: "Работа у очага",
+        desc: "Подкладывать поленья, мешать варево и носить кружки в тепле трактира.",
+        cycleMinutes: 30,
+        fatigue: 2.8,
+        skills: ["cooking", "trade"],
+        attr: "dexterity",
+        yields: [],
+        pay: [1, 2]
+      }
+    ],
+
     /* ---------- Правила потребностей ---------- */
     needsRules: {
       /* Естественное заживление за час: сытый и отдохнувший
          затягивает раны сам. Лечение ускоряет это втрое. */
-      healPerHour: 0.45,
-      perHour: { hunger: -0.85, fatigue: -0.65, mood: -0.15 },
+      healPerHour: 0.55,
+      perHour: { hunger: -0.55, fatigue: -0.45, mood: -0.08 },
+      autoEatBelow: 52,
       hungerLow: 20,
       fatigueLow: 15,
-      healthPenalty: { hunger: -0.9, fatigue: -0.4, both: -1.6 },
-      moodPenaltyHunger: -0.5,
-      rest: { fatigue: 36, health: 5, mood: 7 },
+      healthPenalty: { hunger: -0.7, fatigue: -0.35, both: -1.2 },
+      moodPenaltyHunger: -0.4,
+      rest: { fatigue: 42, health: 7, mood: 8 },
       sleepHours: 7
     },
 
@@ -4823,8 +5402,9 @@ html.bow-motion-calm .bow-fog-band {
        без особой причины. */
     fightRules: {
       hours: 1,                  // час на весь бой, а не на каждый удар
-      fatiguePerExchange: 3,
-      guardFatigue: 2,
+      autoTickMs: 2600,          // спокойный автобой: 1 обмен ударами раз в 2.6 сек.
+      fatiguePerExchange: 1.5,
+      guardFatigue: 1.0,
       yieldAt: { npc: 18, player: 12 },
       sparMinAttitude: -20,      // ниже — с вами просто не станут бороться
       /* Цена нападения: платится в начале, до исхода. */
@@ -4912,20 +5492,34 @@ html.bow-motion-calm .bow-fog-band {
       injuries: {
         arm: {
           key: "arm", name: "покалеченная рука", short: "рука",
-          hit: -0.10, power: 0.08, label: "бьёт слабее и реже попадает"
+          hit: -0.10, power: 0.08, dex: -4, str: -3, label: "бьёт слабее и реже попадает"
         },
         eye: {
           key: "eye", name: "выбитый глаз", short: "глаз",
-          hit: -0.12, power: 0, label: "хуже видит удар"
+          hit: -0.12, power: 0, per: -16, organ: "left_eye", label: "хуже видит удар и дальние цели"
+        },
+        ear: {
+          key: "ear", name: "отсечённое ухо", short: "ухо",
+          hit: -0.04, power: 0, per: -8, organ: "left_ear", label: "хуже слышит шаг за спиной"
         },
         leg: {
           key: "leg", name: "перебитая нога", short: "нога",
-          hit: -0.05, power: 0, flee: -0.20, travel: 1.5,
+          hit: -0.05, power: 0, flee: -0.20, travel: 1.5, agi: -6,
           label: "медленно ходит и плохо бегает"
         },
         ribs: {
           key: "ribs", name: "сросшиеся рёбра", short: "рёбра",
-          hit: -0.04, power: 0.08, fatigue: 1.3, label: "быстрее выматывается"
+          hit: -0.04, power: 0.08, fatigue: 1.3, str: -2, label: "быстрее выматывается"
+        },
+        arm_lost: {
+          key: "arm_lost", name: "отрубленная рука", short: "нет руки",
+          hit: -0.22, power: 0.32, dex: -12, str: -8, limbLost: "left_arm",
+          label: "конечность утрачена навсегда — тяжёлый штраф к бою и ремеслу"
+        },
+        leg_lost: {
+          key: "leg_lost", name: "отрубленная нога", short: "нет ноги",
+          hit: -0.14, power: 0.12, flee: -0.45, travel: 2.1, limbLost: "left_leg",
+          label: "конечность утрачена навсегда — передвигается с огромным трудом"
         }
       },
       /* ---------- Куда бить (0.0.6.3) ----------
@@ -4994,7 +5588,151 @@ html.bow-motion-calm .bow-fog-band {
 
   var Bow = global.Bow = global.Bow || {};
 
-  /* Порядок применения миграций. Ключ — версия, ИЗ которой мигрируем. */
+  function freshBody() {
+    var b = {};
+    (Bow.data.bodyParts || [
+      { key: "head" }, { key: "chest" }, { key: "stomach" },
+      { key: "left_arm" }, { key: "right_arm" }, { key: "left_leg" }, { key: "right_leg" }
+    ]).forEach(function (part) {
+      b[part.key] = { hp: 100, max: 100, bandaged: false, lost: false };
+    });
+    return b;
+  }
+
+  function freshOrgans() {
+    var o = {};
+    (Bow.data.organs || [
+      { key: "left_eye" }, { key: "right_eye" }, { key: "left_ear" }, { key: "right_ear" }
+    ]).forEach(function (org) {
+      o[org.key] = true;
+    });
+    return o;
+  }
+
+  function ensureAnatomy(person, defAttrs, defSkills) {
+    if (!person) { return person; }
+    if (!Bow.util.isPlainObject(person.attrs)) {
+      person.attrs = Bow.util.clone(defAttrs || { strength: 12, toughness: 12, dexterity: 12, perception: 14 });
+    } else {
+      var baseA = defAttrs || { strength: 12, toughness: 12, dexterity: 12, perception: 14 };
+      ["strength", "toughness", "dexterity", "perception"].forEach(function (k) {
+        if (typeof person.attrs[k] !== "number") { person.attrs[k] = baseA[k] || 12; }
+      });
+    }
+    if (!Bow.util.isPlainObject(person.skills)) { person.skills = {}; }
+    var baseS = defSkills || (Bow.data.player && Bow.data.player.skills) || {};
+    Object.keys(baseS).forEach(function (sk) {
+      if (typeof person.skills[sk] !== "number") {
+        person.skills[sk] = baseS[sk];
+      }
+    });
+    if (!Bow.util.isPlainObject(person.body)) {
+      person.body = freshBody();
+    } else {
+      var fb = freshBody();
+      Object.keys(fb).forEach(function (bk) {
+        if (!Bow.util.isPlainObject(person.body[bk])) { person.body[bk] = fb[bk]; }
+      });
+    }
+    if (!Bow.util.isPlainObject(person.organs)) {
+      person.organs = freshOrgans();
+    } else {
+      var fo = freshOrgans();
+      Object.keys(fo).forEach(function (ok) {
+        if (typeof person.organs[ok] !== "boolean") { person.organs[ok] = true; }
+      });
+    }
+    /* Синхронизируем постоянные травмы с конечностями и органами. */
+    (person.injuries || []).forEach(function (inj) {
+      if (inj.key === "eye") { person.organs.left_eye = false; }
+      if (inj.key === "ear") { person.organs.left_ear = false; }
+      if (inj.key === "arm_lost" && person.body.left_arm) {
+        person.body.left_arm.lost = true;
+        person.body.left_arm.hp = 0;
+      }
+      if (inj.key === "leg_lost" && person.body.left_leg) {
+        person.body.left_leg.lost = true;
+        person.body.left_leg.hp = 0;
+      }
+    });
+    return person;
+  }
+
+  /* Эффективное значение характеристики с учётом ран конечностей и утраты органов (как в Kenshi). */
+  function effectiveAttr(person, key) {
+    if (!person) { return 10; }
+    ensureAnatomy(person);
+    var base = (person.attrs && typeof person.attrs[key] === "number") ? person.attrs[key] : 12;
+    var pen = 0;
+    var b = person.body || {};
+    var o = person.organs || {};
+    if (key === "strength") {
+      if (b.left_arm && b.left_arm.lost) { pen += base * 0.35 + 4; }
+      else if (b.left_arm && b.left_arm.hp < 60) { pen += (60 - b.left_arm.hp) * 0.08; }
+      if (b.right_arm && b.right_arm.lost) { pen += base * 0.40 + 5; }
+      else if (b.right_arm && b.right_arm.hp < 60) { pen += (60 - b.right_arm.hp) * 0.09; }
+      if (b.chest && b.chest.hp < 55) { pen += (55 - b.chest.hp) * 0.08; }
+    } else if (key === "dexterity") {
+      if (b.right_arm && b.right_arm.lost) { pen += base * 0.45 + 6; }
+      else if (b.right_arm && b.right_arm.hp < 65) { pen += (65 - b.right_arm.hp) * 0.10; }
+      if (b.left_arm && b.left_arm.lost) { pen += base * 0.25 + 3; }
+      else if (b.left_arm && b.left_arm.hp < 65) { pen += (65 - b.left_arm.hp) * 0.07; }
+    } else if (key === "perception") {
+      if (o.left_eye === false) { pen += 16; }
+      if (o.right_eye === false) { pen += 18; }
+      if (o.left_ear === false) { pen += 7; }
+      if (o.right_ear === false) { pen += 7; }
+      if (b.head && b.head.hp < 60) { pen += (60 - b.head.hp) * 0.12; }
+    } else if (key === "toughness") {
+      if (b.stomach && b.stomach.hp < 45) { pen += (45 - b.stomach.hp) * 0.06; }
+    }
+    return Math.max(1, Math.round((base - pen) * 10) / 10);
+  }
+
+  /* Эффективный навык с учётом травм конечностей и органов (для UI в стиле Kenshi и расчётов). */
+  function effectiveSkill(person, key) {
+    if (!person || !person.skills) { return 0; }
+    ensureAnatomy(person);
+    var base = typeof person.skills[key] === "number" ? person.skills[key] : 0;
+    var b = person.body || {};
+    var o = person.organs || {};
+    var mult = 1;
+    var flat = 0;
+
+    var armHurt = (b.right_arm && b.right_arm.lost) || (b.left_arm && b.left_arm.lost);
+    var legHurt = (b.right_leg && b.right_leg.lost) || (b.left_leg && b.left_leg.lost);
+    var eyeLost = (o.left_eye === false ? 1 : 0) + (o.right_eye === false ? 1 : 0);
+    var earLost = (o.left_ear === false ? 1 : 0) + (o.right_ear === false ? 1 : 0);
+
+    if (["blades", "axes", "blunt", "polearms", "heavy_weapons", "combat", "melee_defense", "weaponsmith", "armorsmith"].indexOf(key) !== -1) {
+      if (b.right_arm && b.right_arm.lost) { mult *= 0.55; }
+      else if (b.right_arm && b.right_arm.hp < 60) { mult *= (0.72 + (b.right_arm.hp / 60) * 0.28); }
+      if (b.left_arm && b.left_arm.lost) { mult *= (key === "heavy_weapons" || key === "polearms" ? 0.35 : 0.78); }
+    }
+    if (["bows", "precision"].indexOf(key) !== -1) {
+      if (armHurt) { mult *= 0.35; }
+      if (eyeLost === 1) { mult *= 0.68; }
+      if (eyeLost >= 2) { mult *= 0.15; }
+    }
+    if (["athletics", "dodge", "swimming", "stealth"].indexOf(key) !== -1) {
+      if (legHurt) { mult *= 0.42; }
+      else {
+        var minLeg = Math.min((b.left_leg ? b.left_leg.hp : 100), (b.right_leg ? b.right_leg.hp : 100));
+        if (minLeg < 65) { mult *= (0.65 + (minLeg / 65) * 0.35); }
+      }
+      if (earLost > 0 && key === "dodge") { flat += earLost * 3; }
+    }
+    if (["thievery_pick", "lockpicking", "medicine", "cooking", "engineering"].indexOf(key) !== -1) {
+      if (b.right_arm && b.right_arm.lost) { mult *= 0.52; }
+    }
+    return Math.max(0, Math.round((base * mult - flat) * 10) / 10);
+  }
+
+  /* Переносимый вес зависит от Силы (как в Kenshi). */
+  function maxCarryWeight(person) {
+    var str = effectiveAttr(person, "strength");
+    return Math.round((16 + str * 0.55) * 10) / 10;
+  }
   var MIGRATIONS = {
     /* 0.0.2 → 0.0.3: добавлены диалоги, визиты, погода.
        Старые сохранения продолжают работать: недостающие поля
@@ -5231,6 +5969,28 @@ html.bow-motion-calm .bow-fog-band {
       }
       state.version = "0.0.7.3";
       return state;
+    },
+
+    /* 0.0.7.3 → 0.0.7.4: характеристики и древо навыков в духе Kenshi, конечности и органы,
+       автономные постоянные задачи, авто-еда и спокойный автобой. */
+    "0.0.7.3": function (state) {
+      if (state.player) {
+        ensureAnatomy(state.player, Bow.data.player.attrs, Bow.data.player.skills);
+        if (typeof state.player.autoEat !== "boolean") { state.player.autoEat = true; }
+      }
+      if (!("task" in state)) { state.task = null; }
+      var fresh = Bow.state.create(Bow.data, state.seed || 1);
+      Object.keys(state.people || {}).forEach(function (id) {
+        var p = state.people[id];
+        var f = fresh.people[id];
+        ensureAnatomy(p, f ? f.attrs : null, f ? f.skills : null);
+        if (!Array.isArray(p.pouch)) { p.pouch = f && Array.isArray(f.pouch) ? f.pouch.slice() : []; }
+      });
+      if (state.fight && state.fight.orders && state.fight.orders.speed === "paused") {
+        state.fight.orders.speed = "auto";
+      }
+      state.version = "0.0.7.4";
+      return state;
     }
   };
 
@@ -5261,8 +6021,12 @@ html.bow-motion-calm .bow-fog-band {
         role: data.player.role,
         status: data.player.status,
         location: data.meta.startLocation,
+        attrs: Bow.util.clone(data.player.attrs || { strength: 14, toughness: 12, dexterity: 15, perception: 16 }),
         skills: Bow.util.clone(data.player.skills),
         needs: Bow.util.clone(data.player.needs),
+        body: freshBody(),
+        organs: freshOrgans(),
+        autoEat: true,
         money: data.player.money,
         inventory: Bow.util.clone(data.player.inventory),
         conditions: [],
@@ -5287,6 +6051,8 @@ html.bow-motion-calm .bow-fog-band {
       journal: [],
       events: [],
       flags: {},
+      /* Текущая автономная задача (как в Kenshi): { key, location, elapsedMin, cycles, itemsGained, moneyGained } */
+      task: null,
       /* Текущий разговор: { personId, nodeId, visited[], startedAt } */
       dialog: null,
       /* Текущий бой: { personId, mode, phase, round, log[], witnesses[], units[] } */
@@ -5349,8 +6115,18 @@ html.bow-motion-calm .bow-fog-band {
            отобрали топор — он и в бою стал слабее. */
         weapon: (p.gear && p.gear.weapon) || null,
         armor: (p.gear && p.gear.armor) || null,
+        pouch: Array.isArray(p.pouch) ? p.pouch.slice() : [],
+        attrs: {
+          strength: Math.max(8, Math.round(10 + (p.skills.combat || 10) * 0.35)),
+          toughness: Math.max(8, Math.round(10 + (p.skills.combat || 10) * 0.3 + (p.skills.survival || 10) * 0.15)),
+          dexterity: Math.max(8, Math.round(10 + (p.skills.stealth || 10) * 0.3 + (p.skills.combat || 10) * 0.2)),
+          perception: Math.max(8, Math.round(10 + (p.skills.survival || 10) * 0.35))
+        },
+        body: freshBody(),
+        organs: freshOrgans(),
         talkedToday: 0
       };
+      ensureAnatomy(state.people[p.id]);
     });
 
     /* Все общины начинают с нейтрального отношения, розыска нет. */
@@ -5476,6 +6252,10 @@ html.bow-motion-calm .bow-fog-band {
     create: create,
     validate: validate,
     migrate: migrate,
+    ensureAnatomy: ensureAnatomy,
+    effectiveAttr: effectiveAttr,
+    effectiveSkill: effectiveSkill,
+    maxCarryWeight: maxCarryWeight,
     isCurrentVersion: function (state) {
       return state && state.version === Bow.data.meta.version;
     }
@@ -5612,6 +6392,12 @@ html.bow-motion-calm .bow-fog-band {
       hour: state.time.hour
     };
     var res = advanceMinutes(state, 1);
+    if (Bow.needs && Bow.needs.autoEatCheck) {
+      Bow.needs.autoEatCheck(state);
+    }
+    if (Bow.work && Bow.work.tickTask) {
+      Bow.work.tickTask(state, 1);
+    }
     return {
       hourChanged: res.hoursPassed > 0 || state.time.hour !== before.hour,
       dayChanged: state.time.day !== before.day || state.time.month !== before.month || state.time.year !== before.year,
@@ -5721,6 +6507,18 @@ html.bow-motion-calm .bow-fog-band {
              драка оставляла игрока калекой до конца игры. */
           n.health += healRate(person);
         }
+        /* Заживление раненых (но не отрубленных) конечностей за час. */
+        if (!hungry && !tired && person.body) {
+          var limbHeal = healRate(person) * 1.4;
+          Object.keys(person.body).forEach(function (bk) {
+            var limb = person.body[bk];
+            if (limb && !limb.lost && limb.hp < limb.max) {
+              var bonus = limb.bandaged ? 1.6 : 1.0;
+              limb.hp = Math.min(limb.max, Bow.util.round1(limb.hp + limbHeal * bonus));
+              if (limb.hp >= limb.max) { limb.bandaged = false; }
+            }
+          });
+        }
         if (hungry) {
           n.mood += rules.moodPenaltyHunger;
         }
@@ -5758,10 +6556,19 @@ html.bow-motion-calm .bow-fog-band {
 
      Навык лечения решает, сколько вернётся. Без навыка почти
      ничего: «полежать» умеют все, «перевязать» — нет. */
+  function hasWoundedLimbs(person) {
+    if (!person || !person.body) { return false; }
+    return Object.keys(person.body).some(function (k) {
+      var l = person.body[k];
+      return l && !l.lost && l.hp < l.max;
+    });
+  }
+
   function treat(state, rng) {
     var p = state.player;
     var n = p.needs;
-    if (n.health >= 100) { return { ok: false, message: "Вы целы. Лечить нечего." }; }
+    var limbHurt = hasWoundedLimbs(p);
+    if (n.health >= 100 && !limbHurt) { return { ok: false, message: "Вы целы. Лечить нечего." }; }
     if (n.fatigue < 8) { return { ok: false, message: "Руки не держат бинт. Нужен отдых." }; }
 
     /* lastTreat = 0 значит «ещё не лечили», а не «лечили в нулевой
@@ -5775,13 +6582,25 @@ html.bow-motion-calm .bow-fog-band {
 
     var medicine = p.skills.medicine || 0;
     /* Без навыка — 4, с сотней навыка — 22. Разница в пять раз. */
-    var gain = Math.round(4 + medicine * 0.18 + (rng ? rng() : Math.random()) * 3);
+    var rawGain = Math.round(4 + medicine * 0.18 + (rng ? rng() : Math.random()) * 3);
     /* Больше, чем не хватает, не вернёшь, и потолок — 30 за раз. */
-    gain = Math.max(1, Math.min(gain, 30, 100 - n.health));
+    var gain = n.health < 100 ? Math.max(1, Math.min(rawGain, 30, 100 - n.health)) : 0;
 
     Bow.time.advance(state, 1);
     Bow.needs.applyChange(p, "fatigue", -3);
-    Bow.needs.applyChange(p, "health", gain);
+    if (gain > 0) {
+      Bow.needs.applyChange(p, "health", gain);
+    }
+    if (p.body) {
+      var limbRestore = Math.round(12 + medicine * 0.28);
+      Object.keys(p.body).forEach(function (bk) {
+        var limb = p.body[bk];
+        if (limb && !limb.lost && limb.hp < limb.max) {
+          limb.hp = Math.min(limb.max, limb.hp + limbRestore);
+          limb.bandaged = limb.hp < limb.max;
+        }
+      });
+    }
     p.lastTreat = Math.max(1, state.time.totalHours);
 
     /* Навык растёт от дела, а не от чтения. */
@@ -5796,9 +6615,58 @@ html.bow-motion-calm .bow-fog-band {
       ok: true,
       healed: gain,
       medicine: p.skills.medicine,
-      message: "Вы промыли и перевязали: +" + gain + " здор. Лечение " +
+      message: "Вы промыли и перевязали раны: +" + gain + " здор. Лечение " +
         before.toFixed(1) + " → " + p.skills.medicine + "."
     };
+  }
+
+  /* ---------- Авто-еда (как в Kenshi, 0.0.7.4) ----------
+     Если у героя в сумке есть съестное, а сытость опустилась до порога,
+     он сам съедает порцию без лишних кликов. */
+  var AUTO_EAT_ORDER = ["berries", "bread", "raw_meat", "stew"];
+
+  function autoEatCheck(state) {
+    if (!state || !state.player || state.dead || state.fight || state.jail) { return null; }
+    var p = state.player;
+    if (p.autoEat === false) { return null; }
+    var threshold = (Bow.data.needsRules && Bow.data.needsRules.autoEatBelow) || 52;
+    if (p.needs.hunger > threshold) { return null; }
+
+    /* Выбираем съестной предмет из сумки (сначала простые дорожные припасы). */
+    var chosenDef = null;
+    for (var i = 0; i < AUTO_EAT_ORDER.length; i++) {
+      var k = AUTO_EAT_ORDER[i];
+      var d = Bow.data.items[k];
+      if (d && d.food && Bow.economy.countItem(p, d.id) > 0) {
+        chosenDef = d;
+        break;
+      }
+    }
+    if (!chosenDef) {
+      (p.inventory || []).forEach(function (entry) {
+        if (chosenDef || entry.qty <= 0) { return; }
+        var def = Bow.economy.findItemDef(entry.itemId);
+        if (def && def.food) { chosenDef = def; }
+      });
+    }
+    if (!chosenDef) { return null; }
+
+    if (!Bow.economy.removeItem(p, chosenDef.id, 1)) { return null; }
+    applyChange(p, "hunger", chosenDef.food);
+    applyChange(p, "mood", 1);
+    var msg = "Авто-перекус из сумки: " + chosenDef.name + " (+" + chosenDef.food + " сытости).";
+    state.flags = state.flags || {};
+    state.flags.lastAutoEat = msg;
+    if (Bow.journal && Bow.journal.add) {
+      Bow.journal.add(state, msg, "food");
+    }
+    return { ate: chosenDef.id, name: chosenDef.name, food: chosenDef.food, message: msg };
+  }
+
+  function toggleAutoEat(state) {
+    if (!state || !state.player) { return false; }
+    state.player.autoEat = state.player.autoEat === false ? true : false;
+    return state.player.autoEat;
   }
 
   function applyChange(person, key, delta) {
@@ -5821,6 +6689,9 @@ html.bow-motion-calm .bow-fog-band {
 
   Bow.needs = {
     treat: treat,
+    hasWoundedLimbs: hasWoundedLimbs,
+    autoEatCheck: autoEatCheck,
+    toggleAutoEat: toggleAutoEat,
     healRate: healRate,
     KEYS: KEYS,
     hourly: hourly,
@@ -5978,6 +6849,13 @@ html.bow-motion-calm .bow-fog-band {
     }, 0);
   }
 
+  function maxWeight(player) {
+    if (Bow.state && Bow.state.maxCarryWeight) {
+      return Bow.state.maxCarryWeight(player);
+    }
+    return 30;
+  }
+
   /* ---------- Действия ---------- */
 
   function buy(state, locationId, key, qty) {
@@ -6039,6 +6917,7 @@ html.bow-motion-calm .bow-fog-band {
     removeItem: removeItem,
     countItem: countItem,
     totalWeight: totalWeight,
+    maxWeight: maxWeight,
     buy: buy,
     sell: sell
   };
@@ -6127,6 +7006,35 @@ html.bow-motion-calm .bow-fog-band {
   var Bow = global.Bow = global.Bow || {};
 
   var REP_LIMIT = 100;
+
+  function skillLabel(key) {
+    var cats = Bow.data.skillCategories || [];
+    for (var i = 0; i < cats.length; i++) {
+      var list = cats[i].skills || [];
+      for (var j = 0; j < list.length; j++) {
+        if (list[j].key === key) { return list[j].name; }
+      }
+    }
+    return { combat: "Бой", trade: "Торг", survival: "Выживание", medicine: "Лечение", leadership: "Власть", stealth: "Скрытность" }[key] || key;
+  }
+
+  function growSkill(person, key, amount) {
+    if (!person || !person.skills) { return 0; }
+    var cur = person.skills[key] || 0;
+    var mult = cur < 25 ? 1.0 : cur < 60 ? 0.65 : 0.35;
+    var next = Math.min(100, Math.round((cur + amount * mult) * 10) / 10);
+    person.skills[key] = next;
+    return Math.round((next - cur) * 10) / 10;
+  }
+
+  function growAttr(person, key, amount) {
+    if (!person || !person.attrs) { return 0; }
+    var cur = person.attrs[key] || 10;
+    var mult = cur < 30 ? 1.0 : cur < 65 ? 0.6 : 0.3;
+    var next = Math.min(100, Math.round((cur + amount * mult) * 10) / 10);
+    person.attrs[key] = next;
+    return Math.round((next - cur) * 10) / 10;
+  }
 
   function jobDefs(locationId) {
     var loc = Bow.data.locations[locationId];
@@ -6241,11 +7149,21 @@ html.bow-motion-calm .bow-fog-band {
     state.stats.actionsTaken += 1;
     state.stats.jobsMade = (state.stats.jobsMade || 0) + 1;
     state.stats.moneyEarned = (state.stats.moneyEarned || 0) + pay;
+    if (job.key === "porter" || job.key === "firewood" || job.key === "bellows") {
+      growSkill(state.player, "labouring", 0.8);
+      growAttr(state.player, "strength", 0.25);
+    } else if (job.key === "grind") {
+      growSkill(state.player, "blades", 0.5);
+      growAttr(state.player, "dexterity", 0.2);
+    } else if (job.key === "scout" || job.key === "deadwood") {
+      growSkill(state.player, "athletics", 0.6);
+      growAttr(state.player, "perception", 0.2);
+    }
 
-    var skillName = { combat: "Бой", trade: "Торг", survival: "Выживание", medicine: "Лечение", leadership: "Власть" }[skillKey] || skillKey;
+    var sLabel = skillLabel(skillKey);
 
     if (success) {
-      Bow.journal.add(state, "Работа: " + job.title + " — " + pay + " м. (" + skillName + " +" +
+      Bow.journal.add(state, "Работа: " + job.title + " — " + pay + " м. (" + sLabel + " +" +
         (state.player.skills[skillKey] - before).toFixed(1) + ")", "work");
       return {
         ok: true,
@@ -6254,7 +7172,7 @@ html.bow-motion-calm .bow-fog-band {
         skill: skillKey,
         skillGain: state.player.skills[skillKey] - before,
         reputation: repDelta,
-        message: job.title + ": удалось. " + pay + " м. " + skillName + " " +
+        message: job.title + ": удалось. " + pay + " м. " + sLabel + " " +
           (state.player.skills[skillKey]) + "."
       };
     }
@@ -6269,6 +7187,180 @@ html.bow-motion-calm .bow-fog-band {
       reputation: 0,
       message: job.title + ": не вышло. Заплатили " + pay + " м. — половину."
     };
+  }
+
+  /* ---------- Автономные постоянные задачи (в духе Kenshi, 0.0.7.4) ----------
+     Игрок назначает задачу (сбор в тайге, силки, добыча руды, дрова и т.д.),
+     и персонаж сам трудится цикл за циклом, складывая добычу в сумку и
+     перекусывая из припасов, пока не устанет или не заполнит сумку. */
+  function taskByKey(key) {
+    var all = Bow.data.tasks || [];
+    for (var i = 0; i < all.length; i++) {
+      if (all[i].key === key) { return all[i]; }
+    }
+    return null;
+  }
+
+  function tasksAt(state) {
+    var loc = state && state.player ? state.player.location : null;
+    return (Bow.data.tasks || []).filter(function (t) { return t.location === loc; });
+  }
+
+  function startTask(state, key) {
+    var def = taskByKey(key);
+    if (!def) { return { ok: false, message: "Такой задачи нет." }; }
+    if (state.player.location !== def.location) {
+      return { ok: false, message: "Для этой задачи нужно быть на месте." };
+    }
+    if (state.player.needs.fatigue < 12) {
+      return { ok: false, message: "Вы слишком измотаны — сначала отдохните." };
+    }
+    if ((def.yields || []).length > 0 && Bow.state.maxCarryWeight) {
+      var curW = Bow.economy.totalWeight(state.player);
+      var maxW = Bow.state.maxCarryWeight(state.player);
+      if (curW >= maxW) {
+        return { ok: false, message: "Сумка уже полна (" + curW.toFixed(1) + " / " + maxW.toFixed(1) + " кг). Сначала сбейте товар." };
+      }
+    }
+
+    state.task = {
+      key: def.key,
+      location: def.location,
+      elapsedMin: 0,
+      cycleMinutes: def.cycleMinutes || 30,
+      cycles: 0,
+      itemsGained: 0,
+      moneyGained: 0,
+      lastNote: "Начато: " + def.title
+    };
+
+    /* Если часы стояли на паузе — включаем живой ход 1x, чтобы герой сразу работал сам. */
+    if (state.time.scale === "paused") {
+      Bow.time.setScale(state, "1x");
+    }
+
+    return {
+      ok: true,
+      task: state.task,
+      message: "Задача назначена: «" + def.title + "» (цикл " + def.cycleMinutes + " мин.). Герой работает сам."
+    };
+  }
+
+  function stopTask(state, reason) {
+    if (!state || !state.task) { return { ok: false, message: "Активной задачи нет." }; }
+    var def = taskByKey(state.task.key);
+    var title = def ? def.title : state.task.key;
+    var cycles = state.task.cycles || 0;
+    state.task = null;
+    var msg = reason || ("Задача «" + title + "» остановлена (циклов выполнено: " + cycles + ").");
+    return { ok: true, message: msg };
+  }
+
+  function tickTask(state, minutes, rng) {
+    if (!state || !state.task) { return null; }
+    if (state.dead || state.fight || state.jail || state.guard || state.encounter || state.dialog) {
+      return null;
+    }
+    var t = state.task;
+    var def = taskByKey(t.key);
+    if (!def || state.player.location !== t.location) {
+      state.task = null;
+      return null;
+    }
+
+    var p = state.player;
+    var r = rng || (Bow.adapter ? Bow.adapter.rng : Math.random);
+
+    /* Проверка усталости перед новым шагом */
+    if (p.needs.fatigue < 10) {
+      var stopTired = "Вы выбились из сил — задача «" + def.short + "» приостановлена.";
+      state.task = null;
+      Bow.time.setScale(state, "paused");
+      Bow.journal.add(state, stopTired, "work");
+      state.flags.lastTaskStop = stopTired;
+      return { stopped: true, message: stopTired };
+    }
+
+    /* Проверка перегруза сумки для собирательских/рудных задач */
+    if ((def.yields || []).length > 0 && Bow.state.maxCarryWeight) {
+      if (Bow.economy.totalWeight(p) >= Bow.state.maxCarryWeight(p)) {
+        var stopBag = "Сумка заполнена до предела — задача «" + def.short + "» завершена.";
+        state.task = null;
+        Bow.time.setScale(state, "paused");
+        Bow.journal.add(state, stopBag, "work");
+        state.flags.lastTaskStop = stopBag;
+        return { stopped: true, message: stopBag };
+      }
+    }
+
+    t.elapsedMin += (minutes || 1);
+    var completed = [];
+
+    while (t.elapsedMin >= (def.cycleMinutes || 30)) {
+      t.elapsedMin -= (def.cycleMinutes || 30);
+      t.cycles += 1;
+
+      Bow.needs.applyChange(p, "fatigue", -(def.fatigue || 3.5));
+      if (Bow.needs.autoEatCheck) { Bow.needs.autoEatCheck(state); }
+
+      var mainSkillKey = (def.skills && def.skills[0]) || "labouring";
+      var effSkill = Bow.state.effectiveSkill ? Bow.state.effectiveSkill(p, mainSkillKey) : (p.skills[mainSkillKey] || 0);
+      var effAttr = (def.attr && Bow.state.effectiveAttr) ? Bow.state.effectiveAttr(p, def.attr) : 12;
+      var bonus = Math.min(0.22, effSkill * 0.002 + effAttr * 0.0015);
+
+      var lootedNames = [];
+      (def.yields || []).forEach(function (y) {
+        var itemDef = Bow.data.items[y.itemKey];
+        if (!itemDef) { return; }
+        if (r() < (y.chance + bonus)) {
+          Bow.economy.addItem(p, itemDef.id, 1);
+          t.itemsGained += 1;
+          lootedNames.push(itemDef.name);
+        }
+      });
+
+      /* Чтобы цикл сбора почти никогда не был «пустым» при старательной работе */
+      if (!lootedNames.length && (def.yields || []).length > 0 && r() < 0.75) {
+        var firstDef = Bow.data.items[def.yields[0].itemKey];
+        if (firstDef) {
+          Bow.economy.addItem(p, firstDef.id, 1);
+          t.itemsGained += 1;
+          lootedNames.push(firstDef.name);
+        }
+      }
+
+      var earned = 0;
+      if (def.pay && def.pay[1] > 0) {
+        var span = Math.max(0, def.pay[1] - def.pay[0]);
+        earned = def.pay[0] + Math.round(r() * span);
+        if (earned > 0) {
+          p.money += earned;
+          t.moneyGained += earned;
+          state.stats.moneyEarned = (state.stats.moneyEarned || 0) + earned;
+        }
+      }
+
+      /* Плавный рост профильных навыков и характеристики (как в Kenshi) */
+      (def.skills || []).forEach(function (sk, idx) {
+        growSkill(p, sk, idx === 0 ? 0.5 : 0.25);
+      });
+      if (def.attr) {
+        growAttr(p, def.attr, 0.18);
+      }
+
+      var summaryParts = [];
+      if (lootedNames.length) { summaryParts.push("+" + lootedNames.join(", +")); }
+      if (earned > 0) { summaryParts.push("+" + earned + " м."); }
+      var cycleNote = def.short + ": " + (summaryParts.length ? summaryParts.join(", ") : "пустой обход");
+      t.lastNote = cycleNote;
+      completed.push(cycleNote);
+
+      if (lootedNames.length || earned > 0) {
+        Bow.journal.add(state, "Задача (" + def.short + "): " + summaryParts.join(", ") + ".", "work");
+      }
+    }
+
+    return completed.length ? { completed: completed, message: completed[completed.length - 1] } : null;
   }
 
   /* Описание условий для интерфейса: игрок должен видеть риск. */
@@ -6346,7 +7438,15 @@ html.bow-motion-calm .bow-fog-band {
     orgName: orgName,
     worldTick: worldTick,
     jobByKey: jobByKey,
-    jobAvailable: jobAvailable
+    jobAvailable: jobAvailable,
+    skillLabel: skillLabel,
+    growSkill: growSkill,
+    growAttr: growAttr,
+    tasksAt: tasksAt,
+    taskByKey: taskByKey,
+    startTask: startTask,
+    stopTask: stopTask,
+    tickTask: tickTask
   };
 
   /* Молва меняется раз в сутки — не каждый час. */
@@ -6615,6 +7715,9 @@ html.bow-motion-calm .bow-fog-band {
       /* Навык растёт от практики. */
       var before = state.player.skills.stealth || 0;
       state.player.skills.stealth = Math.min(100, Math.round((before + 1.2) * 10) / 10);
+      if (Bow.work && Bow.work.growSkill) {
+        Bow.work.growSkill(state.player, "thievery_pick", 1.2);
+      }
 
       /* Тот, у кого срезали кошель, замечает пропажу позже —
          но запоминает это навсегда. */
@@ -6892,34 +7995,77 @@ html.bow-motion-calm .bow-fog-band {
   /* Нанести постоянную травму по месту удара (голова → глаз, руки → рука,
      ноги → колено, корпус → рёбра). Если такая травма уже есть — берём свободную. */
   var AIM_INJURY = { head: "eye", arms: "arm", legs: "leg", body: "ribs" };
+  var BASE_INJURY_KEYS = ["arm", "eye", "leg", "ribs"];
 
-  function maim(person, rng, aimKey) {
+  function applyInjuryAnatomy(person, key) {
+    if (!person) { return; }
+    if (Bow.state && Bow.state.ensureAnatomy) { Bow.state.ensureAnatomy(person); }
+    person.organs = person.organs || { left_eye: true, right_eye: true, left_ear: true, right_ear: true };
+    if (key === "eye") {
+      if (person.organs.left_eye !== false) { person.organs.left_eye = false; }
+      else { person.organs.right_eye = false; }
+    } else if (key === "ear") {
+      if (person.organs.left_ear !== false) { person.organs.left_ear = false; }
+      else { person.organs.right_ear = false; }
+    } else if (key === "arm_lost" && person.body) {
+      var armKey = (person.body.left_arm && !person.body.left_arm.lost) ? "left_arm" : "right_arm";
+      if (person.body[armKey]) { person.body[armKey].lost = true; person.body[armKey].hp = 0; }
+    } else if (key === "leg_lost" && person.body) {
+      var legKey = (person.body.left_leg && !person.body.left_leg.lost) ? "left_leg" : "right_leg";
+      if (person.body[legKey]) { person.body[legKey].lost = true; person.body[legKey].hp = 0; }
+    }
+  }
+
+  function maim(person, rng, aimKey, exactKey) {
     var defs = injuryDefs();
-    var keys = Object.keys(defs);
-    var free = keys.filter(function (k) { return !hasInjury(person, k); });
-    if (!free.length) { return null; }
-    var preferred = aimKey && AIM_INJURY[aimKey];
-    var key = (preferred && free.indexOf(preferred) !== -1)
-      ? preferred
-      : free[Math.floor(rollOf(rng) * free.length) % free.length];
+    var key = null;
+    if (exactKey && defs[exactKey] && !hasInjury(person, exactKey)) {
+      key = exactKey;
+    } else {
+      var freeBase = BASE_INJURY_KEYS.filter(function (k) { return defs[k] && !hasInjury(person, k); });
+      var pool = freeBase.length ? freeBase : Object.keys(defs).filter(function (k) { return !hasInjury(person, k); });
+      if (!pool.length) { return null; }
+      var preferred = aimKey && AIM_INJURY[aimKey];
+      key = (preferred && pool.indexOf(preferred) !== -1)
+        ? preferred
+        : pool[Math.floor(rollOf(rng) * pool.length) % pool.length];
+    }
     var def = defs[key];
     person.injuries = person.injuries || [];
     person.injuries.push({ key: key, at: null });
+    applyInjuryAnatomy(person, key);
     return def;
   }
 
   /* ---------- Сила ---------- */
+  function weaponSkillOf(person, weapon) {
+    if (!person || !person.skills) { return 0; }
+    if (!weapon) { return person.skills.unarmed || 0; }
+    var cls = weapon.weaponClass || (/axe/.test(weapon.id) ? "axes" : /knife|sword/.test(weapon.id) ? "blades" : "blunt");
+    return person.skills[cls] || 0;
+  }
+
   function attackPower(person, mode) {
     var weapon = mode === "spar" ? null : weaponOf(person);
     var skill = (person.skills && person.skills.combat) || 0;
-    var raw = 12 + skill / 5.5 + (weapon ? (weapon.attack || 0) * 1.6 : 0);
-    return raw * (1 - injuryPenalty(person, "power"));
+    var wSkill = weaponSkillOf(person, weapon);
+    var str = (Bow.state && Bow.state.effectiveAttr && person.attrs)
+      ? Bow.state.effectiveAttr(person, "strength")
+      : 14;
+    var raw = 12 + skill / 5.5 + wSkill / 22 + (str - 14) * 0.18 + (weapon ? (weapon.attack || 0) * 1.6 : 0);
+    return Math.max(3, raw * (1 - injuryPenalty(person, "power")));
   }
 
   function defenseOf(person, mode) {
     var armor = mode === "spar" ? null : armorOf(person);
     var skill = (person.skills && person.skills.combat) || 0;
-    return skill / 28 + (armor ? (armor.defense || 0) * 1.1 : 0);
+    var defSkill = armor
+      ? ((person.skills && person.skills.melee_defense) || 0)
+      : ((person.skills && person.skills.dodge) || 0);
+    var tough = (Bow.state && Bow.state.effectiveAttr && person.attrs)
+      ? Bow.state.effectiveAttr(person, "toughness")
+      : 12;
+    return skill / 28 + defSkill / 65 + Math.max(0, (tough - 12) * 0.08) + (armor ? (armor.defense || 0) * 1.1 : 0);
   }
 
   function aimDef(key) {
@@ -7172,7 +8318,7 @@ html.bow-motion-calm .bow-fog-band {
       allies: [],
       enemies: [],
       units: [],
-      orders: { stance: "press", aim: "body", squad: "focus", speed: "paused" },
+      orders: { stance: "press", aim: "body", squad: "focus", speed: "auto" },
       heatTotal: 0,
       repTotal: 0
     };
@@ -7332,13 +8478,13 @@ html.bow-motion-calm .bow-fog-band {
         stance: "press",
         aim: "body",
         squad: "free",
-        speed: "paused"
+        speed: "auto"
       };
     }
     if (!f.orders.stance) { f.orders.stance = "press"; }
     if (!f.orders.aim) { f.orders.aim = "body"; }
     if (!f.orders.squad) { f.orders.squad = "free"; }
-    if (!f.orders.speed) { f.orders.speed = "paused"; }
+    if (!f.orders.speed) { f.orders.speed = "auto"; }
     return f.orders;
   }
 
@@ -7379,11 +8525,11 @@ html.bow-motion-calm .bow-fog-band {
     }
 
     if (kind === "speed") {
-      if (["paused", "1x", "2x"].indexOf(value) === -1) {
+      if (["paused", "auto", "1x", "2x"].indexOf(value) === -1) {
         return { ok: false, message: "Неизвестная скорость." };
       }
-      o.speed = value;
-      return { ok: true, orders: o, message: "" };
+      o.speed = value === "paused" ? "paused" : "auto";
+      return { ok: true, orders: o, message: o.speed === "paused" ? "Бой на паузе." : "Автобой включён." };
     }
 
     return { ok: false, message: "Неизвестный приказ." };
@@ -7558,6 +8704,10 @@ html.bow-motion-calm .bow-fog-band {
     if (stance === "flee") { return flee(state, rng); }
     if (stance === "back") { return stepBack(state, rng); }
     if (stance !== "press" && stance !== "guard") { return { ok: false, message: "Так не дерутся." }; }
+
+    var ordM = ensureOrders(f);
+    ordM.stance = stance;
+    if (aimKey && R.aims && R.aims[aimKey]) { ordM.aim = aimKey; }
 
     f.units.forEach(function (u) { syncUnit(state, u); });
     var playerUnit = unitByKey(f, "player");
@@ -7825,15 +8975,57 @@ html.bow-motion-calm .bow-fog-band {
       }
     }
 
-    /* Тяжёлый удар может оставить след навсегда. Только по-настоящему:
-       в спарринге не калечат, а удар должен быть весомым. До 0.0.6.2
-       этого не было, хотя хроника обещала «кому оторвало конечность». */
+    /* Попадание бьёт в конкретную конечность или часть тела. */
+    var sideParity = (((f.round || 0) + (attacker.col || 0)) % 2) === 0;
+    var hitPartKey = aimKey === "head" ? "head"
+      : aimKey === "arms" ? (sideParity ? "right_arm" : "left_arm")
+      : aimKey === "legs" ? (sideParity ? "left_leg" : "right_leg")
+      : (sideParity ? "chest" : "stomach");
+
+    if (dP.body && dP.body[hitPartKey] && !dP.body[hitPartKey].lost && mode !== "spar") {
+      dP.body[hitPartKey].hp = clamp(Math.round(dP.body[hitPartKey].hp - damage * 1.15), 0, dP.body[hitPartKey].max || 100);
+    }
+
+    /* Рост боевых навыков и Крепости от реального дела (как в Kenshi). */
+    if (Bow.work && Bow.work.growSkill) {
+      if (attacker.key === "player") {
+        var atkWep = mode === "spar" ? null : weaponOf(aP);
+        if (!atkWep) { Bow.work.growSkill(aP, "unarmed", 0.14); }
+        else if (atkWep.weaponClass) { Bow.work.growSkill(aP, atkWep.weaponClass, 0.14); }
+        if (aimKey === "head" || aimKey === "legs") { Bow.work.growSkill(aP, "precision", 0.08); }
+      }
+      if (defender.key === "player") {
+        if ((defender.stance || "press") === "guard") { Bow.work.growSkill(dP, "melee_defense", 0.16); }
+        else if (!armorOf(dP)) { Bow.work.growSkill(dP, "dodge", 0.12); }
+        if (Bow.work.growAttr && damage > 0) { Bow.work.growAttr(dP, "toughness", 0.15); }
+      }
+    }
+
+    /* Увечье, потеря глаза/уха или конечности — ОЧЕНЬ редкое явление (0.0.7.4):
+       как в Kenshi, отсечь конечность или лишить глаза/уха может только опытный боец
+       (combat >= 52) острым оружием, когда эта часть тела уже сильно измочалена. */
     var maimed = null;
-    if (mode !== "spar" && damage >= R.maimAt) {
-      /* Шанс растёт с силой удара и с тем, куда бьёте: в голову
-         калечит чаще, по рукам — реже. Остаётся шансом. */
-      var injuryRoll = Math.min(0.34, (0.06 + (damage - R.maimAt) * 0.008) * aim.maim);
-      if (rollOf(rng) < injuryRoll) { maimed = maim(dP, rng, aimKey); }
+    var atkWeapon = mode === "spar" ? null : weaponOf(aP);
+    var isSharp = !!(atkWeapon && atkWeapon.sharp !== false);
+    var atkCombat = (aP.skills && aP.skills.combat) || 0;
+    var partHpNow = (dP.body && dP.body[hitPartKey]) ? dP.body[hitPartKey].hp : 50;
+
+    if (mode !== "spar" && isSharp && atkCombat >= 52 && damage >= R.maimAt && partHpNow <= 38) {
+      var defTough = (Bow.state && Bow.state.effectiveAttr && dP.attrs)
+        ? Bow.state.effectiveAttr(dP, "toughness")
+        : 12;
+      var toughMit = Math.max(0.35, 1 - (defTough - 12) * 0.012);
+      var baseMaim = (0.03 + (atkCombat - 52) * 0.0028 + (damage - R.maimAt) * 0.005) * aim.maim * toughMit;
+      var injuryRoll = Math.min(0.30, baseMaim);
+      if (rollOf(rng) < injuryRoll) {
+        var exactInj = null;
+        if ((aimKey === "arms" || aimKey === "legs") && partHpNow <= 8 && atkCombat >= 60 && /axe|sword/.test(atkWeapon.id)) {
+          exactInj = aimKey === "arms" ? "arm_lost" : "leg_lost";
+        } else if (aimKey === "head" && hasInjury(dP, "eye") && !hasInjury(dP, "ear")) {
+          exactInj = "ear";
+        }
+        maimed = maim(dP, rng, aimKey, exactInj);
+      }
     }
 
     /* Сбить с ног можно и не убивая: удар в голову или по ногам
@@ -8060,10 +9252,18 @@ html.bow-motion-calm .bow-fog-band {
       if (choice === "rob") {
         player.money += loot;
         faceless.money = 0;
-        log(f, "narr", "Вы вытряхиваете из кошеля грабителя " + loot + " м.");
+        var robTaken = [loot + " м."];
+        if (faceless.weapon) {
+          Bow.economy.addItem(player, faceless.weapon, 1);
+          var rwDef = Bow.economy.findItemDef(faceless.weapon);
+          robTaken.push(rwDef ? rwDef.name : faceless.weapon);
+          faceless.weapon = null;
+        }
+        var robText = robTaken.join(", ");
+        log(f, "narr", "Вы забираете у поверженного налётчика: " + robText + ".");
         finish(state, "win", {});
-        Bow.journal.add(state, "Вы обобрали грабителя: +" + loot + " м.", "crime");
-        return { ok: true, message: "В кошеле грабителя — " + loot + " м." };
+        Bow.journal.add(state, "Вы обобрали грабителя: +" + robText + ".", "crime");
+        return { ok: true, message: "Забрано у грабителя: " + robText + "." };
       }
       if (choice === "kill") {
         (f.units || []).forEach(function (u) {
@@ -8074,9 +9274,10 @@ html.bow-motion-calm .bow-fog-band {
           name: faceless.name,
           role: "уличный налётчик",
           money: loot,
-          items: faceless.weapon ? [faceless.weapon] : []
+          items: [faceless.weapon, faceless.armor].concat(faceless.pouch || [])
         });
         faceless.money = 0;
+        faceless.weapon = null;
         var gHeat = Bow.steal.addHeat(state, "org:guard", 12);
         f.heatTotal += gHeat;
         if (Bow.guard && Bow.guard.schedule) { Bow.guard.schedule(state); }
@@ -8101,12 +9302,27 @@ html.bow-motion-calm .bow-fog-band {
       if (choice === "rob") {
         var gTake = 18 + Math.round(rollOf(rng) * 14);
         player.money += gTake;
+        var gGearTaken = [gTake + " м."];
+        (f.enemies || []).forEach(function (ge) {
+          if (ge.weapon) {
+            Bow.economy.addItem(player, ge.weapon, 1);
+            var gw = Bow.economy.findItemDef(ge.weapon);
+            gGearTaken.push(gw ? gw.name : ge.weapon);
+            ge.weapon = null;
+          }
+          if (ge.armor) {
+            Bow.economy.addItem(player, ge.armor, 1);
+            var ga = Bow.economy.findItemDef(ge.armor);
+            gGearTaken.push(ga ? ga.name : ge.armor);
+            ge.armor = null;
+          }
+        });
         var rbHeat = Bow.steal.addHeat(state, "org:guard", 25);
         f.heatTotal += rbHeat;
-        log(f, "narr", "Вы срезаете с поясов стражников " + gTake + " м.");
+        log(f, "narr", "Вы снимаете со стражников монеты и снаряжение: " + gGearTaken.join(", ") + ".");
         finish(state, "win", { heat: rbHeat });
-        Bow.journal.add(state, "Вы обобрали поверженный патруль стражи: +" + gTake + " м.", "crime");
-        return { ok: true, message: "Снято с поясов стражи: " + gTake + " м." };
+        Bow.journal.add(state, "Вы обобрали патруль стражи: +" + gTake + " м. и снаряжение.", "crime");
+        return { ok: true, message: "Снято со стражи: " + gGearTaken.join(", ") + "." };
       }
       if (choice === "kill") {
         (f.units || []).forEach(function (u) {
@@ -8118,7 +9334,7 @@ html.bow-motion-calm .bow-fog-band {
             name: ge.name || ("Стражник " + (idx + 1)),
             role: "стражник Брода",
             money: 7 + idx * 3,
-            items: [ge.weapon, ge.armor]
+            items: [ge.weapon, ge.armor].concat(ge.pouch || [])
           });
           return gc.id;
         });
@@ -8157,18 +9373,39 @@ html.bow-motion-calm .bow-fog-band {
       var take = Math.min(npc.money, Math.max(1, Math.round(npc.money * (0.6 + rollOf(rng) * 0.35))));
       npc.money -= take;
       player.money += take;
+      var stripped = [];
+      if (npc.weapon) {
+        Bow.economy.addItem(player, npc.weapon, 1);
+        var nwDef = Bow.economy.findItemDef(npc.weapon);
+        stripped.push(nwDef ? nwDef.name : npc.weapon);
+        npc.weapon = null;
+      }
+      if (npc.armor) {
+        Bow.economy.addItem(player, npc.armor, 1);
+        var naDef = Bow.economy.findItemDef(npc.armor);
+        stripped.push(naDef ? naDef.name : npc.armor);
+        npc.armor = null;
+      }
+      (npc.pouch || []).forEach(function (pid) {
+        Bow.economy.addItem(player, pid, 1);
+        var pDef = Bow.economy.findItemDef(pid);
+        stripped.push(pDef ? pDef.name : pid);
+      });
+      npc.pouch = [];
+
       heat = Bow.steal.addHeat(state, npc.org, R.robHeat);
       rep = Bow.work.addReputation(state, npc.org, R.robRep);
       npc.attitude = clamp(npc.attitude - 35, -100, 100);
       npc.memory.push({
         kind: "robbed",
-        text: player.name + " избил меня и выгреб из кошеля " + take + " м.",
+        text: player.name + " избил меня и забрал " + take + " м." + (stripped.length ? (" и " + stripped.join(", ")) : "") + ".",
         weight: 9,
         totalHours: state.time.totalHours
       });
       Bow.util.trim(npc.memory, 40);
-      log(f, "narr", "Вы вытряхиваете из " + his(npc) + " кошеля " + take + " м.");
-      message = "Обирание: " + npc.name + ", взято " + take + " м.";
+      var lootSummary = take + " м." + (stripped.length ? (", " + stripped.join(", ")) : "");
+      log(f, "narr", "Вы забираете у " + npc.name + ": " + lootSummary + ".");
+      message = "Обирание: " + npc.name + ", взято " + lootSummary + ".";
     } else if (choice === "kill") {
       npc.alive = false;
       npc.needs.health = 0;
@@ -8176,18 +9413,20 @@ html.bow-motion-calm .bow-fog-band {
       (f.units || []).forEach(function (u) {
         if (u.side === "enemy" && u.refId === npc.id) { u.dead = true; u.down = false; u.hp = 0; }
       });
-      /* Всё, что было у убитого (кошель, оружие и одёжка/броня), остаётся на теле для обыска. */
+      /* Всё, что было у убитого (кошель, оружие, броня и припасы в котомке), остаётся на теле для обыска. */
+      var corpseLoot = [npc.weapon, npc.armor].concat(npc.pouch || []);
       var npcCorpse = spawnCorpse(state, {
         personId: npc.id,
         roleKey: npc.key,
         name: npc.name,
         role: npc.role,
         money: npc.money,
-        items: [npc.weapon, npc.armor]
+        items: corpseLoot
       });
       npc.money = 0;
       npc.weapon = null;
       npc.armor = null;
+      npc.pouch = [];
       createdCorpses.push(npcCorpse.id);
 
       heat = Bow.steal.addHeat(state, npc.org, R.killHeat);
@@ -8424,14 +9663,32 @@ html.bow-motion-calm .bow-fog-band {
     var legPenalty = 1;
     var inj = (state.player && state.player.injuries) || [];
     for (var i = 0; i < inj.length; i++) {
-      if (inj[i] && inj[i].key === "leg") {
-        legPenalty = (Bow.data.fightRules && Bow.data.fightRules.injuries &&
+      if (inj[i] && inj[i].key === "leg_lost") {
+        legPenalty = Math.max(legPenalty, 2.1);
+      } else if (inj[i] && inj[i].key === "leg") {
+        var tr = (Bow.data.fightRules && Bow.data.fightRules.injuries &&
           Bow.data.fightRules.injuries.leg && Bow.data.fightRules.injuries.leg.travel) || 1.5;
-        break;
+        legPenalty = Math.max(legPenalty, tr);
+      }
+    }
+    var b = state.player && state.player.body;
+    if (b && ((b.left_leg && b.left_leg.lost) || (b.right_leg && b.right_leg.lost))) {
+      legPenalty = Math.max(legPenalty, 2.1);
+    }
+
+    var ath = (state.player && state.player.skills && state.player.skills.athletics) || 22;
+    var athFactor = ath > 25 ? (1 - Math.min(0.30, (ath - 22) * 0.004)) : 1;
+
+    var encFactor = 1;
+    if (Bow.economy && Bow.economy.totalWeight && Bow.economy.maxWeight) {
+      var curW = Bow.economy.totalWeight(state.player);
+      var maxW = Bow.economy.maxWeight(state.player);
+      if (curW > maxW && maxW > 0) {
+        encFactor = 1 + Math.min(1.2, (curW - maxW) / maxW);
       }
     }
 
-    return Math.max(5, Math.round(base * legPenalty));
+    return Math.max(4, Math.round(base * legPenalty * athFactor * encFactor));
   }
 
   /* ---------- Перемещение ---------- */
@@ -8440,6 +9697,8 @@ html.bow-motion-calm .bow-fog-band {
     if (!target) { return { ok: false, message: "Такого места нет." }; }
     if (state.player.location === toKey) { return { ok: false, message: "Вы уже здесь." }; }
 
+    if (state.task) { state.task = null; }
+
     var minutes = travelMinutes(state, toKey);
     var durText = formatDuration(minutes);
 
@@ -8447,8 +9706,19 @@ html.bow-motion-calm .bow-fog-band {
     state.player.location = toKey;
     state.visits[toKey] = (state.visits[toKey] || 0) + 1;
     state.stats.actionsTaken += 1;
+    if (Bow.work && Bow.work.growSkill) {
+      Bow.work.growSkill(state.player, "athletics", 0.2);
+      if (Bow.economy && Bow.economy.totalWeight && Bow.economy.maxWeight &&
+          Bow.economy.totalWeight(state.player) > Bow.economy.maxWeight(state.player) &&
+          Bow.work.growAttr) {
+        Bow.work.growAttr(state.player, "strength", 0.25);
+      }
+    }
 
     Bow.time.advanceMinutes(state, minutes);
+    if (Bow.needs && Bow.needs.autoEatCheck) {
+      Bow.needs.autoEatCheck(state);
+    }
 
     /* Погода пересчитывается при смене сцены: она часть атмосферы. */
     state.flags.weather = Bow.events.weatherOf(state, Bow.adapter ? Bow.adapter.rng : Math.random);
@@ -8575,10 +9845,20 @@ html.bow-motion-calm .bow-fog-band {
 
     var hours = allowed ? rules.sleepHours : Math.max(2, Math.round(rules.sleepHours / 2));
 
+    if (state.task) { state.task = null; }
     Bow.time.advance(state, hours);
     Bow.needs.applyChange(state.player, "fatigue", allowed ? rules.rest.fatigue : Math.round(rules.rest.fatigue / 2));
     Bow.needs.applyChange(state.player, "health", allowed ? rules.rest.health : 1);
     Bow.needs.applyChange(state.player, "mood", allowed ? rules.rest.mood : 2);
+    if (state.player.body) {
+      var limbRest = allowed ? 18 : 7;
+      Object.keys(state.player.body).forEach(function (bk) {
+        var limb = state.player.body[bk];
+        if (limb && !limb.lost && limb.hp < limb.max) {
+          limb.hp = Math.min(limb.max, limb.hp + limbRest);
+        }
+      });
+    }
     state.stats.actionsTaken += 1;
 
     if (allowed) {
@@ -8972,6 +10252,8 @@ html.bow-motion-calm .bow-fog-band {
         needs: { health: 84, fatigue: 70, hunger: 60, mood: 55 },
         weapon: cfg.gear.weapon,
         armor: cfg.gear.armor,
+        money: 10 + i * 4,
+        pouch: i === 0 ? ["item:bandage"] : [],
         hp: 84
       });
     }
@@ -8995,6 +10277,7 @@ html.bow-motion-calm .bow-fog-band {
     if (state.time.totalHours < state.flags.guardAt) { return false; }
 
     state.flags.guardAt = null;
+    if (state.task) { state.task = null; }
     state.guard = {
       phase: "demand",
       arrived: true,
@@ -9370,8 +10653,9 @@ html.bow-motion-calm .bow-fog-band {
       person: false,
       skills: { combat: strength, survival: 30, stealth: 20 },
       needs: { health: 70, fatigue: 65, hunger: 40, mood: 50 },
-      weapon: rnd(rng) < 0.5 ? "item:knife" : null,
-      armor: null,
+      weapon: rnd(rng) < 0.65 ? "item:knife" : "item:club",
+      armor: strength >= 56 ? "item:coat" : null,
+      pouch: ["item:bread"],
       hp: 70,
       demand: 6 + Math.round(rnd(rng) * 10),
       /* Свой кошель у него тоже есть — иначе «обобрать» было бы
@@ -9925,6 +11209,16 @@ html.bow-motion-calm .bow-fog-band {
       }
       return res;
     },
+    taskStart: function (state, taskKey) {
+      return Bow.work.startTask(state, taskKey);
+    },
+    taskStop: function (state) {
+      return Bow.work.stopTask(state);
+    },
+    toggleAutoEat: function (state) {
+      var on = Bow.needs.toggleAutoEat(state);
+      return { ok: true, message: on ? "Авто-еда включена: герой сам перекусит из сумки." : "Авто-еда выключена." };
+    },
     sell: function (state, key, qty) {
       var res = Bow.economy.sell(state, state.player.location, key, qty);
       if (res.ok) { Bow.events.afterAction(state, rng); }
@@ -10124,16 +11418,19 @@ html.bow-motion-calm .bow-fog-band {
   function weaponKindOf(state, personOrUnit) {
     if (!personOrUnit) { return "none"; }
     if (personOrUnit.disarmed) { return "none"; }
+    var wid = "";
     if (personOrUnit.weapon) {
-      var wid = String(personOrUnit.weapon);
-      if (/axe/.test(wid)) { return "axe"; }
-      if (/knife/.test(wid)) { return "knife"; }
-    }
-    if (Bow.fight && Bow.fight.weaponOf && personOrUnit.inventory) {
+      wid = String(personOrUnit.weapon);
+    } else if (Bow.fight && Bow.fight.weaponOf && personOrUnit.inventory) {
       var w = Bow.fight.weaponOf(personOrUnit);
-      if (w && /axe/.test(w.id)) { return "axe"; }
-      if (w && /knife/.test(w.id)) { return "knife"; }
+      if (w) { wid = String(w.id); }
     }
+    if (/axe/.test(wid)) { return "axe"; }
+    if (/sword/.test(wid)) { return "sword"; }
+    if (/spear/.test(wid)) { return "spear"; }
+    if (/club/.test(wid)) { return "club"; }
+    if (/bow/.test(wid)) { return "bow"; }
+    if (/knife/.test(wid)) { return "knife"; }
     return "none";
   }
 
@@ -10161,11 +11458,11 @@ html.bow-motion-calm .bow-fog-band {
       : "#171e26";
 
     if (dead || down) {
-      /* Поверженный силуэт на снегу. */
+      /* Поверженный силуэт: лежит прямо на линии земли (нижний край viewBox), а не в воздухе. */
       return '<svg class="bow-fig-svg bow-fig-fallen" viewBox="0 0 72 44" aria-hidden="true">' +
-        '<ellipse cx="36" cy="36" rx="28" ry="5" fill="rgba(0,0,0,0.42)"/>' +
-        '<path d="M12 31 Q28 21 50 27 L60 33 L14 35 Z" fill="' + bodyFill + '" stroke="' + stroke + '" stroke-width="1.5"/>' +
-        '<circle cx="16" cy="26" r="6.5" fill="' + cloakFill + '" stroke="' + stroke + '" stroke-width="1.5"/>' +
+        '<ellipse cx="36" cy="40" rx="28" ry="3.8" fill="rgba(0,0,0,0.48)"/>' +
+        '<path d="M12 36 Q28 26 50 32 L61 38 L13 40 Z" fill="' + bodyFill + '" stroke="' + stroke + '" stroke-width="1.5"/>' +
+        '<circle cx="16" cy="31" r="6.2" fill="' + cloakFill + '" stroke="' + stroke + '" stroke-width="1.5"/>' +
       '</svg>';
     }
 
@@ -10190,6 +11487,25 @@ html.bow-motion-calm .bow-fog-band {
       weaponSvg = '<g class="bow-fig-weapon">' +
         '<line x1="46" y1="58" x2="54" y2="24" stroke="#b9ad96" stroke-width="2.2" stroke-linecap="round"/>' +
         '<path d="M51 25 L61 22 L59 34 L50 31 Z" fill="#cfd6dd" stroke="#7d8a97" stroke-width="1"/>' +
+      '</g>';
+    } else if (weapon === "sword") {
+      weaponSvg = '<g class="bow-fig-weapon">' +
+        '<line x1="45" y1="54" x2="59" y2="22" stroke="#dce4ec" stroke-width="2.3" stroke-linecap="round"/>' +
+        '<line x1="42" y1="49" x2="49" y2="52" stroke="#b9ad96" stroke-width="2.2"/>' +
+      '</g>';
+    } else if (weapon === "spear") {
+      weaponSvg = '<g class="bow-fig-weapon">' +
+        '<line x1="45" y1="74" x2="53" y2="12" stroke="#b9ad96" stroke-width="2.1" stroke-linecap="round"/>' +
+        '<polygon points="53,8 50,18 56,18" fill="#dce4ec"/>' +
+      '</g>';
+    } else if (weapon === "club") {
+      weaponSvg = '<g class="bow-fig-weapon">' +
+        '<line x1="45" y1="56" x2="55" y2="28" stroke="#9d8260" stroke-width="3.4" stroke-linecap="round"/>' +
+      '</g>';
+    } else if (weapon === "bow") {
+      weaponSvg = '<g class="bow-fig-weapon">' +
+        '<path d="M48 22 Q59 42 48 62" fill="none" stroke="#c3a476" stroke-width="2.1"/>' +
+        '<line x1="48" y1="22" x2="48" y2="62" stroke="#8ea0b2" stroke-width="0.9"/>' +
       '</g>';
     } else if (weapon === "knife") {
       weaponSvg = '<g class="bow-fig-weapon">' +
@@ -10569,11 +11885,15 @@ html.bow-motion-calm .bow-fog-band {
     var playerX = stageEntities.length >= 5 ? 16 : (stageEntities.length === 4 ? 18 : 20);
     var pWeapon = weaponKindOf(state, state.player);
     var selfActive = selected && selected.kind === "self" ? " bow-actor-on" : "";
+    var activeTaskDef = (state.task && Bow.work && Bow.work.taskByKey) ? Bow.work.taskByKey(state.task.key) : null;
+    var playerSub = activeTaskDef
+      ? ('<i class="bow-tone bow-warm">' + esc(activeTaskDef.short) + ' · ' + Math.round(state.task.elapsedMin) + '/' + (activeTaskDef.cycleMinutes || 30) + 'м</i>')
+      : "";
     html.push(
-      '<button type="button" class="bow-actor bow-actor-player' + selfActive + '" style="left:' + playerX + '%;bottom:42px" ' +
+      '<button type="button" class="bow-actor bow-actor-player' + selfActive + (activeTaskDef ? " bow-actor-working" : "") + '" style="left:' + playerX + '%;bottom:42px" ' +
         'data-act="stage-select" data-kind="self" data-x="' + playerX + '" title="Вы — припасы, отдых и перевязка">' +
         figureSvg({ roleKey: "player", side: "player", weapon: pWeapon }) +
-        '<span class="bow-actor-tag"><b>Вы</b></span>' +
+        '<span class="bow-actor-tag"><b>Вы</b>' + playerSub + '</span>' +
       '</button>'
     );
 
@@ -10624,7 +11944,7 @@ html.bow-motion-calm .bow-fog-band {
         var hasLoot = !c.looted && ((c.money || 0) > 0 || (c.items && c.items.length > 0));
         html.push(
           '<button type="button" class="bow-actor bow-actor-corpse' + (cSel ? " bow-actor-on" : "") + (hasLoot ? " bow-actor-corpse-loot" : "") + '" ' +
-            'style="left:' + x + '%;bottom:36px" ' +
+            'style="left:' + x + '%;bottom:42px" ' +
             'data-act="stage-select" data-kind="corpse" data-corpse="' + esc(c.id) + '" data-x="' + x + '" ' +
             'title="' + esc("Труп: " + c.name + (hasLoot ? " (можно обыскать)" : " (обыскан)")) + '">' +
             figureSvg({ roleKey: c.roleKey || "villager", side: "enemy", dead: true }) +
@@ -10769,7 +12089,7 @@ html.bow-motion-calm .bow-fog-band {
       if (!l) { return ""; }
       var isHere = k === curKey;
       var mins = isHere ? 0 : Bow.actions.travelMinutes(state, k);
-      var dur = isHere ? "вы здесь" : Bow.actions.formatDuration(mins);
+      var dur = isHere ? "" : Bow.actions.formatDuration(mins);
       var ppl = Bow.actions.peopleAt(state, k);
       var deadHere = Bow.actions.corpsesAt ? Bow.actions.corpsesAt(state, k) : [];
       var badges = [];
@@ -10777,15 +12097,16 @@ html.bow-motion-calm .bow-fog-band {
       if (deadHere.length) { badges.push("☠ " + deadHere.length); }
       if (isHere && state.guard && state.guard.arrived) { badges.push("⛨ стража"); }
       if (isHere && state.encounter && state.encounter.robber) { badges.push("⚔ налётчик"); }
+      var pinSub = [dur, badges.join(" ")].filter(Boolean).join(" · ");
 
       return '<button type="button" class="bow-map-pin' + (isHere ? " bow-map-pin-here" : "") + '" ' +
         'style="left:' + l.mapX + '%;top:' + l.mapY + '%" ' +
         'data-act="move" data-loc="' + esc(k) + '"' + (isHere ? ' aria-current="location"' : '') +
-        ' title="' + esc(l.name + " — " + (l.mapHint || l.sub) + " (" + dur + ")") + '">' +
+        ' title="' + esc(l.name + " — " + (l.mapHint || l.sub) + (dur ? " (" + dur + ")" : "")) + '">' +
         '<span class="bow-map-pin-dot"></span>' +
         '<span class="bow-map-pin-card">' +
           '<b>' + esc(l.name) + '</b>' +
-          '<i>' + esc(dur) + (badges.length ? " · " + esc(badges.join(" ")) : "") + '</i>' +
+          (pinSub ? '<i>' + esc(pinSub) + '</i>' : '') +
         '</span>' +
       '</button>';
     }).join("");
@@ -10794,7 +12115,7 @@ html.bow-motion-calm .bow-fog-band {
       var l = locs[k];
       var isHere = k === curKey;
       var mins = isHere ? 0 : Bow.actions.travelMinutes(state, k);
-      var dur = isHere ? "Вы здесь" : Bow.actions.formatDuration(mins);
+      var dur = isHere ? "" : Bow.actions.formatDuration(mins);
       var pplNames = Bow.actions.peopleAt(state, k).map(function (p) { return p.name; });
       var deadHere = Bow.actions.corpsesAt ? Bow.actions.corpsesAt(state, k) : [];
       var metaParts = [];
@@ -10809,9 +12130,9 @@ html.bow-motion-calm .bow-fog-band {
           '<span class="bow-dim">' + esc(l.mapHint || l.sub) + (metaParts.length ? " · " + esc(metaParts.join(" · ")) : "") + '</span>' +
         '</div>' +
         '<div class="bow-map-row-go">' +
-          '<span class="bow-map-time">' + esc(dur) + '</span>' +
+          (dur ? '<span class="bow-map-time">' + esc(dur) + '</span>' : '') +
           (isHere
-            ? '<span class="bow-equip-tag">текущее место</span>'
+            ? ''
             : '<button type="button" class="bow-trade-btn" data-act="move" data-loc="' + esc(k) + '">Идти · ' + esc(dur) + '</button>') +
         '</div>' +
       '</div>';
@@ -10833,7 +12154,7 @@ html.bow-motion-calm .bow-fog-band {
           '<text x="148" y="34" fill="#6f8f8a" font-size="11" letter-spacing="2.2">МАТЬ-ТАЙГА (СЕВЕР)</text>' +
           /* Кольцо бревенчатого частокола Студёного Брода */
           '<ellipse cx="366" cy="196" rx="212" ry="78" fill="rgba(32,42,52,0.38)" stroke="#4c5b6b" stroke-width="2" stroke-dasharray="10 4"/>' +
-          '<text x="182" y="142" fill="#7d8e9f" font-size="10" letter-spacing="1.4">ЧАСТОКОЛ ПОСЕЛЕНИЯ</text>' +
+          '<text x="166" y="140" fill="#7d8e9f" font-size="9.5" letter-spacing="1.1">БРЕВЕНЧАТАЯ ОГРАДА (ЧАСТОКОЛ)</text>' +
           /* Река Студёная и каменная переправа (сам Студёный Брод) */
           '<path d="M0,288 Q210,272 365,286 T760,278" fill="none" stroke="#2c4c66" stroke-width="18" opacity="0.88"/>' +
           '<path d="M0,288 Q210,272 365,286 T760,278" fill="none" stroke="#6c99bd" stroke-width="1.4" opacity="0.5"/>' +
@@ -10864,6 +12185,408 @@ html.bow-motion-calm .bow-fog-band {
     weatherOverlayHtml: weatherOverlayHtml,
     renderHotspotsAndActors: renderHotspotsAndActors,
     renderMap: renderMap
+  };
+
+})(typeof window !== "undefined" ? window : this);/* ============================================================
+   BOW AUDIO — спокойный средневековый северный эмбиент (Web Audio API).
+   Работает полностью офлайн внутри одного HTML без внешних файлов:
+     • глубокий тёплый бурдон квинты (виола / тальхарпа в ре-дорийском ладу);
+     • неспешный мягкий перебор лютни / северных гуслей с живыми паузами;
+     • редкое дыхание продольной деревянной флейты;
+     • процедурная пространственная реверберация деревянного зала.
+   Безопасно деградирует в средах без Web Audio (например, JSDOM-тесты).
+   ============================================================ */
+(function (global) {
+  "use strict";
+
+  var Bow = global.Bow = global.Bow || {};
+  var STORAGE_KEY = "bow-audio-v1";
+
+  var state = {
+    enabled: false,
+    volume: 0.45,
+    mood: "calm" // calm | tavern | wild | combat
+  };
+
+  var ctx = null;
+  var masterGain = null;
+  var reverbNode = null;
+  var dryGain = null;
+  var wetGain = null;
+  var droneNodes = null;
+  var phraseTimer = null;
+  var stepIdx = 0;
+
+  /* Ре-дорийский северный средневековый звукоряд (D Dorian, тёплый строй) */
+  var DORIAN_LUTE = [
+    146.83, // D3
+    164.81, // E3
+    174.61, // F3
+    196.00, // G3
+    220.00, // A3
+    246.94, // B3
+    261.63, // C4
+    293.66, // D4
+    329.63, // E4
+    349.23, // F4
+    392.00, // G4
+    440.00  // A4
+  ];
+
+  /* Спокойные средневековые фразы (индексы в DORIAN_LUTE, -1 = пауза дыхания) */
+  var PHRASES = [
+    [0, 4, 7, 6, 4, -1, -1],
+    [2, 4, 7, 9, 7, -1, -1],
+    [0, 3, 4, 7, -1, 4, -1],
+    [4, 7, 8, 7, 4, 2, -1],
+    [0, 4, 6, 7, -1, -1, -1],
+    [3, 6, 7, 10, 7, 4, -1]
+  ];
+
+  function loadPrefs() {
+    try {
+      var raw = global.localStorage && global.localStorage.getItem(STORAGE_KEY);
+      if (!raw) { return; }
+      var parsed = JSON.parse(raw);
+      if (parsed && typeof parsed.volume === "number") {
+        state.volume = Math.max(0, Math.min(1, parsed.volume));
+      }
+      if (parsed && typeof parsed.enabled === "boolean") {
+        state.enabled = parsed.enabled;
+      }
+    } catch (e) {}
+  }
+
+  function savePrefs() {
+    try {
+      if (global.localStorage) {
+        global.localStorage.setItem(STORAGE_KEY, JSON.stringify({
+          enabled: state.enabled,
+          volume: state.volume
+        }));
+      }
+    } catch (e) {}
+  }
+
+  function hasWebAudio() {
+    return !!(global.AudioContext || global.webkitAudioContext);
+  }
+
+  /* Создаём мягкий импульс деревянного зала / северного сруба для ConvolverNode */
+  function buildReverbImpulse(audioCtx) {
+    var rate = audioCtx.sampleRate || 44100;
+    var seconds = 2.6;
+    var len = Math.floor(rate * seconds);
+    var impulse = audioCtx.createBuffer(2, len, rate);
+    var seed = 918273;
+    function nextRand() {
+      seed = (seed * 1664525 + 1013904223) >>> 0;
+      return (seed / 4294967296) * 2 - 1;
+    }
+    for (var ch = 0; ch < 2; ch++) {
+      var data = impulse.getChannelData(ch);
+      var prev = 0;
+      for (var i = 0; i < len; i++) {
+        var t = i / len;
+        var env = Math.pow(1 - t, 2.8);
+        /* Мягкая фильтрация ВЧ, чтобы эхо было тёплым, как дерево и камень */
+        var white = nextRand();
+        prev = prev * 0.72 + white * 0.28;
+        data[i] = prev * env * 0.55;
+      }
+    }
+    return impulse;
+  }
+
+  function ensureContext() {
+    if (ctx) { return ctx; }
+    var Ctor = global.AudioContext || global.webkitAudioContext;
+    if (!Ctor) { return null; }
+    try {
+      ctx = new Ctor();
+      masterGain = ctx.createGain();
+      masterGain.gain.value = 0.0001;
+
+      dryGain = ctx.createGain();
+      dryGain.gain.value = 0.52;
+
+      wetGain = ctx.createGain();
+      wetGain.gain.value = 0.58;
+
+      reverbNode = ctx.createConvolver();
+      reverbNode.buffer = buildReverbImpulse(ctx);
+
+      dryGain.connect(masterGain);
+      wetGain.connect(reverbNode);
+      reverbNode.connect(masterGain);
+      masterGain.connect(ctx.destination);
+    } catch (e) {
+      ctx = null;
+    }
+    return ctx;
+  }
+
+  function startDrone() {
+    if (!ctx || droneNodes) { return; }
+    var now = ctx.currentTime;
+
+    var rootOsc = ctx.createOscillator();
+    var fifthOsc = ctx.createOscillator();
+    var lfo = ctx.createOscillator();
+    var lfoGain = ctx.createGain();
+    var filter = ctx.createBiquadFilter();
+    var gain = ctx.createGain();
+
+    rootOsc.type = "triangle";
+    rootOsc.frequency.setValueAtTime(73.42, now); // D2
+
+    fifthOsc.type = "sine";
+    fifthOsc.frequency.setValueAtTime(110.00, now); // A2
+
+    filter.type = "lowpass";
+    filter.frequency.setValueAtTime(210, now);
+    filter.Q.value = 0.7;
+
+    lfo.type = "sine";
+    lfo.frequency.setValueAtTime(0.065, now);
+    lfoGain.gain.value = 42;
+    lfo.connect(lfoGain);
+    lfoGain.connect(filter.frequency);
+
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.linearRampToValueAtTime(0.055, now + 2.4);
+
+    rootOsc.connect(filter);
+    fifthOsc.connect(filter);
+    filter.connect(gain);
+    gain.connect(dryGain);
+    gain.connect(wetGain);
+
+    rootOsc.start(now);
+    fifthOsc.start(now);
+    lfo.start(now);
+
+    droneNodes = { rootOsc: rootOsc, fifthOsc: fifthOsc, lfo: lfo, filter: filter, gain: gain };
+  }
+
+  function stopDrone() {
+    if (!droneNodes || !ctx) { droneNodes = null; return; }
+    var n = droneNodes;
+    droneNodes = null;
+    try {
+      var now = ctx.currentTime;
+      n.gain.gain.cancelScheduledValues(now);
+      n.gain.gain.setValueAtTime(n.gain.gain.value || 0.03, now);
+      n.gain.gain.linearRampToValueAtTime(0.0001, now + 0.8);
+      global.setTimeout(function () {
+        try { n.rootOsc.stop(); n.fifthOsc.stop(); n.lfo.stop(); } catch (e) {}
+      }, 900);
+    } catch (e) {}
+  }
+
+  /* Мягкий щипок деревянной лютни / гуслей */
+  function pluckNote(freq, delaySec, velocity) {
+    if (!ctx || !state.enabled) { return; }
+    var t0 = ctx.currentTime + (delaySec || 0);
+    var vel = (velocity || 0.5) * 0.11;
+
+    var osc1 = ctx.createOscillator();
+    var osc2 = ctx.createOscillator();
+    var filter = ctx.createBiquadFilter();
+    var env = ctx.createGain();
+
+    osc1.type = "triangle";
+    osc1.frequency.setValueAtTime(freq, t0);
+
+    osc2.type = "sine";
+    osc2.frequency.setValueAtTime(freq * 2, t0);
+
+    var g2 = ctx.createGain();
+    g2.gain.value = 0.24;
+
+    filter.type = "lowpass";
+    filter.frequency.setValueAtTime(Math.min(1300, freq * 4.2), t0);
+    filter.frequency.exponentialRampToValueAtTime(Math.max(220, freq * 1.3), t0 + 2.2);
+
+    env.gain.setValueAtTime(0.0001, t0);
+    env.gain.linearRampToValueAtTime(vel, t0 + 0.028);
+    env.gain.exponentialRampToValueAtTime(0.0004, t0 + 3.1);
+
+    osc1.connect(filter);
+    osc2.connect(g2);
+    g2.connect(filter);
+    filter.connect(env);
+    env.connect(dryGain);
+    env.connect(wetGain);
+
+    osc1.start(t0);
+    osc2.start(t0);
+    osc1.stop(t0 + 3.25);
+    osc2.stop(t0 + 3.25);
+  }
+
+  /* Редкое мягкое дыхание деревянной продольной флейты */
+  function fluteBreath(freq, delaySec) {
+    if (!ctx || !state.enabled) { return; }
+    var t0 = ctx.currentTime + (delaySec || 0);
+
+    var osc = ctx.createOscillator();
+    var vibrato = ctx.createOscillator();
+    var vibGain = ctx.createGain();
+    var filter = ctx.createBiquadFilter();
+    var env = ctx.createGain();
+
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(freq, t0);
+
+    vibrato.type = "sine";
+    vibrato.frequency.setValueAtTime(4.2, t0);
+    vibGain.gain.value = freq * 0.006;
+    vibrato.connect(vibGain);
+    vibGain.connect(osc.frequency);
+
+    filter.type = "lowpass";
+    filter.frequency.value = 950;
+
+    env.gain.setValueAtTime(0.0001, t0);
+    env.gain.linearRampToValueAtTime(0.042, t0 + 1.1);
+    env.gain.setValueAtTime(0.038, t0 + 2.2);
+    env.gain.exponentialRampToValueAtTime(0.0002, t0 + 4.4);
+
+    osc.connect(filter);
+    filter.connect(env);
+    env.connect(wetGain);
+    env.connect(dryGain);
+
+    osc.start(t0);
+    vibrato.start(t0);
+    osc.stop(t0 + 4.55);
+    vibrato.stop(t0 + 4.55);
+  }
+
+  function scheduleNextPhrase() {
+    if (phraseTimer) {
+      global.clearTimeout(phraseTimer);
+      phraseTimer = null;
+    }
+    if (!state.enabled || !ctx) { return; }
+
+    var phrase = PHRASES[stepIdx % PHRASES.length];
+    stepIdx += 1;
+
+    var beatSec = state.mood === "combat" ? 0.95 : (state.mood === "tavern" ? 1.12 : 1.32);
+    for (var i = 0; i < phrase.length; i++) {
+      var noteIdx = phrase[i];
+      if (noteIdx >= 0 && DORIAN_LUTE[noteIdx]) {
+        var jitter = ((i * 37 + stepIdx * 13) % 11) * 0.012;
+        var accent = (i === 0) ? 0.72 : 0.48;
+        pluckNote(DORIAN_LUTE[noteIdx], i * beatSec + jitter, accent);
+        /* Мягкая квинта на сильной доле через раз */
+        if (i === 0 && stepIdx % 2 === 0 && DORIAN_LUTE[0]) {
+          pluckNote(DORIAN_LUTE[0] * 0.5, jitter + 0.03, 0.42);
+        }
+      }
+    }
+
+    /* Каждую третью фразу — тихий вздох деревянной флейты на высокой ноте */
+    if (stepIdx % 3 === 0) {
+      var fluteNotes = [293.66, 349.23, 440.00, 329.63];
+      var fn = fluteNotes[(stepIdx / 3) % fluteNotes.length | 0];
+      fluteBreath(fn, beatSec * 1.5);
+    }
+
+    var pauseExtra = state.mood === "combat" ? 1400 : 2800;
+    var nextMs = Math.round(phrase.length * beatSec * 1000 + pauseExtra);
+    phraseTimer = global.setTimeout(scheduleNextPhrase, nextMs);
+  }
+
+  function applyMasterGain() {
+    if (!ctx || !masterGain) { return; }
+    var now = ctx.currentTime;
+    var target = state.enabled ? Math.max(0.0001, state.volume * 0.85) : 0.0001;
+    masterGain.gain.cancelScheduledValues(now);
+    masterGain.gain.setValueAtTime(Math.max(0.0001, masterGain.gain.value || 0.0001), now);
+    masterGain.gain.linearRampToValueAtTime(target, now + 0.6);
+  }
+
+  function start() {
+    state.enabled = true;
+    savePrefs();
+    if (!ensureContext()) { return false; }
+    if (ctx.state === "suspended" && typeof ctx.resume === "function") {
+      ctx.resume();
+    }
+    applyMasterGain();
+    startDrone();
+    if (!phraseTimer) {
+      scheduleNextPhrase();
+    }
+    return true;
+  }
+
+  function stop() {
+    state.enabled = false;
+    savePrefs();
+    if (phraseTimer) {
+      global.clearTimeout(phraseTimer);
+      phraseTimer = null;
+    }
+    applyMasterGain();
+    stopDrone();
+    return false;
+  }
+
+  function toggle() {
+    return state.enabled ? stop() : start();
+  }
+
+  function setVolume(vol) {
+    var v = Number(vol);
+    if (isNaN(v)) { return state.volume; }
+    state.volume = Math.max(0, Math.min(1, v));
+    savePrefs();
+    applyMasterGain();
+    return state.volume;
+  }
+
+  function syncMood(gameState) {
+    if (!gameState) { return; }
+    var next = "calm";
+    if (gameState.fight) { next = "combat"; }
+    else if (gameState.player && gameState.player.location === "tavern") { next = "tavern"; }
+    else if (gameState.player && gameState.player.location === "forest") { next = "wild"; }
+    state.mood = next;
+
+    if (droneNodes && ctx) {
+      var cutoff = next === "tavern" ? 260 : next === "combat" ? 185 : 210;
+      try {
+        droneNodes.filter.frequency.setTargetAtTime(cutoff, ctx.currentTime, 0.8);
+      } catch (e) {}
+    }
+  }
+
+  /* Если музыка была включена ранее, пробуждаем AudioContext при первом клике игрока */
+  function wakeOnGesture() {
+    if (!state.enabled) { return; }
+    if (!ctx) {
+      start();
+    } else if (ctx.state === "suspended" && typeof ctx.resume === "function") {
+      ctx.resume();
+    }
+  }
+
+  loadPrefs();
+
+  Bow.audio = {
+    start: start,
+    stop: stop,
+    toggle: toggle,
+    setVolume: setVolume,
+    syncMood: syncMood,
+    wakeOnGesture: wakeOnGesture,
+    isEnabled: function () { return !!state.enabled; },
+    getVolume: function () { return state.volume; },
+    isSupported: hasWebAudio
   };
 
 })(typeof window !== "undefined" ? window : this);/* ============================================================
@@ -10908,7 +12631,25 @@ html.bow-motion-calm .bow-fog-band {
     stealth: "кражи, побег, клетка"
   };
 
-  function skillName(key) { return SKILL_NAMES[key] || key; }
+  function skillDefOf(key) {
+    var cats = Bow.data && Bow.data.skillCategories;
+    if (cats && cats.length) {
+      for (var c = 0; c < cats.length; c++) {
+        var list = cats[c].skills || [];
+        for (var i = 0; i < list.length; i++) {
+          if (list[i].key === key) { return list[i]; }
+        }
+      }
+    }
+    if (SKILL_NAMES[key]) {
+      return { key: key, name: SKILL_NAMES[key], hint: SKILL_HINT[key] || "" };
+    }
+    return { key: key, name: key, hint: "" };
+  }
+
+  function skillName(key) {
+    return skillDefOf(key).name;
+  }
 
   var lastMessage = "";
   function setMessage(text) { lastMessage = text || ""; }
@@ -11041,6 +12782,20 @@ html.bow-motion-calm .bow-fog-band {
       btns[i].classList.toggle("bow-clock-on", on);
       btns[i].setAttribute("aria-pressed", on ? "true" : "false");
     }
+
+    var audioBtn = $("bow-audio-btn");
+    if (audioBtn && Bow.audio) {
+      var aOn = Bow.audio.isEnabled();
+      audioBtn.classList.toggle("bow-audio-on", aOn);
+      audioBtn.setAttribute("aria-pressed", aOn ? "true" : "false");
+    }
+
+    var autoEatBtn = $("bow-autoeat-btn");
+    if (autoEatBtn) {
+      var eatOn = state.player.autoEat !== false;
+      autoEatBtn.classList.toggle("bow-order-on", eatOn);
+      autoEatBtn.textContent = eatOn ? "Авто-еда: вкл" : "Авто-еда: выкл";
+    }
   }
 
   function renderNeeds(state) {
@@ -11050,44 +12805,140 @@ html.bow-motion-calm .bow-fog-band {
     box.innerHTML = Bow.needs.KEYS.map(function (k) { return needBar(k, n[k]); }).join("");
   }
 
+  /* ---------- Лист характеристик и навыков в духе Kenshi (0.0.7.4) ---------- */
   function renderSkills(state) {
     var box = $("bow-skills");
     if (!box) { return; }
 
-    box.innerHTML = Object.keys(SKILL_NAMES).map(function (k) {
-      var v = state.player.skills[k] || 0;
-      var lvl = v >= 60 ? "high" : v >= 30 ? "mid" : "low";
-      return '<div class="bow-skill bow-skill-' + lvl + '" title="' + esc(SKILL_HINT[k] || "") + '">' +
-        '<span class="bow-skill-name">' + skillName(k) + '</span>' +
-        '<span class="bow-skill-bar"><i style="width:' + Math.round(v) + '%"></i></span>' +
-        '<b>' + v + '</b>' +
+    var p = state.player;
+    if (Bow.state && Bow.state.ensureAnatomy) { Bow.state.ensureAnatomy(p); }
+
+    var attrsList = (Bow.data && Bow.data.attributes) || [];
+    var attrsHtml = "";
+    if (attrsList.length) {
+      attrsHtml = '<div class="bow-kenshi-attrs">' +
+        '<div class="bow-kenshi-sec-title">ХАРАКТЕРИСТИКИ</div>' +
+        '<div class="bow-attrs-grid">' +
+        attrsList.map(function (a) {
+          var base = Math.round((p.attrs && typeof p.attrs[a.key] === "number") ? p.attrs[a.key] : 18);
+          var eff = (Bow.state && Bow.state.effectiveAttr) ? Bow.state.effectiveAttr(p, a.key) : base;
+          var penalized = eff < base;
+          return '<div class="bow-attr-card' + (penalized ? " bow-attr-penalized" : "") + '" title="' + esc(a.hint || a.name) + '">' +
+            '<div class="bow-attr-head">' +
+              '<span class="bow-attr-name">' + esc(a.name) + '</span>' +
+              '<b class="bow-attr-val">' + eff + (penalized ? ' <small>(' + base + ')</small>' : '') + '</b>' +
+            '</div>' +
+            '<div class="bow-attr-bar"><i style="width:' + Math.min(100, Math.round(eff)) + '%"></i></div>' +
+          '</div>';
+        }).join("") +
+        '</div>' +
       '</div>';
-    }).join("");
+    }
+
+    var cats = (Bow.data && Bow.data.skillCategories) || [];
+    var skillsHtml = "";
+    if (cats.length) {
+      skillsHtml = '<div class="bow-kenshi-skills">' +
+        '<div class="bow-kenshi-sec-title">НАВЫКИ</div>' +
+        '<div class="bow-skill-cats">' +
+        cats.map(function (cat) {
+          var rows = (cat.skills || []).map(function (sk) {
+            var baseV = Math.round((p.skills && typeof p.skills[sk.key] === "number") ? p.skills[sk.key] : 0);
+            var effV = (Bow.state && Bow.state.effectiveSkill) ? Bow.state.effectiveSkill(p, sk.key) : baseV;
+            var lvl = effV >= 60 ? "high" : effV >= 30 ? "mid" : "low";
+            var penCls = effV < baseV ? " bow-skill-pen" : "";
+            return '<div class="bow-skill bow-skill-' + lvl + penCls + '" title="' + esc(sk.hint || sk.name) + '">' +
+              '<span class="bow-skill-name">' + esc(sk.name) + '</span>' +
+              '<span class="bow-skill-bar"><i style="width:' + Math.min(100, Math.round(effV)) + '%"></i></span>' +
+              '<b>' + effV + '</b>' +
+            '</div>';
+          }).join("");
+          return '<div class="bow-skill-cat">' +
+            '<h4 class="bow-skill-cat-h">' + esc(cat.title) + '</h4>' +
+            rows +
+          '</div>';
+        }).join("") +
+        '</div>' +
+      '</div>';
+    } else {
+      skillsHtml = Object.keys(SKILL_NAMES).map(function (k) {
+        var v = p.skills[k] || 0;
+        var lvl = v >= 60 ? "high" : v >= 30 ? "mid" : "low";
+        return '<div class="bow-skill bow-skill-' + lvl + '" title="' + esc(SKILL_HINT[k] || k) + '">' +
+          '<span class="bow-skill-name">' + skillName(k) + '</span>' +
+          '<span class="bow-skill-bar"><i style="width:' + Math.round(v) + '%"></i></span>' +
+          '<b>' + v + '</b>' +
+        '</div>';
+      }).join("");
+    }
+
+    box.innerHTML = attrsHtml + skillsHtml;
   }
 
-  /* ---------- Тело: что не заживёт ----------
-     Увечья постоянные, и игрок должен видеть их без открытия
-     карточки: иначе «покалеченная рука» остаётся строчкой в данных. */
+  /* ---------- Тело: конечности, органы и не заживающие увечья (0.0.7.4) ---------- */
   function renderInjuries(state) {
     var box = $("bow-injuries");
     if (!box) { return; }
 
-    var list = state.player.injuries || [];
-    if (!list.length) {
-      box.innerHTML = '<div class="bow-empty">Целы. Пока.</div>';
-      return;
+    var p = state.player;
+    if (Bow.state && Bow.state.ensureAnatomy) { Bow.state.ensureAnatomy(p); }
+
+    var partsCatalog = (Bow.data && Bow.data.bodyParts) || [];
+    var organsCatalog = (Bow.data && Bow.data.organs) || [];
+
+    var limbsHtml = "";
+    if (partsCatalog.length && p.body) {
+      limbsHtml = '<div class="bow-limbs-grid">' +
+        partsCatalog.map(function (bp) {
+          var st = p.body[bp.key] || { hp: 100, max: 100, lost: false };
+          var hp = Math.max(0, Math.round(st.hp));
+          var tone = st.lost ? "crit" : hp < 40 ? "crit" : hp < 75 ? "warn" : "good";
+          var rightTxt = st.lost ? "ПОТЕРЯНА" : (hp + "/" + (st.max || 100));
+          return '<div class="bow-limb-row' + (st.lost ? " bow-limb-lost" : "") + '" title="' +
+            esc(bp.name + (bp.vital ? " — жизненно важная зона" : " — конечность")) + '">' +
+            '<div class="bow-limb-head">' +
+              '<span>' + esc(bp.name) + '</span>' +
+              '<b class="bow-' + tone + '">' + esc(rightTxt) + '</b>' +
+            '</div>' +
+            '<div class="bow-limb-bar"><i class="bow-fill bow-' + tone + '" style="width:' + (st.lost ? 0 : hp) + '%"></i></div>' +
+          '</div>';
+        }).join("") +
+      '</div>';
     }
 
-    box.innerHTML = list.map(function (entry) {
-      var def = Bow.data.fightRules.injuries[entry.key] || {};
-      var name = def.name || entry.key;
-      var effect = def.label || "";
-      return '<div class="bow-injury">' +
-        '<span class="bow-injury-name">' + esc(name) + '</span>' +
-        (effect ? '<span class="bow-injury-effect">' + esc(effect) + '</span>' : "") +
+    var organsHtml = "";
+    if (organsCatalog.length && p.organs) {
+      organsHtml = '<div class="bow-organs-row">' +
+        organsCatalog.map(function (og) {
+          var intact = p.organs[og.key] !== false;
+          var cls = intact ? "bow-good" : "bow-crit";
+          return '<div class="bow-organ-chip" title="' + esc(og.hint || og.name) + '">' +
+            '<span class="bow-organ-name">' + esc(og.name) + '</span>' +
+            '<b class="' + cls + '">' + (intact ? "в норме" : "утрачен") + '</b>' +
+          '</div>';
+        }).join("") +
+      '</div>';
+    }
+
+    var list = p.injuries || [];
+    var permHtml = "";
+    if (!list.length) {
+      permHtml = '<div class="bow-empty">Целы. Тяжёлых увечий нет — все конечности и органы на месте.</div>';
+    } else {
+      permHtml = '<div class="bow-injuries-list">' + list.map(function (entry) {
+        var def = Bow.data.fightRules.injuries[entry.key] || {};
+        var name = def.name || entry.key;
+        var effect = def.label || "";
+        return '<div class="bow-injury">' +
+          '<span class="bow-injury-name">' + esc(name) + '</span>' +
+          (effect ? '<span class="bow-injury-effect">' + esc(effect) + '</span>' : "") +
         '</div>';
-    }).join("") +
-      '<div class="bow-injury-note">Это не заживёт. Лечения пока нет.</div>';
+      }).join("") +
+      '<div class="bow-injury-note">Это не заживёт — тяжёлое увечье остаётся навсегда и влияет на характеристики.</div>' +
+      '</div>';
+    }
+
+    box.innerHTML = limbsHtml + organsHtml + permHtml;
   }
 
   /* ---------- Перевязка ----------
@@ -11099,13 +12950,14 @@ html.bow-motion-calm .bow-fog-band {
     if (!box) { return; }
 
     var health = state.player.needs.health;
+    var woundedLimbs = Bow.needs.hasWoundedLimbs ? Bow.needs.hasWoundedLimbs(state.player) : false;
     var medicine = state.player.skills.medicine || 0;
     var gain = Math.round(4 + medicine * 0.18 + 1.5);
     var last = state.player.lastTreat || 0;
     /* Не лечили ни разу — ждать нечего. */
     var wait = state.player.lastTreat ? 24 - (state.time.totalHours - last) : 0;
 
-    if (health >= 100) {
+    if (health >= 100 && !woundedLimbs) {
       box.innerHTML = '<div class="bow-empty">Вы целы. Перевязывать нечего.</div>';
       return;
     }
@@ -11113,7 +12965,7 @@ html.bow-motion-calm .bow-fog-band {
     var ready = wait <= 0 && state.player.needs.fatigue >= 8;
     var why = wait > 0 ? "Следующая перевязка через " + Math.ceil(wait) + " ч."
       : state.player.needs.fatigue < 8 ? "Руки не держат бинт — нужен отдых."
-      : "Час работы. Вернёт примерно " + gain + " здор.";
+      : "Час работы. Вернёт примерно " + gain + " здор. и подлечит ушибленные конечности.";
 
     box.innerHTML =
       '<div class="bow-treat-row">' +
@@ -11129,8 +12981,13 @@ html.bow-motion-calm .bow-fog-band {
     var box = $("bow-inventory");
     if (!box) { return; }
 
+    var curW = Bow.util.round1(Bow.economy.totalWeight(state.player));
+    var maxW = Bow.economy.maxWeight ? Bow.economy.maxWeight(state.player) : 30;
+    var overloaded = curW > maxW;
+
     if (state.player.inventory.length === 0) {
-      box.innerHTML = '<div class="bow-empty">Пусто. Всё, что есть, — за спиной.</div>';
+      box.innerHTML = '<div class="bow-empty">Пусто. Всё, что есть, — за спиной.</div>' +
+        '<div class="bow-inv-total">Вес: 0 / ' + maxW + ' кг</div>';
       return;
     }
 
@@ -11152,16 +13009,16 @@ html.bow-motion-calm .bow-fog-band {
       '</div>';
     }).join("");
 
-    /* Что на вас надето и чем вы бьёте — видно без догадок.
-       Лучшее берётся в руки само, поэтому здесь читаем то же,
-       чем пользуется бой. */
     var weapon = Bow.fight.weaponOf(state.player);
     var armor = Bow.fight.armorOf(state.player);
-    html += '<div class="bow-inv-total">Вес: ' + Bow.util.round1(Bow.economy.totalWeight(state.player)) + ' кг</div>';
+    html += '<div class="bow-inv-total' + (overloaded ? " bow-warn" : "") + '">Вес: <b>' + curW + ' / ' + maxW + ' кг</b>' +
+      (overloaded ? ' · перегруз (замедляет шаг, тренирует Силу)' : '') + '</div>';
     html += '<div class="bow-loadout">' +
       '<span>В руке: <b>' + esc(weapon ? weapon.name : "пусто") + '</b></span>' +
       '<span>На себе: <b>' + esc(armor ? armor.name : "пусто") + '</b></span>' +
       '</div>';
+    html += '<div class="bow-treat-note">Авто-еда (' + (state.player.autoEat !== false ? "включена" : "выключена") +
+      '): проголодавшись, герой сам съест хлеб, похлёбку, дичь или ягоды из сумки.</div>';
 
     box.innerHTML = html;
   }
@@ -11229,46 +13086,107 @@ html.bow-motion-calm .bow-fog-band {
     }).join("");
   }
 
-  /* ---------- Заработок ----------
-     Игрок должен видеть риск: сколько часов, сколько платят,
-     насколько велик шанс и от какого навыка он зависит. */
+  /* ---------- Заработок и автономные задачи Kenshi (0.0.7.4) ---------- */
   function renderJobs(state) {
     var box = $("bow-jobs");
     if (!box) { return; }
 
+    var tasks = Bow.work.tasksAt ? Bow.work.tasksAt(state) : [];
     var jobs = Bow.work.listAt(state);
-    if (!jobs.length) {
+    var activeTask = state.task;
+    var activeDef = (activeTask && Bow.work.taskByKey) ? Bow.work.taskByKey(activeTask.key) : null;
+
+    var html = "";
+
+    if (activeTask && activeDef) {
+      var cyc = Math.max(10, activeDef.cycleMinutes || 30);
+      var pctDone = Math.min(100, Math.round(((activeTask.elapsedMin || 0) / cyc) * 100));
+      html += '<div class="bow-task-live">' +
+        '<div class="bow-task-live-head">' +
+          '<div><b>▶ Выполняется задача: ' + esc(activeDef.title) + '</b>' +
+            '<span class="bow-dim"> · цикл ' + Math.round(activeTask.elapsedMin || 0) + '/' + cyc + ' мин. · завершено: ' + (activeTask.cycles || 0) + '</span>' +
+          '</div>' +
+          '<button type="button" class="bow-btn bow-btn-sm bow-btn-danger" data-act="task-stop">⏹ Остановить</button>' +
+        '</div>' +
+        '<div class="bow-bar"><i class="bow-fill bow-good" style="width:' + pctDone + '%"></i></div>' +
+      '</div>';
+    }
+
+    if (tasks.length) {
+      html += '<div class="bow-tasks-sec">' +
+        '<div class="bow-kenshi-sec-title">ПОСТОЯННЫЕ ЗАДАЧИ (ВЫПОЛНЯЮТСЯ САМИ В ХОДЕ ВРЕМЕНИ)</div>' +
+        tasks.map(function (t) {
+          var isCur = activeTask && activeTask.key === t.key;
+          var yieldInfo = [];
+          if (t.yields && t.yields.length) {
+            t.yields.forEach(function (yi) {
+              var idef = Bow.data.items[yi.itemKey];
+              if (idef) { yieldInfo.push(idef.name); }
+            });
+          }
+          if (t.pay && t.pay[1] > 0) {
+            yieldInfo.push(t.pay[0] === t.pay[1] ? (t.pay[1] + " м.") : (t.pay[0] + "–" + t.pay[1] + " м."));
+          }
+          var trainInfo = (t.skills || []).map(function (sk) { return skillName(sk); });
+          return '<div class="bow-job bow-task-card' + (isCur ? " bow-task-on" : "") + '">' +
+            '<div class="bow-job-top">' +
+              '<div class="bow-job-info">' +
+                '<div class="bow-job-head"><b>' + esc(t.title) + '</b></div>' +
+                '<div class="bow-job-note">' + esc(t.desc) + '</div>' +
+                '<div class="bow-job-meta">' +
+                  '<span>цикл ' + t.cycleMinutes + ' мин.</span>' +
+                  (yieldInfo.length ? '<span>добыча: ' + esc(yieldInfo.join(", ")) + '</span>' : '') +
+                  '<span>рост: ' + esc(trainInfo.join(", ")) + '</span>' +
+                '</div>' +
+              '</div>' +
+            '</div>' +
+            (isCur
+              ? '<button type="button" class="bow-btn bow-btn-sm bow-btn-danger" data-act="task-stop">⏹ Остановить задачу</button>'
+              : '<button type="button" class="bow-btn bow-btn-sm bow-task-go" data-act="task-start" data-task="' + esc(t.key) + '">↻ Назначить задачу</button>') +
+          '</div>';
+        }).join("") +
+      '</div>';
+    }
+
+    if (!jobs.length && !tasks.length) {
       box.innerHTML = '<div class="bow-empty">Здесь некому платить за работу.</div>';
       return;
     }
 
-    box.innerHTML = jobs.map(function (j) {
-      var pct = Math.round(j.chance * 100);
-      var risky = j.chance < 0.4 ? "bow-job-risky" : j.chance > 0.7 ? "bow-job-safe" : "";
-      if (!j.available) {
-        return '<div class="bow-job bow-job-locked">' +
-          '<div class="bow-job-head"><b>' + esc(j.title) + '</b>' +
-            '<span class="bow-dim">' + esc(j.orgName) + '</span></div>' +
-          '<div class="bow-job-note">Не доверят: община относится к вам как «' +
-            esc(Bow.work.reputationWord(Bow.work.reputation(state, j.org))) + '».</div>' +
-        '</div>';
+    if (jobs.length) {
+      if (tasks.length) {
+        html += '<div class="bow-kenshi-sec-title bow-sec-spaced">РАЗОВЫЕ СМЕНЫ И ПОРУЧЕНИЯ</div>';
       }
-      return '<div class="bow-job">' +
-        '<div class="bow-job-top">' +
-          '<div class="bow-job-info">' +
-            '<div class="bow-job-head"><b>' + esc(j.title) + '</b></div>' +
-            '<div class="bow-job-note">' + esc(j.desc) + '</div>' +
-            '<div class="bow-job-meta">' +
-              '<span>' + j.hours + ' ч.</span>' +
-              '<span class="' + risky + '">шанс ' + pct + '%</span>' +
-              '<span>' + esc(skillName(j.skill)) + ' ' + j.skillValue + '</span>' +
+      html += jobs.map(function (j) {
+        var pct = Math.round(j.chance * 100);
+        var risky = j.chance < 0.4 ? "bow-job-risky" : j.chance > 0.7 ? "bow-job-safe" : "";
+        if (!j.available) {
+          return '<div class="bow-job bow-job-locked">' +
+            '<div class="bow-job-head"><b>' + esc(j.title) + '</b>' +
+              '<span class="bow-dim">' + esc(j.orgName) + '</span></div>' +
+            '<div class="bow-job-note">Не доверят: община относится к вам как «' +
+              esc(Bow.work.reputationWord(Bow.work.reputation(state, j.org))) + '».</div>' +
+          '</div>';
+        }
+        return '<div class="bow-job">' +
+          '<div class="bow-job-top">' +
+            '<div class="bow-job-info">' +
+              '<div class="bow-job-head"><b>' + esc(j.title) + '</b></div>' +
+              '<div class="bow-job-note">' + esc(j.desc) + '</div>' +
+              '<div class="bow-job-meta">' +
+                '<span>' + j.hours + ' ч.</span>' +
+                '<span class="' + risky + '">шанс ' + pct + '%</span>' +
+                '<span>' + esc(skillName(j.skill)) + ' ' + j.skillValue + '</span>' +
+              '</div>' +
             '</div>' +
+            '<div class="bow-job-pay">' + j.payMin + '–' + j.payMax + ' м.</div>' +
           '</div>' +
-          '<div class="bow-job-pay">' + j.payMin + '–' + j.payMax + ' м.</div>' +
-        '</div>' +
-        '<button class="bow-btn bow-btn-sm bow-job-go" data-act="work" data-job="' + esc(j.key) + '">Взяться за работу</button>' +
-      '</div>';
-    }).join("");
+          '<button class="bow-btn bow-btn-sm bow-job-go" data-act="work" data-job="' + esc(j.key) + '">Взяться за работу</button>' +
+        '</div>';
+      }).join("");
+    }
+
+    box.innerHTML = html;
   }
 
   function renderAllPeople(state) {
@@ -11721,7 +13639,7 @@ html.bow-motion-calm .bow-fog-band {
       btn.classList.toggle("bow-btn-here", here);
       if (here) {
         btn.setAttribute("aria-current", "location");
-        btn.innerHTML = '<span>' + esc(baseLabel) + '</span><i class="bow-move-dur">здесь</i>';
+        btn.innerHTML = '<span>' + esc(baseLabel) + '</span>';
       } else {
         btn.removeAttribute("aria-current");
         var mins = Bow.actions.travelMinutes ? Bow.actions.travelMinutes(state, locId) : 10;
@@ -11731,7 +13649,7 @@ html.bow-motion-calm .bow-fog-band {
     }
 
     var tabCounts = {
-      jobs: Bow.work.listAt(state).length,
+      jobs: Bow.work.listAt(state).length + (Bow.work.tasksAt ? Bow.work.tasksAt(state).length : 0),
       map: Object.keys(Bow.data.locations || {}).length,
       trade: ((loc && loc.trades) ? loc.trades.length : 0)
     };
@@ -12261,10 +14179,20 @@ html.bow-motion-calm .bow-fog-band {
         var foePerson = foeUnit ? (foeUnit.refId ? state.people[foeUnit.refId] : foeUnit) : null;
         var fleePct = Math.round(Bow.fight.fleeChance(state) * 100);
 
-        /* Чисто пошаговый бой (0.0.7.3): время остановлено, без авто-скорости. */
+        /* Спокойный автобой (0.0.7.4): персонаж сражается сам в размеренном темпе (~2.6 сек./круг),
+           мировое время стоит, а бой можно поставить на паузу или вести вручную. */
+        var isAuto = speed === "auto";
         body += '<div class="bow-fight-clock bow-fight-turnbar">' +
-          '<span class="bow-fight-status">Пошаговый бой · мировое время стоит · выберите удар, позицию или нажмите «Сделать ход»</span>' +
-          '<button class="bow-btn bow-btn-sm bow-step-btn" data-act="fight-step" title="Выполнить ровно один ход по выбранным приказам">⏭ Сделать ход</button>' +
+          '<span class="bow-fight-status">' +
+            (isAuto
+              ? 'Спокойный автобой · герой сражается сам · мировое время стоит'
+              : 'Бой на паузе · мировое время стоит · выберите тактику или нажмите «Автобой»') +
+          '</span>' +
+          '<div class="bow-fight-speed-btns">' +
+            '<button class="bow-btn bow-btn-sm' + (!isAuto ? ' bow-order-on' : '') + '" data-act="fight-order" data-kind="speed" data-val="paused" title="Поставить автобой на паузу (Пробел)">⏸ Пауза</button>' +
+            '<button class="bow-btn bow-btn-sm' + (isAuto ? ' bow-order-on' : '') + '" data-act="fight-order" data-kind="speed" data-val="auto" title="Размеренный автобой: герой сам сближается и бьёт по выбранной тактике">▶ Автобой</button>' +
+            '<button class="bow-btn bow-btn-sm bow-step-btn" data-act="fight-step" title="Выполнить ровно один ход вручную">⏭ Шаг</button>' +
+          '</div>' +
         '</div>';
 
         var aimOrder = ["head", "body", "legs", "arms"];
@@ -12665,6 +14593,16 @@ html.bow-motion-calm .bow-fog-band {
           '<button class="bow-btn bow-btn-sm' + (s.motion === "full" ? " bow-order-on" : "") + '" data-act="setting" data-key="motion" data-val="full">Включены</button>' +
           '<button class="bow-btn bow-btn-sm' + (s.motion === "calm" ? " bow-order-on" : "") + '" data-act="setting" data-key="motion" data-val="calm">Спокойно</button>' +
         '</div>' +
+      '</div>' +
+      '<div class="bow-setting-row">' +
+        '<div class="bow-setting-label"><b>Северный средневековый эмбиент</b><span class="bow-dim">Неспешная лютня, бурдон и флейта (синтез внутри игры без интернета)</span></div>' +
+        '<div class="bow-setting-opts">' +
+          '<button type="button" class="bow-btn bow-btn-sm' + ((Bow.audio && Bow.audio.isEnabled()) ? " bow-order-on" : "") + '" data-act="audio-toggle">' +
+            ((Bow.audio && Bow.audio.isEnabled()) ? "♪ Музыка: вкл" : "♪ Музыка: выкл") +
+          '</button>' +
+          '<input type="range" class="bow-vol-range" data-act="audio-vol" min="0" max="100" step="5" value="' +
+            Math.round((Bow.audio ? Bow.audio.getVolume() : 0.45) * 100) + '" aria-label="Громкость музыки" title="Громкость музыки"/>' +
+        '</div>' +
       '</div>';
   }
 
@@ -12674,8 +14612,8 @@ html.bow-motion-calm .bow-fog-band {
   var modalSection = "save";
 
   var MODAL_TITLES = {
-    state: "Состояние и тело",
-    skills: "Умения",
+    state: "Состояние, конечности и органы",
+    skills: "Характеристики и навыки",
     inv: "При себе",
     people: "Жители поселения",
     orgs: "Общины",
@@ -12696,6 +14634,7 @@ html.bow-motion-calm .bow-fog-band {
     }
 
     if (!drawer) { return; }
+    drawer.classList.toggle("bow-modal-wide", modalSection === "skills" || modalSection === "state");
     var panels = drawer.querySelectorAll(".bow-dpanel");
     for (var i = 0; i < panels.length; i++) {
       var sec = panels[i].getAttribute("data-section");
@@ -12785,6 +14724,7 @@ html.bow-motion-calm .bow-fog-band {
   function refresh(quiet) {
     var state = getState();
     Bow.ui.render(state);
+    if (Bow.audio && Bow.audio.syncMood) { Bow.audio.syncMood(state); }
     try {
       global.localStorage.setItem(AUTOSAVE_KEY, Bow.save.serialize(state, Date.now()));
     } catch (err) {
@@ -12881,7 +14821,8 @@ html.bow-motion-calm .bow-fog-band {
       var state = getState();
       var res = Bow.adapter.act.fightStart(state, el.getAttribute("data-mode"));
       if (res && res.ok && state.fight && state.fight.phase === "exchange") {
-        Bow.fight.setOrder(state, "speed", "paused");
+        Bow.fight.setOrder(state, "speed", "auto");
+        startFightClock();
       }
       return res;
     },
@@ -12889,7 +14830,9 @@ html.bow-motion-calm .bow-fog-band {
       var state = getState();
       var kind = el.getAttribute("data-kind");
       var val = el.getAttribute("data-val");
-      return Bow.adapter.act.fightOrder(state, kind, val);
+      var res = Bow.adapter.act.fightOrder(state, kind, val);
+      startFightClock();
+      return res;
     },
     "fight-step": function () {
       var state = getState();
@@ -12933,7 +14876,8 @@ html.bow-motion-calm .bow-fog-band {
       var state = getState();
       var res = Bow.adapter.act.guardFight(state);
       if (res && res.ok && state.fight && state.fight.phase === "exchange") {
-        Bow.fight.setOrder(state, "speed", "paused");
+        Bow.fight.setOrder(state, "speed", "auto");
+        startFightClock();
       }
       return res;
     },
@@ -12950,7 +14894,8 @@ html.bow-motion-calm .bow-fog-band {
       var state = getState();
       var res = Bow.adapter.act.streetFight(state);
       if (res && res.ok && state.fight && state.fight.phase === "exchange") {
-        Bow.fight.setOrder(state, "speed", "paused");
+        Bow.fight.setOrder(state, "speed", "auto");
+        startFightClock();
       }
       return res;
     },
@@ -12961,7 +14906,27 @@ html.bow-motion-calm .bow-fog-band {
       return { ok: true, message: "" };
     },
     work: function (el) {
-      return Bow.adapter.act.work(getState(), el.getAttribute("data-job"));
+      var st = getState();
+      if (st.task) { st.task = null; }
+      return Bow.adapter.act.work(st, el.getAttribute("data-job"));
+    },
+    "task-start": function (el) {
+      var state = getState();
+      var res = Bow.adapter.act.taskStart(state, el.getAttribute("data-task"));
+      if (res && res.ok) { startClock(); }
+      return res;
+    },
+    "task-stop": function () {
+      return Bow.adapter.act.taskStop(getState());
+    },
+    "toggle-autoeat": function () {
+      return Bow.adapter.act.toggleAutoEat(getState());
+    },
+    "audio-toggle": function () {
+      if (!Bow.audio) { return { ok: true, message: "" }; }
+      var on = Bow.audio.toggle();
+      if (Bow.ui.renderSettings) { Bow.ui.renderSettings(); }
+      return { ok: true, message: on ? "Включён северный средневековый эмбиент." : "Музыка выключена." };
     },
     buy: function (el) { return Bow.adapter.act.buy(getState(), el.getAttribute("data-key"), 1); },
     sell: function (el) { return Bow.adapter.act.sell(getState(), el.getAttribute("data-key"), 1); },
@@ -13090,6 +15055,9 @@ html.bow-motion-calm .bow-fog-band {
     "stage-close": true,
     "panel": true,
     "setting": true,
+    "audio-toggle": true,
+    "toggle-autoeat": true,
+    "task-stop": true,
     "tab": true
   };
 
@@ -13139,6 +15107,7 @@ html.bow-motion-calm .bow-fog-band {
   }
 
   function onClick(event) {
+    if (Bow.audio && Bow.audio.wakeOnGesture) { Bow.audio.wakeOnGesture(); }
     var el = event.target.closest("[data-act]");
     if (!el) {
       /* Клик по пустому фону Главного окна закрывает всплывающую карточку сцены. */
@@ -13215,11 +15184,16 @@ html.bow-motion-calm .bow-fog-band {
     return true;
   }
 
-  /* ---------- Бой чисто пошаговый (0.0.7.3): авто-таймер схватки отключён ---------- */
+  /* ---------- Спокойный автобой (0.0.7.4): ~2.6 сек. на круг, мировое время стоит ---------- */
   var fightTimer = null;
 
-  function fightShouldRun() {
-    return false;
+  function fightShouldRun(state) {
+    var st = state || getState();
+    if (!st || st.dead) { return false; }
+    if (!st.fight || st.fight.phase !== "exchange") { return false; }
+    if (Bow.ui.isDrawerOpen() || openPersonId) { return false; }
+    var ord = Bow.fight.ensureOrders ? Bow.fight.ensureOrders(st.fight) : st.fight.orders;
+    return !!(ord && ord.speed === "auto");
   }
 
   function stopFightClock() {
@@ -13231,6 +15205,20 @@ html.bow-motion-calm .bow-fog-band {
 
   function startFightClock() {
     stopFightClock();
+    var state = getState();
+    if (!fightShouldRun(state)) { return; }
+    var intervalMs = (Bow.data && Bow.data.fightRules && Bow.data.fightRules.autoTickMs) || 2600;
+    fightTimer = global.setInterval(function () {
+      var st = getState();
+      if (!fightShouldRun(st)) {
+        if (!st || !st.fight || st.fight.phase !== "exchange") { stopFightClock(); }
+        return;
+      }
+      var res = Bow.adapter.act.fightStep(st);
+      if (res && res.message) { Bow.ui.setMessage(res.message); }
+      refresh(true);
+      if (!st.fight || st.fight.phase !== "exchange") { stopFightClock(); }
+    }, intervalMs);
   }
 
   function stopClock() {
@@ -13418,6 +15406,12 @@ html.bow-motion-calm .bow-fog-band {
     if (!document.getElementById("bow-app")) { return; }
 
     document.getElementById("bow-app").addEventListener("click", onClick);
+    document.getElementById("bow-app").addEventListener("input", function (event) {
+      var target = event.target;
+      if (target && target.getAttribute && target.getAttribute("data-act") === "audio-vol" && Bow.audio) {
+        Bow.audio.setVolume(parseFloat(target.value) / 100);
+      }
+    });
 
     /* Клик по тёмному фону закрывает окно персонажа. */
     var sheet = document.getElementById("bow-sheet");
@@ -13427,11 +15421,22 @@ html.bow-motion-calm .bow-fog-band {
       });
     }
 
-    /* Escape закрывает модальное окно или карточку сцены. */
+    /* Escape закрывает модальное окно или карточку сцены; Пробел в бою ставит/снимает паузу. */
     document.addEventListener("keydown", function (event) {
+      if (event.key === " " || event.code === "Space") {
+        var st = getState();
+        if (st && st.fight && st.fight.phase === "exchange" && !Bow.ui.isDrawerOpen()) {
+          event.preventDefault();
+          var ord = Bow.fight.ensureOrders(st.fight);
+          Bow.fight.setOrder(st, "speed", ord.speed === "auto" ? "paused" : "auto");
+          startFightClock();
+          refresh(true);
+          return;
+        }
+      }
       if (event.key !== "Escape") { return; }
-      if (Bow.ui.isDrawerOpen()) { Bow.ui.setDrawer(false); return; }
-      if (openPersonId) { openSheet(null); return; }
+      if (Bow.ui.isDrawerOpen()) { Bow.ui.setDrawer(false); startFightClock(); return; }
+      if (openPersonId) { openSheet(null); startFightClock(); return; }
       Bow.ui.setStageSelection(null);
       refresh(true);
     });
@@ -13498,10 +15503,10 @@ html.bow-motion-calm .bow-fog-band {
        ============================================================ --&gt;
   &lt;header class=&quot;bow-topbar&quot;&gt;
     &lt;button class=&quot;bow-logo-btn&quot; id=&quot;bow-logo-btn&quot; aria-label=&quot;Меню игры&quot; aria-expanded=&quot;false&quot; title=&quot;Меню игры — продолжить, настройки, сохранения&quot;&gt;
+      &lt;span class=&quot;bow-logo-bars&quot; aria-hidden=&quot;true&quot;&gt;☰&lt;/span&gt;
       &lt;span class=&quot;bow-logo-img&quot; aria-hidden=&quot;true&quot;&gt;&lt;/span&gt;
       &lt;span class=&quot;bow-logo-text&quot;&gt;
         &lt;b&gt;Blades Of War&lt;/b&gt;
-        &lt;i&gt;&lt;span id=&quot;bow-season&quot;&gt;Эдем&lt;/span&gt; · меню&lt;/i&gt;
       &lt;/span&gt;
     &lt;/button&gt;
 
@@ -13514,11 +15519,11 @@ html.bow-motion-calm .bow-fog-band {
     &lt;/div&gt;
 
     &lt;nav class=&quot;bow-rail bow-top-nav&quot; id=&quot;bow-rail&quot; aria-label=&quot;Окна разделов&quot;&gt;
-      &lt;button class=&quot;bow-rail-btn&quot; data-act=&quot;panel&quot; data-panel=&quot;state&quot; title=&quot;Состояние и раны&quot;&gt;
+      &lt;button class=&quot;bow-rail-btn&quot; data-act=&quot;panel&quot; data-panel=&quot;state&quot; title=&quot;Состояние, конечности и органы&quot;&gt;
         &lt;span class=&quot;bow-rail-i&quot;&gt;♥&lt;/span&gt;&lt;span class=&quot;bow-rail-l&quot;&gt;Сост.&lt;/span&gt;
       &lt;/button&gt;
-      &lt;button class=&quot;bow-rail-btn&quot; data-act=&quot;panel&quot; data-panel=&quot;skills&quot; title=&quot;Умения&quot;&gt;
-        &lt;span class=&quot;bow-rail-i&quot;&gt;✦&lt;/span&gt;&lt;span class=&quot;bow-rail-l&quot;&gt;Умен.&lt;/span&gt;
+      &lt;button class=&quot;bow-rail-btn&quot; data-act=&quot;panel&quot; data-panel=&quot;skills&quot; title=&quot;Характеристики и навыки&quot;&gt;
+        &lt;span class=&quot;bow-rail-i&quot;&gt;✦&lt;/span&gt;&lt;span class=&quot;bow-rail-l&quot;&gt;Навыки&lt;/span&gt;
       &lt;/button&gt;
       &lt;button class=&quot;bow-rail-btn&quot; data-act=&quot;panel&quot; data-panel=&quot;inv&quot; title=&quot;При себе&quot;&gt;
         &lt;span class=&quot;bow-rail-i&quot;&gt;▤&lt;/span&gt;&lt;span class=&quot;bow-rail-l&quot;&gt;Вещи&lt;/span&gt;
@@ -13532,15 +15537,15 @@ html.bow-motion-calm .bow-fog-band {
       &lt;button class=&quot;bow-rail-btn&quot; data-act=&quot;panel&quot; data-panel=&quot;journal&quot; title=&quot;Хроника&quot;&gt;
         &lt;span class=&quot;bow-rail-i&quot;&gt;≡&lt;/span&gt;&lt;span class=&quot;bow-rail-l&quot;&gt;Хрон.&lt;/span&gt;
       &lt;/button&gt;
-      &lt;button class=&quot;bow-rail-btn&quot; data-act=&quot;panel&quot; data-panel=&quot;save&quot; title=&quot;Меню игры и настройки&quot;&gt;
-        &lt;span class=&quot;bow-rail-i&quot;&gt;☰&lt;/span&gt;&lt;span class=&quot;bow-rail-l&quot;&gt;Меню&lt;/span&gt;
-      &lt;/button&gt;
     &lt;/nav&gt;
 
-    &lt;div class=&quot;bow-clock-controls&quot; role=&quot;group&quot; aria-label=&quot;Ход времени&quot;&gt;
-      &lt;button class=&quot;bow-clock-btn&quot; data-act=&quot;clock&quot; data-scale=&quot;paused&quot; title=&quot;Пауза&quot;&gt;❙❙&lt;/button&gt;
-      &lt;button class=&quot;bow-clock-btn&quot; data-act=&quot;clock&quot; data-scale=&quot;1x&quot; title=&quot;Обычный ход (1 мин. = 2 сек.)&quot;&gt;▶&lt;/button&gt;
-      &lt;button class=&quot;bow-clock-btn&quot; data-act=&quot;clock&quot; data-scale=&quot;4x&quot; title=&quot;Быстрый ход (2 мин./сек.)&quot;&gt;▶▶&lt;/button&gt;
+    &lt;div class=&quot;bow-topbar-right&quot;&gt;
+      &lt;button type=&quot;button&quot; class=&quot;bow-audio-btn&quot; id=&quot;bow-audio-btn&quot; data-act=&quot;audio-toggle&quot; aria-pressed=&quot;false&quot; title=&quot;Средневековый северный эмбиент (вкл/выкл)&quot;&gt;♪&lt;/button&gt;
+      &lt;div class=&quot;bow-clock-controls&quot; role=&quot;group&quot; aria-label=&quot;Ход времени&quot;&gt;
+        &lt;button class=&quot;bow-clock-btn&quot; data-act=&quot;clock&quot; data-scale=&quot;paused&quot; title=&quot;Пауза&quot;&gt;❙❙&lt;/button&gt;
+        &lt;button class=&quot;bow-clock-btn&quot; data-act=&quot;clock&quot; data-scale=&quot;1x&quot; title=&quot;Обычный ход (1 мин. = 2 сек.)&quot;&gt;▶&lt;/button&gt;
+        &lt;button class=&quot;bow-clock-btn&quot; data-act=&quot;clock&quot; data-scale=&quot;4x&quot; title=&quot;Быстрый ход (2 мин./сек.)&quot;&gt;▶▶&lt;/button&gt;
+      &lt;/div&gt;
     &lt;/div&gt;
   &lt;/header&gt;
 
@@ -13549,7 +15554,7 @@ html.bow-motion-calm .bow-fog-band {
        ============================================================ --&gt;
   &lt;section class=&quot;bow-places-bar&quot; aria-label=&quot;Переход&quot;&gt;
     &lt;div class=&quot;bow-places-head&quot;&gt;
-      &lt;span&gt;Переход&lt;/span&gt;
+      &lt;span class=&quot;bow-places-meta&quot;&gt;Переход &lt;span class=&quot;bow-tb-sep&quot;&gt;·&lt;/span&gt; &lt;span id=&quot;bow-season&quot; class=&quot;bow-season-tag&quot;&gt;Зима · Студёный Брод&lt;/span&gt;&lt;/span&gt;
       &lt;button type=&quot;button&quot; class=&quot;bow-map-open-btn&quot; data-act=&quot;open-map&quot; title=&quot;Открыть карту поселения и Хладных Ветров&quot;&gt;◈ Карта&lt;/button&gt;
     &lt;/div&gt;
     &lt;div class=&quot;bow-actions bow-places-row&quot;&gt;
@@ -13593,6 +15598,7 @@ html.bow-motion-calm .bow-fog-band {
         &lt;div class=&quot;bow-heat&quot; id=&quot;bow-heat&quot;&gt;&lt;/div&gt;
         &lt;div class=&quot;bow-hud-acts&quot;&gt;
           &lt;button class=&quot;bow-btn bow-btn-sm&quot; data-act=&quot;rest&quot;&gt;&lt;span class=&quot;bow-btn-i&quot;&gt;☾&lt;/span&gt;Отдохнуть&lt;/button&gt;
+          &lt;button class=&quot;bow-btn bow-btn-sm&quot; id=&quot;bow-autoeat-btn&quot; data-act=&quot;toggle-autoeat&quot; title=&quot;Автоматически съедать припасы из сумки, когда герой проголодается&quot;&gt;Авто-еда: вкл&lt;/button&gt;
           &lt;span id=&quot;bow-hud-quick&quot; class=&quot;bow-hud-quick&quot;&gt;&lt;/span&gt;
         &lt;/div&gt;
       &lt;/section&gt;
@@ -13663,13 +15669,13 @@ html.bow-motion-calm .bow-fog-band {
             &lt;/section&gt;
 
             &lt;section class=&quot;bow-dpanel&quot; data-section=&quot;body&quot;&gt;
-              &lt;h3 class=&quot;bow-subh&quot;&gt;Тело и перевязка&lt;/h3&gt;
+              &lt;h3 class=&quot;bow-subh&quot;&gt;Части тела, органы и перевязка&lt;/h3&gt;
               &lt;div id=&quot;bow-injuries&quot; class=&quot;bow-injuries&quot;&gt;&lt;/div&gt;
               &lt;div id=&quot;bow-treat&quot; class=&quot;bow-treat&quot;&gt;&lt;/div&gt;
             &lt;/section&gt;
 
             &lt;section class=&quot;bow-dpanel&quot; data-section=&quot;skills&quot;&gt;
-              &lt;h3 class=&quot;bow-subh&quot;&gt;Умения&lt;/h3&gt;
+              &lt;h3 class=&quot;bow-subh&quot;&gt;Характеристики и навыки&lt;/h3&gt;
               &lt;div id=&quot;bow-skills&quot; class=&quot;bow-skills&quot;&gt;&lt;/div&gt;
             &lt;/section&gt;
 
@@ -13731,7 +15737,7 @@ html.bow-motion-calm .bow-fog-band {
   &lt;div id=&quot;bow-sheet&quot; class=&quot;bow-sheet&quot; aria-hidden=&quot;true&quot;&gt;&lt;/div&gt;
 
   &lt;footer class=&quot;bow-footer&quot;&gt;
-    &lt;span&gt;Blades Of War · прототип 0.0.7.3 · Хладные Ветра · Студёный Брод&lt;/span&gt;
+    &lt;span&gt;Blades Of War · прототип 0.0.7.4 · Хладные Ветра · Студёный Брод&lt;/span&gt;
     &lt;span class=&quot;bow-dim&quot;&gt;Север Эдемских земель · малое поселение у переправы&lt;/span&gt;
   &lt;/footer&gt;
 

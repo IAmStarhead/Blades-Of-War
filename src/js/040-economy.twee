@@ -143,6 +143,13 @@
     }, 0);
   }
 
+  function maxWeight(player) {
+    if (Bow.state && Bow.state.maxCarryWeight) {
+      return Bow.state.maxCarryWeight(player);
+    }
+    return 30;
+  }
+
   /* ---------- Действия ---------- */
 
   function buy(state, locationId, key, qty) {
@@ -204,6 +211,7 @@
     removeItem: removeItem,
     countItem: countItem,
     totalWeight: totalWeight,
+    maxWeight: maxWeight,
     buy: buy,
     sell: sell
   };

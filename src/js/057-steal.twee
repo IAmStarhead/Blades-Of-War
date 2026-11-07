@@ -260,6 +260,9 @@
       /* Навык растёт от практики. */
       var before = state.player.skills.stealth || 0;
       state.player.skills.stealth = Math.min(100, Math.round((before + 1.2) * 10) / 10);
+      if (Bow.work && Bow.work.growSkill) {
+        Bow.work.growSkill(state.player, "thievery_pick", 1.2);
+      }
 
       /* Тот, у кого срезали кошель, замечает пропажу позже —
          но запоминает это навсегда. */

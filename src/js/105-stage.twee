@@ -83,16 +83,19 @@
   function weaponKindOf(state, personOrUnit) {
     if (!personOrUnit) { return "none"; }
     if (personOrUnit.disarmed) { return "none"; }
+    var wid = "";
     if (personOrUnit.weapon) {
-      var wid = String(personOrUnit.weapon);
-      if (/axe/.test(wid)) { return "axe"; }
-      if (/knife/.test(wid)) { return "knife"; }
-    }
-    if (Bow.fight && Bow.fight.weaponOf && personOrUnit.inventory) {
+      wid = String(personOrUnit.weapon);
+    } else if (Bow.fight && Bow.fight.weaponOf && personOrUnit.inventory) {
       var w = Bow.fight.weaponOf(personOrUnit);
-      if (w && /axe/.test(w.id)) { return "axe"; }
-      if (w && /knife/.test(w.id)) { return "knife"; }
+      if (w) { wid = String(w.id); }
     }
+    if (/axe/.test(wid)) { return "axe"; }
+    if (/sword/.test(wid)) { return "sword"; }
+    if (/spear/.test(wid)) { return "spear"; }
+    if (/club/.test(wid)) { return "club"; }
+    if (/bow/.test(wid)) { return "bow"; }
+    if (/knife/.test(wid)) { return "knife"; }
     return "none";
   }
 
@@ -120,11 +123,11 @@
       : "#171e26";
 
     if (dead || down) {
-      /* Поверженный силуэт на снегу. */
+      /* Поверженный силуэт: лежит прямо на линии земли (нижний край viewBox), а не в воздухе. */
       return '<svg class="bow-fig-svg bow-fig-fallen" viewBox="0 0 72 44" aria-hidden="true">' +
-        '<ellipse cx="36" cy="36" rx="28" ry="5" fill="rgba(0,0,0,0.42)"/>' +
-        '<path d="M12 31 Q28 21 50 27 L60 33 L14 35 Z" fill="' + bodyFill + '" stroke="' + stroke + '" stroke-width="1.5"/>' +
-        '<circle cx="16" cy="26" r="6.5" fill="' + cloakFill + '" stroke="' + stroke + '" stroke-width="1.5"/>' +
+        '<ellipse cx="36" cy="40" rx="28" ry="3.8" fill="rgba(0,0,0,0.48)"/>' +
+        '<path d="M12 36 Q28 26 50 32 L61 38 L13 40 Z" fill="' + bodyFill + '" stroke="' + stroke + '" stroke-width="1.5"/>' +
+        '<circle cx="16" cy="31" r="6.2" fill="' + cloakFill + '" stroke="' + stroke + '" stroke-width="1.5"/>' +
       '</svg>';
     }
 
@@ -149,6 +152,25 @@
       weaponSvg = '<g class="bow-fig-weapon">' +
         '<line x1="46" y1="58" x2="54" y2="24" stroke="#b9ad96" stroke-width="2.2" stroke-linecap="round"/>' +
         '<path d="M51 25 L61 22 L59 34 L50 31 Z" fill="#cfd6dd" stroke="#7d8a97" stroke-width="1"/>' +
+      '</g>';
+    } else if (weapon === "sword") {
+      weaponSvg = '<g class="bow-fig-weapon">' +
+        '<line x1="45" y1="54" x2="59" y2="22" stroke="#dce4ec" stroke-width="2.3" stroke-linecap="round"/>' +
+        '<line x1="42" y1="49" x2="49" y2="52" stroke="#b9ad96" stroke-width="2.2"/>' +
+      '</g>';
+    } else if (weapon === "spear") {
+      weaponSvg = '<g class="bow-fig-weapon">' +
+        '<line x1="45" y1="74" x2="53" y2="12" stroke="#b9ad96" stroke-width="2.1" stroke-linecap="round"/>' +
+        '<polygon points="53,8 50,18 56,18" fill="#dce4ec"/>' +
+      '</g>';
+    } else if (weapon === "club") {
+      weaponSvg = '<g class="bow-fig-weapon">' +
+        '<line x1="45" y1="56" x2="55" y2="28" stroke="#9d8260" stroke-width="3.4" stroke-linecap="round"/>' +
+      '</g>';
+    } else if (weapon === "bow") {
+      weaponSvg = '<g class="bow-fig-weapon">' +
+        '<path d="M48 22 Q59 42 48 62" fill="none" stroke="#c3a476" stroke-width="2.1"/>' +
+        '<line x1="48" y1="22" x2="48" y2="62" stroke="#8ea0b2" stroke-width="0.9"/>' +
       '</g>';
     } else if (weapon === "knife") {
       weaponSvg = '<g class="bow-fig-weapon">' +
@@ -528,11 +550,15 @@
     var playerX = stageEntities.length >= 5 ? 16 : (stageEntities.length === 4 ? 18 : 20);
     var pWeapon = weaponKindOf(state, state.player);
     var selfActive = selected && selected.kind === "self" ? " bow-actor-on" : "";
+    var activeTaskDef = (state.task && Bow.work && Bow.work.taskByKey) ? Bow.work.taskByKey(state.task.key) : null;
+    var playerSub = activeTaskDef
+      ? ('<i class="bow-tone bow-warm">' + esc(activeTaskDef.short) + ' · ' + Math.round(state.task.elapsedMin) + '/' + (activeTaskDef.cycleMinutes || 30) + 'м</i>')
+      : "";
     html.push(
-      '<button type="button" class="bow-actor bow-actor-player' + selfActive + '" style="left:' + playerX + '%;bottom:42px" ' +
+      '<button type="button" class="bow-actor bow-actor-player' + selfActive + (activeTaskDef ? " bow-actor-working" : "") + '" style="left:' + playerX + '%;bottom:42px" ' +
         'data-act="stage-select" data-kind="self" data-x="' + playerX + '" title="Вы — припасы, отдых и перевязка">' +
         figureSvg({ roleKey: "player", side: "player", weapon: pWeapon }) +
-        '<span class="bow-actor-tag"><b>Вы</b></span>' +
+        '<span class="bow-actor-tag"><b>Вы</b>' + playerSub + '</span>' +
       '</button>'
     );
 
@@ -583,7 +609,7 @@
         var hasLoot = !c.looted && ((c.money || 0) > 0 || (c.items && c.items.length > 0));
         html.push(
           '<button type="button" class="bow-actor bow-actor-corpse' + (cSel ? " bow-actor-on" : "") + (hasLoot ? " bow-actor-corpse-loot" : "") + '" ' +
-            'style="left:' + x + '%;bottom:36px" ' +
+            'style="left:' + x + '%;bottom:42px" ' +
             'data-act="stage-select" data-kind="corpse" data-corpse="' + esc(c.id) + '" data-x="' + x + '" ' +
             'title="' + esc("Труп: " + c.name + (hasLoot ? " (можно обыскать)" : " (обыскан)")) + '">' +
             figureSvg({ roleKey: c.roleKey || "villager", side: "enemy", dead: true }) +
@@ -728,7 +754,7 @@
       if (!l) { return ""; }
       var isHere = k === curKey;
       var mins = isHere ? 0 : Bow.actions.travelMinutes(state, k);
-      var dur = isHere ? "вы здесь" : Bow.actions.formatDuration(mins);
+      var dur = isHere ? "" : Bow.actions.formatDuration(mins);
       var ppl = Bow.actions.peopleAt(state, k);
       var deadHere = Bow.actions.corpsesAt ? Bow.actions.corpsesAt(state, k) : [];
       var badges = [];
@@ -736,15 +762,16 @@
       if (deadHere.length) { badges.push("☠ " + deadHere.length); }
       if (isHere && state.guard && state.guard.arrived) { badges.push("⛨ стража"); }
       if (isHere && state.encounter && state.encounter.robber) { badges.push("⚔ налётчик"); }
+      var pinSub = [dur, badges.join(" ")].filter(Boolean).join(" · ");
 
       return '<button type="button" class="bow-map-pin' + (isHere ? " bow-map-pin-here" : "") + '" ' +
         'style="left:' + l.mapX + '%;top:' + l.mapY + '%" ' +
         'data-act="move" data-loc="' + esc(k) + '"' + (isHere ? ' aria-current="location"' : '') +
-        ' title="' + esc(l.name + " — " + (l.mapHint || l.sub) + " (" + dur + ")") + '">' +
+        ' title="' + esc(l.name + " — " + (l.mapHint || l.sub) + (dur ? " (" + dur + ")" : "")) + '">' +
         '<span class="bow-map-pin-dot"></span>' +
         '<span class="bow-map-pin-card">' +
           '<b>' + esc(l.name) + '</b>' +
-          '<i>' + esc(dur) + (badges.length ? " · " + esc(badges.join(" ")) : "") + '</i>' +
+          (pinSub ? '<i>' + esc(pinSub) + '</i>' : '') +
         '</span>' +
       '</button>';
     }).join("");
@@ -753,7 +780,7 @@
       var l = locs[k];
       var isHere = k === curKey;
       var mins = isHere ? 0 : Bow.actions.travelMinutes(state, k);
-      var dur = isHere ? "Вы здесь" : Bow.actions.formatDuration(mins);
+      var dur = isHere ? "" : Bow.actions.formatDuration(mins);
       var pplNames = Bow.actions.peopleAt(state, k).map(function (p) { return p.name; });
       var deadHere = Bow.actions.corpsesAt ? Bow.actions.corpsesAt(state, k) : [];
       var metaParts = [];
@@ -768,9 +795,9 @@
           '<span class="bow-dim">' + esc(l.mapHint || l.sub) + (metaParts.length ? " · " + esc(metaParts.join(" · ")) : "") + '</span>' +
         '</div>' +
         '<div class="bow-map-row-go">' +
-          '<span class="bow-map-time">' + esc(dur) + '</span>' +
+          (dur ? '<span class="bow-map-time">' + esc(dur) + '</span>' : '') +
           (isHere
-            ? '<span class="bow-equip-tag">текущее место</span>'
+            ? ''
             : '<button type="button" class="bow-trade-btn" data-act="move" data-loc="' + esc(k) + '">Идти · ' + esc(dur) + '</button>') +
         '</div>' +
       '</div>';
@@ -792,7 +819,7 @@
           '<text x="148" y="34" fill="#6f8f8a" font-size="11" letter-spacing="2.2">МАТЬ-ТАЙГА (СЕВЕР)</text>' +
           /* Кольцо бревенчатого частокола Студёного Брода */
           '<ellipse cx="366" cy="196" rx="212" ry="78" fill="rgba(32,42,52,0.38)" stroke="#4c5b6b" stroke-width="2" stroke-dasharray="10 4"/>' +
-          '<text x="182" y="142" fill="#7d8e9f" font-size="10" letter-spacing="1.4">ЧАСТОКОЛ ПОСЕЛЕНИЯ</text>' +
+          '<text x="166" y="140" fill="#7d8e9f" font-size="9.5" letter-spacing="1.1">БРЕВЕНЧАТАЯ ОГРАДА (ЧАСТОКОЛ)</text>' +
           /* Река Студёная и каменная переправа (сам Студёный Брод) */
           '<path d="M0,288 Q210,272 365,286 T760,278" fill="none" stroke="#2c4c66" stroke-width="18" opacity="0.88"/>' +
           '<path d="M0,288 Q210,272 365,286 T760,278" fill="none" stroke="#6c99bd" stroke-width="1.4" opacity="0.5"/>' +

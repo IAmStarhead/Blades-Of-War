@@ -16,7 +16,7 @@
   Bow.data = {
 
     meta: {
-      version: "0.0.7.3",
+      version: "0.0.7.4",
       title: "Blades Of War",
       worldName: "Эдем · Королевство Хладных Ветров",
       regionShort: "Хладные Ветра",
@@ -113,7 +113,7 @@
             desc: "Постоять за прилавок, пока хозяин ушёл. Надо считать и не путать сдачу.",
             hours: 4, pay: [6, 12], fatigue: 6, hunger: 5, rep: 2, minRep: 0 }
         ],
-        trades: ["bread", "salt", "fur", "rope"],
+        trades: ["bread", "salt", "fur", "rope", "berries", "firewood", "raw_meat"],
         people: ["sigi", "liva"]
       },
       tavern: {
@@ -140,11 +140,11 @@
           { key: "taproom", title: "Помочь в трактире", org: "org:brod", skill: "trade",
             desc: "Носить кружки, вытирать столы, слушать, о чём спорят возчики.",
             hours: 4, pay: [3, 7], fatigue: 8, hunger: 5, rep: 2, minRep: -25 },
-          { key: "cook", title: "Постоять у котла", org: "org:brod", skill: "medicine",
+          { key: "cook", title: "Постоять у котла", org: "org:brod", skill: "cooking",
             desc: "Резать репу, следить за огнём и не дать похлёбке подгореть.",
             hours: 3, pay: [4, 9], fatigue: 9, hunger: 4, rep: 1, minRep: 10 }
         ],
-        trades: ["stew", "ale", "bread"],
+        trades: ["stew", "ale", "bread", "berries", "raw_meat"],
         people: ["sigi", "tarn"]
       },
       smithy: {
@@ -156,10 +156,10 @@
         travelMinutes: 11,
         mapX: 34,
         mapY: 60,
-        mapHint: "Горн и наковальня Тарна у западных ворот",
+        mapHint: "Горн, рудная куча и наковальня Тарна у западных ворот",
         desc: [
           "Жар и грохот. Горн раздут до белого, на наковальне лежит заготовка ножа. Стены увешаны клещами и старыми подковами.",
-          "Хозяин работает молча. Он не любит, когда его отвлекают, но цену за работу называет честно."
+          "Хозяин работает молча. Он не любит, когда его отвлекают, но цену за работу и принесённую болотную руду называет честно."
         ],
         ambience: [
           "Молот бьёт ровно, как сердце. Между ударами слышно, как гудит воздух в мехах.",
@@ -167,37 +167,37 @@
           "Искры улетают в темноту и гаснут, не долетая до стены."
         ],
         jobs: [
-          { key: "bellows", title: "Поработать мехами", org: "org:brod", skill: "combat",
+          { key: "bellows", title: "Поработать мехами", org: "org:brod", skill: "labouring",
             desc: "Держать мехи, пока Тарн кует. Жар, грохот, окалина на руках.",
             hours: 4, pay: [5, 11], fatigue: 16, hunger: 8, rep: 2, minRep: -30 },
-          { key: "grind", title: "Точить и править железо", org: "org:brod", skill: "combat",
+          { key: "grind", title: "Точить и править железо", org: "org:brod", skill: "weaponsmith",
             desc: "Работа для тех, кто уже понимает, где у клинка край.",
             hours: 3, pay: [7, 14], fatigue: 10, hunger: 6, rep: 2, minRep: 25 }
         ],
-        trades: ["knife", "axe", "padded", "rope", "tool"],
+        trades: ["knife", "club", "spear", "axe", "sword", "bow", "padded", "rope", "tool", "iron_ore"],
         people: ["tarn"]
       },
       outskirts: {
         id: "loc:outskirts",
         name: "Околица",
-        sub: "Студёный Брод · северный частокол",
+        sub: "Студёный Брод · край дворов у бревенчатой стены",
         org: "org:brod",
         travelHours: 2,
         travelMinutes: 19,
         mapX: 51,
         mapY: 37,
-        mapHint: "Крайние дворы, поленницы и северные ворота в частоколе",
+        mapHint: "Крайние дворы, поленницы и северные ворота в бревенчатом частоколе",
         desc: [
-          "Здесь кончаются дворы и начинается мокрая земля. Плетни стоят криво, за ними — сараи и поленницы.",
-          "Следы на снегу ведут к частоколу, а от него — в тайгу. Кто-то ходил этой дорогой недавно."
+          "Здесь кончаются дворы и начинается мёрзлая земля. По краю поселение обнесено частоколом — плотной стеной из вкопанных заострённых брёвен, защищающей избы от волков и лихих людей.",
+          "У северных ворот стоят поленницы и сараи. Следы на снегу уходят за бревенчатую ограду прямо в тайгу."
         ],
         ambience: [
           "Где-то за сараями лает собака — коротко, дважды, и замолкает.",
           "Из трубы крайней избы идёт дым, но окна тёмные. Хозяева либо спят, либо их нет.",
-          "Ветер приносит запах мокрой коры — значит, кто-то недавно рубил дрова за околицей."
+          "Ветер гудит в щелях бревенчатого частокола и приносит запах мокрой коры."
         ],
         jobs: [
-          { key: "firewood", title: "Наколоть дров", org: "org:brod", skill: "survival",
+          { key: "firewood", title: "Наколоть дров", org: "org:brod", skill: "labouring",
             desc: "За околицей стоят поленницы. Работа простая, но спину ломит.",
             hours: 3, pay: [3, 7], fatigue: 15, hunger: 7, rep: 1, minRep: -50 }
         ],
@@ -207,16 +207,16 @@
       forest: {
         id: "loc:forest",
         name: "Опушка тайги",
-        sub: "За северным частоколом · Мать-Тайга",
+        sub: "За северными воротами · Мать-Тайга",
         org: "org:brod",
         travelHours: 3,
         travelMinutes: 37,
         mapX: 57,
         mapY: 14,
-        mapHint: "Кромка вековой тайги к северу от Студёного Брода",
+        mapHint: "Кромка вековой тайги к северу от Студёного Брода: сбор, дрова и силки",
         desc: [
           "Тайга дышит сыростью и смолой. Ветки смыкаются над головой, свет пробивается серыми полосами.",
-          "Дальше в глубину идти без лыж и без провожатого не стоит: здесь легко обойти круг и не вернуться."
+          "У кромки леса под снегом прячется мёрзлая брусника, коренья и сухостой, а на звериных тропах можно ставить силки."
         ],
         ambience: [
           "Снег на ветках держится тяжело. Где-то в глубине срывается пласт — глухой хлопок, и снова тишина.",
@@ -236,18 +236,26 @@
       }
     },
 
-    /* ---------- Товары ---------- */
+    /* ---------- Товары, оружие и добыча ---------- */
     items: {
-      bread:  { id: "item:bread",  name: "Хлеб",            weight: 0.5, food: 18, base: 3,  desc: "Ржаной, тёмный, чёрствый по краям." },
-      stew:   { id: "item:stew",   name: "Похлёбка",        weight: 0.6, food: 34, base: 6,  desc: "Горячая, с репой и мясной закваской." },
-      ale:    { id: "item:ale",    name: "Кружка пива",     weight: 0.4, mood: 8,  base: 4,  desc: "Жидкое, но согревает." },
-      salt:   { id: "item:salt",   name: "Мешочек соли",    weight: 1.0, base: 9,  desc: "Северная соль, крупная и серая. Ходовой товар." },
-      fur:    { id: "item:fur",    name: "Шкура",           weight: 1.6, base: 14, desc: "Выделанная лисья шкура. Тепло и цена." },
-      rope:   { id: "item:rope",   name: "Верёвка",         weight: 1.2, base: 5,  desc: "Пеньковая, сажени три." },
-      knife:  { id: "item:knife",  name: "Нож",             weight: 0.3, equip: "weapon", attack: 4, base: 15, desc: "Простой кованый нож в деревянных ножнах." },
-      axe:    { id: "item:axe",    name: "Топор",           weight: 2.4, equip: "weapon", attack: 10, base: 34, desc: "Плотницкий топор с коротким топорищем. Тяжёлый, зато не подводит." },
-      padded: { id: "item:padded", name: "Стёганка",        weight: 2.2, equip: "armor", defense: 4, base: 26, desc: "Прошитая в несколько слоёв куртка. От ножа держит, от топора — не очень." },
-      tool:   { id: "item:tool",   name: "Инструмент",      weight: 1.8, base: 22, desc: "Клещи и молоток кузнечной работы." }
+      bread:    { id: "item:bread",    name: "Хлеб",             weight: 0.5, food: 18, base: 3,  desc: "Ржаной, тёмный, чёрствый по краям." },
+      berries:  { id: "item:berries",  name: "Таёжная ягода",    weight: 0.3, food: 12, base: 3,  desc: "Мёрзлая брусника и коренья из-под снега. Утоляет голод в дороге." },
+      raw_meat: { id: "item:raw_meat", name: "Пайка дичи",       weight: 0.5, food: 25, base: 7,  desc: "Подвяленная на морозе зайчатина и боровая дичь." },
+      stew:     { id: "item:stew",     name: "Похлёбка",         weight: 0.6, food: 34, base: 6,  desc: "Горячая, с репой и мясной закваской." },
+      ale:      { id: "item:ale",      name: "Кружка пива",      weight: 0.4, mood: 8,  base: 4,  desc: "Жидкое, но согревает." },
+      salt:     { id: "item:salt",     name: "Мешочек соли",     weight: 1.0, base: 9,  desc: "Северная соль, крупная и серая. Ходовой товар." },
+      fur:      { id: "item:fur",      name: "Шкура",            weight: 1.6, base: 14, desc: "Выделанная лисья шкура. Тепло и цена." },
+      firewood: { id: "item:firewood", name: "Смолистые дрова",  weight: 1.4, base: 4,  desc: "Сухая таёжная вязанка — берут и на площади, и в домах." },
+      iron_ore: { id: "item:iron_ore", name: "Болотная руда",    weight: 1.8, base: 8,  desc: "Бурые комья железняка для кузнечного горна Тарна." },
+      rope:     { id: "item:rope",     name: "Верёвка",          weight: 1.2, base: 5,  desc: "Пеньковая, сажени три." },
+      knife:    { id: "item:knife",    name: "Нож",              weight: 0.3, equip: "weapon", weaponClass: "blades",   sharp: true,  attack: 4,  base: 15, desc: "Простой кованый нож в деревянных ножнах." },
+      club:     { id: "item:club",     name: "Окованная дубина", weight: 1.7, equip: "weapon", weaponClass: "blunt",    sharp: false, attack: 6,  base: 18, desc: "Тяжёлое берёзовое корье с железным обручем. Оглушает, но не режет." },
+      spear:    { id: "item:spear",    name: "Рогатина",         weight: 2.3, equip: "weapon", weaponClass: "polearms", sharp: true,  attack: 8,  base: 26, desc: "Северное древковое копьё с перекладиной на зверя и человека." },
+      axe:      { id: "item:axe",      name: "Топор",            weight: 2.4, equip: "weapon", weaponClass: "axes",     sharp: true,  attack: 10, base: 34, desc: "Плотницкий топор с коротким топорищем. Тяжёлый, зато не подводит." },
+      sword:    { id: "item:sword",    name: "Северный тесак",   weight: 1.9, equip: "weapon", weaponClass: "blades",   sharp: true,  attack: 12, base: 48, desc: "Широкий однолезвийный клинок хладцев — режет стёганку и кость." },
+      bow:      { id: "item:bow",      name: "Охотничий лук",    weight: 1.4, equip: "weapon", weaponClass: "bows",     sharp: true,  attack: 9,  base: 38, desc: "Клееный таёжный лук из ели и берёзы с костяными накладками." },
+      padded:   { id: "item:padded",   name: "Стёганка",         weight: 2.2, equip: "armor",  defense: 4, base: 26, desc: "Прошитая в несколько слоёв куртка. От ножа держит, от топора — не очень." },
+      tool:     { id: "item:tool",     name: "Инструмент",       weight: 1.8, base: 22, desc: "Клещи и молоток кузнечной работы." }
     },
 
     /* ---------- Персонажи ----------
@@ -263,6 +271,7 @@
         /* gear — id предметов (item:…), а не ключи товаров:
            мы ищем их тем же findItemDef, что и инвентарь игрока. */
         gear: { weapon: "item:knife" },
+        pouch: ["item:bread"],
         needs: { health: 82, hunger: 68, fatigue: 55, mood: 61 },
         traits: ["практичная", "памятливая", "не любит долгов"],
         about: "Держит трактир «Хромой олень» уже девятнадцать лет. Знает, кто в округе чем дышит, и помнит каждую неоплаченную кружку пива.",
@@ -323,6 +332,7 @@
         role: "кузнец", location: "smithy", org: "org:brod",
         skills: { combat: 44, trade: 26, survival: 35, medicine: 6, leadership: 12, stealth: 18 },
         gear: { weapon: "item:axe", armor: "item:padded" },
+        pouch: ["item:iron_ore"],
         needs: { health: 88, hunger: 62, fatigue: 48, mood: 44 },
         traits: ["молчаливый", "упрямый", "честный в работе"],
         about: "Пришёл в Брод десять лет назад с войны и остался. Кует всё, от гвоздей до наконечников, и не любит разговаривать о прошлом.",
@@ -382,6 +392,7 @@
         role: "дочь торговца", location: "square", org: "org:brod",
         skills: { combat: 5, trade: 31, survival: 12, medicine: 14, leadership: 9, stealth: 22 },
         gear: {},
+        pouch: ["item:bread", "item:salt"],
         needs: { health: 94, hunger: 76, fatigue: 39, mood: 72 },
         traits: ["любопытная", "доверчивая", "хочет уехать на юг"],
         about: "Дочь торговца припасами. Считает, что жизнь в Броде слишком мала для неё, и говорит об этом вслух.",
@@ -428,6 +439,7 @@
         role: "охотник", location: "outskirts", org: "org:brod",
         skills: { combat: 41, trade: 15, survival: 64, medicine: 22, leadership: 8, stealth: 46 },
         gear: { weapon: "item:axe" },
+        pouch: ["item:fur", "item:raw_meat"],
         needs: { health: 66, hunger: 58, fatigue: 62, mood: 37 },
         traits: ["нелюдимый", "осторожный", "знает тайгу"],
         about: "Живёт на околице, промышляет охотой. В поселение заходит редко и разговаривает ещё реже.",
@@ -491,7 +503,48 @@
       pron: "m",
       role: "странник",
       status: "free",
-      skills: { combat: 15, trade: 20, survival: 25, medicine: 10, leadership: 5, stealth: 10 },
+      attrs: {
+        strength: 14,
+        toughness: 12,
+        dexterity: 15,
+        perception: 16
+      },
+      skills: {
+        /* Шесть опорных умений (совместимость со всеми модулями) */
+        combat: 15,
+        trade: 20,
+        survival: 25,
+        medicine: 10,
+        leadership: 5,
+        stealth: 10,
+        /* Оружейные специализации */
+        blades: 16,
+        axes: 8,
+        blunt: 10,
+        polearms: 6,
+        heavy_weapons: 3,
+        /* Ближний бой и защита */
+        melee_defense: 12,
+        dodge: 14,
+        unarmed: 12,
+        /* Дальний бой */
+        bows: 8,
+        precision: 11,
+        /* Тень и воровство */
+        thievery_pick: 10,
+        lockpicking: 5,
+        assassination: 4,
+        /* Движение */
+        athletics: 22,
+        swimming: 9,
+        /* Знания и ремёсла */
+        engineering: 6,
+        lore: 12,
+        weaponsmith: 4,
+        armorsmith: 4,
+        labouring: 18,
+        cooking: 11
+      },
       needs: { health: 85, hunger: 70, fatigue: 60, mood: 65 },
       money: 18,
       inventory: [
@@ -500,17 +553,208 @@
       ]
     },
 
+    /* ---------- Характеристики и древо навыков в духе Kenshi ---------- */
+    attributes: [
+      { key: "strength",   name: "Сила",       hint: "Переносимый вес, мощь рубящего/дробящего удара и тяжёлый труд (руда, дрова)." },
+      { key: "toughness",  name: "Крепость",   hint: "Закалка тела: снижает входящий урон, бережёт конечности и растёт под ударами." },
+      { key: "dexterity",  name: "Ловкость",   hint: "Скорость и точность клинков, древкового оружия, защиты и тонкой работы." },
+      { key: "perception", name: "Восприятие", hint: "Зоркость и слух: меткость ударов/стрельбы, сбор в тайге и чутьё на засаду." }
+    ],
+
+    skillCategories: [
+      {
+        key: "weapons",
+        title: "-Оружие-",
+        skills: [
+          { key: "blades",        name: "Клинки",         hint: "Ножи, кинжалы и северные тесаки: точность и режущий урон." },
+          { key: "axes",          name: "Топоры",         hint: "Плотницкие и боевые топоры: пробивание стёганок и щитов." },
+          { key: "blunt",         name: "Дробящее",       hint: "Окованные дубины, палицы и молоты: оглушает без кровопотери." },
+          { key: "polearms",      name: "Древковое",      hint: "Рогатины, копья и посохи: удержание дистанции." },
+          { key: "heavy_weapons", name: "Тяжёлое оружие", hint: "Двуручные секиры и колуны — требуют высокой Силы." }
+        ]
+      },
+      {
+        key: "combat_cat",
+        title: "-Бой-",
+        skills: [
+          { key: "combat",        name: "Атака",          hint: "Умение находить брешь и попадать в ближнем бою." },
+          { key: "melee_defense", name: "Защита",         hint: "Парирование и глухая оборона с оружием в руках." },
+          { key: "dodge",         name: "Уклонение",      hint: "Уход с линии удара на ногах без тяжёлого доспеха." },
+          { key: "unarmed",       name: "Рукопашный бой", hint: "Кулаки, захваты и борьба без оружия." }
+        ]
+      },
+      {
+        key: "ranged",
+        title: "-Стрельба-",
+        skills: [
+          { key: "bows",          name: "Луки",           hint: "Таёжные и охотничьи луки, самострелы." },
+          { key: "precision",     name: "Меткость",       hint: "Прицельные удары и выстрелы в голову, глаза и ноги." }
+        ]
+      },
+      {
+        key: "thievery",
+        title: "-Воровство-",
+        skills: [
+          { key: "stealth",       name: "Скрытность",     hint: "Бесшумный шаг, ночные вылазки и уход от стражи." },
+          { key: "thievery_pick", name: "Воровство",      hint: "Срезание кошелей и шаренье по карманам." },
+          { key: "lockpicking",   name: "Взлом",          hint: "Замки, засовы и побег из клетки." },
+          { key: "assassination", name: "Оглушение",      hint: "Тихий удар исподтишка без лишнего шума." }
+        ]
+      },
+      {
+        key: "athletics_cat",
+        title: "-Движение-",
+        skills: [
+          { key: "athletics",     name: "Атлетика",       hint: "Скорость пеших переходов по снегу и отрыв от погони." },
+          { key: "swimming",      name: "Плавание",       hint: "Ледяные броды, течение и переправы." },
+          { key: "survival",      name: "Выживание",      hint: "Тайга, чтение следов, сбор припасов и силки." }
+        ]
+      },
+      {
+        key: "sciences",
+        title: "-Знания-",
+        skills: [
+          { key: "medicine",      name: "Полев. медицина", hint: "Перевязка ран и повреждённых конечностей." },
+          { key: "engineering",   name: "Плотницкое дело", hint: "Починка строений, частокола и снастей." },
+          { key: "lore",          name: "Грамота и счёт",  hint: "Чтение накладных, законов и знание земель Эдема." }
+        ]
+      },
+      {
+        key: "trades",
+        title: "-Ремёсла-",
+        skills: [
+          { key: "weaponsmith",   name: "Оруж. ковка",    hint: "Ковка и правка клинков и топоров у горна." },
+          { key: "armorsmith",    name: "Бронное дело",   hint: "Стёганки, кожа и починка доспеха." },
+          { key: "labouring",     name: "Чёрная работа",  hint: "Добыча болотной руды, рубка дров и переноска тюков." },
+          { key: "cooking",       name: "Стряпня",        hint: "Похлёбка, дичь на углях и заготовка снеди." },
+          { key: "trade",         name: "Торг",           hint: "Дешевле покупать и дороже сбывать добычу." },
+          { key: "leadership",    name: "Власть",         hint: "Вес слова: отряд идёт за вами, а грабители пасуют." }
+        ]
+      }
+    ],
+
+    /* ---------- Конечности и органы персонажа ---------- */
+    bodyParts: [
+      { key: "head",      name: "Голова",      aim: "head", canSever: false },
+      { key: "chest",     name: "Грудь",       aim: "body", canSever: false },
+      { key: "stomach",   name: "Живот",       aim: "body", canSever: false },
+      { key: "left_arm",  name: "Левая рука",  aim: "arms", canSever: true  },
+      { key: "right_arm", name: "Правая рука", aim: "arms", canSever: true  },
+      { key: "left_leg",  name: "Левая нога",  aim: "legs", canSever: true  },
+      { key: "right_leg", name: "Правая нога", aim: "legs", canSever: true  }
+    ],
+
+    organs: [
+      { key: "left_eye",  name: "Левый глаз",  sense: "vision" },
+      { key: "right_eye", name: "Правый глаз", sense: "vision" },
+      { key: "left_ear",  name: "Левое ухо",   sense: "hearing" },
+      { key: "right_ear", name: "Правое ухо",  sense: "hearing" }
+    ],
+
+    /* ---------- Автономные постоянные задачи (как копка руды в Kenshi) ---------- */
+    tasks: [
+      {
+        key: "forage_taiga",
+        location: "forest",
+        title: "Собирать дары тайги",
+        short: "Сбор в тайге",
+        desc: "Бродить у кромки леса, собирая мёрзлую ягоду, коренья и смолистый сушняк в сумку, пока есть силы и место.",
+        cycleMinutes: 25,
+        fatigue: 3.2,
+        skills: ["survival", "labouring"],
+        attr: "perception",
+        yields: [
+          { itemKey: "berries",  chance: 0.72 },
+          { itemKey: "firewood", chance: 0.48 }
+        ],
+        pay: [0, 0]
+      },
+      {
+        key: "snare_taiga",
+        location: "forest",
+        title: "Проверять силки и звериные тропы",
+        short: "Силки в тайге",
+        desc: "Ставить и обходить петли у опушки — добывает пайки дичи и изредка пушную шкуру.",
+        cycleMinutes: 35,
+        fatigue: 4.0,
+        skills: ["survival", "stealth"],
+        attr: "perception",
+        yields: [
+          { itemKey: "raw_meat", chance: 0.62 },
+          { itemKey: "fur",      chance: 0.22 }
+        ],
+        pay: [0, 0]
+      },
+      {
+        key: "mine_ore",
+        location: "smithy",
+        title: "Дробить и отбирать болотную руду",
+        short: "Добыча руды",
+        desc: "Разбивать мёрзлые глыбы железняка у кузни — руда складывается в сумку, её сразу покупает Тарн.",
+        cycleMinutes: 30,
+        fatigue: 4.5,
+        skills: ["labouring", "weaponsmith"],
+        attr: "strength",
+        yields: [
+          { itemKey: "iron_ore", chance: 0.80 }
+        ],
+        pay: [0, 0]
+      },
+      {
+        key: "chop_logs",
+        location: "outskirts",
+        title: "Заготавливать дрова у частокола",
+        short: "Заготовка дров",
+        desc: "Колоть кряжи у северной бревенчатой стены — в сумку идут вязанки дров на продажу.",
+        cycleMinutes: 28,
+        fatigue: 4.0,
+        skills: ["labouring", "axes"],
+        attr: "strength",
+        yields: [
+          { itemKey: "firewood", chance: 0.82 }
+        ],
+        pay: [0, 1]
+      },
+      {
+        key: "haul_square",
+        location: "square",
+        title: "Таскать тюки у солевых возов",
+        short: "Носка грузов",
+        desc: "Непрерывная подённая работа на площади — качает спину, ноги и приносит мелкую монету за каждый круг.",
+        cycleMinutes: 30,
+        fatigue: 3.8,
+        skills: ["labouring", "athletics"],
+        attr: "strength",
+        yields: [],
+        pay: [1, 3]
+      },
+      {
+        key: "help_hearth",
+        location: "tavern",
+        title: "Работать у котла и очага",
+        short: "Работа у очага",
+        desc: "Подкладывать поленья, мешать варево и носить кружки в тепле трактира.",
+        cycleMinutes: 30,
+        fatigue: 2.8,
+        skills: ["cooking", "trade"],
+        attr: "dexterity",
+        yields: [],
+        pay: [1, 2]
+      }
+    ],
+
     /* ---------- Правила потребностей ---------- */
     needsRules: {
       /* Естественное заживление за час: сытый и отдохнувший
          затягивает раны сам. Лечение ускоряет это втрое. */
-      healPerHour: 0.45,
-      perHour: { hunger: -0.85, fatigue: -0.65, mood: -0.15 },
+      healPerHour: 0.55,
+      perHour: { hunger: -0.55, fatigue: -0.45, mood: -0.08 },
+      autoEatBelow: 52,
       hungerLow: 20,
       fatigueLow: 15,
-      healthPenalty: { hunger: -0.9, fatigue: -0.4, both: -1.6 },
-      moodPenaltyHunger: -0.5,
-      rest: { fatigue: 36, health: 5, mood: 7 },
+      healthPenalty: { hunger: -0.7, fatigue: -0.35, both: -1.2 },
+      moodPenaltyHunger: -0.4,
+      rest: { fatigue: 42, health: 7, mood: 8 },
       sleepHours: 7
     },
 
@@ -520,8 +764,9 @@
        без особой причины. */
     fightRules: {
       hours: 1,                  // час на весь бой, а не на каждый удар
-      fatiguePerExchange: 3,
-      guardFatigue: 2,
+      autoTickMs: 2600,          // спокойный автобой: 1 обмен ударами раз в 2.6 сек.
+      fatiguePerExchange: 1.5,
+      guardFatigue: 1.0,
       yieldAt: { npc: 18, player: 12 },
       sparMinAttitude: -20,      // ниже — с вами просто не станут бороться
       /* Цена нападения: платится в начале, до исхода. */
@@ -609,20 +854,34 @@
       injuries: {
         arm: {
           key: "arm", name: "покалеченная рука", short: "рука",
-          hit: -0.10, power: 0.08, label: "бьёт слабее и реже попадает"
+          hit: -0.10, power: 0.08, dex: -4, str: -3, label: "бьёт слабее и реже попадает"
         },
         eye: {
           key: "eye", name: "выбитый глаз", short: "глаз",
-          hit: -0.12, power: 0, label: "хуже видит удар"
+          hit: -0.12, power: 0, per: -16, organ: "left_eye", label: "хуже видит удар и дальние цели"
+        },
+        ear: {
+          key: "ear", name: "отсечённое ухо", short: "ухо",
+          hit: -0.04, power: 0, per: -8, organ: "left_ear", label: "хуже слышит шаг за спиной"
         },
         leg: {
           key: "leg", name: "перебитая нога", short: "нога",
-          hit: -0.05, power: 0, flee: -0.20, travel: 1.5,
+          hit: -0.05, power: 0, flee: -0.20, travel: 1.5, agi: -6,
           label: "медленно ходит и плохо бегает"
         },
         ribs: {
           key: "ribs", name: "сросшиеся рёбра", short: "рёбра",
-          hit: -0.04, power: 0.08, fatigue: 1.3, label: "быстрее выматывается"
+          hit: -0.04, power: 0.08, fatigue: 1.3, str: -2, label: "быстрее выматывается"
+        },
+        arm_lost: {
+          key: "arm_lost", name: "отрубленная рука", short: "нет руки",
+          hit: -0.22, power: 0.32, dex: -12, str: -8, limbLost: "left_arm",
+          label: "конечность утрачена навсегда — тяжёлый штраф к бою и ремеслу"
+        },
+        leg_lost: {
+          key: "leg_lost", name: "отрубленная нога", short: "нет ноги",
+          hit: -0.14, power: 0.12, flee: -0.45, travel: 2.1, limbLost: "left_leg",
+          label: "конечность утрачена навсегда — передвигается с огромным трудом"
         }
       },
       /* ---------- Куда бить (0.0.6.3) ----------
