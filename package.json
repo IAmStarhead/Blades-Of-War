@@ -1,6 +1,6 @@
 {
   "name": "blades-of-war",
-  "version": "0.0.6.3",
+  "version": "0.0.7",
   "private": true,
   "description": "Blades Of War — текстовая симуляционная песочница (Twine 2 / SugarCube 2)",
   "scripts": {

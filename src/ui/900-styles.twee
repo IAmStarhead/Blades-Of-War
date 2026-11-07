@@ -1,6 +1,6 @@
 :: Story Stylesheet [stylesheet]
 /* ============================================================
-   BLADES OF WAR — оформление прототипа 0.0.6.3
+   BLADES OF WAR — оформление прототипа 0.0.7
    Палитра: холодный камень, серебро, воронёная сталь, бордо.
    Схема: верхняя палка + выдвижная панель + рельса значков.
    Адаптив: компьютер → планшет → телефон.
@@ -2275,4 +2275,851 @@ body {
   font-size: 0.68rem;
   color: var(--bow-dim);
   margin: -2px 0 6px;
+}
+
+
+/* ============================================================
+   0.0.7 — НОВЫЙ КАРКАС ЭКРАНА, ГЛАВНОЕ ОКНО СЦЕНЫ И ПОЛУРУЧНОЙ БОЙ
+   ============================================================ */
+
+.bow-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+.bow-app {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0 16px 28px;
+}
+
+/* --- Верхняя шапка в одну линию (по макету 0.0.7) --- */
+.bow-topbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px;
+  margin-bottom: 10px;
+  background: #0d1116;
+  border-bottom: 1px solid var(--bow-line);
+  flex-wrap: wrap;
+}
+
+.bow-logo-img { width: 36px; height: 36px; }
+.bow-logo-text b { font-size: 0.96rem; letter-spacing: 0.12em; }
+.bow-logo-text i { display: none; }
+
+.bow-topbar-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--bow-mono);
+  font-size: 0.74rem;
+  color: var(--bow-dim);
+  margin-right: auto;
+}
+
+/* Кнопки разделов переехали с левой рельсы в верхнюю шапку */
+.bow-rail.bow-top-nav {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 5px;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background: transparent;
+  position: static;
+  width: auto;
+}
+
+.bow-rail.bow-top-nav .bow-rail-btn {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 48px;
+  min-height: 40px;
+  padding: 4px 6px;
+  background: #141a21;
+  border: 1px solid var(--bow-line-soft);
+  border-radius: var(--bow-radius);
+  color: var(--bow-dim);
+  cursor: pointer;
+  transition: border-color 0.16s, background 0.16s, color 0.16s;
+}
+
+.bow-rail.bow-top-nav .bow-rail-btn:hover {
+  background: var(--bow-surface-4);
+  border-color: var(--bow-line);
+  color: var(--bow-silver);
+}
+
+.bow-rail.bow-top-nav .bow-rail-btn.bow-rail-active {
+  background: rgba(125, 43, 51, 0.22);
+  border-color: var(--bow-bordo);
+  color: var(--bow-silver);
+}
+
+.bow-rail.bow-top-nav .bow-rail-btn.bow-rail-warn::after {
+  content: "";
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--bow-crit);
+}
+
+/* Крупные читаемые кнопки часов справа в шапке */
+.bow-topbar .bow-clock-controls {
+  display: inline-flex;
+  gap: 5px;
+  margin-left: 4px;
+}
+
+.bow-topbar .bow-clock-btn {
+  min-width: 40px;
+  min-height: 40px;
+  padding: 6px 8px;
+  font-size: 0.78rem;
+  background: #141a21;
+  border: 1px solid var(--bow-line-soft);
+  border-radius: var(--bow-radius);
+}
+
+.bow-topbar .bow-clock-btn.bow-clock-on {
+  color: var(--bow-gold);
+  border-color: var(--bow-gold);
+  background: rgba(201, 169, 97, 0.12);
+}
+
+/* --- Полоса «Переход» под шапкой --- */
+.bow-places-bar {
+  background: var(--bow-panel);
+  border: 1px solid var(--bow-line-soft);
+  border-radius: var(--bow-radius);
+  padding: 8px 12px 10px;
+  margin-bottom: 10px;
+}
+
+.bow-places-head {
+  font-family: var(--bow-mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--bow-dim);
+  margin-bottom: 7px;
+}
+
+.bow-places-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.bow-places-row .bow-btn {
+  min-height: 36px;
+  padding: 6px 14px;
+  font-size: 0.8rem;
+}
+
+/* --- Основное поле без боковой колонки --- */
+.bow-body {
+  display: block;
+  position: relative;
+}
+
+.bow-body::after { display: none !important; }
+
+.bow-main { width: 100%; min-width: 0; }
+
+/* --- Главное графическое окно локации (#bow-stage) --- */
+.bow-stage {
+  position: relative;
+  height: 330px;
+  background: #0d131a;
+  border: 1px solid var(--bow-line);
+  border-radius: var(--bow-radius);
+  overflow: hidden;
+  margin-bottom: 10px;
+  box-shadow: var(--bow-shadow-md);
+}
+
+.bow-stage.bow-scene-fade {
+  animation: bow-fade-in 320ms ease-out both;
+}
+
+.bow-stage-canvas {
+  position: absolute;
+  inset: 0;
+}
+
+.bow-stage-bg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.bow-stage-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.bow-stage-top {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 3;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  background: linear-gradient(180deg, rgba(9, 13, 18, 0.82) 0%, rgba(9, 13, 18, 0) 100%);
+  pointer-events: none;
+}
+
+.bow-stage-title {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.bow-stage-title h2 {
+  margin: 0;
+  font-family: var(--bow-serif);
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--bow-silver);
+}
+
+.bow-stage-title .bow-dim {
+  font-family: var(--bow-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.bow-stage-hint {
+  font-family: var(--bow-mono);
+  font-size: 0.62rem;
+  color: var(--bow-faint);
+  letter-spacing: 0.06em;
+}
+
+.bow-stage-bottom {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  padding: 8px 14px;
+  background: linear-gradient(0deg, rgba(9, 12, 16, 0.88) 0%, rgba(9, 12, 16, 0) 100%);
+  pointer-events: none;
+}
+
+.bow-stage-bottom .bow-ambience {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  font-size: 0.8rem;
+  color: var(--bow-dim);
+}
+
+.bow-stage-bottom .bow-result {
+  margin: 2px 0 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: 0.78rem;
+  color: var(--bow-gold);
+}
+
+/* Кликабельные точки объектов на сцене */
+.bow-spot {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 4px 10px;
+  background: rgba(15, 20, 26, 0.82);
+  border: 1px solid var(--bow-line);
+  border-radius: var(--bow-radius);
+  color: var(--bow-text);
+  cursor: pointer;
+  backdrop-filter: blur(3px);
+  transition: border-color 0.16s, background 0.16s, transform 0.16s;
+}
+
+.bow-spot:hover,
+.bow-spot.bow-spot-on {
+  background: rgba(31, 41, 51, 0.94);
+  border-color: var(--bow-gold);
+  transform: translate(-50%, -52%);
+}
+
+.bow-spot-exit { border-style: dashed; }
+.bow-spot-exit:hover { border-color: var(--bow-silver); }
+
+.bow-spot-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--bow-gold);
+  flex-shrink: 0;
+}
+
+.bow-spot-exit .bow-spot-dot { background: var(--bow-steel); }
+
+.bow-spot-txt {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  line-height: 1.15;
+}
+
+.bow-spot-txt b {
+  font-family: var(--bow-mono);
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--bow-silver);
+}
+
+.bow-spot-txt i {
+  font-style: normal;
+  font-family: var(--bow-mono);
+  font-size: 0.58rem;
+  color: var(--bow-dim);
+}
+
+/* Минималистичные фигурки персонажей в Главном окне */
+.bow-actor {
+  position: absolute;
+  transform: translateX(-50%);
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 64px;
+  min-height: 44px;
+  padding: 4px 6px 22px;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  color: var(--bow-text);
+  transition: transform 0.18s ease, filter 0.18s ease;
+}
+
+.bow-actor:hover,
+.bow-actor.bow-actor-on {
+  transform: translateX(-50%) translateY(-3px);
+  filter: drop-shadow(0 0 8px rgba(201, 169, 97, 0.45));
+}
+
+.bow-actor .bow-fig-svg {
+  width: 54px;
+  height: 74px;
+  display: block;
+}
+
+.bow-fig-flip { transform: scaleX(-1); }
+
+.bow-actor-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 7px;
+  background: rgba(12, 16, 21, 0.88);
+  border: 1px solid var(--bow-line-soft);
+  border-radius: var(--bow-radius);
+  font-family: var(--bow-mono);
+  font-size: 0.66rem;
+  white-space: nowrap;
+}
+
+.bow-actor-tag i { font-style: normal; }
+
+.bow-actor-hp {
+  width: 38px;
+  height: 4px;
+  background: #0b0e12;
+  border: 1px solid var(--bow-line-soft);
+}
+.bow-actor-hp i { display: block; height: 100%; background: var(--bow-crit); }
+
+/* Всплывающая карточка взаимодействия внутри Главного окна */
+.bow-stage-pop {
+  display: none;
+  position: absolute;
+  right: 12px;
+  top: 44px;
+  z-index: 5;
+  width: min(350px, calc(100% - 24px));
+  max-height: calc(100% - 56px);
+  overflow-y: auto;
+}
+
+.bow-stage-pop.bow-stage-pop-open { display: block; }
+
+.bow-stage-card {
+  background: rgba(18, 23, 29, 0.96);
+  border: 1px solid var(--bow-line);
+  border-radius: var(--bow-radius);
+  padding: 10px 12px;
+  box-shadow: var(--bow-shadow-lg);
+  backdrop-filter: blur(6px);
+}
+
+.bow-stage-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+  font-size: 0.86rem;
+}
+
+.bow-stage-card-meta {
+  font-family: var(--bow-mono);
+  font-size: 0.68rem;
+  color: var(--bow-dim);
+  margin-bottom: 8px;
+}
+
+.bow-stage-mini-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 5px 0;
+  border-top: 1px solid var(--bow-line-soft);
+  font-size: 0.8rem;
+}
+
+.bow-gold-txt {
+  font-family: var(--bow-mono);
+  color: var(--bow-gold);
+  white-space: nowrap;
+}
+
+@keyframes bow-snow-fall {
+  0%   { transform: translate(0, -10px); opacity: 0.2; }
+  50%  { opacity: 0.7; }
+  100% { transform: translate(-14px, 24px); opacity: 0.15; }
+}
+
+.bow-flake { animation: bow-snow-fall 2.8s linear infinite; }
+.bow-flake-1 { animation-delay: 0.9s; }
+.bow-flake-2 { animation-delay: 1.8s; }
+
+/* --- Приборная полоса героя под Главным окном --- */
+.bow-hud-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 8px 12px;
+  margin-bottom: 10px;
+  background: var(--bow-panel);
+  border: 1px solid var(--bow-line-soft);
+  border-radius: var(--bow-radius);
+}
+
+.bow-hud-strip .bow-topbar-status {
+  margin-left: 0;
+  gap: 14px;
+}
+
+.bow-hud-acts {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.bow-hud-quick {
+  display: inline-flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* --- Вкладки под «Действиями» и карточки работ по макету 0.0.7 --- */
+.bow-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--bow-line-soft);
+  padding-bottom: 8px;
+}
+
+.bow-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 7px 14px;
+  background: #141a20;
+  border: 1px solid var(--bow-line-soft);
+  border-bottom: 2px solid var(--bow-line-soft);
+  border-radius: var(--bow-radius);
+  font-family: var(--bow-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--bow-dim);
+  cursor: pointer;
+  transition: color 0.16s, border-color 0.16s, background 0.16s;
+}
+
+.bow-tab:hover {
+  color: var(--bow-silver);
+  background: var(--bow-surface-3);
+}
+
+.bow-tab.bow-tab-on {
+  color: var(--bow-silver);
+  background: #182028;
+  border-bottom-color: #a83c48;
+}
+
+.bow-tab .bow-fold-count { margin: 0; }
+
+.bow-tab-pane { display: none; }
+.bow-tab-pane.bow-tab-pane-on { display: block; }
+
+.bow-job-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 8px;
+}
+
+.bow-job-info { flex: 1 1 auto; min-width: 0; }
+
+.bow-job .bow-job-pay {
+  font-family: var(--bow-mono);
+  font-size: 1.32rem;
+  font-weight: 700;
+  color: var(--bow-gold);
+  white-space: nowrap;
+  padding-left: 8px;
+}
+
+.bow-job-go { width: 100%; justify-content: flex-start; padding-left: 12px; }
+
+/* --- Всплывающее отдельное окно раздела поверх игры (#bow-drawer.bow-modal) --- */
+.bow-drawer.bow-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  width: 100%;
+  max-height: none;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  opacity: 1;
+  background: none;
+  overflow: visible;
+}
+
+.bow-drawer.bow-modal.bow-modal-open {
+  display: flex;
+}
+
+.bow-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(6, 9, 13, 0.72);
+  backdrop-filter: blur(3px);
+}
+
+.bow-modal-box {
+  position: relative;
+  z-index: 2;
+  width: min(560px, 94vw);
+  max-height: 82vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bow-panel);
+  border: 1px solid var(--bow-line);
+  border-radius: var(--bow-radius);
+  box-shadow: var(--bow-shadow-lg);
+}
+
+.bow-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--bow-line-soft);
+}
+
+.bow-modal-head .bow-h2 { margin: 0; }
+
+.bow-modal-body.bow-drawer-scroll {
+  width: 100%;
+  max-width: none;
+  max-height: calc(82vh - 54px);
+  overflow-y: auto;
+  padding: 14px 16px;
+  box-sizing: border-box;
+}
+
+/* Показывается только выбранная вкладка окна */
+#bow-drawer.bow-modal .bow-dpanel {
+  display: none;
+  border: 0;
+  padding: 0;
+  margin-bottom: 14px;
+}
+
+#bow-drawer.bow-modal .bow-dpanel.bow-dpanel-focus {
+  display: block;
+}
+
+.bow-subh {
+  margin: 0 0 8px;
+  font-family: var(--bow-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--bow-dim);
+}
+
+.bow-all-people {
+  display: grid;
+  gap: 8px;
+}
+
+/* --- Минималистичная панорама боя и тактическая панель Kenshi (0.0.7) --- */
+.bow-arena-scene {
+  position: relative;
+  border: 1px solid var(--bow-line);
+  border-radius: var(--bow-radius);
+  overflow: hidden;
+  background: #0f161e;
+}
+
+.bow-arena-scene .bow-stage-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.85;
+  pointer-events: none;
+}
+
+.bow-arena-scene .bow-arena {
+  position: relative;
+  z-index: 2;
+  background: linear-gradient(180deg, rgba(12, 17, 23, 0.12) 0%, rgba(15, 22, 30, 0.55) 48%, rgba(18, 26, 35, 0.72) 100%);
+  min-height: 250px;
+  padding: 18px 12px 12px;
+}
+
+.bow-arena-scene .bow-cell-a,
+.bow-arena-scene .bow-cell-b {
+  background: rgba(200, 214, 228, 0.03);
+  border: 1px dashed rgba(145, 165, 184, 0.12);
+}
+
+.bow-arena-scene .bow-chip {
+  background: transparent;
+  border: 1px solid transparent;
+  padding: 4px;
+  min-height: 78px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  transition: transform 0.18s ease, border-color 0.16s ease, background 0.16s ease;
+}
+
+.bow-arena-scene .bow-chip-enemy { cursor: pointer; }
+
+.bow-arena-scene .bow-chip-enemy:hover {
+  border-color: rgba(201, 169, 97, 0.55);
+  background: rgba(201, 169, 97, 0.07);
+}
+
+.bow-arena-scene .bow-chip-target {
+  border-color: var(--bow-gold);
+  background: rgba(201, 169, 97, 0.12);
+  box-shadow: 0 0 0 1px rgba(201, 169, 97, 0.35);
+}
+
+.bow-chip-ally.bow-chip-strike { transform: translateX(7px); }
+.bow-chip-enemy.bow-chip-strike { transform: translateX(-7px); }
+
+.bow-chip-overhead {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 5px;
+  background: rgba(10, 14, 18, 0.85);
+  border: 1px solid var(--bow-line-soft);
+  border-radius: 2px;
+  margin-bottom: 2px;
+}
+
+.bow-chip-num {
+  font-family: var(--bow-mono);
+  font-size: 0.62rem;
+  color: var(--bow-silver);
+}
+
+.bow-chip-hpbar {
+  width: 32px;
+  height: 4px;
+  background: #090c10;
+  overflow: hidden;
+}
+
+.bow-chip-hpbar i { display: block; height: 100%; }
+
+.bow-arena-scene .bow-chip-body {
+  position: relative;
+  width: auto;
+  height: auto;
+  background: none;
+  border: 0;
+}
+
+.bow-arena-scene .bow-chip-body > b { display: none; }
+
+.bow-arena-scene .bow-fig-svg {
+  width: 48px;
+  height: 66px;
+  display: block;
+}
+
+.bow-arena-scene .bow-fig-fallen {
+  width: 58px;
+  height: 36px;
+}
+
+.bow-fight-clock {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 8px 10px;
+  margin: 8px 0;
+  background: #11161c;
+  border: 1px solid var(--bow-line-soft);
+  border-radius: var(--bow-radius);
+}
+
+.bow-fight-speeds {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.bow-fight-speeds .bow-clock-btn,
+.bow-fight-speeds .bow-step-btn {
+  min-height: 36px;
+  padding: 6px 10px;
+  font-size: 0.72rem;
+}
+
+.bow-fight-status {
+  font-family: var(--bow-mono);
+  font-size: 0.68rem;
+  color: var(--bow-dim);
+}
+
+.bow-aim-btn.bow-aim-on {
+  border-color: var(--bow-gold);
+  background: rgba(201, 169, 97, 0.13);
+}
+
+.bow-orders-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 8px 0;
+  padding: 8px 10px;
+  background: #12181f;
+  border: 1px solid var(--bow-line-soft);
+  border-radius: var(--bow-radius);
+}
+
+.bow-order-group {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.bow-order-label {
+  font-family: var(--bow-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--bow-faint);
+  margin-right: 4px;
+}
+
+.bow-btn.bow-order-on {
+  border-color: var(--bow-bordo);
+  background: rgba(125, 43, 51, 0.24);
+  color: var(--bow-silver);
+}
+
+@media (max-width: 720px) {
+  .bow-topbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .bow-rail.bow-top-nav {
+    order: 3;
+    width: 100%;
+    overflow-x: auto;
+    justify-content: space-between;
+  }
+  .bow-rail.bow-top-nav .bow-rail-btn {
+    min-width: 42px;
+    padding: 4px;
+  }
+  .bow-stage { height: 250px; }
+  .bow-stage-hint { display: none; }
+  .bow-job-top { flex-direction: column; align-items: flex-start; gap: 6px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bow-flake,
+  .bow-stage,
+  .bow-actor,
+  .bow-spot,
+  .bow-chip {
+    animation-duration: 0.001s !important;
+    transition-duration: 0.001s !important;
+  }
 }

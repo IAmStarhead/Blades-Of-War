@@ -2,46 +2,28 @@
 <div id="bow-app" class="bow-app">
 
   <!-- ============================================================
-       ВЕРХНЯЯ ПАЛКА
-       Логотип слева, сводка по центру, состояние справа.
+       ВЕРХНЯЯ ШАПКА (0.0.7 — в одну линию по макету владельца)
+       Щит, дата/монеты/погода, кнопки окон разделов и часы справа.
        ============================================================ -->
   <header class="bow-topbar">
-    <button class="bow-logo-btn" id="bow-logo-btn" aria-label="Показать или скрыть панель" aria-expanded="false" title="Нажмите, чтобы показать или убрать панель">
+    <button class="bow-logo-btn" id="bow-logo-btn" aria-label="Открыть окно состояния" aria-expanded="false" title="Состояние персонажа">
       <span class="bow-logo-img" aria-hidden="true"></span>
       <span class="bow-logo-text">
         <b>Blades Of War</b>
         <i id="bow-season">Эдем</i>
       </span>
-      <span class="bow-logo-hint" aria-hidden="true">панель</span>
     </button>
 
     <div class="bow-topbar-info">
       <span id="bow-time" class="bow-tb-time">—</span>
       <span class="bow-tb-sep">·</span>
-      <span id="bow-where" class="bow-tb-place">—</span>
-      <span class="bow-tb-sep">·</span>
+      <span id="bow-where" class="bow-tb-place bow-sr-only">—</span>
       <span class="bow-tb-money" title="Монеты"><b id="bow-money">0</b> м.</span>
       <span id="bow-weather" class="bow-weather"></span>
-        <span class="bow-clock-controls" role="group" aria-label="Ход времени">
-          <button class="bow-clock-btn" data-act="clock" data-scale="paused" title="Время стоит">❙❙</button>
-          <button class="bow-clock-btn" data-act="clock" data-scale="1x" title="Обычный ход">▶</button>
-          <button class="bow-clock-btn" data-act="clock" data-scale="4x" title="Ускорить">▶▶</button>
-        </span>
     </div>
 
-    <div class="bow-topbar-status" id="bow-topbar-status"></div>
-    <div class="bow-heat" id="bow-heat"></div>
-  </header>
-
-  <!-- ============================================================
-       ОСНОВНОЕ ПОЛЕ: рельса слева, панель, сцена справа
-       Панель встроена в поток, поэтому её выезд не зависит
-       от position: fixed и не может «телепортироваться».
-       ============================================================ -->
-  <div class="bow-body" id="bow-body">
-
-    <nav class="bow-rail" id="bow-rail" aria-label="Разделы">
-      <button class="bow-rail-btn" data-act="panel" data-panel="state" title="Состояние">
+    <nav class="bow-rail bow-top-nav" id="bow-rail" aria-label="Окна разделов">
+      <button class="bow-rail-btn" data-act="panel" data-panel="state" title="Состояние и раны">
         <span class="bow-rail-i">♥</span><span class="bow-rail-l">Сост.</span>
       </button>
       <button class="bow-rail-btn" data-act="panel" data-panel="skills" title="Умения">
@@ -50,7 +32,7 @@
       <button class="bow-rail-btn" data-act="panel" data-panel="inv" title="При себе">
         <span class="bow-rail-i">▤</span><span class="bow-rail-l">Вещи</span>
       </button>
-      <button class="bow-rail-btn" data-act="panel" data-panel="people" title="Люди рядом">
+      <button class="bow-rail-btn" data-act="panel" data-panel="people" title="Жители">
         <span class="bow-rail-i">◉</span><span class="bow-rail-l">Люди</span>
       </button>
       <button class="bow-rail-btn" data-act="panel" data-panel="orgs" title="Общины">
@@ -64,129 +46,188 @@
       </button>
     </nav>
 
-    <!-- ВЫДВИЖНАЯ ПАНЕЛЬ -->
-    <aside class="bow-drawer" id="bow-drawer" aria-hidden="true">
-      <div class="bow-drawer-scroll">
-        <div class="bow-drawer-inner">
+    <div class="bow-clock-controls" role="group" aria-label="Ход времени">
+      <button class="bow-clock-btn" data-act="clock" data-scale="paused" title="Пауза">❙❙</button>
+      <button class="bow-clock-btn" data-act="clock" data-scale="1x" title="Обычный ход">▶</button>
+      <button class="bow-clock-btn" data-act="clock" data-scale="4x" title="Ускорить">▶▶</button>
+    </div>
+  </header>
 
-          <section class="bow-dpanel" data-section="state">
-            <h2 class="bow-h2">Состояние</h2>
-            <div id="bow-needs" class="bow-needs"></div>
+  <!-- ============================================================
+       ПЕРЕХОД МЕЖДУ ЛОКАЦИЯМИ
+       ============================================================ -->
+  <section class="bow-places-bar" aria-label="Переход">
+    <div class="bow-places-head">Переход</div>
+    <div class="bow-actions bow-places-row">
+      <button class="bow-btn" data-act="move" data-loc="square">Площадь</button>
+      <button class="bow-btn" data-act="move" data-loc="tavern">Трактир</button>
+      <button class="bow-btn" data-act="move" data-loc="smithy">Кузница</button>
+      <button class="bow-btn" data-act="move" data-loc="outskirts">Околица</button>
+      <button class="bow-btn" data-act="move" data-loc="forest">Опушка тайги</button>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       ОСНОВНОЕ ПОЛЕ ИГРЫ
+       ============================================================ -->
+  <div class="bow-body" id="bow-body">
+
+    <main class="bow-main">
+
+      <!-- ГЛАВНОЕ ОКНО — минималистичная диорама локации с людьми и объектами -->
+      <section class="bow-stage" id="bow-stage" aria-label="Окно локации">
+        <div class="bow-stage-top">
+          <div class="bow-stage-title">
+            <h2 id="bow-loc-name">—</h2>
+            <span id="bow-loc-sub" class="bow-dim">—</span>
+          </div>
+          <span class="bow-stage-hint">нажмите на человека или объект в окне</span>
+        </div>
+
+        <div id="bow-stage-canvas" class="bow-stage-canvas"></div>
+        <div id="bow-stage-pop" class="bow-stage-pop" aria-live="polite"></div>
+
+        <div class="bow-stage-bottom">
+          <div id="bow-ambience" class="bow-ambience"></div>
+          <div class="bow-result" id="bow-last" aria-live="polite"></div>
+        </div>
+      </section>
+
+      <!-- ПРИБОРНАЯ ПОЛОСА ПОД ГЛАВНЫМ ОКНОМ: показатели, розыск и быстрый уход за собой -->
+      <section class="bow-hud-strip" aria-label="Показатели героя">
+        <div class="bow-topbar-status" id="bow-topbar-status"></div>
+        <div class="bow-heat" id="bow-heat"></div>
+        <div class="bow-hud-acts">
+          <button class="bow-btn bow-btn-sm" data-act="rest"><span class="bow-btn-i">☾</span>Отдохнуть</button>
+          <span id="bow-hud-quick" class="bow-hud-quick"></span>
+        </div>
+      </section>
+
+      <!-- Неотложные встречи и разговор -->
+      <section id="bow-guard" class="bow-fight" aria-live="polite"></section>
+      <section id="bow-encounter" class="bow-fight" aria-live="polite"></section>
+      <section id="bow-jail" class="bow-fight" aria-live="polite"></section>
+      <section id="bow-dialog" class="bow-dialog" aria-live="polite"></section>
+
+      <!-- НИЖНИЙ БЛОК ДЕЙСТВИЙ ПО ВКЛАДКАМ -->
+      <section class="bow-panel">
+        <h2 class="bow-h2">Действия</h2>
+        <div class="bow-tabs" role="tablist" aria-label="Разделы места">
+          <button class="bow-tab bow-tab-on" data-act="tab" data-tab="jobs" role="tab" aria-selected="true">
+            <span>Заработок</span><b class="bow-fold-count" data-count-for="jobs">0</b>
+          </button>
+          <button class="bow-tab" data-act="tab" data-tab="people" role="tab" aria-selected="false">
+            <span>Рядом</span><b class="bow-fold-count" data-count-for="people">0</b>
+          </button>
+          <button class="bow-tab" data-act="tab" data-tab="trade" role="tab" aria-selected="false">
+            <span>Товар и снедь</span><b class="bow-fold-count" data-count-for="trade">0</b>
+          </button>
+          <button class="bow-tab" data-act="tab" data-tab="desc" role="tab" aria-selected="false">
+            <span>О месте</span>
+          </button>
+        </div>
+
+        <div class="bow-tab-pane bow-tab-pane-on" data-tab-pane="jobs">
+          <div id="bow-jobs" class="bow-jobs"></div>
+        </div>
+
+        <div class="bow-tab-pane" data-tab-pane="people">
+          <div id="bow-people" class="bow-people"></div>
+        </div>
+
+        <div class="bow-tab-pane" data-tab-pane="trade">
+          <!-- #passages обязателен для SugarCube -->
+          <div id="passages"></div>
+        </div>
+
+        <div class="bow-tab-pane" data-tab-pane="desc">
+          <section class="bow-scene" id="bow-scene">
+            <div id="bow-loc-text" class="bow-scene-text"></div>
           </section>
+        </div>
+      </section>
 
-          <section class="bow-dpanel" data-section="body">
-            <h2 class="bow-h2">Тело</h2>
-            <div id="bow-injuries" class="bow-injuries"></div>
-            <div id="bow-treat" class="bow-treat"></div>
-          </section>
+    </main>
 
-          <section class="bow-dpanel" data-section="skills">
-            <h2 class="bow-h2">Умения</h2>
-            <div id="bow-skills" class="bow-skills"></div>
-          </section>
+    <!-- ОТДЕЛЬНОЕ ВСПЛЫВАЮЩЕЕ ОКНО ВКЛАДКИ ПОВЕРХ ИГРЫ -->
+    <aside class="bow-drawer bow-modal" id="bow-drawer" aria-hidden="true">
+      <div class="bow-modal-backdrop" data-act="close-panel"></div>
+      <div class="bow-modal-box" role="dialog" aria-modal="true" aria-labelledby="bow-modal-title">
+        <div class="bow-modal-head">
+          <h2 class="bow-h2" id="bow-modal-title">Состояние</h2>
+          <button class="bow-dialog-close" data-act="close-panel" aria-label="Закрыть окно" title="Закрыть">✕</button>
+        </div>
+        <div class="bow-drawer-scroll bow-modal-body">
+          <div class="bow-drawer-inner">
 
-          <section class="bow-dpanel" data-section="inv">
-            <h2 class="bow-h2">При себе</h2>
-            <div id="bow-inventory" class="bow-inventory"></div>
-          </section>
+            <section class="bow-dpanel" data-section="state">
+              <h3 class="bow-subh">Состояние</h3>
+              <div id="bow-needs" class="bow-needs"></div>
+            </section>
 
-          <section class="bow-dpanel" data-section="orgs">
-            <h2 class="bow-h2">Общины</h2>
-            <div id="bow-orgs" class="bow-orgs"></div>
-          </section>
+            <section class="bow-dpanel" data-section="body">
+              <h3 class="bow-subh">Тело и перевязка</h3>
+              <div id="bow-injuries" class="bow-injuries"></div>
+              <div id="bow-treat" class="bow-treat"></div>
+            </section>
 
-          <section class="bow-dpanel" data-section="journal">
-            <h2 class="bow-h2">Хроника</h2>
-            <div id="bow-journal" class="bow-journal"></div>
-          </section>
+            <section class="bow-dpanel" data-section="skills">
+              <h3 class="bow-subh">Умения</h3>
+              <div id="bow-skills" class="bow-skills"></div>
+            </section>
 
-          <section class="bow-dpanel" data-section="save">
-            <h2 class="bow-h2">Память игры</h2>
-            <div class="bow-saves">
-              <button class="bow-btn bow-btn-sm" id="bow-btn-save">Выгрузить сохранение</button>
-              <button class="bow-btn bow-btn-sm" id="bow-btn-load">Загрузить файл</button>
-              <button class="bow-btn bow-btn-sm" id="bow-btn-continue" disabled>Продолжить с автосейва</button>
-              <button class="bow-btn bow-btn-sm bow-btn-danger" id="bow-btn-restart">Начать заново</button>
-            </div>
-            <p class="bow-note">
-              Игра сохраняется в браузере после каждого действия.
-              Чтобы перенести прогресс — выгрузите файл.
-            </p>
-          </section>
+            <section class="bow-dpanel" data-section="inv">
+              <h3 class="bow-subh">При себе</h3>
+              <div id="bow-inventory" class="bow-inventory"></div>
+            </section>
 
+            <section class="bow-dpanel" data-section="people">
+              <h3 class="bow-subh">Жители поселения</h3>
+              <div id="bow-all-people" class="bow-all-people"></div>
+            </section>
+
+            <section class="bow-dpanel" data-section="orgs">
+              <h3 class="bow-subh">Общины</h3>
+              <div id="bow-orgs" class="bow-orgs"></div>
+            </section>
+
+            <section class="bow-dpanel" data-section="journal">
+              <h3 class="bow-subh">Хроника</h3>
+              <div id="bow-journal" class="bow-journal"></div>
+            </section>
+
+            <section class="bow-dpanel" data-section="save">
+              <h3 class="bow-subh">Память игры</h3>
+              <div class="bow-saves">
+                <button class="bow-btn bow-btn-sm" id="bow-btn-save">Выгрузить сохранение</button>
+                <button class="bow-btn bow-btn-sm" id="bow-btn-load">Загрузить файл</button>
+                <button class="bow-btn bow-btn-sm" id="bow-btn-continue" disabled>Продолжить с автосейва</button>
+                <button class="bow-btn bow-btn-sm bow-btn-danger" id="bow-btn-restart">Начать заново</button>
+              </div>
+              <p class="bow-note">
+                Игра сохраняется в браузере после каждого действия.
+                Чтобы перенести прогресс — выгрузите файл.
+              </p>
+            </section>
+
+          </div>
         </div>
       </div>
     </aside>
 
-    <!-- СЦЕНА -->
-    <main class="bow-main">
-
-      <section class="bow-scene" id="bow-scene">
-        <div class="bow-scene-head">
-          <h2 id="bow-loc-name">—</h2>
-          <span id="bow-loc-sub" class="bow-dim">—</span>
-        </div>
-        <div id="bow-loc-text" class="bow-scene-text"></div>
-        <div id="bow-ambience" class="bow-ambience"></div>
-        <div class="bow-result" id="bow-last" aria-live="polite"></div>
-      </section>
-
-      <!-- Стража и уличная встреча: это происходит со вами здесь и сейчас -->
-      <section id="bow-guard" class="bow-fight" aria-live="polite"></section>
-      <section id="bow-encounter" class="bow-fight" aria-live="polite"></section>
-      <section id="bow-jail" class="bow-fight" aria-live="polite"></section>
-
-      <!-- Диалог: лента реплик и варианты ответа -->
-      <section id="bow-dialog" class="bow-dialog" aria-live="polite"></section>
-
-      <section class="bow-panel">
-        <h2 class="bow-h2">Действия</h2>
-        <div class="bow-actions">
-          <button class="bow-btn" data-act="rest"><span class="bow-btn-i">☾</span>Отдохнуть</button>
-          <button class="bow-btn" data-act="move" data-loc="square">Площадь</button>
-          <button class="bow-btn" data-act="move" data-loc="tavern">Трактир</button>
-          <button class="bow-btn" data-act="move" data-loc="smithy">Кузница</button>
-          <button class="bow-btn" data-act="move" data-loc="outskirts">Околица</button>
-          <button class="bow-btn" data-act="move" data-loc="forest">Опушка тайги</button>
-        </div>
-
-        <!-- Складывающиеся блоки: экран не превращается в полотно,
-             а игрок сам решает, что держать открытым. Заработок
-             открыт по умолчанию — это основное действие. -->
-        <details class="bow-fold" open>
-          <summary class="bow-h2 bow-fold-sum"><span>Заработок</span><i class="bow-fold-i"></i></summary>
-          <div id="bow-jobs" class="bow-jobs"></div>
-        </details>
-
-        <details class="bow-fold" open>
-          <summary class="bow-h2 bow-fold-sum"><span>Рядом</span><i class="bow-fold-i"></i></summary>
-          <div id="bow-people" class="bow-people"></div>
-        </details>
-
-        <details class="bow-fold" open>
-          <summary class="bow-h2 bow-fold-sum"><span>Товар и снедь</span><i class="bow-fold-i"></i></summary>
-          <!-- #passages обязателен для SugarCube -->
-          <div id="passages"></div>
-        </details>
-      </section>
-
-    </main>
   </div>
 
-  <!--
-       БОЙ — ОТДЕЛЬНЫЙ ПАССАЖ
-       Не карточка в сцене: поле с фишками должно занимать место.
-       Экран открывается поверх, сцена под ним гаснет.
-  -->
+  <!-- ============================================================
+       БОЙ — ОТДЕЛЬНЫЙ ЭКРАН С МИНИМАЛИСТИЧНОЙ ДИОРАМОЙ И ТАКТИКОЙ KENSHI
+       ============================================================ -->
   <section id="bow-fight-page" class="bow-fight-page" aria-hidden="true">
-    <!-- Бой на отдельной странице. Здесь только поле и управление. -->
     <div id="bow-fight"></div>
   </section>
 
   <div id="bow-sheet" class="bow-sheet" aria-hidden="true"></div>
 
   <footer class="bow-footer">
-    <span>Blades Of War · прототип 0.0.6.3 · тестовая локация: Студёный Брод</span>
+    <span>Blades Of War · прототип 0.0.7 · тестовая локация: Студёный Брод</span>
     <span class="bow-dim">Текст мира — черновой, имена и место подлежат согласованию</span>
   </footer>
 

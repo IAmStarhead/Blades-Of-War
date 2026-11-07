@@ -799,7 +799,7 @@ function byAct(act, key) {
     return inv.match(/В руке: \S+/) ? inv.match(/В руке: \S+/)[0] : "снаряжение показано";
   });
 
-  check("Миграция 0.0.5 даёт старому сохранению бой и снаряжение (до 0.0.6.3)", () => {
+  check("Миграция 0.0.5 даёт старому сохранению бой и снаряжение (до 0.0.7)", () => {
     const g = clone(game());
     g.version = "0.0.5";
     delete g.fight;
@@ -808,7 +808,7 @@ function byAct(act, key) {
 
     const back = win.Bow.save.deserialize(win.Bow.save.serialize(g, 1));
     assert(back.ok, "старое сохранение не загрузилось: " + back.reason);
-    eq(back.state.version, "0.0.6.3", "версия после миграции");
+    eq(back.state.version, "0.0.7", "версия после миграции");
     assert(back.state.fight === null, "после миграции нет пустого слота боя");
     assert(back.state.people["person:tarn"].weapon, "кузнец остался без топора");
     return "0.0.5 → " + back.state.version + ", топор кузнеца на месте";
@@ -1005,11 +1005,11 @@ function byAct(act, key) {
     delete g.flags.huntedHeat;
 
     const back = win.Bow.save.deserialize(win.Bow.save.serialize(g, 1));
-    eq(back.state.version, "0.0.6.3", "версия после миграции");
+    eq(back.state.version, "0.0.7", "версия после миграции");
     assert(back.state.guard && back.state.guard.arrived === true,
       "стража из старого сохранения осталась «непришедшей» — из неё не выбраться");
     eq(back.state.flags.huntedUntil, null, "поле срока розыска");
-    return "версия 0.0.6.3, стража признана пришедшей";
+    return "версия 0.0.7, стража признана пришедшей";
   });
 
   check("Розыск виден игроку цифрой, а не только в журнале", () => {
@@ -1119,8 +1119,9 @@ function byAct(act, key) {
        боёв: один бросок может пройти мимо порога и ничего не доказать. */
     let found = 0;
     let line = "";
-    for (let n = 0; n < 12 && !found; n++) {
+    for (let n = 0; n < 24 && !found; n++) {
       const g = clone(game());
+      const r = win.Bow.rng.make(101 + n * 37);
       g.fight = null;
       g.player.injuries = [];
       g.player.money = 0;
@@ -1133,9 +1134,9 @@ function byAct(act, key) {
       g.people["person:tarn"].needs.fatigue = 100;
 
       win.Bow.fight.open(g, "person:tarn");
-      win.Bow.fight.start(g, "crime", Math.random);
+      win.Bow.fight.start(g, "crime", () => r.next());
       for (let i = 0; i < 20 && g.fight && g.fight.phase === "exchange"; i++) {
-        win.Bow.fight.move(g, "press", Math.random);
+        win.Bow.fight.move(g, "press", () => r.next(), null, "head");
       }
 
       const log = ((g.fight || g.flags.lastFight).log || []).map((l) => l.text).join(" ");
@@ -1762,12 +1763,207 @@ function byAct(act, key) {
 
     const back = win.Bow.save.deserialize(win.Bow.save.serialize(g, 1));
     assert(back.ok, "сохранение 0.0.6.2 не загрузилось: " + back.reason);
-    eq(back.state.version, "0.0.6.3", "версия после миграции");
+    eq(back.state.version, "0.0.7", "версия после миграции");
     assert(back.state.steal && typeof back.state.steal === "object", "нет слота подготовки кражи");
     eq(back.state.player.lastTreat, null, "lastTreat после миграции");
     assert(typeof back.state.player.skills.medicine === "number", "навык лечения не восстановлен");
     eq(back.state.stats.treats, 0, "счётчик перевязок");
-    return "0.0.6.2 → 0.0.6.3, поля на месте";
+    return "0.0.6.2 → " + back.state.version + ", поля на месте";
+  });
+
+  /* 8м. Главное графическое окно, шапка с модальными окнами и полуручной бой Kenshi (0.0.7) */
+  check("Шапка 0.0.7 держит кнопки разделов и часы, а переходы вынесены отдельно", () => {
+    const topbar = doc().querySelector("header.bow-topbar");
+    assert(topbar, "нет верхней шапки");
+    const navBtns = topbar.querySelectorAll(".bow-rail-btn");
+    eq(navBtns.length, 7, "кнопок разделов в шапке");
+    assert(topbar.querySelector(".bow-clock-controls"), "часы не в шапке");
+    const places = doc().querySelector(".bow-places-bar");
+    assert(places && places.querySelectorAll('[data-act="move"]').length === 5,
+      "нет отдельной полосы из 5 переходов");
+    return "7 кнопок разделов в шапке + полоса Переход";
+  });
+
+  check("Кнопки шапки открывают отдельное модальное окно выбранной вкладки поверх игры", () => {
+    win.Bow.ui.setDrawer(false);
+    const skillsBtn = doc().querySelector('.bow-topbar [data-act="panel"][data-panel="skills"]');
+    click(skillsBtn);
+    const modal = doc().getElementById("bow-drawer");
+    assert(modal.classList.contains("bow-modal-open"), "модальное окно не открылось");
+    const focused = [...modal.querySelectorAll(".bow-dpanel.bow-dpanel-focus")].map((el) => el.getAttribute("data-section"));
+    eq(focused.join(","), "skills", "показана не только выбранная вкладка");
+
+    const peopleBtn = doc().querySelector('.bow-topbar [data-act="panel"][data-panel="people"]');
+    click(peopleBtn);
+    eq(doc().getElementById("bow-modal-title").textContent, "Жители поселения", "заголовок окна Люди");
+    assert(doc().querySelectorAll("#bow-all-people .bow-person").length >= 4, "жители не перечислены в окне");
+
+    click(doc().querySelector('#bow-drawer [data-act="close-panel"]'));
+    assert(!modal.classList.contains("bow-modal-open"), "окно не закрылось крестиком");
+    return "открывается ровно выбранная вкладка и закрывается поверх игры";
+  });
+
+  check("Главное окно рисует панораму всех 5 локаций, день/ночь/снег и живых персонажей", () => {
+    const g = game();
+    const snap = clone(g);
+    try {
+      const stage = doc().getElementById("bow-stage");
+      assert(stage, "нет главного окна #bow-stage");
+
+      ["square", "tavern", "smithy", "outskirts", "forest"].forEach((loc) => {
+        g.player.location = loc;
+        win.BowGame.refresh(true);
+        assert(stage.querySelector("svg.bow-stage-bg"), "нет SVG-панорамы для " + loc);
+      });
+
+      g.player.location = "square";
+      g.time.hour = 13;
+      g.flags.weather = "ясно и морозно";
+      const dayPal = win.Bow.stage.skyOf(g);
+      g.time.hour = 23;
+      g.flags.weather = "низкая метель";
+      const nightPal = win.Bow.stage.skyOf(g);
+      assert(dayPal.skyTop !== nightPal.skyTop && nightPal.moon, "небо не меняется от времени суток");
+      win.BowGame.refresh(true);
+      assert(stage.querySelector(".bow-stage-snow"), "в метель на сцене нет снега");
+
+      /* Жители на сцене настоящие: ушёл человек — исчез из окна. */
+      g.people["person:liva"].location = "square";
+      g.people["person:sigi"].location = "tavern";
+      win.BowGame.refresh(true);
+      assert(stage.querySelector('.bow-actor-npc[data-person="person:liva"]'), "Лива не видна на площади");
+      assert(!stage.querySelector('.bow-actor-npc[data-person="person:sigi"]'), "Сиги нарисована там, где её нет");
+
+      /* Клик по персонажу в Главном окне открывает живую карточку прямо поверх сцены. */
+      click(stage.querySelector('.bow-actor-npc[data-person="person:liva"]'));
+      const pop = doc().getElementById("bow-stage-pop");
+      assert(pop.classList.contains("bow-stage-pop-open") && /Лива/.test(pop.textContent),
+        "клик по фигурке не открыл карточку действий в Главном окне");
+      click(pop.querySelector('[data-act="stage-close"]'));
+      assert(!pop.classList.contains("bow-stage-pop-open"), "карточка сцены не закрылась");
+
+      return "5 панорам, смена дня/ночи/метели и кликабельные фигурки";
+    } finally {
+      Object.keys(snap).forEach((k) => { g[k] = snap[k]; });
+      win.Bow.ui.setStageSelection(null);
+      win.BowGame.refresh(true);
+    }
+  });
+
+  check("Поле боя рисует панораму места и минималистичные фигурки бойцов с оружием и нокдауном", () => {
+    const g = game();
+    const snap = clone(g);
+    try {
+      g.fight = null;
+      g.jail = null;
+      g.player.location = "smithy";
+      g.player.needs.health = 100;
+      g.player.needs.fatigue = 100;
+      g.people["person:tarn"].location = "smithy";
+      g.people["person:tarn"].needs.health = 100;
+
+      win.Bow.fight.open(g, "person:tarn");
+      win.Bow.fight.start(g, "crime", seq([0.5]));
+      win.BowGame.refresh(true);
+
+      const page = doc().getElementById("bow-fight-page");
+      assert(page.querySelector(".bow-arena-scene svg.bow-stage-bg"), "на поле боя нет фона локации");
+      assert(page.querySelectorAll(".bow-chip svg.bow-fig-svg").length >= 2, "нет фигурок бойцов");
+      assert(page.querySelector(".bow-chip-enemy .bow-fig-weapon"), "у вооружённого Тарна не видно топора в руке");
+
+      const foe = g.fight.units.filter((u) => u.side === "enemy")[0];
+      foe.disarmed = true;
+      win.BowGame.refresh(true);
+      assert(!page.querySelector(".bow-chip-enemy .bow-fig-weapon"), "после обезоруживания оружие осталось в руке");
+
+      foe.down = true;
+      win.BowGame.refresh(true);
+      assert(page.querySelector(".bow-chip-enemy svg.bow-fig-fallen"), "сбитый с ног не лёг на снег");
+      return "фон локации + фигурки + оружие + падение";
+    } finally {
+      win.BowGame.stopFightClock();
+      Object.keys(snap).forEach((k) => { g[k] = snap[k]; });
+      win.BowGame.refresh(true);
+    }
+  });
+
+  check("Полуручной бой Kenshi: приказы меняются на ходу, защита режет урон, отряд слушается", () => {
+    const g = clone(game());
+    g.fight = null;
+    g.jail = null;
+    g.player.location = "square";
+    g.player.skills.combat = 65;
+    g.player.needs.health = 100;
+    g.player.needs.fatigue = 100;
+
+    const bror = g.people["person:bror"];
+    bror.location = "square";
+    bror.attitude = 50;
+    bror.needs.health = 100;
+    bror.needs.fatigue = 100;
+
+    g.heat["org:guard"] = 80;
+    g.flags.guardAt = g.time.totalHours;
+    win.Bow.guard.checkArrival(g);
+    win.Bow.guard.fight(g);
+
+    const foes = g.fight.units.filter((u) => u.side === "enemy");
+    foes[0].needs.health = 90; foes[0].hp = 90;
+    foes[1].needs.health = 42; foes[1].hp = 42;
+    foes[2].needs.health = 90; foes[2].hp = 90;
+    g.fight.target = foes[2].key;
+
+    /* 1. Вольный бой (free): Брор сам выбирает самого слабого (foes[1]), хотя герой бьёт foes[2]. */
+    win.Bow.fight.setOrder(g, "aim", "head");
+    win.Bow.fight.setOrder(g, "squad", "free");
+    win.Bow.fight.step(g, seq([0.05, 0.5, 0.99, 0.05, 0.5, 0.99, 0.99, 0.99, 0.99]));
+
+    const brorAim = (g.fight.aim || []).filter((a) => a.from === "ally:person:bror")[0];
+    assert(brorAim && brorAim.to === foes[1].key, "в вольном бою спутник не выбрал слабейшего врага");
+    const logText = g.fight.log.map((l) => l.text).join(" ");
+    assert(/в голову/.test(logText), "step() не применил приказ метить в голову");
+
+    /* 2. Стойка «Держать защиту» реально режет входящий по герою урон вдвое. */
+    const attacker = { skills: { combat: 60 }, needs: { health: 90, fatigue: 80 }, weapon: "item:axe" };
+    const pressTaken = win.Bow.fight.damageRoll(attacker, g.player, "guard", "press", seq([0.5]), "body");
+    const guardTaken = win.Bow.fight.damageRoll(attacker, g.player, "guard", "guard", seq([0.5]), "body");
+    assert(guardTaken < pressTaken, "стойка защиты не снижает урон: " + guardTaken + " vs " + pressTaken);
+
+    /* 3. Таймер боя крутится только на 1x/2x в фазе exchange и замирает на паузе и при открытом окне. */
+    const live = game();
+    const snap = clone(live);
+    try {
+      live.fight = g.fight;
+      win.Bow.fight.setOrder(live, "speed", "1x");
+      win.Bow.ui.setDrawer(false);
+      assert(win.BowGame.fightShouldRun(live), "таймер боя не идёт на 1x");
+      win.Bow.ui.setDrawer(true, "state");
+      assert(!win.BowGame.fightShouldRun(live), "таймер боя не замер при открытом модальном окне");
+      win.Bow.ui.setDrawer(false);
+      win.Bow.fight.setOrder(live, "speed", "paused");
+      assert(!win.BowGame.fightShouldRun(live), "таймер боя не замер на паузе");
+    } finally {
+      win.BowGame.stopFightClock();
+      win.Bow.ui.setDrawer(false);
+      Object.keys(snap).forEach((k) => { live[k] = snap[k]; });
+      win.BowGame.refresh(true);
+    }
+
+    return "вольный отряд → слабейший, защита −" + pressTaken + "→−" + guardTaken + ", пауза работает";
+  });
+
+  check("Миграция 0.0.6.3 → 0.0.7 добавляет тактические приказы активному бою", () => {
+    const g = clone(game());
+    g.version = "0.0.6.3";
+    g.fight = {
+      personId: "person:liva", mode: "crime", phase: "exchange", round: 2,
+      log: [], witnesses: [], allies: [], enemies: [], units: [], heatTotal: 0, repTotal: 0
+    };
+    const back = win.Bow.save.deserialize(win.Bow.save.serialize(g, 1));
+    assert(back.ok, "сохранение 0.0.6.3 не загрузилось: " + back.reason);
+    eq(back.state.version, "0.0.7", "версия после миграции");
+    assert(back.state.fight.orders && back.state.fight.orders.aim === "body", "приказы боя не созданы при миграции");
+    return "0.0.6.3 → 0.0.7, приказы боя созданы";
   });
 
   check("Оскорбление короля заканчивает игру", () => {
@@ -2024,15 +2220,17 @@ function byAct(act, key) {
     return "вправо — уважение, влево — вражда";
   });
 
-  check("Блоки сцены можно свернуть", () => {
-    const folds = doc().querySelectorAll(".bow-fold");
-    assert(folds.length >= 3, "блоков для сворачивания меньше трёх: " + folds.length);
-    const first = folds[0];
-    assert(first.open, "заработок закрыт по умолчанию");
-    first.open = false;
-    assert(!first.open, "блок не сворачивается");
-    first.open = true;
-    return folds.length + " блока: заработок, люди, товар";
+  check("Действия разложены по вкладкам вместо длинной простыни (0.0.7)", () => {
+    const tabs = doc().querySelectorAll('.bow-tabs [data-act="tab"]');
+    assert(tabs.length === 4, "вкладок не четыре: " + tabs.length);
+    const tradeTab = doc().querySelector('.bow-tabs [data-act="tab"][data-tab="trade"]');
+    click(tradeTab);
+    assert(doc().querySelector('.bow-tab-pane[data-tab-pane="trade"]').classList.contains("bow-tab-pane-on"),
+      "вкладка торговли не открылась");
+    assert(!doc().querySelector('.bow-tab-pane[data-tab-pane="jobs"]').classList.contains("bow-tab-pane-on"),
+      "предыдущая вкладка не скрылась");
+    click(doc().querySelector('.bow-tabs [data-act="tab"][data-tab="jobs"]'));
+    return "4 вкладки: заработок, рядом, товар, о месте";
   });
 
   check("В панели есть раздел «Общины», а в сцене — заработок", () => {

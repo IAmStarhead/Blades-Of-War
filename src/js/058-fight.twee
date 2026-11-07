@@ -368,6 +368,7 @@
       allies: [],
       enemies: [],
       units: [],
+      orders: { stance: "press", aim: "body", squad: "focus", speed: "paused" },
       heatTotal: 0,
       repTotal: 0
     };
@@ -414,6 +415,8 @@
 
     /* У грабителя нет записи в людях — он приходит из встречи.
        Его противник уже лежит в f.enemies и ждёт только старта. */
+    ensureOrders(f);
+
     if (mode === "robbery") {
       f.mode = mode;
       f.phase = "exchange";
@@ -515,6 +518,78 @@
 
   /* Выбрать цель до удара. Ход не тратится: это прицеливание,
      а не действие. */
+  function ensureOrders(f) {
+    if (!f) { return null; }
+    if (!f.orders) {
+      f.orders = {
+        stance: "press",
+        aim: "body",
+        squad: "focus",
+        speed: "paused"
+      };
+    }
+    if (!f.orders.stance) { f.orders.stance = "press"; }
+    if (!f.orders.aim) { f.orders.aim = "body"; }
+    if (!f.orders.squad) { f.orders.squad = "focus"; }
+    if (!f.orders.speed) { f.orders.speed = "paused"; }
+    return f.orders;
+  }
+
+  /* Тактический приказ в полуручном бою (0.0.7): меняется мгновенно,
+     хоть на паузе, хоть на живом ходу, не тратя такт обмена. */
+  function setOrder(state, kind, value) {
+    var f = state.fight;
+    if (!f || f.phase !== "exchange") { return { ok: false, message: "Сейчас не бой." }; }
+    var o = ensureOrders(f);
+
+    if (kind === "stance") {
+      if (["press", "guard", "flee"].indexOf(value) === -1) {
+        return { ok: false, message: "Неизвестная стойка." };
+      }
+      o.stance = value;
+      var sLabel = value === "guard" ? "Глухая защита." : value === "flee" ? "Ищете окно для прорыва." : "Идёте в напор.";
+      return { ok: true, orders: o, message: sLabel };
+    }
+
+    if (kind === "aim") {
+      if (["head", "body", "legs", "arms"].indexOf(value) === -1) {
+        return { ok: false, message: "Туда не бьют." };
+      }
+      o.aim = value;
+      if (o.stance === "flee") { o.stance = "press"; }
+      return { ok: true, orders: o, message: "Метите " + aimDef(value).short + "." };
+    }
+
+    if (kind === "squad") {
+      if (["focus", "free", "guard"].indexOf(value) === -1) {
+        return { ok: false, message: "Неизвестный приказ отряду." };
+      }
+      o.squad = value;
+      var qLabel = value === "free" ? "Отряд бьётся вольно."
+        : value === "guard" ? "Отряд держит строй от защиты."
+        : "Отряд бьёт вашу цель.";
+      return { ok: true, orders: o, message: qLabel };
+    }
+
+    if (kind === "speed") {
+      if (["paused", "1x", "2x"].indexOf(value) === -1) {
+        return { ok: false, message: "Неизвестная скорость." };
+      }
+      o.speed = value;
+      return { ok: true, orders: o, message: "" };
+    }
+
+    return { ok: false, message: "Неизвестный приказ." };
+  }
+
+  /* Один такт живого боя по текущим приказам командира. */
+  function step(state, rng) {
+    var f = state.fight;
+    if (!f || f.phase !== "exchange") { return { ok: false, message: "Сейчас не бой." }; }
+    var o = ensureOrders(f);
+    return move(state, o.stance || "press", rng, f.target || null, o.aim || "body");
+  }
+
   function setTarget(state, key) {
     var f = state.fight;
     if (!f || f.phase !== "exchange") { return { ok: false, message: "Сейчас не бой." }; }
@@ -621,24 +696,42 @@
        а не заставлять игрока дочитывать хронику. */
     f.aim = [];
 
+    ensureOrders(f);
+    playerUnit.stance = stance;
+
     if (!playerUnit.down) {
       /* Бьёте тем местом, какое выбрали. По умолчанию — корпус:
          без выбора всегда был только один «удар вообще». */
-      strike(state, playerUnit, foe, stance, rng, aimKey || "body");
+      strike(state, playerUnit, foe, stance, rng, aimKey || (f.orders && f.orders.aim) || "body");
       syncUnit(state, playerUnit);
       syncUnit(state, foe);
       f.aim.push({ from: playerUnit.key, to: foe.key });
     }
 
-    /* Союзники бьют того же, кого и вы: поле маленькое, на большее
-       не рассчитано. Но цель перепроверяется после каждого удара —
-       иначе сносили бы уже лежачего. */
+    /* Союзники действуют по приказу командира (0.0.7):
+       • focus — наваливаются на вашу цель;
+       • free  — сами выбирают самого слабого врага и место удара (как в Kenshi);
+       • guard — держат строй от защиты, берегут силы и режут ответный урон. */
+    var squadOrder = (f.orders && f.orders.squad) || "focus";
     aliveUnits(f, "ally").forEach(function (u) {
       if (u.key === "player") { return; }
       var live = aliveUnits(f, "enemy");
       if (!live.length) { return; }
       var prey = live[0];
-      strike(state, u, prey, "press", rng, "body");
+      var allyStance = squadOrder === "guard" ? "guard" : "press";
+      var allyAim = "body";
+
+      if (squadOrder === "free") {
+        live.sort(function (a, b) { return a.hp - b.hp; });
+        prey = live[0];
+        allyAim = chooseAim(u, state);
+      } else if (f.target) {
+        var focused = live.filter(function (e) { return e.key === f.target; })[0];
+        if (focused) { prey = focused; }
+      }
+
+      u.stance = allyStance;
+      strike(state, u, prey, allyStance, rng, allyAim);
       syncUnit(state, u);
       syncUnit(state, prey);
       f.aim.push({ from: u.key, to: prey.key });
@@ -656,6 +749,7 @@
       ours.sort(function (a, b) { return a.hp - b.hp; });
       var victim = ours[0];
       var foeStance = chooseStance(foe);
+      foe.stance = foeStance;
       if (foeStance === "yield") { return; }
       strike(state, foe, victim, foeStance, rng, chooseAim(foe, state));
       syncUnit(state, victim);
@@ -1126,6 +1220,9 @@
     close: close,
     start: start,
     move: move,
+    step: step,
+    setOrder: setOrder,
+    ensureOrders: ensureOrders,
     flee: flee,
     decide: decide,
     finish: finish,

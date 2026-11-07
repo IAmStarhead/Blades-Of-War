@@ -170,6 +170,17 @@
     fightTarget: function (state, key) {
       return Bow.fight.setTarget(state, key);
     },
+    fightOrder: function (state, kind, value) {
+      return Bow.fight.setOrder(state, kind, value);
+    },
+    fightStep: function (state) {
+      var res = Bow.fight.step(state, rng);
+      if (res.ok) {
+        Bow.needs.ensure(state.player);
+        if (!Bow.fight.isActive(state)) { Bow.events.afterAction(state, rng); }
+      }
+      return res;
+    },
     fightDecide: function (state, choice) {
       var res = Bow.fight.decide(state, choice, rng);
       if (res.ok) {

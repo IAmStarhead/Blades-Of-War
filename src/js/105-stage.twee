@@ -1,0 +1,487 @@
+:: bow-stage [script]
+/* ============================================================
+   BOW STAGE — главное графическое окно локации и поле боя (0.0.7).
+   Минималистичная панорама в духе городских экранов Heroes и
+   северных диорам: локация меняется от времени суток и погоды,
+   а люди и предметы стоят прямо в кадре и откликаются на клик.
+   ============================================================ */
+(function (global) {
+  "use strict";
+
+  var Bow = global.Bow = global.Bow || {};
+
+  function esc(text) {
+    return String(text == null ? "" : text)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  /* ---------- Свет, небо и погода из состояния мира ---------- */
+  function skyOf(state) {
+    var h = (state && state.time && typeof state.time.hour === "number") ? state.time.hour : 12;
+    var w = (state && state.flags && state.flags.weather) ? String(state.flags.weather) : "";
+    var snowy = /снег|метел|позём|круп|вьюг/i.test(w);
+    var phase = "day";
+    if (h >= 22 || h < 5) { phase = "night"; }
+    else if (h >= 5 && h < 8) { phase = "dawn"; }
+    else if (h >= 18 && h < 22) { phase = "dusk"; }
+
+    var palettes = {
+      night: {
+        skyTop: "#070b11", skyBot: "#121a26",
+        far: "#0d131c", mid: "#141d28",
+        snowTop: "#1a2430", snowBot: "#111821",
+        line: "#2b394a", glow: "#e09a48", glowOp: "0.92",
+        stars: true, moon: true
+      },
+      dawn: {
+        skyTop: "#111823", skyBot: "#2c3644",
+        far: "#17202b", mid: "#1e2936",
+        snowTop: "#2c3845", snowBot: "#1b242e",
+        line: "#3b4a59", glow: "#d9924c", glowOp: "0.55",
+        stars: false, moon: false
+      },
+      day: {
+        skyTop: "#18222d", skyBot: "#313f4d",
+        far: "#1d2733", mid: "#24313f",
+        snowTop: "#394754", snowBot: "#242f3a",
+        line: "#4a5b6b", glow: "#cfa063", glowOp: "0.28",
+        stars: false, moon: false
+      },
+      dusk: {
+        skyTop: "#0d131d", skyBot: "#272e3d",
+        far: "#141c27", mid: "#1b2532",
+        snowTop: "#25303d", snowBot: "#161e28",
+        line: "#364556", glow: "#df9644", glowOp: "0.82",
+        stars: true, moon: false
+      }
+    };
+
+    var p = palettes[phase];
+    p.phase = phase;
+    p.snowy = snowy;
+    return p;
+  }
+
+  /* ---------- Минималистичная фигурка персонажа / бойца ----------
+     Читается с одного взгляда: силуэт плаща/плеч, шлем стражника,
+     оружие в руке (или пустая рука, если выбили), щит в защите. */
+  function weaponKindOf(state, personOrUnit) {
+    if (!personOrUnit) { return "none"; }
+    if (personOrUnit.disarmed) { return "none"; }
+    if (personOrUnit.weapon) {
+      var wid = String(personOrUnit.weapon);
+      if (/axe/.test(wid)) { return "axe"; }
+      if (/knife/.test(wid)) { return "knife"; }
+    }
+    if (Bow.fight && Bow.fight.weaponOf && personOrUnit.inventory) {
+      var w = Bow.fight.weaponOf(personOrUnit);
+      if (w && /axe/.test(w.id)) { return "axe"; }
+      if (w && /knife/.test(w.id)) { return "knife"; }
+    }
+    return "none";
+  }
+
+  function figureSvg(opts) {
+    opts = opts || {};
+    var roleKey = opts.roleKey || "villager";
+    var side = opts.side || "neutral"; // player | ally | enemy | neutral
+    var weapon = opts.weapon || "none";
+    var down = !!opts.down;
+    var dead = !!opts.dead;
+    var guarding = opts.stance === "guard";
+    var flip = side === "enemy";
+
+    var bodyFill = side === "player" ? "#26384a"
+      : side === "ally" ? "#22362e"
+      : side === "enemy" ? "#3b1f26"
+      : "#202933";
+    var stroke = side === "player" ? "#8fb3d9"
+      : side === "ally" ? "#7fb59a"
+      : side === "enemy" ? "#cc6b76"
+      : "#9aa7b4";
+    var cloakFill = side === "player" ? "#1b2836"
+      : side === "ally" ? "#182721"
+      : side === "enemy" ? "#291419"
+      : "#171e26";
+
+    if (dead || down) {
+      /* Поверженный силуэт на снегу. */
+      return '<svg class="bow-fig-svg bow-fig-fallen" viewBox="0 0 72 44" aria-hidden="true">' +
+        '<ellipse cx="36" cy="36" rx="28" ry="5" fill="rgba(0,0,0,0.42)"/>' +
+        '<path d="M12 31 Q28 21 50 27 L60 33 L14 35 Z" fill="' + bodyFill + '" stroke="' + stroke + '" stroke-width="1.5"/>' +
+        '<circle cx="16" cy="26" r="6.5" fill="' + cloakFill + '" stroke="' + stroke + '" stroke-width="1.5"/>' +
+      '</svg>';
+    }
+
+    var headExtra = "";
+    if (roleKey === "guard") {
+      /* Конический северный шлем с наносником. */
+      headExtra = '<path d="M25 22 L32 10 L39 22 Z" fill="' + stroke + '" opacity="0.85"/>' +
+                  '<line x1="32" y1="19" x2="32" y2="26" stroke="' + stroke + '" stroke-width="1.6"/>';
+    } else if (roleKey === "bror" || roleKey === "player") {
+      /* Дорожный капюшон. */
+      headExtra = '<path d="M24 25 Q32 11 40 25" fill="none" stroke="' + stroke + '" stroke-width="1.6"/>';
+    } else if (roleKey === "liva") {
+      /* Меховой ворот торговки. */
+      headExtra = '<path d="M21 34 Q32 29 43 34" fill="none" stroke="#d4c3a3" stroke-width="2.4"/>';
+    } else if (roleKey === "tarn") {
+      /* Широкие плечи кузнеца. */
+      headExtra = '<rect x="23" y="34" width="18" height="26" rx="2" fill="' + cloakFill + '" stroke="' + stroke + '" stroke-width="1.1"/>';
+    }
+
+    var weaponSvg = "";
+    if (weapon === "axe") {
+      weaponSvg = '<g class="bow-fig-weapon">' +
+        '<line x1="46" y1="58" x2="54" y2="24" stroke="#b9ad96" stroke-width="2.2" stroke-linecap="round"/>' +
+        '<path d="M51 25 L61 22 L59 34 L50 31 Z" fill="#cfd6dd" stroke="#7d8a97" stroke-width="1"/>' +
+      '</g>';
+    } else if (weapon === "knife") {
+      weaponSvg = '<g class="bow-fig-weapon">' +
+        '<line x1="45" y1="52" x2="56" y2="38" stroke="#cfd6dd" stroke-width="2.1" stroke-linecap="round"/>' +
+        '<line x1="44" y1="53" x2="47" y2="50" stroke="#9d7e58" stroke-width="2.8"/>' +
+      '</g>';
+    } else if (roleKey === "tarn" && side === "neutral") {
+      /* Кузнечный молот в мирной сцене. */
+      weaponSvg = '<g class="bow-fig-weapon">' +
+        '<line x1="46" y1="56" x2="52" y2="32" stroke="#9d8768" stroke-width="2.2"/>' +
+        '<rect x="47" y="28" width="11" height="6" rx="1" fill="#aeb8c2"/>' +
+      '</g>';
+    }
+
+    var shieldSvg = "";
+    if (guarding || roleKey === "guard") {
+      shieldSvg = '<ellipse cx="20" cy="48" rx="6" ry="12" fill="' + cloakFill + '" stroke="' + stroke + '" stroke-width="1.8"/>';
+    }
+
+    return '<svg class="bow-fig-svg' + (flip ? " bow-fig-flip" : "") + '" viewBox="0 0 64 88" aria-hidden="true">' +
+      '<ellipse cx="32" cy="82" rx="17" ry="4" fill="rgba(0,0,0,0.45)"/>' +
+      /* Ноги */
+      '<line x1="28" y1="62" x2="26" y2="80" stroke="' + stroke + '" stroke-width="2.4" stroke-linecap="round"/>' +
+      '<line x1="36" y1="62" x2="38" y2="80" stroke="' + stroke + '" stroke-width="2.4" stroke-linecap="round"/>' +
+      /* Плащ и корпус */
+      '<path d="M21 34 L43 34 L47 65 L17 65 Z" fill="' + cloakFill + '" stroke="' + stroke + '" stroke-width="1.5" stroke-linejoin="round"/>' +
+      '<path d="M25 34 L39 34 L37 60 L27 60 Z" fill="' + bodyFill + '"/>' +
+      /* Голова */
+      '<circle cx="32" cy="23" r="7" fill="' + bodyFill + '" stroke="' + stroke + '" stroke-width="1.6"/>' +
+      headExtra +
+      shieldSvg +
+      weaponSvg +
+    '</svg>';
+  }
+
+  /* ---------- Минималистичные фоны 5 локаций ---------- */
+  function snowParticlesSvg(enabled) {
+    if (!enabled) { return ""; }
+    var flakes = [
+      [80, 42], [190, 88], [310, 34], [430, 110], [560, 56],
+      [690, 94], [820, 48], [140, 170], [380, 190], [640, 165], [880, 145]
+    ];
+    return '<g class="bow-stage-snow" opacity="0.55">' +
+      flakes.map(function (pt, idx) {
+        return '<line x1="' + pt[0] + '" y1="' + pt[1] + '" x2="' + (pt[0] - 8) + '" y2="' + (pt[1] + 14) +
+          '" stroke="#d7e1ea" stroke-width="1.3" stroke-linecap="round" class="bow-flake bow-flake-' + (idx % 3) + '"/>';
+      }).join("") +
+    '</g>';
+  }
+
+  function skyBaseSvg(pal, indoor) {
+    if (indoor) {
+      return '<defs>' +
+        '<linearGradient id="bowSky" x1="0" y1="0" x2="0" y2="1">' +
+          '<stop offset="0%" stop-color="#0b0e12"/>' +
+          '<stop offset="100%" stop-color="#171c22"/>' +
+        '</linearGradient>' +
+        '<radialGradient id="bowHearth" cx="0.32" cy="0.62" r="0.48">' +
+          '<stop offset="0%" stop-color="#e38836" stop-opacity="0.34"/>' +
+          '<stop offset="100%" stop-color="#e38836" stop-opacity="0"/>' +
+        '</radialGradient>' +
+      '</defs>' +
+      '<rect width="960" height="320" fill="url(#bowSky)"/>' +
+      '<rect width="960" height="320" fill="url(#bowHearth)"/>';
+    }
+
+    var celestial = "";
+    if (pal.stars) {
+      celestial += '<g opacity="0.55" fill="#d8e2ec">' +
+        '<circle cx="130" cy="40" r="1.2"/><circle cx="260" cy="28" r="1"/><circle cx="470" cy="46" r="1.3"/>' +
+        '<circle cx="660" cy="26" r="1.1"/><circle cx="810" cy="52" r="1.2"/>' +
+      '</g>';
+    }
+    if (pal.moon) {
+      celestial += '<circle cx="760" cy="56" r="15" fill="#d9e2ec" opacity="0.78"/>' +
+                   '<circle cx="766" cy="52" r="13" fill="' + pal.skyTop + '"/>';
+    }
+
+    return '<defs>' +
+      '<linearGradient id="bowSky" x1="0" y1="0" x2="0" y2="1">' +
+        '<stop offset="0%" stop-color="' + pal.skyTop + '"/>' +
+        '<stop offset="68%" stop-color="' + pal.skyBot + '"/>' +
+        '<stop offset="100%" stop-color="' + pal.snowTop + '"/>' +
+      '</linearGradient>' +
+      '<linearGradient id="bowGround" x1="0" y1="0" x2="0" y2="1">' +
+        '<stop offset="0%" stop-color="' + pal.snowTop + '"/>' +
+        '<stop offset="100%" stop-color="' + pal.snowBot + '"/>' +
+      '</linearGradient>' +
+    '</defs>' +
+    '<rect width="960" height="320" fill="url(#bowSky)"/>' +
+    celestial;
+  }
+
+  function backdropSvg(locKey, state, forBattle) {
+    var pal = skyOf(state);
+    var indoor = (locKey === "tavern" || locKey === "smithy") && !forBattle;
+    var svg = skyBaseSvg(pal, indoor);
+
+    if (locKey === "square") {
+      svg +=
+        /* Дальний план: крыши Брода и частокол */
+        '<path d="M0 198 L90 172 L165 198 L250 162 L330 198 L620 198 L700 166 L785 198 L960 192 L960 225 L0 225 Z" fill="' + pal.far + '"/>' +
+        /* Дым из труб */
+        '<path d="M250 162 Q256 132 272 114" fill="none" stroke="#8fa0b0" stroke-opacity="0.26" stroke-width="5" stroke-linecap="round"/>' +
+        '<path d="M700 166 Q708 136 724 118" fill="none" stroke="#8fa0b0" stroke-opacity="0.22" stroke-width="4" stroke-linecap="round"/>' +
+        /* Земля / каменная площадь */
+        '<rect x="0" y="208" width="960" height="112" fill="url(#bowGround)"/>' +
+        '<line x1="0" y1="208" x2="960" y2="208" stroke="' + pal.line + '" stroke-width="1"/>' +
+        /* Слева: навес торговых лавок */
+        '<g opacity="' + (forBattle ? "0.5" : "0.95") + '">' +
+          '<polygon points="56,214 236,214 252,168 44,174" fill="' + pal.mid + '" stroke="' + pal.line + '" stroke-width="1.4"/>' +
+          '<line x1="72" y1="174" x2="72" y2="236" stroke="' + pal.line + '" stroke-width="2.5"/>' +
+          '<line x1="222" y1="170" x2="222" y2="236" stroke="' + pal.line + '" stroke-width="2.5"/>' +
+          '<rect x="86" y="212" width="118" height="22" fill="#18212b" stroke="' + pal.line + '" stroke-width="1.2"/>' +
+        '</g>' +
+        /* По центру: каменный колодец и сани с грузом */
+        '<g opacity="' + (forBattle ? "0.42" : "0.9") + '">' +
+          '<rect x="436" y="202" width="64" height="24" fill="' + pal.mid + '" stroke="' + pal.line + '" stroke-width="1.3"/>' +
+          '<line x1="444" y1="202" x2="444" y2="168" stroke="' + pal.line + '" stroke-width="2"/>' +
+          '<line x1="492" y1="202" x2="492" y2="168" stroke="' + pal.line + '" stroke-width="2"/>' +
+          '<polygon points="432,170 468,152 504,170" fill="' + pal.far + '" stroke="' + pal.line + '" stroke-width="1.3"/>' +
+          /* Мешки на дровнях */
+          '<ellipse cx="364" cy="224" rx="22" ry="11" fill="#2b333b" stroke="' + pal.line + '" stroke-width="1.1"/>' +
+          '<line x1="334" y1="235" x2="396" y2="235" stroke="' + pal.line + '" stroke-width="2"/>' +
+        '</g>' +
+        /* Справа: крыльцо трактира с тёплым окном */
+        '<g opacity="' + (forBattle ? "0.5" : "0.96") + '">' +
+          '<polygon points="736,222 924,222 924,148 828,116 736,152" fill="' + pal.mid + '" stroke="' + pal.line + '" stroke-width="1.4"/>' +
+          '<rect x="780" y="168" width="32" height="24" fill="' + pal.glow + '" opacity="' + pal.glowOp + '"/>' +
+          '<line x1="796" y1="168" x2="796" y2="192" stroke="' + pal.mid + '" stroke-width="1.5"/>' +
+          '<rect x="844" y="168" width="34" height="54" fill="#121820" stroke="' + pal.line + '" stroke-width="1.2"/>' +
+          '<circle cx="760" cy="166" r="4" fill="' + pal.glow + '" opacity="0.9"/>' +
+        '</g>';
+    } else if (locKey === "tavern" && !forBattle) {
+      svg +=
+        /* Балки потолка и пол трактира */
+        '<rect x="0" y="224" width="960" height="96" fill="#14181e"/>' +
+        '<line x1="0" y1="224" x2="960" y2="224" stroke="#313944" stroke-width="1.5"/>' +
+        '<rect x="0" y="0" width="960" height="28" fill="#0d1015"/>' +
+        '<line x1="160" y1="28" x2="160" y2="224" stroke="#232a33" stroke-width="6"/>' +
+        '<line x1="760" y1="28" x2="760" y2="224" stroke="#232a33" stroke-width="6"/>' +
+        /* Каменный очаг и олень с треснувшим рогом */
+        '<polygon points="230,224 370,224 352,108 248,108" fill="#1b2129" stroke="#394452" stroke-width="1.5"/>' +
+        '<path d="M268,224 Q300,164 332,224 Z" fill="#101419"/>' +
+        '<path d="M282,222 Q300,180 318,222 Z" fill="#df8738" opacity="0.88"/>' +
+        '<path d="M291,222 Q300,196 309,222 Z" fill="#f4c26b" opacity="0.9"/>' +
+        /* Силуэт головы оленя над очагом */
+        '<path d="M300,92 L286,72 M292,80 L280,82 M300,92 L312,76" fill="none" stroke="#8c7a62" stroke-width="2" stroke-linecap="round"/>' +
+        '<circle cx="300" cy="95" r="4" fill="#8c7a62"/>' +
+        /* Стойка с кружками и бочонком */
+        '<rect x="520" y="182" width="200" height="44" fill="#1b2027" stroke="#3d4652" stroke-width="1.4"/>' +
+        '<line x1="512" y1="182" x2="728" y2="182" stroke="#6a5844" stroke-width="3"/>' +
+        '<ellipse cx="690" cy="166" rx="18" ry="14" fill="#26211d" stroke="#594a3a" stroke-width="1.3"/>' +
+        /* Слюдяное окно в стужу */
+        '<rect x="816" y="112" width="68" height="62" fill="' + pal.skyBot + '" stroke="#3c4754" stroke-width="2"/>' +
+        '<line x1="850" y1="112" x2="850" y2="174" stroke="#252d36" stroke-width="2"/>' +
+        '<line x1="816" y1="143" x2="884" y2="143" stroke="#252d36" stroke-width="2"/>';
+    } else if (locKey === "smithy" && !forBattle) {
+      svg +=
+        '<rect x="0" y="224" width="960" height="96" fill="#13171c"/>' +
+        '<line x1="0" y1="224" x2="960" y2="224" stroke="#333c47" stroke-width="1.5"/>' +
+        /* Горн слева с белым жаром */
+        '<polygon points="70,224 270,224 246,84 94,84" fill="#1c222a" stroke="#3d4856" stroke-width="1.6"/>' +
+        '<rect x="122" y="168" width="96" height="32" rx="4" fill="#101418"/>' +
+        '<ellipse cx="170" cy="188" rx="38" ry="10" fill="#e87a2e" opacity="0.92"/>' +
+        '<ellipse cx="170" cy="189" rx="20" ry="5" fill="#ffdca0"/>' +
+        /* Искры */
+        '<circle cx="158" cy="152" r="1.5" fill="#ffb35c"/><circle cx="182" cy="140" r="1.3" fill="#ffd79a"/><circle cx="168" cy="128" r="1.1" fill="#ff9442"/>' +
+        /* Наковальня по центру */
+        '<rect x="444" y="202" width="52" height="24" fill="#23201d" stroke="#454c56" stroke-width="1.2"/>' +
+        '<path d="M426,188 L512,188 L498,202 L442,202 Z" fill="#525f6d" stroke="#8595a6" stroke-width="1.3"/>' +
+        /* Стойка с оружием справа */
+        '<rect x="690" y="142" width="140" height="82" fill="none" stroke="#3c4652" stroke-width="2"/>' +
+        '<line x1="720" y1="152" x2="720" y2="216" stroke="#9aa7b4" stroke-width="2.2"/>' +
+        '<line x1="760" y1="150" x2="760" y2="216" stroke="#9aa7b4" stroke-width="2.4"/>' +
+        '<path d="M760,154 L773,150 L771,164 L760,160 Z" fill="#cfd6dd"/>' +
+        '<rect x="792" y="160" width="24" height="38" rx="3" fill="#28323c" stroke="#687786" stroke-width="1.2"/>';
+    } else if (locKey === "outskirts") {
+      svg +=
+        /* Зубчатая кромка дальней тайги */
+        '<path d="M0 204 L40 182 L75 202 L115 174 L152 202 L580 204 L625 170 L660 202 L705 164 L748 202 L795 158 L842 202 L895 162 L960 198 L960 220 L0 220 Z" fill="' + pal.far + '"/>' +
+        '<rect x="0" y="208" width="960" height="112" fill="url(#bowGround)"/>' +
+        '<line x1="0" y1="208" x2="960" y2="208" stroke="' + pal.line + '" stroke-width="1"/>' +
+        /* Покосившаяся изба, плетень и поленница */
+        '<g opacity="' + (forBattle ? "0.48" : "0.94") + '">' +
+          '<polygon points="84,212 224,212 220,166 152,138 88,168" fill="' + pal.mid + '" stroke="' + pal.line + '" stroke-width="1.4"/>' +
+          '<path d="M178 148 Q186 122 204 108" fill="none" stroke="#8fa0b0" stroke-opacity="0.25" stroke-width="4"/>' +
+          /* Плетень */
+          '<line x1="242" y1="196" x2="356" y2="202" stroke="' + pal.line + '" stroke-width="1.6"/>' +
+          '<line x1="242" y1="206" x2="356" y2="210" stroke="' + pal.line + '" stroke-width="1.6"/>' +
+          '<line x1="260" y1="188" x2="256" y2="216" stroke="' + pal.line + '" stroke-width="2"/>' +
+          '<line x1="300" y1="190" x2="298" y2="216" stroke="' + pal.line + '" stroke-width="2"/>' +
+          '<line x1="340" y1="190" x2="342" y2="216" stroke="' + pal.line + '" stroke-width="2"/>' +
+          /* Колода с топором */
+          '<rect x="388" y="212" width="28" height="18" fill="#2b2622" stroke="' + pal.line + '" stroke-width="1.2"/>' +
+          '<line x1="402" y1="212" x2="414" y2="192" stroke="#b9ad96" stroke-width="2"/>' +
+        '</g>' +
+        /* Частокол и тропа в тайгу */
+        '<g opacity="' + (forBattle ? "0.48" : "0.92") + '">' +
+          '<path d="M730 212 L730 164 L738 152 L746 164 L746 212 M750 212 L750 166 L758 154 L766 166 L766 212 M832 212 L832 164 L840 152 L848 164 L848 212" fill="' + pal.mid + '" stroke="' + pal.line + '" stroke-width="1.2"/>' +
+          '<path d="M788 212 Q816 252 878 316" fill="none" stroke="' + pal.line + '" stroke-width="2" stroke-dasharray="6 6"/>' +
+        '</g>';
+    } else {
+      /* Опушка тайги (и уличный бой для внутренних сцен) */
+      svg +=
+        '<path d="M0 210 L55 130 L105 210 L165 112 L225 210 L290 138 L345 210 L615 210 L675 124 L735 210 L805 104 L870 210 L925 136 L960 210 Z" fill="' + pal.far + '"/>' +
+        '<rect x="0" y="206" width="960" height="114" fill="url(#bowGround)"/>' +
+        /* Крупные ели по краям */
+        '<g opacity="' + (forBattle ? "0.52" : "0.95") + '">' +
+          '<polygon points="96,82 44,216 148,216" fill="' + pal.mid + '" stroke="' + pal.line + '" stroke-width="1.2"/>' +
+          '<polygon points="96,54 58,154 134,154" fill="' + pal.mid + '" stroke="' + pal.line + '" stroke-width="1.2"/>' +
+          '<polygon points="852,72 796,218 908,218" fill="' + pal.mid + '" stroke="' + pal.line + '" stroke-width="1.2"/>' +
+          '<polygon points="852,44 810,148 894,148" fill="' + pal.mid + '" stroke="' + pal.line + '" stroke-width="1.2"/>' +
+          /* Валежник и цепочка следов */
+          '<line x1="250" y1="230" x2="368" y2="218" stroke="#3a332c" stroke-width="7" stroke-linecap="round"/>' +
+          '<line x1="250" y1="230" x2="368" y2="218" stroke="' + pal.line + '" stroke-width="1.2"/>' +
+          '<g fill="' + pal.far + '" opacity="0.75">' +
+            '<ellipse cx="560" cy="248" rx="6" ry="2.5"/><ellipse cx="586" cy="240" rx="6" ry="2.5"/>' +
+            '<ellipse cx="612" cy="233" rx="5.5" ry="2.2"/><ellipse cx="638" cy="226" rx="5" ry="2"/>' +
+            '<ellipse cx="662" cy="220" rx="4.5" ry="1.8"/>' +
+          '</g>' +
+        '</g>';
+    }
+
+    if (!indoor) {
+      svg += snowParticlesSvg(pal.snowy);
+    }
+
+    return '<svg class="bow-stage-bg" viewBox="0 0 960 320" preserveAspectRatio="xMidYMid slice" aria-hidden="true">' +
+      svg + '</svg>';
+  }
+
+  /* ---------- Интерактивные точки локации на сцене ---------- */
+  var STAGE_PROPS = {
+    square: [
+      { kind: "trade", label: "Торговые лавки", sub: "товар", x: 15, y: 58 },
+      { kind: "jobs",  label: "Подвода и ряды", sub: "работа", x: 40, y: 63 },
+      { kind: "exit",  loc: "tavern", label: "Трактир →", sub: "1 ч.", x: 85, y: 54 }
+    ],
+    tavern: [
+      { kind: "rest",  label: "У очага", sub: "отдых", x: 31, y: 60 },
+      { kind: "jobs",  label: "Зал и котёл", sub: "работа", x: 48, y: 56 },
+      { kind: "trade", label: "Стойка", sub: "снедь и брага", x: 66, y: 55 }
+    ],
+    smithy: [
+      { kind: "jobs",  label: "Горн и мехи", sub: "работа", x: 18, y: 56 },
+      { kind: "trade", label: "Железо у Тарна", sub: "купить / сбыть", x: 79, y: 55 }
+    ],
+    outskirts: [
+      { kind: "jobs",  label: "Поленница", sub: "наколоть дров", x: 41, y: 63 },
+      { kind: "exit",  loc: "forest", label: "В тайгу →", sub: "3 ч.", x: 83, y: 58 }
+    ],
+    forest: [
+      { kind: "jobs",  label: "Опушка и следы", sub: "работа", x: 34, y: 64 },
+      { kind: "exit",  loc: "outskirts", label: "К околице →", sub: "2 ч.", x: 84, y: 60 }
+    ]
+  };
+
+  /* Рассадка фигурок жителей в кадре (в процентах ширины сцены). */
+  var NPC_SLOTS = [56, 71, 44, 82];
+
+  function renderHotspotsAndActors(state, selected) {
+    var locKey = state.player.location;
+    var props = STAGE_PROPS[locKey] || [];
+    var people = Bow.actions.peopleAt(state, locKey);
+    var html = [];
+
+    /* 1. Точки интереса самой локации */
+    props.forEach(function (pr) {
+      if (pr.kind === "exit") {
+        html.push(
+          '<button class="bow-spot bow-spot-exit" style="left:' + pr.x + '%;top:' + pr.y + '%" ' +
+            'data-act="move" data-loc="' + esc(pr.loc) + '" title="Перейти: ' + esc(pr.label) + '">' +
+            '<span class="bow-spot-dot"></span>' +
+            '<span class="bow-spot-txt"><b>' + esc(pr.label) + '</b><i>' + esc(pr.sub) + '</i></span>' +
+          '</button>'
+        );
+        return;
+      }
+      if (pr.kind === "rest") {
+        html.push(
+          '<button class="bow-spot bow-spot-prop" style="left:' + pr.x + '%;top:' + pr.y + '%" ' +
+            'data-act="rest" title="Отдохнуть в тепле">' +
+            '<span class="bow-spot-dot"></span>' +
+            '<span class="bow-spot-txt"><b>' + esc(pr.label) + '</b><i>' + esc(pr.sub) + '</i></span>' +
+          '</button>'
+        );
+        return;
+      }
+      var active = selected && selected.kind === pr.kind ? " bow-spot-on" : "";
+      html.push(
+        '<button class="bow-spot bow-spot-prop' + active + '" style="left:' + pr.x + '%;top:' + pr.y + '%" ' +
+          'data-act="stage-select" data-kind="' + esc(pr.kind) + '">' +
+          '<span class="bow-spot-dot"></span>' +
+          '<span class="bow-spot-txt"><b>' + esc(pr.label) + '</b><i>' + esc(pr.sub) + '</i></span>' +
+        '</button>'
+      );
+    });
+
+    /* 2. Фигурка самого игрока слева на переднем плане */
+    var pWeapon = weaponKindOf(state, state.player);
+    var selfActive = selected && selected.kind === "self" ? " bow-actor-on" : "";
+    html.push(
+      '<button class="bow-actor bow-actor-player' + selfActive + '" style="left:24%;bottom:12px" ' +
+        'data-act="stage-select" data-kind="self" title="Вы — припасы, отдых и перевязка">' +
+        figureSvg({ roleKey: "player", side: "player", weapon: pWeapon }) +
+        '<span class="bow-actor-tag"><b>Вы</b></span>' +
+      '</button>'
+    );
+
+    /* 3. Фигурки жителей, которые реально находятся здесь и сейчас */
+    people.forEach(function (p, idx) {
+      var x = NPC_SLOTS[idx % NPC_SLOTS.length];
+      var isSel = selected && selected.kind === "person" && selected.personId === p.id;
+      var tone = p.attitude >= 20 ? "warm" : p.attitude <= -20 ? "cold" : "neutral";
+      var wKind = weaponKindOf(state, p);
+      var hp = Math.round((p.needs && p.needs.health) || 100);
+      var sign = p.attitude > 0 ? "+" : "";
+
+      html.push(
+        '<button class="bow-actor bow-actor-npc' + (isSel ? " bow-actor-on" : "") + '" ' +
+          'style="left:' + x + '%;bottom:14px" ' +
+          'data-act="stage-select" data-kind="person" data-person="' + esc(p.id) + '" ' +
+          'title="' + esc(p.name + " — " + p.role) + '">' +
+          (hp < 100
+            ? '<span class="bow-actor-hp"><i style="width:' + hp + '%"></i></span>'
+            : '') +
+          figureSvg({ roleKey: p.key || "villager", side: "neutral", weapon: wKind }) +
+          '<span class="bow-actor-tag">' +
+            '<b>' + esc(p.name) + '</b>' +
+            '<i class="bow-tone bow-' + tone + '">' + sign + Math.round(p.attitude) + '</i>' +
+          '</span>' +
+        '</button>'
+      );
+    });
+
+    return html.join("");
+  }
+
+  Bow.stage = {
+    skyOf: skyOf,
+    figureSvg: figureSvg,
+    weaponKindOf: weaponKindOf,
+    backdropSvg: backdropSvg,
+    renderHotspotsAndActors: renderHotspotsAndActors
+  };
+
+})(typeof window !== "undefined" ? window : this);

@@ -1,4 +1,4 @@
-ПЕРЕДАЧА ПРОЕКТА BLADES OF WAR — версия 0.0.6.3
+ПЕРЕДАЧА ПРОЕКТА BLADES OF WAR — версия 0.0.7
 
 ЧТО ЭТО
 Настоящая история Twine 2 / SugarCube 2, собираемая в один HTML.
@@ -10,7 +10,7 @@
 КАК СОБИРАТЬ
 npm install
 npm run build     (.twee -> dist/BladesOfWar.html)
-npm run check     (154 автопроверки логики и интерфейса)
+npm run check     (160 автопроверок логики и интерфейса)
 npm run verify    (сборка + проверки)
 
 ГДЕ ЧТО МЕНЯТЬ
@@ -30,7 +30,8 @@ npm run verify    (сборка + проверки)
 Уличные встречи (грабитель)       -> src/js/067-street.twee
 Бой, оружие, развязка             -> src/js/058-fight.twee
 Правила боя (пороги, урон, штрафы) -> src/js/005-data.twee (fightRules)
-Окно боя                          -> src/js/110-ui.twee (renderFight)
+Главное окно сцены и фигурки      -> src/js/105-stage.twee (Bow.stage)
+Окно боя и приказы Kenshi         -> src/js/110-ui.twee (renderFight), src/js/058-fight.twee
 Живое время (таймер)              -> src/js/900-game.twee (startClock)
 Репутация в панели                -> src/js/110-ui.twee (renderOrgs)
 Выдвижная панель                  -> src/ui/900-styles.twee (.bow-drawer)
