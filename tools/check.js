@@ -1134,9 +1134,9 @@ function byAct(act, key) {
       g.people["person:tarn"].needs.fatigue = 100;
 
       win.Bow.fight.open(g, "person:tarn");
-      win.Bow.fight.start(g, "crime", () => r.next());
+      win.Bow.fight.start(g, "crime", r);
       for (let i = 0; i < 20 && g.fight && g.fight.phase === "exchange"; i++) {
-        win.Bow.fight.move(g, "press", () => r.next(), null, "head");
+        win.Bow.fight.move(g, "press", r, null, "head");
       }
 
       const log = ((g.fight || g.flags.lastFight).log || []).map((l) => l.text).join(" ");
