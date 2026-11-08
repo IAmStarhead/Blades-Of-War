@@ -1030,6 +1030,42 @@
           '<button type="button" class="bow-trade-btn bow-fight-btn" data-act="street-fight">Драться</button>' +
         '</div>' +
       '</div>');
+      return;
+    }
+
+    if (sel.kind === "prop" && sel.spot) {
+      var sp = sel.spot;
+      var propBtn = "";
+      if (sp.tab) {
+        propBtn = '<button type="button" class="bow-trade-btn" data-act="tab" data-tab="' + esc(sp.tab) + '">' + esc(sp.tabLabel || "Открыть") + '</button>';
+      } else if (sp.act) {
+        propBtn = '<button type="button" class="bow-trade-btn" data-act="' + esc(sp.act) + '">' + esc(sp.actLabel || "Действие") + '</button>';
+      }
+      applyStagePopHtml(pop, popKey + ":" + sp.key, '<div class="bow-stage-card">' +
+        '<div class="bow-stage-card-head"><div class="bow-stage-card-title"><b>' + esc(sp.title) + '</b><span class="bow-dim">· ' + esc(sp.sub || "") + '</span></div>' + closeBtn + '</div>' +
+        '<div class="bow-stage-card-meta">' + esc(sp.desc || "") + '</div>' +
+        (propBtn ? '<div class="bow-person-acts">' + propBtn + '</div>' : '') +
+      '</div>');
+    }
+  }
+
+  function repaintIsoStage(state) {
+    var canvas = $("bow-stage-canvas");
+    if (!canvas || !Bow.iso) { return; }
+    var isoCv = canvas.querySelector("canvas.bow-iso-canvas");
+    if (isoCv) {
+      Bow.iso.paintStageCanvas(isoCv, state, stageSelection);
+    }
+    /* Плавно подтягиваем координаты подписи игрока во время шага без пересборки DOM */
+    var pBtn = canvas.querySelector(".bow-stage-layer .bow-actor-player");
+    if (pBtn && Bow.iso.getPlayerPos && Bow.iso.tileToScreen) {
+      var pos = Bow.iso.getPlayerPos(state);
+      var scr = Bow.iso.tileToScreen(pos.col, pos.row);
+      var xp = Math.round((scr.x / Bow.iso.VIEW_W) * 1000) / 10;
+      var yp = Math.round((scr.y / Bow.iso.VIEW_H) * 1000) / 10;
+      pBtn.style.left = xp + "%";
+      pBtn.style.top = yp + "%";
+      pBtn.setAttribute("data-x", String(xp));
     }
   }
 
@@ -1039,7 +1075,6 @@
 
     var locKey = state.jail ? "jail" : state.player.location;
     var pal = Bow.stage.skyOf(state);
-    var bgKey = locKey + "|" + pal.phase + "|" + pal.weatherKind;
     var wKey = locKey + "|" + pal.weatherKind;
 
     var bgWrap = canvas.querySelector(".bow-stage-bg-wrap");
@@ -1048,7 +1083,7 @@
 
     if (!bgWrap || !wWrap || !layer) {
       canvas.innerHTML =
-        '<div class="bow-stage-bg-wrap"></div>' +
+        '<div class="bow-stage-bg-wrap"><canvas class="bow-iso-canvas" width="1088" height="368"></canvas></div>' +
         '<div class="bow-stage-weather-wrap"></div>' +
         '<div class="bow-stage-layer"></div>';
       bgWrap = canvas.querySelector(".bow-stage-bg-wrap");
@@ -1056,10 +1091,16 @@
       layer = canvas.querySelector(".bow-stage-layer");
     }
 
-    if (bgWrap.getAttribute("data-bg-key") !== bgKey) {
-      bgWrap.setAttribute("data-bg-key", bgKey);
-      bgWrap.innerHTML = Bow.stage.backdropSvg(locKey, state, false);
+    bgWrap.setAttribute("data-loc", locKey);
+    var isoCv = bgWrap.querySelector("canvas.bow-iso-canvas");
+    if (!isoCv) {
+      bgWrap.innerHTML = '<canvas class="bow-iso-canvas" width="1088" height="368"></canvas>';
+      isoCv = bgWrap.querySelector("canvas.bow-iso-canvas");
     }
+    if (Bow.iso && Bow.iso.paintStageCanvas) {
+      Bow.iso.paintStageCanvas(isoCv, state, stageSelection);
+    }
+
     if (wWrap.getAttribute("data-w-key") !== wKey) {
       wWrap.setAttribute("data-w-key", wKey);
       wWrap.innerHTML = Bow.stage.weatherOverlayHtml
@@ -1337,34 +1378,35 @@
      поэтому бойцы разнесены по всему полю и никогда не заслоняют друг друга. */
   var HEX_VIEW_W = 1088;
   var HEX_VIEW_H = 368;
-  var HEX_RX = 64;
-  var HEX_RY = 34;
+  var HEX_RX = 45;
+  var HEX_RY = 21;
 
   function hexCenterPx(col, row) {
+    if (Bow.iso && Bow.iso.fightTileToScreen) {
+      var pt = Bow.iso.fightTileToScreen(col || 0, row || 0);
+      return { cx: pt.x, cy: pt.y };
+    }
     var oddShift = (row % 2 === 1) ? HEX_RX : 0;
-    var cx = 128 + col * (HEX_RX * 2) + oddShift;
-    var cy = 108 + row * (HEX_RY * 1.5);
+    var cx = 160 + col * (HEX_RX * 2) + oddShift;
+    var cy = 114 + row * (HEX_RY * 2);
     return { cx: cx, cy: cy };
   }
 
+  /* Изометрический ромб тактической клетки (совпадает 1-в-1 с ромбами Bow.iso.paintBattleCanvas) */
   function hexPolygonPts(cx, cy, rx, ry) {
-    var h = ry * 0.5;
     return [
       cx + "," + (cy - ry),
-      (cx + rx) + "," + (cy - h),
-      (cx + rx) + "," + (cy + h),
+      (cx + rx) + "," + cy,
       cx + "," + (cy + ry),
-      (cx - rx) + "," + (cy + h),
-      (cx - rx) + "," + (cy - h)
+      (cx - rx) + "," + cy
     ].join(" ");
   }
 
   function arenaPoint(col, row, cols, rows) {
     var c = hexCenterPx(col || 0, row || 0);
     var xPct = (c.cx / HEX_VIEW_W) * 100;
-    /* Ноги фигурки стоят в центре гекса, а компактная плашка — прямо под сапогами внутри соты */
-    var topPct = ((c.cy - 54) / HEX_VIEW_H) * 100;
-    var footPct = ((c.cy + 8) / HEX_VIEW_H) * 100;
+    var topPct = ((c.cy - 48) / HEX_VIEW_H) * 100;
+    var footPct = ((c.cy + 6) / HEX_VIEW_H) * 100;
     return {
       left: Math.round(xPct * 100) / 100,
       top: Math.round(topPct * 100) / 100,
@@ -1489,18 +1531,12 @@
     var roleKey = u.key === "player" ? "player"
       : (u.refId && state.people[u.refId]) ? state.people[u.refId].key
       : (u.roleKey ? u.roleKey : (/guard/.test(u.key) ? "guard" : "robber"));
-    var figSide = u.key === "player" ? "player" : (u.side === "ally" ? "ally" : "enemy");
     var wKind = u.disarmed ? "none" : (Bow.stage ? Bow.stage.weaponKindOf(state, personRef) : "none");
-    var fig = Bow.stage
-      ? Bow.stage.figureSvg({
-          roleKey: roleKey,
-          side: figSide,
-          weapon: wKind,
-          down: u.down,
-          dead: u.dead,
-          stance: u.stance
-        })
-      : "";
+    /* Никаких кружков и треугольников: сами человечки рисуются мягким растром на изометрическом Canvas,
+       а .bow-iso-fig держит точную зону клика по силуэту и семантические маркеры состояния оружия/падения. */
+    var fig = '<span class="bow-iso-fig' + (u.down || u.dead ? ' bow-fig-fallen' : '') + '" data-role="' + esc(roleKey) + '">' +
+      (wKind && wKind !== "none" ? '<i class="bow-fig-weapon" data-weapon="' + esc(wKind) + '"></i>' : '') +
+      '</span>';
 
     /* Расширенная боевая анимация рассечения, блока со стальными искрами, уклона и потерь отряда (0.0.8.0) */
     var fxHtml = "";
@@ -1620,14 +1656,13 @@
       if (!inMap[st.to] || st.hit) { inMap[st.to] = st; }
     });
 
-    var bg = (Bow.stage && state) ? Bow.stage.backdropSvg(state.player.location, state, true) : "";
     var wHtml = (Bow.stage && Bow.stage.weatherOverlayHtml && state)
       ? Bow.stage.weatherOverlayHtml(state, state.player.location, true)
       : "";
     var gridSvg = tacticalGridSvg(A, units, f.target, state);
 
     return {
-      bgHtml: bg + wHtml,
+      bgHtml: '<canvas class="bow-iso-battle-canvas" width="1088" height="368"></canvas>' + wHtml,
       arenaHtml:
         '<div class="bow-arena" style="--cols:' + A.cols + ';--rows:' + A.rows + '">' +
           gridSvg +
@@ -1725,6 +1760,11 @@
           shellLast.querySelector(".bow-arena-slot").innerHTML = lastFld.arenaHtml;
           shellLast.querySelector(".bow-roster").innerHTML = lastFld.rosterHtml;
           shellLast.querySelector(".bow-fight-controls-slot").innerHTML = controlsAfter;
+        }
+        var lastCv = page.querySelector("canvas.bow-iso-battle-canvas");
+        if (lastCv && Bow.iso && Bow.iso.paintBattleCanvas) {
+          /* Рисуем финальную картину места схватки с лежащим врагом */
+          Bow.iso.paintBattleCanvas(lastCv, { player: state.player, time: state.time, flags: state.flags, people: state.people, fight: last });
         }
       } else {
         page.innerHTML = '<div class="bow-fight-page-inner">' + lastHead + controlsAfter + '</div>';
@@ -1873,13 +1913,13 @@
         body += '<div class="bow-fight-clock bow-fight-turnbar">' +
           '<span class="bow-fight-status">' +
             (isAuto
-              ? 'Спокойный автобой · герой сражается сам · мировое время стоит'
-              : 'Бой на паузе · мировое время стоит · выберите тактику или нажмите «Автобой»') +
+              ? 'Автобой включён · герой сражается сам · мировое время стоит'
+              : 'Пошаговый бой · клик по клетке — шаг · клик по выбранному врагу или кнопке ниже — удар') +
           '</span>' +
           '<div class="bow-fight-speed-btns">' +
-            '<button class="bow-btn bow-btn-sm' + (!isAuto ? ' bow-order-on' : '') + '" data-act="fight-order" data-kind="speed" data-val="paused" title="Поставить автобой на паузу (Пробел)">⏸ Пауза</button>' +
-            '<button class="bow-btn bow-btn-sm' + (isAuto ? ' bow-order-on' : '') + '" data-act="fight-order" data-kind="speed" data-val="auto" title="Размеренный автобой: герой сам сближается и бьёт по выбранной тактике">▶ Автобой</button>' +
-            '<button class="bow-btn bow-btn-sm bow-step-btn" data-act="fight-step" title="Выполнить ровно один ход вручную">⏭ Шаг</button>' +
+            '<button class="bow-btn bow-btn-sm' + (!isAuto ? ' bow-order-on' : '') + '" data-act="fight-order" data-kind="speed" data-val="paused" title="Пошаговый режим без автобоя (по умолчанию)">⏸ Пошагово</button>' +
+            '<button class="bow-btn bow-btn-sm' + (isAuto ? ' bow-order-on' : '') + '" data-act="fight-order" data-kind="speed" data-val="auto" title="Включить размеренный автобой по желанию">▶ Автобой</button>' +
+            '<button class="bow-btn bow-btn-sm bow-step-btn" data-act="fight-step" title="Сделать один ход по текущей тактике">⏭ Ход</button>' +
           '</div>' +
         '</div>';
 
@@ -1958,6 +1998,10 @@
           shell.querySelector(".bow-fight-controls-slot").innerHTML = body;
         }
         page.classList.add("bow-page-open");
+        var bCv = page.querySelector("canvas.bow-iso-battle-canvas");
+        if (bCv && Bow.iso && Bow.iso.paintBattleCanvas) {
+          Bow.iso.paintBattleCanvas(bCv, state);
+        }
         animateArenaMoves(page);
       }
       if (box) { box.innerHTML = ""; box.classList.remove("bow-fight-open"); }
@@ -2214,9 +2258,8 @@
       '<div class="bow-fight-acts">' +
         '<button class="bow-btn bow-btn-sm" data-act="jail-serve">Отсидеть 4 ч.</button>' +
         '<button class="bow-btn bow-btn-sm' + (isPicking ? ' bow-btn-danger' : '') + '" data-act="jail-pick-toggle">' +
-          (isPicking ? ('✋ Замереть (' + lpProg + '%)') : ('🗝 Взлом (полоска' + (lpProg > 0 ? ' · ' + lpProg + '%' : '') + ')')) +
+          (isPicking ? ('✋ Замереть (' + lpProg + '%)') : ('🗝 Взлом замка' + (lpProg > 0 ? ' (' + lpProg + '%)' : ''))) +
         '</button>' +
-        '<button class="bow-btn bow-btn-sm" data-act="jail-pick-manual">⚙ Вручную (отмычка)</button>' +
         '<button class="bow-btn bow-btn-sm" data-act="jail-bribe">Подкупить сторожа</button>' +
         '<button class="bow-btn bow-btn-sm" data-act="jail-escape">Рвануть напролом</button>' +
       '</div>' +
@@ -2617,6 +2660,7 @@
     setTab: setTab,
     setMapMode: setMapMode,
     renderMapPane: renderMapPane,
+    repaintIsoStage: repaintIsoStage,
     setStageSelection: setStageSelection,
     getSettings: getSettings,
     setSetting: setSetting,

@@ -5695,6 +5695,99 @@ html.bow-motion-calm .bow-mgs-alert { animation: none !important; }
 html.bow-motion-calm .bow-kenshi-lockfill,
 html.bow-motion-calm .bow-jail-guard-fig { transition: none !important; }
 
+/* ============================================================
+   КРУГ 23 (0.0.9.0): КАНОН «СУМРАЧНЫЙ БРОД» — ИЗОМЕТРИЧЕСКИЙ CANVAS,
+   POINT-AND-CLICK, ЧИСТАЯ КЛЕТКА В РАЗРЕЗЕ И БЕСШОВНЫЙ БОЙ
+   ============================================================ */
+
+.bow-iso-canvas,
+.bow-iso-battle-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  cursor: pointer;
+  user-select: none;
+}
+
+.bow-stage-layer {
+  pointer-events: none;
+}
+
+.bow-stage-layer .bow-iso-actor,
+.bow-stage-layer .bow-iso-spot {
+  pointer-events: auto;
+}
+
+/* Аккуратная зона нажатия поверх изометрического спрайта (сам человечек рисуется на Canvas!) */
+.bow-actor.bow-iso-actor {
+  position: absolute;
+  bottom: auto !important;
+  transform: translate(-50%, -86%);
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 4;
+}
+
+.bow-iso-hit {
+  display: block;
+  width: 44px;
+  height: 58px;
+  border-radius: 22px;
+}
+
+.bow-actor.bow-iso-actor:hover .bow-actor-tag,
+.bow-actor.bow-iso-actor.bow-actor-on .bow-actor-tag {
+  border-color: #7eb8e6;
+  color: #f0f6fc;
+}
+
+.bow-actor.bow-iso-actor .bow-actor-tag {
+  margin-top: 2px;
+  padding: 1px 6px;
+  font-size: 0.64rem;
+  background: rgba(9, 14, 20, 0.84);
+  border: 1px solid rgba(98, 122, 146, 0.42);
+  border-radius: 3px;
+  white-space: nowrap;
+}
+
+.bow-spot.bow-iso-spot {
+  transform: translate(-50%, -50%);
+  padding: 3px 8px;
+  background: rgba(11, 17, 24, 0.84);
+  border-color: rgba(92, 118, 144, 0.46);
+  z-index: 5;
+}
+
+.bow-spot.bow-iso-spot:hover,
+.bow-spot.bow-iso-spot.bow-spot-on {
+  border-color: #8cc4f0;
+  background: rgba(16, 25, 36, 0.94);
+}
+
+/* В бою фигурка рисуется на bow-iso-battle-canvas, а .bow-iso-fig задаёт контур нажатия */
+.bow-arena-scene .bow-iso-fig {
+  display: block;
+  width: 48px;
+  height: 58px;
+}
+
+.bow-arena-scene .bow-iso-fig .bow-fig-weapon {
+  display: none;
+}
+
+/* Мягкий переход в схватку без глухого чёрного перекрытия сцены */
+.bow-battle-intro-flash {
+  background: radial-gradient(circle at 50% 45%, rgba(140, 184, 224, 0.18), rgba(8, 12, 18, 0.42)) !important;
+}
+
+
 
 
 

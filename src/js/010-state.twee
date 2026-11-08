@@ -470,6 +470,15 @@
       }
       state.version = "0.0.8.2";
       return state;
+    },
+
+    /* 0.0.8.2 → 0.0.9.0: изометрический стиль «Сумрачный Брод», Point-and-Click, пошаговый бой по умолчанию и запекание звука. */
+    "0.0.8.2": function (state) {
+      if (state.fight && state.fight.orders && state.fight.orders.speed === "auto") {
+        state.fight.orders.speed = "paused";
+      }
+      state.version = "0.0.9.0";
+      return state;
     }
   };
 
@@ -719,7 +728,7 @@
     var guard = 0;
     var applied = [];
 
-    while (state.version !== Bow.data.meta.version && guard < 20) {
+    while (state.version !== Bow.data.meta.version && guard < 40) {
       var fn = MIGRATIONS[state.version];
       if (!fn) { break; }
       state = fn(state);

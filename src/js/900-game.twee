@@ -22,18 +22,45 @@
     return v.game;
   }
 
-  /* Перерисовка + сохранение в память SugarCube + автосейв. */
-  function refresh(quiet) {
+  var autosaveTimer = null;
+  var autosaveDirty = false;
+  var lastExplicitTargetKey = "";
+  var lastExplicitTargetRound = -1;
+
+  function flushAutosave(quiet) {
+    if (autosaveTimer) {
+      clearTimeout(autosaveTimer);
+      autosaveTimer = null;
+    }
+    autosaveDirty = false;
     var state = getState();
-    Bow.ui.render(state);
-    if (Bow.audio && Bow.audio.syncMood) { Bow.audio.syncMood(state); }
+    if (!state) { return; }
     try {
       global.localStorage.setItem(AUTOSAVE_KEY, Bow.save.serialize(state, Date.now()));
     } catch (err) {
-      /* Приватный режим браузера может запрещать localStorage.
-         Это не повод ронять игру — просто нет автосейва. */
       if (!quiet && global.console) { global.console.warn("[Bow] автосохранение недоступно:", err); }
     }
+  }
+
+  function scheduleAutosave(immediate, quiet) {
+    if (immediate) {
+      flushAutosave(quiet);
+      return;
+    }
+    autosaveDirty = true;
+    if (autosaveTimer) { return; }
+    autosaveTimer = setTimeout(function () {
+      autosaveTimer = null;
+      if (autosaveDirty) { flushAutosave(true); }
+    }, 2400);
+  }
+
+  /* Перерисовка + отложенный автосейв без микрофризов звука (0.0.9.0). */
+  function refresh(quiet, immediateSave) {
+    var state = getState();
+    Bow.ui.render(state);
+    if (Bow.audio && Bow.audio.syncMood) { Bow.audio.syncMood(state); }
+    scheduleAutosave(!!immediateSave, quiet);
   }
 
   function say(result) {
@@ -49,10 +76,13 @@
       /* Смена сцены закрывает разговор и окно персонажа.
          Посреди боя уйти нельзя: это было бы бесплатным побегом. */
       if (state.fight) { return { ok: false, message: "Сначала закончите бой." }; }
+      if (Bow.iso && Bow.iso.stopWalkLoop) { Bow.iso.stopWalkLoop(); }
       if (state.dialog) { Bow.dialog.close(state); }
       state.flags.lastDialogSummary = null;
       openSheet(null);
-      return Bow.adapter.act.move(state, el.getAttribute("data-loc"));
+      var res = Bow.adapter.act.move(state, el.getAttribute("data-loc"));
+      scheduleAutosave(true, true);
+      return res;
     },
     talk: function (el) {
       Bow.ui.setDrawer(false);
@@ -121,10 +151,14 @@
     },
     "fight-start": function (el) {
       var state = getState();
+      if (Bow.iso && Bow.iso.stopWalkLoop) { Bow.iso.stopWalkLoop(); }
+      lastExplicitTargetKey = "";
+      lastExplicitTargetRound = -1;
       var res = Bow.adapter.act.fightStart(state, el.getAttribute("data-mode"));
       if (res && res.ok && state.fight && state.fight.phase === "exchange") {
-        Bow.fight.setOrder(state, "speed", "auto");
-        startFightClock();
+        /* По решению владельца (0.0.9.0): бой по умолчанию начинается в пошаговом режиме без автобоя! */
+        Bow.fight.setOrder(state, "speed", "paused");
+        stopFightClock();
       }
       return res;
     },
@@ -159,7 +193,19 @@
       return Bow.adapter.act.fightMove(state, stance, target, aim);
     },
     "fight-target": function (el) {
-      return Bow.adapter.act.fightTarget(getState(), el.getAttribute("data-target"));
+      var state = getState();
+      var tgtKey = el.getAttribute("data-target");
+      if (state.fight && state.fight.phase === "exchange") {
+        var ord = Bow.fight.ensureOrders(state.fight);
+        /* В пошаговом режиме повторный клик по уже выделенному врагу сразу делает шаг/удар в него! */
+        if (ord.speed === "paused" && state.fight.target === tgtKey && lastExplicitTargetKey === tgtKey && lastExplicitTargetRound === state.fight.round) {
+          lastExplicitTargetRound = -1;
+          return Bow.adapter.act.fightMove(state, "press", tgtKey, ord.aim || "body");
+        }
+        lastExplicitTargetKey = tgtKey;
+        lastExplicitTargetRound = state.fight.round;
+      }
+      return Bow.adapter.act.fightTarget(state, tgtKey);
     },
     "fight-hex": function (el) {
       var state = getState();
@@ -185,10 +231,13 @@
     "guard-insult": function () { return Bow.adapter.act.guardInsult(getState()); },
     "guard-fight": function () {
       var state = getState();
+      if (Bow.iso && Bow.iso.stopWalkLoop) { Bow.iso.stopWalkLoop(); }
+      lastExplicitTargetKey = "";
+      lastExplicitTargetRound = -1;
       var res = Bow.adapter.act.guardFight(state);
       if (res && res.ok && state.fight && state.fight.phase === "exchange") {
-        Bow.fight.setOrder(state, "speed", "auto");
-        startFightClock();
+        Bow.fight.setOrder(state, "speed", "paused");
+        stopFightClock();
       }
       return res;
     },
@@ -201,9 +250,24 @@
       return res;
     },
     "jail-bribe": function () { return Bow.adapter.act.jailBribe(getState()); },
-    "jail-pick-toggle": function () {
+    "jail-pick-toggle": function (el) {
       var st = getState();
       jailUserWakeUntil = Date.now() + 60000;
+      /* Если ещё не стоим у двери клетки (4,3) — сначала подходим к решётке в изометрии */
+      if (el && Bow.iso && Bow.iso.walkAdjacentAndAct && !st.jail.picking) {
+        var pos = Bow.iso.getPlayerPos(st);
+        if (Math.hypot(5 - pos.col, 3 - pos.row) > 1.55) {
+          Bow.iso.walkAdjacentAndAct(st, 5, 3, function () {
+            var r2 = Bow.adapter.act.jailPickToggle(st);
+            startJailClock();
+            if (r2 && r2.fadeVeil && Bow.ui.triggerVeil) { Bow.ui.triggerVeil(); }
+            say(r2);
+          }, function () {
+            if (Bow.ui.repaintIsoStage) { Bow.ui.repaintIsoStage(st); }
+          });
+          return { ok: true, message: "Подходите к засову…" };
+        }
+      }
       var res = Bow.adapter.act.jailPickToggle(st);
       startJailClock();
       if (res && res.fadeVeil && Bow.ui.triggerVeil) { Bow.ui.triggerVeil(); }
@@ -265,10 +329,13 @@
     "street-scare": function () { return Bow.adapter.act.streetScare(getState()); },
     "street-fight": function () {
       var state = getState();
+      if (Bow.iso && Bow.iso.stopWalkLoop) { Bow.iso.stopWalkLoop(); }
+      lastExplicitTargetKey = "";
+      lastExplicitTargetRound = -1;
       var res = Bow.adapter.act.streetFight(state);
       if (res && res.ok && state.fight && state.fight.phase === "exchange") {
-        Bow.fight.setOrder(state, "speed", "auto");
-        startFightClock();
+        Bow.fight.setOrder(state, "speed", "paused");
+        stopFightClock();
       }
       return res;
     },
@@ -374,17 +441,41 @@
       return { ok: true, message: "" };
     },
     "stage-select": function (el) {
+      var state = getState();
       var kind = el.getAttribute("data-kind");
       var personId = el.getAttribute("data-person");
       var corpseId = el.getAttribute("data-corpse");
       var xVal = parseFloat(el.getAttribute("data-x"));
-      Bow.ui.setStageSelection({
-        kind: kind,
-        personId: personId,
-        corpseId: corpseId,
-        x: isNaN(xVal) ? null : xVal
-      });
-      if (kind === "jobs" || kind === "trade") { Bow.ui.setTab(kind); }
+      var isoCol = parseFloat(el.getAttribute("data-iso-col"));
+      var isoRow = parseFloat(el.getAttribute("data-iso-row"));
+      var applySelect = function () {
+        Bow.ui.setStageSelection({
+          kind: kind,
+          personId: personId,
+          corpseId: corpseId,
+          x: isNaN(xVal) ? null : xVal
+        });
+        if (kind === "jobs" || kind === "trade") { Bow.ui.setTab(kind); }
+      };
+
+      /* Point-and-Click (Fallout / Kenshi / Divinity): если цель на другой клетке,
+         герой сначала подходит к ней ногами по маршруту A*, поворачивается и открывает меню! */
+      var isComa = !!(Bow.state && Bow.state.isComatose && Bow.state.isComatose(state.player));
+      if (!isComa && kind !== "self" && !isNaN(isoCol) && !isNaN(isoRow) && Bow.iso && Bow.iso.walkAdjacentAndAct) {
+        var curP = Bow.iso.getPlayerPos(state);
+        if (Math.hypot(isoCol - curP.col, isoRow - curP.row) > 1.55) {
+          Bow.ui.setStageSelection(null);
+          Bow.iso.walkAdjacentAndAct(state, isoCol, isoRow, function () {
+            applySelect();
+            refresh(true);
+          }, function () {
+            if (Bow.ui.repaintIsoStage) { Bow.ui.repaintIsoStage(state); }
+          });
+          return { ok: true, message: "" };
+        }
+      }
+
+      applySelect();
       return { ok: true, message: "" };
     },
     "stage-close": function () {
@@ -534,9 +625,82 @@
     if (Bow.audio && Bow.audio.wakeOnGesture) { Bow.audio.wakeOnGesture(); }
     var el = event.target.closest("[data-act]");
     if (!el) {
-      /* Клик по пустому фону Главного окна закрывает всплывающую карточку сцены. */
-      if (event.target.closest && event.target.closest("#bow-stage-canvas") && !event.target.closest("#bow-stage-pop")) {
+      /* Point-and-Click на изометрической сцене (0.0.9.0):
+         закрываем открытую карточку и, если клик пришёл по реальной клетке пола/выхода/объекта,
+         ведём героя по честному маршруту A*! */
+      var stageWrap = event.target.closest && event.target.closest("#bow-stage-canvas");
+      if (stageWrap && !event.target.closest("#bow-stage-pop")) {
         Bow.ui.setStageSelection(null);
+        var st = getState();
+        var isoCv = stageWrap.querySelector("canvas.bow-iso-canvas");
+        var rect = isoCv && isoCv.getBoundingClientRect ? isoCv.getBoundingClientRect() : null;
+        var isComaNow = !!(Bow.state && Bow.state.isComatose && Bow.state.isComatose(st.player));
+
+        if (rect && rect.width > 40 && rect.height > 40 && !isComaNow && !st.fight && Bow.iso) {
+          var sx = ((event.clientX - rect.left) / rect.width) * Bow.iso.VIEW_W;
+          var sy = ((event.clientY - rect.top) / rect.height) * Bow.iso.VIEW_H;
+          var tile = Bow.iso.screenToTile(sx, sy);
+          var map = Bow.iso.mapOf(st);
+
+          if (tile.col >= 0 && tile.col < Bow.iso.COLS && tile.row >= 0 && tile.row < Bow.iso.ROWS) {
+            /* 1. Клик по дорожному маркеру выхода (Exit Grid в духе Fallout) */
+            var hitExit = null;
+            if (!st.jail && !st.guard && !st.encounter && map.exits) {
+              for (var ei = 0; ei < map.exits.length; ei++) {
+                if (map.exits[ei].col === tile.col && map.exits[ei].row === tile.row) {
+                  hitExit = map.exits[ei];
+                  break;
+                }
+              }
+            }
+            if (hitExit) {
+              Bow.iso.walkTo(st, hitExit.col, hitExit.row, function () {
+                var mv = Bow.adapter.act.move(st, hitExit.to);
+                scheduleAutosave(true, true);
+                say(mv);
+              }, function () {
+                if (Bow.ui.repaintIsoStage) { Bow.ui.repaintIsoStage(st); }
+              });
+              refresh(true);
+              return;
+            }
+
+            /* 2. Клик по интерактивному объекту мира (колодец, очаг, горн, костёр) */
+            var hitSpot = null;
+            if (!st.jail && map.spots) {
+              for (var si = 0; si < map.spots.length; si++) {
+                if (map.spots[si].col === tile.col && map.spots[si].row === tile.row) {
+                  hitSpot = map.spots[si];
+                  break;
+                }
+              }
+            }
+            if (hitSpot) {
+              Bow.iso.walkAdjacentAndAct(st, hitSpot.col, hitSpot.row, function () {
+                var ptScr = Bow.iso.tileToScreen(hitSpot.col, hitSpot.row);
+                Bow.ui.setStageSelection({
+                  kind: "prop",
+                  spot: hitSpot,
+                  x: Math.round((ptScr.x / Bow.iso.VIEW_W) * 100)
+                });
+                refresh(true);
+              }, function () {
+                if (Bow.ui.repaintIsoStage) { Bow.ui.repaintIsoStage(st); }
+              });
+              refresh(true);
+              return;
+            }
+
+            /* 3. Обычный шаг Point-and-Click по изометрическому полу/снегу */
+            Bow.iso.walkTo(st, tile.col, tile.row, function () {
+              refresh(true);
+            }, function () {
+              if (Bow.ui.repaintIsoStage) { Bow.ui.repaintIsoStage(st); }
+            });
+            if (Bow.ui.repaintIsoStage) { Bow.ui.repaintIsoStage(st); }
+            return;
+          }
+        }
         refresh(true);
       }
       return;
@@ -857,6 +1021,7 @@
     stopFightClock: stopFightClock,
     startJailClock: startJailClock,
     stopJailClock: stopJailClock,
+    flushAutosave: flushAutosave,
     exportSave: exportSave,
     importSave: importSave,
     restart: restart,
@@ -880,6 +1045,21 @@
       if (st && st.jail) {
         jailUserWakeUntil = Date.now() + 45000;
         if (!jailTimer) { startJailClock(); }
+      }
+      var isoCvMove = event.target && event.target.closest && event.target.closest("canvas.bow-iso-canvas");
+      if (isoCvMove && Bow.iso && Bow.iso.setHoverScreen && (!st || !st.fight)) {
+        var cRect = isoCvMove.getBoundingClientRect();
+        if (cRect && cRect.width > 40) {
+          var hsx = ((event.clientX - cRect.left) / cRect.width) * Bow.iso.VIEW_W;
+          var hsy = ((event.clientY - cRect.top) / cRect.height) * Bow.iso.VIEW_H;
+          var prevH = Bow.iso._lastHoverKey || "";
+          var curH = Bow.iso.setHoverScreen(hsx, hsy);
+          var nextH = curH ? (curH.col + "," + curH.row) : "";
+          if (nextH !== prevH) {
+            Bow.iso._lastHoverKey = nextH;
+            if (Bow.ui.repaintIsoStage) { Bow.ui.repaintIsoStage(st); }
+          }
+        }
       }
       var lpStage = event.target && event.target.closest && event.target.closest("#bow-lp-stage");
       if (lpStage && Bow.ui.getLockpickModalState && Bow.ui.getLockpickModalState().open) {
@@ -994,10 +1174,14 @@
       btnContinue.disabled = false;
     }
 
+    /* Гарантированный сброс отложенного автосейва при закрытии или сворачивании вкладки */
+    global.addEventListener("pagehide", function () { if (autosaveDirty) { flushAutosave(true); } });
+    global.addEventListener("beforeunload", function () { if (autosaveDirty) { flushAutosave(true); } });
+
     /* Применяем сохранённые настройки и отрисовываем стартовый экран. */
     if (Bow.ui.applySettings) { Bow.ui.applySettings(); }
     Bow.ui.setMessage("Осмотритесь. Здесь пока немного людей, но они настоящие.");
-    refresh(true);
+    refresh(true, true);
     startClock();
   }
 

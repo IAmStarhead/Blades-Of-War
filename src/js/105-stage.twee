@@ -621,9 +621,21 @@
     return Math.round(30 + (58 * idx) / (count - 1));
   }
 
+  function isoPct(col, row) {
+    if (Bow.iso && Bow.iso.tileToScreen) {
+      var pt = Bow.iso.tileToScreen(col, row);
+      return {
+        x: Math.round((pt.x / Bow.iso.VIEW_W) * 1000) / 10,
+        y: Math.round((pt.y / Bow.iso.VIEW_H) * 1000) / 10
+      };
+    }
+    return { x: 50, y: 55 };
+  }
+
   function renderHotspotsAndActors(state, selected) {
-    /* Отдельная живая сцена острога / клетки у частокола (фикс image-20, 0.0.8.1):
-       узник сидит за железной решёткой без оружия, снаружи дежурит сторож с факелом. */
+    /* 1. Изометрическая сцена Клетки в разрезе (0.0.9.0, фикс image-28):
+       камера слева без перекрывающих решёток спереди, перегородка с дверью посередине (col 5),
+       коридор со сторожем справа. Ручной Fallout-взлом убран в запас — работает чистая полоска Kenshi! */
     if (state.jail) {
       var leftLabel = (Bow.guard && Bow.guard.formatJailLeft) ? Bow.guard.formatJailLeft(state.jail) : (state.jail.hoursLeft + " ч.");
       var bribeCost = Math.round(((Bow.data && Bow.data.fightRules && Bow.data.fightRules.guard && Bow.data.fightRules.guard.bribeBase) || 25) * 0.8 + (state.jail.hoursLeft || 1));
@@ -642,7 +654,7 @@
             ? '<i class="bow-tone bow-cold">тревога!</i>'
             : '<i class="bow-dim">следит</i>';
 
-      var guardCls = "bow-actor bow-actor-enemy bow-actor-guard bow-jail-guard-" + esc(gPhase);
+      var guardCls = "bow-actor bow-iso-actor bow-actor-enemy bow-actor-guard bow-jail-guard-" + esc(gPhase);
       var alertMark = gPhase === "alert"
         ? '<span class="bow-mgs-alert" aria-label="Сторож заметил взлом">!</span>'
         : (gPhase === "turning" ? '<span class="bow-mgs-warn" aria-hidden="true">?</span>' : '');
@@ -654,87 +666,95 @@
            '</span>')
         : '';
 
-      var lockColor = lockDef.tier >= 4 ? "#d4af5a" : (lockDef.tier >= 2 ? "#a8c0d8" : "#8fa1b3");
+      var pPos = (Bow.iso && Bow.iso.getPlayerPos) ? Bow.iso.getPlayerPos(state) : { col: 2, row: 4 };
+      var pScr = isoPct(pPos.col, pPos.row);
+      var gIso = (Bow.iso && Bow.iso.jailGuardIsoState) ? Bow.iso.jailGuardIsoState(state.jail) : { col: 7, row: 3 };
+      var gScr = isoPct(gIso.col, gIso.row);
+      var strawScr = isoPct(1, 2);
+      var doorScr = isoPct(5, 3);
 
       return [
-        '<button type="button" class="bow-spot bow-spot-prop" style="left:19%;top:31%" data-act="jail-serve" title="Вздремнуть на соломе и отсидеть 4 часа">' +
+        '<button type="button" class="bow-spot bow-iso-spot bow-spot-prop" style="left:' + strawScr.x + '%;top:' + Math.max(14, strawScr.y - 9) + '%" ' +
+          'data-act="jail-serve" data-iso-col="1" data-iso-row="2" title="Вздремнуть на соломе и отсидеть 4 часа">' +
           '<span class="bow-spot-dot"></span>' +
-          '<span class="bow-spot-txt"><b>Охапка соломы</b><i>отсидеть 4 ч. (' + esc(leftLabel) + ')</i></span>' +
+          '<span class="bow-spot-txt"><b>Охапка соломы</b><i>отсидеть 4 ч.</i></span>' +
         '</button>',
-        '<button type="button" class="bow-spot bow-spot-exit' + (isPicking ? ' bow-spot-on' : '') + '" style="left:46%;top:29%" data-act="jail-pick-toggle" title="Взлом в реальном времени (полоска Kenshi) — ловите момент, пока сторож отвернулся">' +
+        '<button type="button" class="bow-spot bow-iso-spot bow-spot-exit' + (isPicking ? ' bow-spot-on' : '') + '" style="left:' + doorScr.x + '%;top:' + Math.max(14, doorScr.y - 16) + '%" ' +
+          'data-act="jail-pick-toggle" data-iso-col="5" data-iso-row="3" title="Подойти к решётке и взламывать замок, пока сторож отвернулся">' +
           '<span class="bow-spot-dot"></span>' +
           '<span class="bow-spot-txt"><b>' + esc(lockDef.name) + ' · ' + esc(lockDef.rank) + '</b><i>' +
-            (isPicking ? ('замереть (' + lpProg + '%)') : ('взлом · нав. ' + lpSkill + (lpProg > 0 ? ' · ' + lpProg + '%' : ''))) +
+            (isPicking ? ('замереть (' + lpProg + '%)') : ('взлом · ур. ' + lpSkill + (lpProg > 0 ? ' · ' + lpProg + '%' : ''))) +
           '</i></span>' +
         '</button>',
-        '<button type="button" class="bow-spot bow-spot-prop" style="left:77%;top:31%" data-act="jail-bribe" title="Сунуть монеты сторожу через прутья">' +
-          '<span class="bow-spot-dot"></span>' +
-          '<span class="bow-spot-txt"><b>Подкупить сторожа</b><i>' + bribeCost + ' м.</i></span>' +
-        '</button>',
-        /* Узник внутри клетки + движущаяся полоска взлома Kenshi прямо над головой */
-        '<button type="button" class="bow-actor bow-actor-player' + selfOn + (isPicking ? ' bow-actor-picking' : '') + '" style="left:36%;bottom:42px;z-index:3" ' +
-          'data-act="stage-select" data-kind="self" data-x="36" title="Вы в клетке · осталось ' + esc(leftLabel) + '">' +
+        /* Узник в левом отсеке камеры — перед ним НЕТ решёток, полоска и подпись читаются идеально */
+        '<button type="button" class="bow-actor bow-iso-actor bow-actor-player' + selfOn + (isPicking ? ' bow-actor-picking' : '') + '" ' +
+          'style="left:' + pScr.x + '%;top:' + pScr.y + '%" ' +
+          'data-act="stage-select" data-kind="self" data-x="' + pScr.x + '" title="Вы в камере · осталось ' + esc(leftLabel) + '">' +
           kenshiBarHtml +
-          figureSvg({ roleKey: "player", side: "player", weapon: null }) +
-          '<span class="bow-actor-tag"><b>Вы (в клетке)</b><i class="bow-tone bow-cold">' + esc(leftLabel) + '</i></span>' +
+          '<span class="bow-iso-hit"></span>' +
+          '<span class="bow-actor-tag"><b>Вы</b><i class="bow-tone bow-cold">' + esc(leftLabel) + '</i></span>' +
         '</button>',
-        /* Передняя кованая решётка клетки поверх фигурки узника! */
-        '<svg class="bow-stage-cage-bars" viewBox="0 0 420 200" preserveAspectRatio="none" aria-hidden="true">' +
-          '<rect x="4" y="6" width="412" height="190" fill="none" stroke="#4d5c6c" stroke-width="5"/>' +
-          '<line x1="4" y1="54" x2="416" y2="54" stroke="#455362" stroke-width="4.5"/>' +
-          '<line x1="4" y1="144" x2="416" y2="144" stroke="#455362" stroke-width="4.5"/>' +
-          '<g stroke="#647587" stroke-width="4">' +
-            '<line x1="46" y1="6" x2="46" y2="196"/><line x1="88" y1="6" x2="88" y2="196"/>' +
-            '<line x1="130" y1="6" x2="130" y2="196"/><line x1="172" y1="6" x2="172" y2="196"/>' +
-            '<line x1="214" y1="6" x2="214" y2="196"/><line x1="256" y1="6" x2="256" y2="196"/>' +
-            '<line x1="298" y1="6" x2="298" y2="196"/><line x1="340" y1="6" x2="340" y2="196"/>' +
-            '<line x1="382" y1="6" x2="382" y2="196"/>' +
-          '</g>' +
-          /* Тяжёлый висячий замок на засове справа (усиливается с ростом lockTier) */
-          '<rect x="390" y="90" width="24" height="28" rx="3" fill="#232c35" stroke="' + lockColor + '" stroke-width="2.2"/>' +
-          '<path d="M395 90 C395 79, 409 79, 409 90" fill="none" stroke="' + lockColor + '" stroke-width="2.6"/>' +
-          '<circle cx="402" cy="103" r="2.3" fill="#0d1217"/>' +
-        '</svg>',
-        /* Кнопка ручного вскрытия замка крупным планом (Skyrim / Fallout) прямо на засове решётки */
-        '<button type="button" class="bow-cage-lock-btn" data-act="jail-pick-manual" title="Открыть замочную скважину крупным планом и взломать отмычкой вручную (Skyrim / Fallout)">' +
-          '🗝 Вручную' +
-        '</button>',
-        /* Сторож снаружи у факела (следит / поворачивается / отвернулся / «!» тревога MGS) */
-        '<button type="button" class="' + guardCls + '" style="left:73%;bottom:42px;z-index:5" ' +
-          'data-act="jail-bribe" title="Сторож у клети — подкупить за ' + bribeCost + ' м.">' +
+        /* Сторож в правом коридоре острога за перегородкой (ходит, отворачивается к жаровне и палит «!») */
+        '<button type="button" class="' + guardCls + '" ' +
+          'style="left:' + gScr.x + '%;top:' + gScr.y + '%" ' +
+          'data-act="jail-bribe" data-iso-col="5" data-iso-row="3" title="Сторож в коридоре — подкупить за ' + bribeCost + ' м.">' +
           alertMark +
-          '<span class="bow-jail-guard-fig">' + figureSvg({ roleKey: "guard", side: "enemy", weapon: "axe", stance: "guard" }) + '</span>' +
+          '<span class="bow-iso-hit"></span>' +
           '<span class="bow-actor-tag bow-actor-tag-guard"><b>⛨ Сторож</b>' + guardSub + '</span>' +
         '</button>'
       ].join("");
     }
 
     var locKey = state.player.location;
+    var map = (Bow.iso && Bow.iso.mapOf) ? Bow.iso.mapOf(state) : null;
     var props = STAGE_PROPS[locKey] || [];
-    var people = Bow.actions.peopleAt(state, locKey);
-    var corpses = Bow.actions.corpsesAt ? Bow.actions.corpsesAt(state, locKey) : [];
-    var hasGuard = !!(state.guard && state.guard.arrived && state.guard.squad && state.guard.squad.length);
-    var hasRobber = !!(state.encounter && state.encounter.robber);
     var html = [];
 
-    /* 1. Точки интереса самой локации (верхний ярус) с точным временем пути в минутах */
+    /* 2. Точки ремесла / торговли / отдыха и изометрические выходы локации */
     props.forEach(function (pr) {
       if (pr.kind === "exit") {
         var mins = Bow.actions.travelMinutes ? Bow.actions.travelMinutes(state, pr.loc) : 15;
         var subDur = Bow.actions.formatDuration ? Bow.actions.formatDuration(mins) : pr.sub;
+        /* Находим изометрическую клетку выхода, если она описана на карте */
+        var exCol = 10, exRow = 4, exPos = { x: pr.x, y: pr.y };
+        if (map && map.exits) {
+          for (var ei = 0; ei < map.exits.length; ei++) {
+            if (map.exits[ei].to === pr.loc) {
+              exCol = map.exits[ei].col;
+              exRow = map.exits[ei].row;
+              var ep = isoPct(exCol, exRow);
+              exPos = { x: ep.x, y: Math.min(82, Math.max(16, ep.y - 6)) };
+              break;
+            }
+          }
+        }
         html.push(
-          '<button type="button" class="bow-spot bow-spot-exit" style="left:' + pr.x + '%;top:' + pr.y + '%" ' +
-            'data-act="move" data-loc="' + esc(pr.loc) + '" data-x="' + pr.x + '" title="Перейти: ' + esc(pr.label) + ' (' + esc(subDur) + ')">' +
+          '<button type="button" class="bow-spot bow-iso-spot bow-spot-exit" style="left:' + exPos.x + '%;top:' + exPos.y + '%" ' +
+            'data-act="move" data-loc="' + esc(pr.loc) + '" data-iso-col="' + exCol + '" data-iso-row="' + exRow + '" data-x="' + exPos.x + '" title="Подойти к выходу: ' + esc(pr.label) + ' (' + esc(subDur) + ')">' +
             '<span class="bow-spot-dot"></span>' +
             '<span class="bow-spot-txt"><b>' + esc(pr.label) + '</b><i>' + esc(subDur) + '</i></span>' +
           '</button>'
         );
         return;
       }
+      var propCol = pr.kind === "trade" ? 8 : (pr.kind === "rest" ? 1 : 4);
+      var propRow = pr.kind === "rest" ? 1 : (pr.kind === "trade" ? 1 : 2);
+      if (map && map.spots && map.spots.length) {
+        for (var si = 0; si < map.spots.length; si++) {
+          var ms = map.spots[si];
+          if ((pr.kind === "trade" && ms.tab === "trade") || (pr.kind === "jobs" && ms.tab === "jobs") || (pr.kind === "rest" && ms.act === "rest")) {
+            propCol = ms.col;
+            propRow = ms.row;
+            break;
+          }
+        }
+      }
+      var spScr = isoPct(propCol, propRow);
+      var topY = Math.max(12, Math.min(39, spScr.y - 12));
       if (pr.kind === "rest") {
         html.push(
-          '<button type="button" class="bow-spot bow-spot-prop" style="left:' + pr.x + '%;top:' + pr.y + '%" ' +
-            'data-act="rest" data-x="' + pr.x + '" title="Отдохнуть в тепле">' +
+          '<button type="button" class="bow-spot bow-iso-spot bow-spot-prop" style="left:' + spScr.x + '%;top:' + topY + '%" ' +
+            'data-act="rest" data-iso-col="' + propCol + '" data-iso-row="' + propRow + '" data-x="' + spScr.x + '" title="Подойти и отдохнуть">' +
             '<span class="bow-spot-dot"></span>' +
             '<span class="bow-spot-txt"><b>' + esc(pr.label) + '</b><i>' + esc(pr.sub) + '</i></span>' +
           '</button>'
@@ -743,141 +763,105 @@
       }
       var active = selected && selected.kind === pr.kind ? " bow-spot-on" : "";
       html.push(
-        '<button type="button" class="bow-spot bow-spot-prop' + active + '" style="left:' + pr.x + '%;top:' + pr.y + '%" ' +
-          'data-act="stage-select" data-kind="' + esc(pr.kind) + '" data-x="' + pr.x + '">' +
+        '<button type="button" class="bow-spot bow-iso-spot bow-spot-prop' + active + '" style="left:' + spScr.x + '%;top:' + topY + '%" ' +
+          'data-act="stage-select" data-kind="' + esc(pr.kind) + '" data-iso-col="' + propCol + '" data-iso-row="' + propRow + '" data-x="' + spScr.x + '">' +
           '<span class="bow-spot-dot"></span>' +
           '<span class="bow-spot-txt"><b>' + esc(pr.label) + '</b><i>' + esc(pr.sub) + '</i></span>' +
         '</button>'
       );
     });
 
-    /* Собираем всех видимых участников на нижнем ярусе сцены:
-       пришедшая стража, уличный грабитель/вор, живые жители и лежащие трупы. */
-    var stageEntities = [];
-
-    if (hasGuard) {
-      var gSquad = state.guard.squad;
-      var showGuards = (people.length + corpses.length >= 4) ? gSquad.slice(0, 2) : gSquad.slice(0, 3);
-      showGuards.forEach(function (gu, gIdx) {
-        stageEntities.push({ kind: "guard", guardUnit: gu, guardIdx: gIdx });
-      });
-    }
-
-    if (hasRobber) {
-      stageEntities.push({ kind: "robber", robber: state.encounter.robber });
-    }
-
-    people.forEach(function (p) {
-      stageEntities.push({ kind: "person", person: p });
-    });
-
-    corpses.forEach(function (c) {
-      stageEntities.push({ kind: "corpse", corpse: c });
-    });
-
-    /* 2. Фигурка самого игрока слева на переднем плане (или без сознания на снегу при минусе в области тела) */
-    var playerX = stageEntities.length >= 5 ? 16 : (stageEntities.length === 4 ? 18 : 20);
-    var pWeapon = weaponKindOf(state, state.player);
-    var selfActive = selected && selected.kind === "self" ? " bow-actor-on" : "";
+    /* 3. Живые персонажи, стража, грабители и тела на их изометрических клетках */
+    var ents = (Bow.iso && Bow.iso.collectSceneEntities) ? Bow.iso.collectSceneEntities(state, selected) : [];
     var isComa = !!(Bow.state && Bow.state.isComatose && Bow.state.isComatose(state.player));
     var activeTaskDef = (!isComa && state.task && Bow.work && Bow.work.taskByKey) ? Bow.work.taskByKey(state.task.key) : null;
-    var playerSub = isComa
-      ? '<i class="bow-tone bow-cold">без сознания</i>'
-      : activeTaskDef
-        ? ('<i class="bow-tone bow-warm">' + esc(activeTaskDef.short) + ' · ' + Math.round(state.task.elapsedMin) + '/' + (activeTaskDef.cycleMinutes || 30) + 'м</i>')
-        : "";
-    html.push(
-      '<button type="button" class="bow-actor bow-actor-player' + selfActive + (activeTaskDef ? " bow-actor-working" : "") + (isComa ? " bow-actor-coma" : "") + '" style="left:' + playerX + '%;bottom:42px" ' +
-        'data-act="stage-select" data-kind="self" data-x="' + playerX + '" title="Вы — припасы, отдых и перевязка">' +
-        figureSvg({ roleKey: "player", side: "player", weapon: pWeapon, down: isComa }) +
-        '<span class="bow-actor-tag"><b>Вы</b>' + playerSub + '</span>' +
-      '</button>'
-    );
 
-    /* 3. Остальные фигурки на сцене (стража, грабитель, жители, трупы) */
-    stageEntities.forEach(function (ent, idx) {
-      var x = actorSlotX(idx, stageEntities.length);
+    ents.forEach(function (ent) {
+      var xPct = Math.round((ent.x / 1088) * 1000) / 10;
+      var yPct = Math.round((ent.y / 368) * 1000) / 10;
 
-      if (ent.kind === "guard") {
-        var gu = ent.guardUnit;
+      if (ent.type === "player") {
+        var selfActive = selected && selected.kind === "self" ? " bow-actor-on" : "";
+        var playerSub = isComa
+          ? '<i class="bow-tone bow-cold">без сознания</i>'
+          : activeTaskDef
+            ? ('<i class="bow-tone bow-warm">' + esc(activeTaskDef.short) + ' · ' + Math.round(state.task.elapsedMin) + '/' + (activeTaskDef.cycleMinutes || 30) + 'м</i>')
+            : "";
+        html.push(
+          '<button type="button" class="bow-actor bow-iso-actor bow-actor-player' + selfActive + (activeTaskDef ? " bow-actor-working" : "") + (isComa ? " bow-actor-coma" : "") + '" ' +
+            'style="left:' + xPct + '%;top:' + yPct + '%" ' +
+            'data-act="stage-select" data-kind="self" data-x="' + xPct + '" title="Вы — припасы, отдых и перевязка">' +
+            '<span class="bow-iso-hit"></span>' +
+            '<span class="bow-actor-tag"><b>Вы</b>' + playerSub + '</span>' +
+          '</button>'
+        );
+        return;
+      }
+
+      if (ent.type === "guard") {
         var gSel = selected && selected.kind === "guard";
         html.push(
-          '<button type="button" class="bow-actor bow-actor-enemy bow-actor-guard' + (gSel ? " bow-actor-on" : "") + '" ' +
-            'style="left:' + x + '%;bottom:42px" ' +
-            'data-act="stage-select" data-kind="guard" data-x="' + x + '" ' +
-            'title="Стража Брода — ' + esc(gu.name) + ' (требуют ответа)">' +
-            figureSvg({ roleKey: "guard", side: "enemy", weapon: "axe", stance: "guard" }) +
-            '<span class="bow-actor-tag bow-actor-tag-threat">' +
-              '<b>⛨ ' + esc(gu.name) + '</b>' +
-              '<i class="bow-tone bow-cold">стража</i>' +
-            '</span>' +
+          '<button type="button" class="bow-actor bow-iso-actor bow-actor-enemy bow-actor-guard' + (gSel ? " bow-actor-on" : "") + '" ' +
+            'style="left:' + xPct + '%;top:' + yPct + '%" ' +
+            'data-act="stage-select" data-kind="guard" data-iso-col="' + ent.col + '" data-iso-row="' + ent.row + '" data-x="' + xPct + '" ' +
+            'title="Стража Брода — ' + esc(ent.name) + '">' +
+            '<span class="bow-iso-hit"></span>' +
+            '<span class="bow-actor-tag bow-actor-tag-threat"><b>⛨ ' + esc(ent.name) + '</b><i class="bow-tone bow-cold">стража</i></span>' +
           '</button>'
         );
         return;
       }
 
-      if (ent.kind === "robber") {
-        var rb = ent.robber;
+      if (ent.type === "robber") {
+        var rb = state.encounter && state.encounter.robber;
         var rSel = selected && selected.kind === "robber";
-        var rWeapon = weaponKindOf(state, rb);
         html.push(
-          '<button type="button" class="bow-actor bow-actor-enemy bow-actor-robber' + (rSel ? " bow-actor-on" : "") + '" ' +
-            'style="left:' + x + '%;bottom:42px" ' +
-            'data-act="stage-select" data-kind="robber" data-x="' + x + '" ' +
-            'title="' + esc(rb.name) + ' — требует ' + rb.demand + ' м.">' +
-            figureSvg({ roleKey: "robber", side: "enemy", weapon: rWeapon }) +
-            '<span class="bow-actor-tag bow-actor-tag-threat">' +
-              '<b>⚔ ' + esc(rb.name) + '</b>' +
-              '<i class="bow-tone bow-cold">' + rb.demand + ' м.</i>' +
-            '</span>' +
+          '<button type="button" class="bow-actor bow-iso-actor bow-actor-enemy bow-actor-robber' + (rSel ? " bow-actor-on" : "") + '" ' +
+            'style="left:' + xPct + '%;top:' + yPct + '%" ' +
+            'data-act="stage-select" data-kind="robber" data-iso-col="' + ent.col + '" data-iso-row="' + ent.row + '" data-x="' + xPct + '" ' +
+            'title="' + esc(ent.name) + (rb ? (' — требует ' + rb.demand + ' м.') : '') + '">' +
+            '<span class="bow-iso-hit"></span>' +
+            '<span class="bow-actor-tag bow-actor-tag-threat"><b>⚔ ' + esc(ent.name) + '</b>' + (rb ? '<i class="bow-tone bow-cold">' + rb.demand + ' м.</i>' : '') + '</span>' +
           '</button>'
         );
         return;
       }
 
-      if (ent.kind === "corpse") {
+      if (ent.type === "corpse") {
         var c = ent.corpse;
         var cSel = selected && selected.kind === "corpse" && selected.corpseId === c.id;
         var hasLoot = !c.looted && ((c.money || 0) > 0 || (c.items && c.items.length > 0));
         var stg = (Bow.actions && Bow.actions.corpseStage) ? Bow.actions.corpseStage(state, c) : { key: "fresh", label: "свежее тело" };
         var subLabel = hasLoot ? ("обыскать · " + stg.label) : stg.label;
         html.push(
-          '<button type="button" class="bow-actor bow-actor-corpse bow-corpse-' + stg.key + (cSel ? " bow-actor-on" : "") + (hasLoot ? " bow-actor-corpse-loot" : "") + '" ' +
-            'style="left:' + x + '%;bottom:42px" ' +
-            'data-act="stage-select" data-kind="corpse" data-corpse="' + esc(c.id) + '" data-x="' + x + '" ' +
-            'title="' + esc("Труп: " + c.name + " (" + stg.label + ")" + (hasLoot ? " — можно обыскать" : "")) + '">' +
-            figureSvg({ roleKey: c.roleKey || "villager", side: "enemy", dead: true }) +
-            '<span class="bow-actor-tag bow-actor-tag-corpse">' +
-              '<b>☠ ' + esc(c.name) + '</b>' +
-              '<i class="bow-dim">' + esc(subLabel) + '</i>' +
-            '</span>' +
+          '<button type="button" class="bow-actor bow-iso-actor bow-actor-corpse bow-corpse-' + stg.key + (cSel ? " bow-actor-on" : "") + (hasLoot ? " bow-actor-corpse-loot" : "") + '" ' +
+            'style="left:' + xPct + '%;top:' + yPct + '%" ' +
+            'data-act="stage-select" data-kind="corpse" data-corpse="' + esc(c.id) + '" data-iso-col="' + ent.col + '" data-iso-row="' + ent.row + '" data-x="' + xPct + '" ' +
+            'title="' + esc("Труп: " + c.name + " (" + stg.label + ")") + '">' +
+            '<span class="bow-iso-hit"></span>' +
+            '<span class="bow-actor-tag bow-actor-tag-corpse"><b>☠ ' + esc(c.name) + '</b><i class="bow-dim">' + esc(subLabel) + '</i></span>' +
           '</button>'
         );
         return;
       }
 
-      var p = ent.person;
-      var isSel = selected && selected.kind === "person" && selected.personId === p.id;
-      var tone = p.attitude >= 20 ? "warm" : p.attitude <= -20 ? "cold" : "neutral";
-      var wKind = weaponKindOf(state, p);
-      var hp = Math.round((p.needs && p.needs.health) || 100);
-      var sign = p.attitude > 0 ? "+" : "";
-
-      html.push(
-        '<button type="button" class="bow-actor bow-actor-npc' + (isSel ? " bow-actor-on" : "") + '" ' +
-          'style="left:' + x + '%;bottom:42px" ' +
-          'data-act="stage-select" data-kind="person" data-person="' + esc(p.id) + '" data-x="' + x + '" ' +
-          'title="' + esc(p.name + " — " + p.role) + '">' +
-          (hp < 100
-            ? '<span class="bow-actor-hp"><i style="width:' + hp + '%"></i></span>'
-            : '') +
-          figureSvg({ roleKey: p.key || "villager", side: "neutral", weapon: wKind }) +
-          '<span class="bow-actor-tag">' +
-            '<b>' + esc(p.name) + '</b>' +
-            '<i class="bow-tone bow-' + tone + '">' + sign + Math.round(p.attitude) + '</i>' +
-          '</span>' +
-        '</button>'
-      );
+      if (ent.type === "npc" && ent.person) {
+        var p = ent.person;
+        var isSel = selected && selected.kind === "person" && selected.personId === p.id;
+        var tone = p.attitude >= 20 ? "warm" : p.attitude <= -20 ? "cold" : "neutral";
+        var hp = Math.round((p.needs && p.needs.health) || 100);
+        var sign = p.attitude > 0 ? "+" : "";
+        html.push(
+          '<button type="button" class="bow-actor bow-iso-actor bow-actor-npc' + (isSel ? " bow-actor-on" : "") + '" ' +
+            'style="left:' + xPct + '%;top:' + yPct + '%" ' +
+            'data-act="stage-select" data-kind="person" data-person="' + esc(p.id) + '" data-iso-col="' + ent.col + '" data-iso-row="' + ent.row + '" data-x="' + xPct + '" ' +
+            'title="' + esc(p.name + " — " + p.role) + '">' +
+            (hp < 100 ? '<span class="bow-actor-hp"><i style="width:' + hp + '%"></i></span>' : '') +
+            '<span class="bow-iso-hit"></span>' +
+            '<span class="bow-actor-tag"><b>' + esc(p.name) + '</b><i class="bow-tone bow-' + tone + '">' + sign + Math.round(p.attitude) + '</i></span>' +
+          '</button>'
+        );
+      }
     });
 
     return html.join("");

@@ -566,7 +566,7 @@
       allies: [],
       enemies: [],
       units: [],
-      orders: { stance: "press", aim: "body", squad: "focus", speed: "auto" },
+      orders: { stance: "press", aim: "body", squad: "focus", speed: "paused" },
       heatTotal: 0,
       repTotal: 0
     };
@@ -738,13 +738,13 @@
         stance: "press",
         aim: "body",
         squad: "free",
-        speed: "auto"
+        speed: "paused"
       };
     }
     if (!f.orders.stance) { f.orders.stance = "press"; }
     if (!f.orders.aim) { f.orders.aim = "body"; }
     if (!f.orders.squad) { f.orders.squad = "free"; }
-    if (!f.orders.speed) { f.orders.speed = "auto"; }
+    if (!f.orders.speed) { f.orders.speed = "paused"; }
     return f.orders;
   }
 

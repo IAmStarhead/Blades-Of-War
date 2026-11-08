@@ -317,8 +317,22 @@
   var combatDry = null;
   var combatWet = null;
   var velvetNoiseBuf = null;
+  var velvetNoiseByRate = {};
 
-  /* Планировщик точного времени Web Audio */
+  /* Предзапекание петель треков через OfflineAudioContext (0.0.9.0):
+     вместо сотни живых осцилляторов и 3 тяжёлых ConvolverNode в реальном времени
+     браузер один раз в фоне рендерит бесшовную петлю трека (с наложением хвоста
+     реверберации на начало такта 0) и крутит её ОДНИМ AudioBufferSourceNode! */
+  var BAKE_SAMPLE_RATE = 24000;
+  var bakedBuffers = {};
+  var bakingPromises = {};
+  var activeLoopSource = null;
+  var activeLoopGain = null;
+  var activeBakedKey = "";
+  var autoRotateTimer = null;
+  var bakeReqSeq = 0;
+
+  /* Планировщик точного времени Web Audio (резервный режим, если нет OfflineAudioContext) */
   var schedulerTimer = null;
   var nextSubTime = 0;
   var curBarIdx = 0;
@@ -401,10 +415,14 @@
     return !!(global.AudioContext || global.webkitAudioContext);
   }
 
-  /* Бархатный розовый шум без треска для воздушного выдоха-снейра Enigma */
+  function hasOfflineAudio() {
+    return !!(global.OfflineAudioContext || global.webkitOfflineAudioContext);
+  }
+
+  /* Бархатный розовый шум без треска (кэшируется по частоте дискретизации для OfflineAudioContext) */
   function getVelvetNoiseBuffer(audioCtx) {
-    if (velvetNoiseBuf) { return velvetNoiseBuf; }
-    var sr = audioCtx.sampleRate || 44100;
+    var sr = (audioCtx && audioCtx.sampleRate) ? audioCtx.sampleRate : 44100;
+    if (velvetNoiseByRate[sr]) { return velvetNoiseByRate[sr]; }
     var len = Math.floor(sr * 1.4);
     var buf = audioCtx.createBuffer(1, len, sr);
     var d = buf.getChannelData(0);
@@ -419,6 +437,7 @@
       b2 = 0.57000 * b2 + w * 1.0526913;
       d[i] = (b0 + b1 + b2 + w * 0.1848) * 0.14;
     }
+    velvetNoiseByRate[sr] = buf;
     velvetNoiseBuf = buf;
     return buf;
   }
@@ -456,10 +475,12 @@
     var Ctor = global.AudioContext || global.webkitAudioContext;
     if (!Ctor) { return null; }
     try {
-      ctx = new Ctor();
+      ctx = new Ctor({ latencyHint: "playback" });
       masterGain = ctx.createGain();
       masterGain.gain.value = 0.0001;
       masterGain.connect(ctx.destination);
+
+      var useBaked = hasOfflineAudio();
 
       /* Шина 1: Тёплое помещение (Трактир, Кузница) */
       indoorBus = ctx.createGain();
@@ -468,11 +489,13 @@
       indoorDry.gain.value = 0.72;
       indoorWet = ctx.createGain();
       indoorWet.gain.value = 0.38;
-      var inRev = ctx.createConvolver();
-      inRev.buffer = buildImpulseResponse(ctx, 1.45, 0.76, 0.8, 108271);
       indoorDry.connect(indoorBus);
-      indoorWet.connect(inRev);
-      inRev.connect(indoorBus);
+      if (!useBaked) {
+        var inRev = ctx.createConvolver();
+        inRev.buffer = buildImpulseResponse(ctx, 1.45, 0.76, 0.8, 108271);
+        indoorWet.connect(inRev);
+        inRev.connect(indoorBus);
+      }
       indoorBus.connect(masterGain);
 
       /* Шина 2: Северный простор + гипнотическое эхо Enigma (Улица, Околица, Тайга) */
@@ -482,25 +505,29 @@
       outdoorDry.gain.value = 0.50;
       outdoorWet = ctx.createGain();
       outdoorWet.gain.value = 0.70;
-      var outRev = ctx.createConvolver();
-      outRev.buffer = buildImpulseResponse(ctx, 3.65, 0.83, 0.22, 791233);
       outdoorDry.connect(outdoorBus);
-      outdoorWet.connect(outRev);
-      outRev.connect(outdoorBus);
+      if (!useBaked) {
+        var outRev = ctx.createConvolver();
+        outRev.buffer = buildImpulseResponse(ctx, 3.65, 0.83, 0.22, 791233);
+        outdoorWet.connect(outRev);
+        outRev.connect(outdoorBus);
+      }
       outdoorBus.connect(masterGain);
 
       /* Шина 3: Поле боя (единое тёплое акустическое пространство с остальным саундтреком, 0.0.8.2) */
       combatBus = ctx.createGain();
-      combatBus.gain.value = 0.0001;
+      combatBus.gain.value = useBaked ? 0.92 : 0.0001;
       combatDry = ctx.createGain();
       combatDry.gain.value = 0.52;
       combatWet = ctx.createGain();
       combatWet.gain.value = 0.64;
-      var cbRev = ctx.createConvolver();
-      cbRev.buffer = buildImpulseResponse(ctx, 3.45, 0.84, 0.42, 553911);
       combatDry.connect(combatBus);
-      combatWet.connect(cbRev);
-      cbRev.connect(combatBus);
+      if (!useBaked) {
+        var cbRev = ctx.createConvolver();
+        cbRev.buffer = buildImpulseResponse(ctx, 3.45, 0.84, 0.42, 553911);
+        combatWet.connect(cbRev);
+        cbRev.connect(combatBus);
+      }
       combatBus.connect(masterGain);
     } catch (e) {
       ctx = null;
@@ -1610,7 +1637,243 @@
     masterGain.gain.linearRampToValueAtTime(target, now + 0.45);
   }
 
+  function trackBakeKey(track) {
+    if (!track) { return ""; }
+    var beatSuffix = (track.realm === "outdoor") ? (state.streetBeat ? ":b1" : ":b0") : "";
+    return track.id + beatSuffix;
+  }
+
+  function trackLoopDuration(track) {
+    var totalSubs = (track.meter || 4) * (track.subPerBeat || 2);
+    var beatSec = 60 / (track.bpm || 80);
+    var subDur = beatSec / (track.subPerBeat || 2);
+    return (track.bars ? track.bars.length : 4) * totalSubs * subDur;
+  }
+
+  /* Фоновое запекание бесшовной петли трека через OfflineAudioContext:
+     рендерим (loopDur + tailDur) секунд с настоящим ревербератором зала,
+     а затем складываем хвост [loopDur .. loopDur+tailDur] в начало [0 .. tailDur].
+     В итоге loop = true звучит абсолютно бесшовно и тратит < 1% CPU! */
+  function bakeTrackAsync(trackId) {
+    var track = trackById(trackId);
+    if (!track || !hasOfflineAudio() || !ensureContext()) {
+      return Promise.resolve(null);
+    }
+    var key = trackBakeKey(track);
+    if (bakedBuffers[key]) {
+      return Promise.resolve(bakedBuffers[key]);
+    }
+    if (bakingPromises[key]) {
+      return bakingPromises[key];
+    }
+
+    var OfflineCtor = global.OfflineAudioContext || global.webkitOfflineAudioContext;
+    var totalSubs = (track.meter || 4) * (track.subPerBeat || 2);
+    var beatSec = 60 / (track.bpm || 80);
+    var subDur = beatSec / (track.subPerBeat || 2);
+    var barCount = track.bars.length;
+    var loopDur = barCount * totalSubs * subDur;
+    var tailDur = track.realm === "indoor" ? 1.85 : (track.realm === "combat" ? 3.55 : 3.75);
+    var sr = BAKE_SAMPLE_RATE;
+    var loopFrames = Math.max(1, Math.round(loopDur * sr));
+    var tailFrames = Math.max(1, Math.round(tailDur * sr));
+    var totalFrames = loopFrames + tailFrames;
+
+    var offCtx;
+    try {
+      offCtx = new OfflineCtor(2, totalFrames, sr);
+    } catch (err) {
+      return Promise.resolve(null);
+    }
+
+    /* Строим в оффлайн-контексте ровно ту пространственную шину, которая нужна этому треку */
+    var offBus = offCtx.createGain();
+    offBus.gain.value = 1.0;
+    offBus.connect(offCtx.destination);
+
+    var offDry = offCtx.createGain();
+    var offWet = offCtx.createGain();
+    var offRev = offCtx.createConvolver();
+    if (track.realm === "indoor") {
+      offDry.gain.value = 0.72;
+      offWet.gain.value = 0.38;
+      offRev.buffer = buildImpulseResponse(offCtx, 1.45, 0.76, 0.8, 108271);
+    } else if (track.realm === "combat") {
+      offDry.gain.value = 0.52;
+      offWet.gain.value = 0.64;
+      offRev.buffer = buildImpulseResponse(offCtx, 3.45, 0.84, 0.42, 553911);
+    } else {
+      offDry.gain.value = 0.50;
+      offWet.gain.value = 0.70;
+      offRev.buffer = buildImpulseResponse(offCtx, 3.65, 0.83, 0.22, 791233);
+    }
+    offDry.connect(offBus);
+    offWet.connect(offRev);
+    offRev.connect(offBus);
+
+    /* На 1 миллисекунду перенаправляем генераторы нот в оффлайн-граф и раскладываем все такты */
+    var savedCtx = ctx;
+    var savedInDry = indoorDry, savedInWet = indoorWet;
+    var savedOutDry = outdoorDry, savedOutWet = outdoorWet;
+    var savedCbDry = combatDry, savedCbWet = combatWet;
+    try {
+      ctx = offCtx;
+      indoorDry = offDry; indoorWet = offWet;
+      outdoorDry = offDry; outdoorWet = offWet;
+      combatDry = offDry; combatWet = offWet;
+
+      var tCursor = 0.0;
+      for (var b = 0; b < barCount; b++) {
+        var bar = track.bars[b];
+        for (var s = 0; s < totalSubs; s++) {
+          scheduleSubStep(track, bar, s, totalSubs, subDur, tCursor);
+          tCursor += subDur;
+        }
+      }
+    } finally {
+      ctx = savedCtx;
+      indoorDry = savedInDry; indoorWet = savedInWet;
+      outdoorDry = savedOutDry; outdoorWet = savedOutWet;
+      combatDry = savedCbDry; combatWet = savedCbWet;
+    }
+
+    var p = offCtx.startRendering().then(function (rendered) {
+      delete bakingPromises[key];
+      if (!ctx || !rendered) { return null; }
+      var seamless = ctx.createBuffer(2, loopFrames, sr);
+      for (var ch = 0; ch < 2; ch++) {
+        var src = rendered.getChannelData(ch);
+        var dst = seamless.getChannelData(ch);
+        for (var i = 0; i < loopFrames; i++) {
+          dst[i] = src[i];
+        }
+        /* Бесшовное наложение реверберационного и инструментального хвоста в начало петли */
+        var foldLen = Math.min(tailFrames, src.length - loopFrames);
+        for (var f = 0; f < foldLen; f++) {
+          dst[f % loopFrames] += src[loopFrames + f];
+        }
+        /* Мягкое микроскопическое сглаживание стыка на 64 сэмплах (2.6 мс) от любых суб-сэмпловых ступенек */
+        var xfade = Math.min(64, Math.floor(loopFrames / 8));
+        for (var x = 0; x < xfade; x++) {
+          var alpha = x / xfade;
+          var tailSample = src[loopFrames - xfade + x] + ((loopFrames + tailFrames - xfade + x < src.length) ? src[loopFrames + tailFrames - xfade + x] : 0);
+          dst[loopFrames - xfade + x] = dst[loopFrames - xfade + x] * (1 - alpha * 0.15) + tailSample * (alpha * 0.15);
+        }
+      }
+      bakedBuffers[key] = seamless;
+      return seamless;
+    }).catch(function () {
+      delete bakingPromises[key];
+      return null;
+    });
+
+    bakingPromises[key] = p;
+    return p;
+  }
+
+  function stopBakedPlayback(fadeSec) {
+    if (autoRotateTimer) {
+      global.clearTimeout(autoRotateTimer);
+      autoRotateTimer = null;
+    }
+    if (!ctx || !activeLoopSource) {
+      activeLoopSource = null;
+      activeLoopGain = null;
+      activeBakedKey = "";
+      return;
+    }
+    var oldSrc = activeLoopSource;
+    var oldGain = activeLoopGain;
+    activeLoopSource = null;
+    activeLoopGain = null;
+    activeBakedKey = "";
+    try {
+      var now = ctx.currentTime;
+      var fade = typeof fadeSec === "number" ? fadeSec : 0.35;
+      if (oldGain) {
+        oldGain.gain.cancelScheduledValues(now);
+        oldGain.gain.setValueAtTime(Math.max(0.0001, oldGain.gain.value || 1.0), now);
+        oldGain.gain.linearRampToValueAtTime(0.0001, now + fade);
+      }
+      oldSrc.stop(now + fade + 0.04);
+    } catch (e) {}
+  }
+
+  function scheduleAutoVariationTimer(track) {
+    if (autoRotateTimer) {
+      global.clearTimeout(autoRotateTimer);
+      autoRotateTimer = null;
+    }
+    if (!state.enabled || state.mode !== "auto" || !track) { return; }
+    var waitMs = Math.max(16000, Math.round(trackLoopDuration(track) * 2 * 1000));
+    autoRotateTimer = global.setTimeout(function () {
+      autoRotateTimer = null;
+      if (!state.enabled || state.mode !== "auto") { return; }
+      rotateVariationInRealm();
+      syncPlayback();
+    }, waitMs);
+  }
+
+  function syncPlayback() {
+    if (!state.enabled || !ctx) { return; }
+    if (!hasOfflineAudio()) {
+      updateRealmCrossfade();
+      startScheduler();
+      return;
+    }
+    stopScheduler();
+    var track = trackById(state.trackId);
+    var wantedKey = trackBakeKey(track);
+    if (activeLoopSource && activeBakedKey === wantedKey) {
+      scheduleAutoVariationTimer(track);
+      return;
+    }
+
+    var mySeq = ++bakeReqSeq;
+    bakeTrackAsync(track.id).then(function (buf) {
+      if (mySeq !== bakeReqSeq || !state.enabled || !ctx) { return; }
+      if (!buf) {
+        /* Если браузер вдруг отклонил OfflineAudioContext — мягко падаем обратно на живой планировщик */
+        updateRealmCrossfade();
+        startScheduler();
+        return;
+      }
+      stopBakedPlayback(0.38);
+      var now = ctx.currentTime;
+      var src = ctx.createBufferSource();
+      var gNode = ctx.createGain();
+      src.buffer = buf;
+      src.loop = true;
+      gNode.gain.setValueAtTime(0.0001, now);
+      gNode.gain.linearRampToValueAtTime(1.0, now + 0.36);
+      src.connect(gNode);
+      gNode.connect(masterGain);
+      src.start(now + 0.01);
+
+      activeLoopSource = src;
+      activeLoopGain = gNode;
+      activeBakedKey = wantedKey;
+      scheduleAutoVariationTimer(track);
+
+      /* Тихо предзапекаем соседнюю вариацию этого же режима наперёд, чтобы ротация была мгновенной */
+      var pool = tracksByRealm(track.realm);
+      if (pool.length > 1) {
+        for (var i = 0; i < pool.length; i++) {
+          if (pool[i].id === track.id) {
+            var nextCand = pool[(i + 1) % pool.length];
+            global.setTimeout(function () { bakeTrackAsync(nextCand.id); }, 450);
+            break;
+          }
+        }
+      }
+    });
+  }
+
   function startScheduler() {
+    if (hasOfflineAudio()) {
+      syncPlayback();
+      return;
+    }
     if (schedulerTimer) { return; }
     if (!ctx) { return; }
     nextSubTime = ctx.currentTime + 0.06;
@@ -1635,9 +1898,13 @@
     curSubIdx = 0;
     barsPlayedInTrack = 0;
     savePrefs();
-    if (ctx) {
-      nextSubTime = ctx.currentTime + 0.08;
-      updateRealmCrossfade();
+    if (ctx && state.enabled) {
+      if (hasOfflineAudio()) {
+        syncPlayback();
+      } else {
+        nextSubTime = ctx.currentTime + 0.08;
+        updateRealmCrossfade();
+      }
     }
     return found;
   }
@@ -1658,12 +1925,14 @@
   function toggleStreetBeat() {
     state.streetBeat = !state.streetBeat;
     savePrefs();
+    if (ctx && state.enabled && hasOfflineAudio()) { syncPlayback(); }
     return state.streetBeat;
   }
 
   function setStreetBeat(on) {
     state.streetBeat = !!on;
     savePrefs();
+    if (ctx && state.enabled && hasOfflineAudio()) { syncPlayback(); }
     return state.streetBeat;
   }
 
@@ -1684,16 +1953,22 @@
     if (ctx.state === "suspended" && typeof ctx.resume === "function") {
       ctx.resume();
     }
-    updateRealmCrossfade();
     applyMasterGain();
-    startScheduler();
+    if (hasOfflineAudio()) {
+      syncPlayback();
+    } else {
+      updateRealmCrossfade();
+      startScheduler();
+    }
     return true;
   }
 
   function stop() {
     state.enabled = false;
+    bakeReqSeq += 1;
     savePrefs();
     stopScheduler();
+    stopBakedPlayback(0.32);
     applyMasterGain();
     return false;
   }
@@ -1730,9 +2005,13 @@
         curBarIdx = 0;
         curSubIdx = 0;
         barsPlayedInTrack = 0;
-        if (ctx) {
-          nextSubTime = ctx.currentTime + 0.12;
-          updateRealmCrossfade();
+        if (ctx && state.enabled) {
+          if (hasOfflineAudio()) {
+            syncPlayback();
+          } else {
+            nextSubTime = ctx.currentTime + 0.12;
+            updateRealmCrossfade();
+          }
         }
       }
       return;
@@ -1754,9 +2033,13 @@
         curBarIdx = 0;
         curSubIdx = 0;
         barsPlayedInTrack = 0;
-        if (ctx) {
-          nextSubTime = ctx.currentTime + 0.1;
-          updateRealmCrossfade();
+        if (ctx && state.enabled) {
+          if (hasOfflineAudio()) {
+            syncPlayback();
+          } else {
+            nextSubTime = ctx.currentTime + 0.1;
+            updateRealmCrossfade();
+          }
         }
       }
     } else if (state.mode === "manual" && leavingCombat && state.preCombatTrackId) {
@@ -1768,9 +2051,13 @@
         curBarIdx = 0;
         curSubIdx = 0;
         barsPlayedInTrack = 0;
-        if (ctx) {
-          nextSubTime = ctx.currentTime + 0.1;
-          updateRealmCrossfade();
+        if (ctx && state.enabled) {
+          if (hasOfflineAudio()) {
+            syncPlayback();
+          } else {
+            nextSubTime = ctx.currentTime + 0.1;
+            updateRealmCrossfade();
+          }
         }
       }
     }
@@ -1784,7 +2071,11 @@
       if (ctx.state === "suspended" && typeof ctx.resume === "function") {
         ctx.resume();
       }
-      if (!schedulerTimer) { startScheduler(); }
+      if (hasOfflineAudio()) {
+        if (!activeLoopSource) { syncPlayback(); }
+      } else if (!schedulerTimer) {
+        startScheduler();
+      }
     }
   }
 
@@ -1828,6 +2119,9 @@
     getRealm: function () { return state.realm; },
     isEnabled: function () { return state.enabled; },
     getVolume: function () { return state.volume; },
-    isSupported: hasWebAudio
+    isSupported: hasWebAudio,
+    isBakedSupported: hasOfflineAudio,
+    bakeTrackAsync: bakeTrackAsync,
+    getBakedCount: function () { return Object.keys(bakedBuffers).length; }
   };
 })(typeof window !== "undefined" ? window : this);

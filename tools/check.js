@@ -808,7 +808,7 @@ function byAct(act, key) {
 
     const back = win.Bow.save.deserialize(win.Bow.save.serialize(g, 1));
     assert(back.ok, "старое сохранение не загрузилось: " + back.reason);
-    eq(back.state.version, "0.0.8.2", "версия после миграции");
+    eq(back.state.version, "0.0.9.0", "версия после миграции");
     assert(back.state.fight === null, "после миграции нет пустого слота боя");
     assert(back.state.people["person:tarn"].weapon, "кузнец остался без топора");
     return "0.0.5 → " + back.state.version + ", топор кузнеца на месте";
@@ -1009,7 +1009,7 @@ function byAct(act, key) {
     delete g.flags.huntedHeat;
 
     const back = win.Bow.save.deserialize(win.Bow.save.serialize(g, 1));
-    eq(back.state.version, "0.0.8.2", "версия после миграции");
+    eq(back.state.version, "0.0.9.0", "версия после миграции");
     assert(back.state.guard && back.state.guard.arrived === true,
       "стража из старого сохранения осталась «непришедшей» — из неё не выбраться");
     eq(back.state.flags.huntedUntil, null, "поле срока розыска");
@@ -1777,7 +1777,7 @@ function byAct(act, key) {
 
     const back = win.Bow.save.deserialize(win.Bow.save.serialize(g, 1));
     assert(back.ok, "сохранение 0.0.6.2 не загрузилось: " + back.reason);
-    eq(back.state.version, "0.0.8.2", "версия после миграции");
+    eq(back.state.version, "0.0.9.0", "версия после миграции");
     assert(back.state.steal && typeof back.state.steal === "object", "нет слота подготовки кражи");
     eq(back.state.player.lastTreat, null, "lastTreat после миграции");
     assert(typeof back.state.player.skills.medicine === "number", "навык лечения не восстановлен");
@@ -1817,7 +1817,7 @@ function byAct(act, key) {
     return "открывается ровно выбранная вкладка и закрывается поверх игры";
   });
 
-  check("Главное окно рисует панораму всех 5 локаций, день/ночь/снег и живых персонажей", () => {
+  check("Главное окно рисует изометрический мир всех 5 локаций, день/ночь/снег и живых персонажей", () => {
     const g = game();
     const snap = clone(g);
     try {
@@ -1827,7 +1827,8 @@ function byAct(act, key) {
       ["square", "tavern", "smithy", "outskirts", "forest"].forEach((loc) => {
         g.player.location = loc;
         win.BowGame.refresh(true);
-        assert(stage.querySelector("svg.bow-stage-bg"), "нет SVG-панорамы для " + loc);
+        assert(stage.querySelector("canvas.bow-iso-canvas"), "нет изометрического холста для " + loc);
+        assert(win.Bow.iso.mapOf(g).id === loc, "изометрическая карта не переключилась на " + loc);
       });
 
       g.player.location = "square";
@@ -1856,7 +1857,7 @@ function byAct(act, key) {
       click(pop.querySelector('[data-act="stage-close"]'));
       assert(!pop.classList.contains("bow-stage-pop-open"), "карточка сцены не закрылась");
 
-      return "5 панорам, смена дня/ночи/метели и кликабельные фигурки";
+      return "5 изометрических локаций, смена дня/ночи/метели и кликабельные человечки";
     } finally {
       Object.keys(snap).forEach((k) => { g[k] = snap[k]; });
       win.Bow.ui.setStageSelection(null);
@@ -1864,7 +1865,7 @@ function byAct(act, key) {
     }
   });
 
-  check("Поле боя рисует панораму места и минималистичные фигурки бойцов с оружием и нокдауном", () => {
+  check("Поле боя рисует изометрическую сцену места и приглушённые фигурки бойцов с оружием и нокдауном", () => {
     const g = game();
     const snap = clone(g);
     try {
@@ -1881,9 +1882,10 @@ function byAct(act, key) {
       win.BowGame.refresh(true);
 
       const page = doc().getElementById("bow-fight-page");
-      assert(page.querySelector(".bow-arena-scene svg.bow-stage-bg"), "на поле боя нет фона локации");
-      assert(page.querySelectorAll(".bow-chip svg.bow-fig-svg").length >= 2, "нет фигурок бойцов");
-      assert(page.querySelector(".bow-chip-enemy .bow-fig-weapon"), "у вооружённого Тарна не видно топора в руке");
+      assert(page.querySelector(".bow-arena-scene canvas.bow-iso-battle-canvas"), "на поле боя нет изометрического холста локации");
+      assert(!page.querySelector(".bow-chip svg.bow-fig-svg"), "на поле боя остались старые кружки-треугольники svg.bow-fig-svg!");
+      assert(page.querySelectorAll(".bow-chip .bow-iso-fig").length >= 2, "нет изометрических контуров бойцов");
+      assert(page.querySelector(".bow-chip-enemy .bow-fig-weapon"), "у вооружённого Тарна не помечен топор в руке");
 
       const foe = g.fight.units.filter((u) => u.side === "enemy")[0];
       foe.disarmed = true;
@@ -1892,8 +1894,8 @@ function byAct(act, key) {
 
       foe.down = true;
       win.BowGame.refresh(true);
-      assert(page.querySelector(".bow-chip-enemy svg.bow-fig-fallen"), "сбитый с ног не лёг на снег");
-      return "фон локации + фигурки + оружие + падение";
+      assert(page.querySelector(".bow-chip-enemy .bow-fig-fallen"), "сбитый с ног не переведён в поверженное состояние");
+      return "изометрический холст места + человечки + оружие + падение";
     } finally {
       win.BowGame.stopFightClock();
       Object.keys(snap).forEach((k) => { g[k] = snap[k]; });
@@ -1979,9 +1981,9 @@ function byAct(act, key) {
     };
     const back = win.Bow.save.deserialize(win.Bow.save.serialize(g, 1));
     assert(back.ok, "сохранение 0.0.6.3 не загрузилось: " + back.reason);
-    eq(back.state.version, "0.0.8.2", "версия после миграции");
+    eq(back.state.version, "0.0.9.0", "версия после миграции");
     assert(back.state.fight.orders && back.state.fight.orders.aim === "body", "приказы боя созданы при миграции");
-    return "0.0.6.3 → 0.0.8.2, приказы боя созданы";
+    return "0.0.6.3 → 0.0.9.0, приказы боя созданы";
   });
 
   /* 8н. Круг 13 (0.0.7.1): фикс зависания в клетке, честная дистанция боя, логотип и Меню игры */
@@ -2227,7 +2229,7 @@ function byAct(act, key) {
     }
   });
 
-  check("Хитбоксы объектов и персонажей разведены по ярусам, SVG пропускает клик, а карточка не заслоняет цель", () => {
+  check("Хитбоксы объектов и персонажей разведены в изометрии 2:1, клик работает точно, а карточка не заслоняет цель", () => {
     const g = game();
     const snap = clone(g);
     try {
@@ -2241,33 +2243,34 @@ function byAct(act, key) {
 
       const spots = [...doc().querySelectorAll("#bow-stage .bow-spot")];
       const actors = [...doc().querySelectorAll("#bow-stage .bow-actor")];
-      assert(spots.length >= 3 && actors.length >= 5, "не все точки и фигурки отрисованы");
+      assert(spots.length >= 2 && actors.length >= 5, "не все изометрические переходы и фигурки отрисованы");
 
-      /* Все точки окружения в верхнем ярусе (<= 42%), не на головах персонажей */
-      spots.forEach((sp) => {
-        const topPct = parseFloat(sp.style.top);
-        assert(topPct <= 42, "точка окружения слишком низко и лезет на людей: top=" + sp.style.top);
-      });
-
-      /* Все актёры равномерно разнесены по X без наложений */
-      const xs = actors.map((a) => parseFloat(a.getAttribute("data-x"))).sort((a, b) => a - b);
-      for (let i = 1; i < xs.length; i++) {
-        assert(xs[i] - xs[i - 1] >= 12, "фигурки людей слиплись по X: " + xs.join(", "));
+      /* Все актёры в изометрии разнесены и по X, и в 2D-плоскости без слипания силуэтов */
+      const pts = actors.map((a) => ({
+        x: parseFloat(a.getAttribute("data-x")),
+        y: parseFloat(a.style.top || "50")
+      }));
+      for (let i = 0; i < pts.length; i++) {
+        for (let j = i + 1; j < pts.length; j++) {
+          const dist = Math.hypot(pts[i].x - pts[j].x, pts[i].y - pts[j].y);
+          assert(dist >= 5.5, "изометрические человечки слиплись: " + JSON.stringify(pts));
+        }
       }
 
-      /* Клик прямо по внутреннему элементу SVG (<circle> головы правого жителя) открывает карточку слева */
-      const rightNpc = actors.filter((a) => parseFloat(a.getAttribute("data-x")) > 60)[0];
-      const svgInner = rightNpc.querySelector("circle") || rightNpc.querySelector("svg");
-      click(svgInner);
+      /* Клик по зоне силуэта (.bow-iso-hit) правого жителя открывает карточку слева */
+      const rightNpc = actors.filter((a) => parseFloat(a.getAttribute("data-x")) >= 58)[0];
+      assert(rightNpc, "нет правого жителя на изометрической площади");
+      const hitInner = rightNpc.querySelector(".bow-iso-hit") || rightNpc;
+      click(hitInner);
       const pop = doc().getElementById("bow-stage-pop");
-      assert(pop.classList.contains("bow-stage-pop-open"), "клик по внутреннему SVG не открыл карточку");
+      assert(pop.classList.contains("bow-stage-pop-open"), "клик по изометрическому хитбоксу не открыл карточку");
       assert(pop.classList.contains("bow-stage-pop-left"), "карточка правого жителя не ушла влево и закрыла его");
 
       /* Клик по пустому фону сцены закрывает карточку */
       click(doc().querySelector("#bow-stage-canvas .bow-stage-bg-wrap"));
       assert(!pop.classList.contains("bow-stage-pop-open"), "клик по пустому месту сцены не закрыл карточку");
 
-      return "ярусы разведены, X: [" + xs.join(", ") + "%], умная сторона карточки работает";
+      return "изометрия разведена, актёров: " + actors.length + ", умная сторона карточки работает";
     } finally {
       Object.keys(snap).forEach((k) => { g[k] = snap[k]; });
       win.Bow.ui.setStageSelection(null);
@@ -2329,7 +2332,9 @@ function byAct(act, key) {
       const page = doc().getElementById("bow-fight-page");
       assert(page.querySelector(".bow-fight-turnbar"), "нет полосы управления автобоем");
       eq(win.Bow.data.fightRules.autoTickMs, 2600, "интервал спокойного автобоя должен быть 2600 мс");
-      assert(win.BowGame.fightShouldRun(g), "при старте боя должен быть включён спокойный автобой");
+      assert(!win.BowGame.fightShouldRun(g), "с 0.0.9.0 бой по умолчанию должен стартовать на паузе (пошагово)");
+      win.Bow.fight.setOrder(g, "speed", "auto");
+      assert(win.BowGame.fightShouldRun(g), "ручное включение спокойного автобоя должно запускать таймер");
       assert(!win.BowGame.clockShouldRun(g), "мировые часы идут во время боя");
 
       win.Bow.fight.setOrder(g, "speed", "paused");
@@ -2587,9 +2592,9 @@ function byAct(act, key) {
       g.player.location = "square";
       win.BowGame.refresh(true);
       const stageCorpse = doc().querySelector("#bow-stage .bow-actor-corpse");
-      assert(stageCorpse && /bottom:\s*42px/.test(stageCorpse.getAttribute("style") || ""),
-        "труп на Главном окне не выровнен по линии земли (bottom:42px)");
-      return "арена translate(-50%, 30px) + сцена bottom:42px — тела лежат на земле";
+      assert(stageCorpse && stageCorpse.hasAttribute("data-iso-col") && /top:\s*\d/.test(stageCorpse.getAttribute("style") || ""),
+        "труп на Главном окне не привязан к изометрической клетке земли");
+      return "арена translate(-50%, 30px) + изометрическая клетка земли — тела лежат на снегу";
     } finally {
       Object.keys(snap).forEach((k) => { g[k] = snap[k]; });
       win.BowGame.refresh(true);
@@ -3900,10 +3905,10 @@ function byAct(act, key) {
     }
   });
 
-  check("0.0.8.2: миграция состояний доводит версию игры до 0.0.8.2", () => {
-    assert(win.Bow.data.meta.version === "0.0.8.2", "версия в Bow.data.meta не 0.0.8.2");
-    assert(game().version === "0.0.8.2", "версия активного состояния не 0.0.8.2");
-    return "версия 0.0.8.2 подтверждена";
+  check("0.0.9.0: миграция состояний доводит версию игры до 0.0.9.0", () => {
+    assert(win.Bow.data.meta.version === "0.0.9.0", "версия в Bow.data.meta не 0.0.9.0");
+    assert(game().version === "0.0.9.0", "версия активного состояния не 0.0.9.0");
+    return "версия 0.0.9.0 подтверждена";
   });
 
   check("0.0.7.7: щипковые удары по струнам полностью вырезаны из саундтрека", () => {
@@ -4111,7 +4116,7 @@ function byAct(act, key) {
     return "спиккато + валторны + ратный хор + тайко/литавры активны";
   });
 
-  check("0.0.8.1: в заключении Главное окно рисует сцену «Клетка у частокола» с кованой решёткой поверх узника (фикс image-20)", () => {
+  check("0.0.9.0: в заключении Главное окно рисует изометрическую «Клетку у частокола» в разрезе без передней решётки (фикс image-28)", () => {
     const g = game();
     const snap = clone(g);
     try {
@@ -4122,12 +4127,14 @@ function byAct(act, key) {
 
       const locName = doc().getElementById("bow-loc-name").textContent;
       assert(locName === "Клетка у частокола", "вместо клетки показана обычная локация: " + locName);
-      assert(doc().querySelector("#bow-stage svg.bow-stage-cage-bars"), "нет передней кованой решётки клетки поверх узника");
+      assert(doc().querySelector("#bow-stage canvas.bow-iso-canvas"), "в клетке нет изометрического холста");
+      assert(!doc().querySelector("#bow-stage svg.bow-stage-cage-bars"), "передняя решётка всё ещё заслоняет интерфейс и героя!");
       const prisoner = doc().querySelector("#bow-stage .bow-actor-player");
       assert(prisoner && !prisoner.querySelector(".bow-fig-weapon"), "у заключённого в клетке осталось оружие в руке");
-      assert(doc().querySelector('#bow-stage [data-act="jail-pick-toggle"]'), "на сцене клетки нет интерактивного засова для взлома");
-      assert(doc().querySelector('#bow-stage [data-act="jail-pick-manual"]'), "на решётке нет кнопки ручного взлома отмычкой");
-      return "сцена «Клетка у частокола» + кованая решётка + сторож";
+      assert(doc().querySelector('#bow-stage [data-act="jail-pick-toggle"]'), "на сцене клетки нет интерактивного засова для взлома Kenshi");
+      assert(!doc().querySelector('#bow-stage [data-act="jail-pick-manual"]'), "кнопка ручного взлома не должна отображаться на сцене в 0.0.9.0");
+      assert(!doc().querySelector('#bow-jail [data-act="jail-pick-manual"]'), "кнопка ручного взлома не должна отображаться в карточке клетки в 0.0.9.0");
+      return "изометрическая клетка в разрезе + без передних прутьев + взлом Kenshi";
     } finally {
       if (win.BowGame.stopJailClock) { win.BowGame.stopJailClock(); }
       Object.keys(snap).forEach((k) => { g[k] = snap[k]; });
@@ -4428,6 +4435,166 @@ function byAct(act, key) {
       "боевая шина не переведена в длинный тёплый акустический зал");
 
     return "убийство → реп. стражи " + repAfterKill + " (после 4 отсидок " + g.reputation["org:guard"] + ", не >0) + тёплый зал 3.45с";
+  });
+
+  /* ---------- Круг 23 (0.0.9.0): Канон «Сумрачный Брод», изометрия 2:1, Point-and-Click A*, человечки, пошаговый бой и предзапекание звука ---------- */
+
+  check("0.0.9.0: канон визуального стиля «Сумрачный Брод» записан в docs/STYLE_GUIDE.md, а кружки и треугольники убраны со сцены", () => {
+    const guidePath = path.join(__dirname, "..", "docs", "STYLE_GUIDE.md");
+    assert(fs.existsSync(guidePath), "нет файла канона docs/STYLE_GUIDE.md");
+    const guide = fs.readFileSync(guidePath, "utf8");
+    assert(/Сумрачный Брод/.test(guide) && /2:1/.test(guide) && /приглуш/i.test(guide),
+      "docs/STYLE_GUIDE.md не описывает изометрию 2:1 и приглушённых человечков");
+
+    const g = game();
+    g.player.location = "square";
+    win.BowGame.refresh(true);
+    assert(!doc().querySelector("#bow-stage svg.bow-fig-svg"), "на сцене остались старые кружки-треугольники svg.bow-fig-svg!");
+
+    /* Генератор приглушённых человечков кэширует растровые холсты 64×80 для стоячих и лежачих поз */
+    const spStand = win.Bow.iso.getSprite({ roleKey: "player", side: "player", facing: "SE", weapon: "knife" });
+    const spSame = win.Bow.iso.getSprite({ roleKey: "player", side: "player", facing: "SE", weapon: "knife" });
+    const spDead = win.Bow.iso.getSprite({ roleKey: "robber", side: "enemy", dead: true });
+    assert(spStand && spStand.width === 64 && spStand.height === 80, "неверный размер спрайта человечка");
+    assert(spStand === spSame && spStand !== spDead, "кэш спрайтов человечков не переиспользует готовый холст");
+    return "docs/STYLE_GUIDE.md на месте + кэш спрайтов 64×80 без кружков-треугольников";
+  });
+
+  check("0.0.9.0: изометрия 2:1 (Bow.iso) обратимо переводит клетки в экран, обходит препятствия по A* и двигает героя Point-and-Click", () => {
+    const g = clone(game());
+    g.fight = null;
+    g.jail = null;
+    g.player.location = "square";
+
+    /* 1. Обратимость проекции tileToScreen ↔ screenToTile на всей решётке 12×8 */
+    for (let r = 0; r < win.Bow.iso.ROWS; r++) {
+      for (let c = 0; c < win.Bow.iso.COLS; c++) {
+        const scr = win.Bow.iso.tileToScreen(c, r);
+        const back = win.Bow.iso.screenToTile(scr.x, scr.y);
+        assert(back.col === c && back.row === r,
+          "сбой обратной изометрической проекции на (" + c + "," + r + ") → (" + back.col + "," + back.row + ")");
+      }
+    }
+
+    /* 2. Поиск пути A* обходит каменный колодец в центре площади (5,3), не проходя сквозь него */
+    const map = win.Bow.iso.mapOf(g);
+    assert(win.Bow.iso.isBlocked(map, 5, 3, g), "колодец на (5,3) должен быть непроходимым препятствием");
+    const path = win.Bow.iso.findPath(map, 3, 3, 7, 3, g);
+    assert(path.length >= 4, "A* не нашёл обход вокруг колодца");
+    assert(!path.some((step) => step.col === 5 && step.row === 3), "маршрут A* прошёл сквозь каменный колодец!");
+    assert(path[path.length - 1].col === 7 && path[path.length - 1].row === 3, "маршрут A* не довёл до целевой клетки");
+
+    /* 3. В клетке узник заперт в левой половине (col < 5): клик за решётку доводит до прутьев (col 4), но НЕ пускает в коридор сторожа (col >= 5) */
+    g.jail = { hoursLeft: 4, minutesLeft: 240, reason: "драка" };
+    const jailMap = win.Bow.iso.mapOf(g);
+    const escapeWalk = win.Bow.iso.findPath(jailMap, 2, 4, 8, 4, g);
+    assert(escapeWalk.length > 0 && !escapeWalk.some((step) => step.col >= 5),
+      "узник не должен проходить сквозь запертую решётку (col 5) в коридор сторожа!");
+
+    /* 4. Point-and-Click walkAdjacentAndAct подводит героя к объекту вплотную */
+    const live = game();
+    const snap = clone(live);
+    try {
+      live.fight = null;
+      live.jail = null;
+      live.player.location = "smithy";
+      live.people["person:tarn"].location = "smithy";
+      live.people["person:tarn"].alive = true;
+      win.BowGame.refresh(true);
+      let arrived = false;
+      win.Bow.iso.walkAdjacentAndAct(live, 5, 2, () => { arrived = true; });
+      const pos = win.Bow.iso.getPlayerPos(live);
+      assert(arrived && Math.hypot(5 - pos.col, 2 - pos.row) <= 1.55,
+        "walkAdjacentAndAct не подвёл героя к наковальне: (" + pos.col + "," + pos.row + ")");
+    } finally {
+      Object.keys(snap).forEach((k) => { live[k] = snap[k]; });
+      win.BowGame.refresh(true);
+    }
+
+    return "проекция 12×8 обратима, A* огибает колодец (" + path.length + " шагов) и держит решётку";
+  });
+
+  check("0.0.9.0: бой стартует пошагово (без автобоя), повторный клик бьёт врага, а Вариант 1 / Вариант 2 работают совместно", () => {
+    const g = game();
+    const snap = clone(g);
+    try {
+      g.fight = null;
+      g.jail = null;
+      g.guard = null;
+      g.player.location = "tavern";
+      g.player.needs.health = 100;
+      g.player.needs.fatigue = 100;
+      g.people["person:sigi"].location = "tavern";
+      g.people["person:sigi"].alive = true;
+      g.people["person:sigi"].attitude = 30;
+      g.people["person:sigi"].needs.health = 100;
+
+      /* Запускаем бой через реальную кнопку UI (fight-start) — автобой НЕ должен включаться сам! */
+      win.Bow.fight.open(g, "person:sigi");
+      win.BowGame.refresh(true);
+      const sparBtn = doc().querySelector('#bow-fight-page [data-act="fight-start"][data-mode="spar"]');
+      assert(sparBtn, "нет кнопки начала кулачного боя");
+      click(sparBtn);
+
+      eq(g.fight.orders.speed, "paused", "после старта боя через UI скорость должна быть 'paused' (пошагово)");
+      assert(!win.BowGame.fightShouldRun(g), "таймер автобоя не должен тикать при старте схватки");
+
+      /* Вариант 1: обычная схватка в трактире идёт прямо на изометрическом полу трактира (7×5 ромбов = 35) */
+      const cells = doc().querySelectorAll("#bow-fight-page svg.bow-tactical-grid polygon.bow-hex-cell");
+      eq(cells.length, 35, "изометрическая тактическая сетка 7×5 ромбов");
+      const r0 = g.fight.round;
+
+      /* Первый клик по врагу — выбор цели (ход НЕ тратится), повторный клик по живому DOM-узлу — шаг/удар! */
+      const foeHit1 = doc().querySelector("#bow-fight-page .bow-chip-enemy .bow-chip-hitshape");
+      assert(foeHit1, "нет кликабельного силуэта врага в бою");
+      click(foeHit1);
+      eq(g.fight.round, r0, "первый клик должен только выделить цель без автохода");
+      const foeHit2 = doc().querySelector("#bow-fight-page .bow-chip-enemy .bow-chip-hitshape");
+      click(foeHit2);
+      assert(g.fight.round === r0 + 1, "повторный клик по выделенному врагу в пошаговом режиме должен делать шаг/удар");
+
+      /* Вариант 2 (запасная открытая арена): для крупного отряда-стека в помещении бой разворачивается на просторе околицы */
+      const bigStack = win.Bow.fight.createStack({
+        key: "stack:raiders", name: "Ватага", side: "enemy", count: 24, unitHp: 18, combat: 35
+      });
+      win.Bow.fight.startSquadBattle(g, [bigStack], { note: "Отряд врывается со двора." });
+      eq(g.fight.orders.speed, "paused", "групповой бой тоже стартует пошагово");
+      win.BowGame.refresh(true);
+      assert(doc().querySelector("#bow-fight-page canvas.bow-iso-battle-canvas"), "холст Варианта 2 не отрисовался");
+
+      return "старт на паузе + выбор/удар двойным кликом + гибрид Варианта 1 и Варианта 2";
+    } finally {
+      win.BowGame.stopFightClock();
+      Object.keys(snap).forEach((k) => { g[k] = snap[k]; });
+      win.BowGame.refresh(true);
+    }
+  });
+
+  check("0.0.9.0: предзапекание петель саундтрека (OfflineAudioContext) и отложенный автосейв устраняют фризы звука", () => {
+    const audioSrc = fs.readFileSync(path.join(__dirname, "..", "src", "js", "108-audio.twee"), "utf8");
+    assert(/OfflineAudioContext/.test(audioSrc) && /bakeTrackAsync/.test(audioSrc),
+      "в 108-audio.twee нет оффлайн-предзапекателя петель саундтрека");
+    assert(typeof win.Bow.audio.bakeTrackAsync === "function" && typeof win.Bow.audio.getBakedCount === "function",
+      "API предзапекания звука не экспортирован в Bow.audio");
+    assert(typeof win.BowGame.flushAutosave === "function",
+      "отложенный автосейв (flushAutosave) не экспортирован в BowGame");
+
+    /* Быстрые вызовы refresh(true) подряд НЕ сериализуют 20 КБ JSON синхронно на каждый кадр,
+       а flushAutosave() мгновенно записывает актуальное состояние на диск */
+    const g = game();
+    const m0 = g.player.money;
+    try {
+      g.player.money = m0 + 77;
+      win.BowGame.refresh(true);
+      win.BowGame.flushAutosave(true);
+      const raw = win.localStorage.getItem("bow-autosave-v1");
+      const parsed = win.Bow.save.deserialize(raw);
+      assert(parsed.ok && parsed.state.player.money === m0 + 77, "flushAutosave не сохранил свежее состояние");
+    } finally {
+      g.player.money = m0;
+      win.BowGame.flushAutosave(true);
+    }
+    return "OfflineAudioContext bakeTrackAsync + дебаунс localStorage с flushAutosave активны";
   });
 
   /* ---------- Итоги ---------- */
