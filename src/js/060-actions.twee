@@ -86,6 +86,10 @@
 
   /* ---------- Перемещение ---------- */
   function move(state, toKey) {
+    if (Bow.state && Bow.state.isComatose && Bow.state.isComatose(state.player)) {
+      var cv = Bow.state.criticalVitalOf(state.player);
+      return { ok: false, message: "Область «" + cv.label + "» в минусе (" + Math.round(cv.hp) + "%) — вы лежите без сил и не можете идти сами." };
+    }
     var target = Bow.data.locations[toKey];
     if (!target) { return { ok: false, message: "Такого места нет." }; }
     if (state.player.location === toKey) { return { ok: false, message: "Вы уже здесь." }; }
@@ -238,6 +242,10 @@
 
     var hours = allowed ? rules.sleepHours : Math.max(2, Math.round(rules.sleepHours / 2));
 
+    if (Bow.state && Bow.state.isComatose && Bow.state.isComatose(state.player)) {
+      var cvRest = Bow.state.criticalVitalOf(state.player);
+      return { ok: false, message: "Область «" + cvRest.label + "» в минусе — вы без сознания и не встанете сами, пока кто-нибудь не перевяжет рану." };
+    }
     if (state.task) { state.task = null; }
     Bow.time.advance(state, hours);
     Bow.needs.applyChange(state.player, "fatigue", allowed ? rules.rest.fatigue : Math.round(rules.rest.fatigue / 2));
@@ -247,7 +255,7 @@
       var limbRest = allowed ? 18 : 7;
       Object.keys(state.player.body).forEach(function (bk) {
         var limb = state.player.body[bk];
-        if (limb && !limb.lost && limb.hp < limb.max) {
+        if (limb && !limb.lost && limb.hp < limb.max && !(limb.hp < 0 && !limb.bandaged)) {
           limb.hp = Math.min(limb.max, limb.hp + limbRest);
         }
       });
@@ -325,11 +333,60 @@
     return { ok: true, message: parts.join("\n\n"), person: person.id, name: person.name };
   }
 
+  /* Стадия тлена тела по прошедшим часам (0.0.7.5). */
+  function corpseStage(state, corpse) {
+    var nowH = (state && state.time && typeof state.time.totalHours === "number") ? state.time.totalHours : 0;
+    var bornH = (corpse && typeof corpse.killedAt === "number")
+      ? corpse.killedAt
+      : (corpse && typeof corpse.createdAtHours === "number" ? corpse.createdAtHours : nowH);
+    var age = Math.max(0, nowH - bornH);
+    var maxHours = (corpse && corpse.location === "forest") ? 72 : 48;
+    if (age < 12) {
+      return { key: "fresh", label: "свежее тело", hoursAge: age, maxHours: maxHours };
+    }
+    if (age < 28) {
+      return { key: "cold", label: "остывшее тело", hoursAge: age, maxHours: maxHours };
+    }
+    return { key: "rotting", label: "тронуто тленом", hoursAge: age, maxHours: maxHours };
+  }
+
+  /* Каждый час тела коченеют, гниют и исчезают:
+     в Студёном Броде жители убирают мертвецов за околицу (~48 ч.),
+     а в тайге тела растаскивает зверьё и заносит снегом (~72 ч.). */
+  function decayCorpses(state) {
+    if (!state || !Array.isArray(state.corpses) || !state.corpses.length) { return; }
+    var nowH = (state.time && typeof state.time.totalHours === "number") ? state.time.totalHours : 0;
+    var removedHere = [];
+    state.corpses = state.corpses.filter(function (c) {
+      if (!c) { return false; }
+      var bornH = typeof c.killedAt === "number" ? c.killedAt : (c.createdAtHours || 0);
+      var age = nowH - bornH;
+      var limit = c.location === "forest" ? 72 : 48;
+      if (age >= limit) {
+        if (state.player && c.location === state.player.location) {
+          removedHere.push(c);
+        }
+        return false;
+      }
+      c.decayStage = corpseStage(state, c).key;
+      return true;
+    });
+    if (removedHere.length && Bow.journal && Bow.journal.add) {
+      var first = removedHere[0];
+      var note = first.location === "forest"
+        ? "Тело (" + first.name + ") за время растащило таёжное зверьё и замело снегом."
+        : "Жители убрали и схоронили истлевшее тело (" + first.name + ") за околицей.";
+      Bow.journal.add(state, note, "world");
+    }
+  }
+
   Bow.actions = {
     move: move,
     travelMinutes: travelMinutes,
     formatDuration: formatDuration,
     corpsesAt: corpsesAt,
+    corpseStage: corpseStage,
+    decayCorpses: decayCorpses,
     lootCorpse: lootCorpse,
     eat: eat,
     drink: drink,
@@ -340,18 +397,14 @@
     location: loc
   };
 
-  /* Сброс суточных счётчиков разговоров и уборка старых обобранных тел через трое суток. */
+  Bow.bus.on("tick:hour", decayCorpses);
+
+  /* Сброс суточных счётчиков разговоров. */
   Bow.bus.on("tick:day", function (state) {
     Object.keys(state.people).forEach(function (id) {
       state.people[id].talkedToday = 0;
     });
-    if (Array.isArray(state.corpses)) {
-      state.corpses = state.corpses.filter(function (c) {
-        if (!c) { return false; }
-        if (!c.looted) { return true; }
-        return (state.time.totalHours - (c.killedAt || 0)) < 72;
-      });
-    }
+    decayCorpses(state);
   });
 
 })(typeof window !== "undefined" ? window : this);

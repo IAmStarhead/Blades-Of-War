@@ -215,7 +215,7 @@
     box.innerHTML = Bow.needs.KEYS.map(function (k) { return needBar(k, n[k]); }).join("");
   }
 
-  /* ---------- Лист характеристик и навыков в духе Kenshi (0.0.7.4) ---------- */
+  /* ---------- Лист характеристик и навыков в духе Kenshi (0.0.7.5) ---------- */
   function renderSkills(state) {
     var box = $("bow-skills");
     if (!box) { return; }
@@ -231,14 +231,15 @@
         '<div class="bow-attrs-grid">' +
         attrsList.map(function (a) {
           var base = Math.round((p.attrs && typeof p.attrs[a.key] === "number") ? p.attrs[a.key] : 18);
-          var eff = (Bow.state && Bow.state.effectiveAttr) ? Bow.state.effectiveAttr(p, a.key) : base;
+          var rawEff = (Bow.state && Bow.state.effectiveAttr) ? Bow.state.effectiveAttr(p, a.key) : base;
+          var eff = Math.round(rawEff);
           var penalized = eff < base;
           return '<div class="bow-attr-card' + (penalized ? " bow-attr-penalized" : "") + '" title="' + esc(a.hint || a.name) + '">' +
             '<div class="bow-attr-head">' +
               '<span class="bow-attr-name">' + esc(a.name) + '</span>' +
               '<b class="bow-attr-val">' + eff + (penalized ? ' <small>(' + base + ')</small>' : '') + '</b>' +
             '</div>' +
-            '<div class="bow-attr-bar"><i style="width:' + Math.min(100, Math.round(eff)) + '%"></i></div>' +
+            '<div class="bow-attr-bar"><i style="width:' + Math.min(100, Math.max(0, eff)) + '%"></i></div>' +
           '</div>';
         }).join("") +
         '</div>' +
@@ -254,12 +255,13 @@
         cats.map(function (cat) {
           var rows = (cat.skills || []).map(function (sk) {
             var baseV = Math.round((p.skills && typeof p.skills[sk.key] === "number") ? p.skills[sk.key] : 0);
-            var effV = (Bow.state && Bow.state.effectiveSkill) ? Bow.state.effectiveSkill(p, sk.key) : baseV;
+            var rawV = (Bow.state && Bow.state.effectiveSkill) ? Bow.state.effectiveSkill(p, sk.key) : baseV;
+            var effV = Math.round(rawV);
             var lvl = effV >= 60 ? "high" : effV >= 30 ? "mid" : "low";
             var penCls = effV < baseV ? " bow-skill-pen" : "";
             return '<div class="bow-skill bow-skill-' + lvl + penCls + '" title="' + esc(sk.hint || sk.name) + '">' +
               '<span class="bow-skill-name">' + esc(sk.name) + '</span>' +
-              '<span class="bow-skill-bar"><i style="width:' + Math.min(100, Math.round(effV)) + '%"></i></span>' +
+              '<span class="bow-skill-bar"><i style="width:' + Math.min(100, Math.max(0, effV)) + '%"></i></span>' +
               '<b>' + effV + '</b>' +
             '</div>';
           }).join("");
@@ -272,11 +274,11 @@
       '</div>';
     } else {
       skillsHtml = Object.keys(SKILL_NAMES).map(function (k) {
-        var v = p.skills[k] || 0;
+        var v = Math.round(p.skills[k] || 0);
         var lvl = v >= 60 ? "high" : v >= 30 ? "mid" : "low";
         return '<div class="bow-skill bow-skill-' + lvl + '" title="' + esc(SKILL_HINT[k] || k) + '">' +
           '<span class="bow-skill-name">' + skillName(k) + '</span>' +
-          '<span class="bow-skill-bar"><i style="width:' + Math.round(v) + '%"></i></span>' +
+          '<span class="bow-skill-bar"><i style="width:' + v + '%"></i></span>' +
           '<b>' + v + '</b>' +
         '</div>';
       }).join("");
@@ -285,7 +287,7 @@
     box.innerHTML = attrsHtml + skillsHtml;
   }
 
-  /* ---------- Тело: конечности, органы и не заживающие увечья (0.0.7.4) ---------- */
+  /* ---------- Тело: цветные полосы с % и минусовые ранения Kenshi (0.0.7.5) ---------- */
   function renderInjuries(state) {
     var box = $("bow-injuries");
     if (!box) { return; }
@@ -301,16 +303,24 @@
       limbsHtml = '<div class="bow-limbs-grid">' +
         partsCatalog.map(function (bp) {
           var st = p.body[bp.key] || { hp: 100, max: 100, lost: false };
-          var hp = Math.max(0, Math.round(st.hp));
-          var tone = st.lost ? "crit" : hp < 40 ? "crit" : hp < 75 ? "warn" : "good";
-          var rightTxt = st.lost ? "ПОТЕРЯНА" : (hp + "/" + (st.max || 100));
-          return '<div class="bow-limb-row' + (st.lost ? " bow-limb-lost" : "") + '" title="' +
-            esc(bp.name + (bp.vital ? " — жизненно важная зона" : " — конечность")) + '">' +
+          var maxHp = st.max || 100;
+          var rawHp = Math.round(st.hp);
+          var pct = Math.round((rawHp / maxHp) * 100);
+          var isNeg = !st.lost && pct < 0;
+          /* Светофор: зелёный >=70% (хорошо), жёлтый 35..69% (не очень), красный <35% / минус (плохо). */
+          var tone = st.lost ? "critical" : pct < 35 ? "critical" : pct < 70 ? "ok" : "good";
+          var stateWord = st.lost ? "ПОТЕРЯНА"
+            : isNeg ? (pct + "% · " + (st.bandaged ? "перевязана" : (bp.vital ? "КОМА" : "крит.")))
+            : (pct + "%" + (st.bandaged ? " · бинт" : ""));
+          var barFillCls = st.lost ? "bow-critical" : isNeg ? "bow-neg" : ("bow-" + tone);
+          var barW = st.lost ? 0 : isNeg ? Math.min(100, Math.max(12, Math.abs(pct))) : Math.min(100, Math.max(4, pct));
+          return '<div class="bow-limb-row' + (st.lost ? " bow-limb-lost" : "") + (isNeg ? " bow-limb-neg" : "") + '" title="' +
+            esc(bp.name + " (" + rawHp + "/" + maxHp + ") — " + (bp.vital ? "жизненно важная область: при минусе не встать без помощи" : "конечность")) + '">' +
             '<div class="bow-limb-head">' +
               '<span>' + esc(bp.name) + '</span>' +
-              '<b class="bow-' + tone + '">' + esc(rightTxt) + '</b>' +
+              '<b class="bow-' + tone + '">' + esc(stateWord) + '</b>' +
             '</div>' +
-            '<div class="bow-limb-bar"><i class="bow-fill bow-' + tone + '" style="width:' + (st.lost ? 0 : hp) + '%"></i></div>' +
+            '<div class="bow-limb-bar"><i class="bow-fill ' + barFillCls + '" style="width:' + barW + '%"></i></div>' +
           '</div>';
         }).join("") +
       '</div>';
@@ -321,7 +331,7 @@
       organsHtml = '<div class="bow-organs-row">' +
         organsCatalog.map(function (og) {
           var intact = p.organs[og.key] !== false;
-          var cls = intact ? "bow-good" : "bow-crit";
+          var cls = intact ? "bow-good" : "bow-critical";
           return '<div class="bow-organ-chip" title="' + esc(og.hint || og.name) + '">' +
             '<span class="bow-organ-name">' + esc(og.name) + '</span>' +
             '<b class="' + cls + '">' + (intact ? "в норме" : "утрачен") + '</b>' +
@@ -496,107 +506,67 @@
     }).join("");
   }
 
-  /* ---------- Заработок и автономные задачи Kenshi (0.0.7.4) ---------- */
+  /* ---------- Единая непрерывная «Работа» без дублей и без «задач» (0.0.7.5) ---------- */
   function renderJobs(state) {
     var box = $("bow-jobs");
     if (!box) { return; }
 
-    var tasks = Bow.work.tasksAt ? Bow.work.tasksAt(state) : [];
-    var jobs = Bow.work.listAt(state);
+    var works = Bow.work.worksAt ? Bow.work.worksAt(state) : [];
     var activeTask = state.task;
-    var activeDef = (activeTask && Bow.work.taskByKey) ? Bow.work.taskByKey(activeTask.key) : null;
 
-    var html = "";
-
-    if (activeTask && activeDef) {
-      var cyc = Math.max(10, activeDef.cycleMinutes || 30);
-      var pctDone = Math.min(100, Math.round(((activeTask.elapsedMin || 0) / cyc) * 100));
-      html += '<div class="bow-task-live">' +
-        '<div class="bow-task-live-head">' +
-          '<div><b>▶ Выполняется задача: ' + esc(activeDef.title) + '</b>' +
-            '<span class="bow-dim"> · цикл ' + Math.round(activeTask.elapsedMin || 0) + '/' + cyc + ' мин. · завершено: ' + (activeTask.cycles || 0) + '</span>' +
-          '</div>' +
-          '<button type="button" class="bow-btn bow-btn-sm bow-btn-danger" data-act="task-stop">⏹ Остановить</button>' +
-        '</div>' +
-        '<div class="bow-bar"><i class="bow-fill bow-good" style="width:' + pctDone + '%"></i></div>' +
-      '</div>';
-    }
-
-    if (tasks.length) {
-      html += '<div class="bow-tasks-sec">' +
-        '<div class="bow-kenshi-sec-title">ПОСТОЯННЫЕ ЗАДАЧИ (ВЫПОЛНЯЮТСЯ САМИ В ХОДЕ ВРЕМЕНИ)</div>' +
-        tasks.map(function (t) {
-          var isCur = activeTask && activeTask.key === t.key;
-          var yieldInfo = [];
-          if (t.yields && t.yields.length) {
-            t.yields.forEach(function (yi) {
-              var idef = Bow.data.items[yi.itemKey];
-              if (idef) { yieldInfo.push(idef.name); }
-            });
-          }
-          if (t.pay && t.pay[1] > 0) {
-            yieldInfo.push(t.pay[0] === t.pay[1] ? (t.pay[1] + " м.") : (t.pay[0] + "–" + t.pay[1] + " м."));
-          }
-          var trainInfo = (t.skills || []).map(function (sk) { return skillName(sk); });
-          return '<div class="bow-job bow-task-card' + (isCur ? " bow-task-on" : "") + '">' +
-            '<div class="bow-job-top">' +
-              '<div class="bow-job-info">' +
-                '<div class="bow-job-head"><b>' + esc(t.title) + '</b></div>' +
-                '<div class="bow-job-note">' + esc(t.desc) + '</div>' +
-                '<div class="bow-job-meta">' +
-                  '<span>цикл ' + t.cycleMinutes + ' мин.</span>' +
-                  (yieldInfo.length ? '<span>добыча: ' + esc(yieldInfo.join(", ")) + '</span>' : '') +
-                  '<span>рост: ' + esc(trainInfo.join(", ")) + '</span>' +
-                '</div>' +
-              '</div>' +
-            '</div>' +
-            (isCur
-              ? '<button type="button" class="bow-btn bow-btn-sm bow-btn-danger" data-act="task-stop">⏹ Остановить задачу</button>'
-              : '<button type="button" class="bow-btn bow-btn-sm bow-task-go" data-act="task-start" data-task="' + esc(t.key) + '">↻ Назначить задачу</button>') +
-          '</div>';
-        }).join("") +
-      '</div>';
-    }
-
-    if (!jobs.length && !tasks.length) {
+    if (!works.length) {
       box.innerHTML = '<div class="bow-empty">Здесь некому платить за работу.</div>';
       return;
     }
 
-    if (jobs.length) {
-      if (tasks.length) {
-        html += '<div class="bow-kenshi-sec-title bow-sec-spaced">РАЗОВЫЕ СМЕНЫ И ПОРУЧЕНИЯ</div>';
-      }
-      html += jobs.map(function (j) {
-        var pct = Math.round(j.chance * 100);
-        var risky = j.chance < 0.4 ? "bow-job-risky" : j.chance > 0.7 ? "bow-job-safe" : "";
-        if (!j.available) {
-          return '<div class="bow-job bow-job-locked">' +
-            '<div class="bow-job-head"><b>' + esc(j.title) + '</b>' +
-              '<span class="bow-dim">' + esc(j.orgName) + '</span></div>' +
-            '<div class="bow-job-note">Не доверят: община относится к вам как «' +
-              esc(Bow.work.reputationWord(Bow.work.reputation(state, j.org))) + '».</div>' +
-          '</div>';
-        }
-        return '<div class="bow-job">' +
-          '<div class="bow-job-top">' +
-            '<div class="bow-job-info">' +
-              '<div class="bow-job-head"><b>' + esc(j.title) + '</b></div>' +
-              '<div class="bow-job-note">' + esc(j.desc) + '</div>' +
-              '<div class="bow-job-meta">' +
-                '<span>' + j.hours + ' ч.</span>' +
-                '<span class="' + risky + '">шанс ' + pct + '%</span>' +
-                '<span>' + esc(skillName(j.skill)) + ' ' + j.skillValue + '</span>' +
-              '</div>' +
-            '</div>' +
-            '<div class="bow-job-pay">' + j.payMin + '–' + j.payMax + ' м.</div>' +
-          '</div>' +
-          '<button class="bow-btn bow-btn-sm bow-job-go" data-act="work" data-job="' + esc(j.key) + '">Взяться за работу</button>' +
+    box.innerHTML = works.map(function (w) {
+      var isCur = !!(activeTask && activeTask.key === w.key);
+      var locked = typeof w.minRep === "number" && w.org && Bow.work.reputation(state, w.org) < w.minRep;
+      if (locked) {
+        return '<div class="bow-job bow-job-locked">' +
+          '<div class="bow-job-head"><b>' + esc(w.title) + '</b>' +
+            '<span class="bow-dim">' + esc(Bow.work.orgName(state, w.org)) + '</span></div>' +
+          '<div class="bow-job-note">Не доверят: община относится к вам как «' +
+            esc(Bow.work.reputationWord(Bow.work.reputation(state, w.org))) + '».</div>' +
         '</div>';
-      }).join("");
-    }
+      }
 
-    box.innerHTML = html;
+      var yieldInfo = [];
+      if (w.yields && w.yields.length) {
+        w.yields.forEach(function (yi) {
+          var idef = Bow.data.items[yi.itemKey];
+          if (idef) { yieldInfo.push(idef.name); }
+        });
+      }
+      var payTxt = (w.pay && w.pay[1] > 0)
+        ? (w.pay[0] === w.pay[1] ? (w.pay[1] + " м.") : (w.pay[0] + "–" + w.pay[1] + " м."))
+        : "";
+      var trainInfo = (w.skills || []).map(function (sk) { return skillName(sk); });
+      var cyc = Math.max(10, w.cycleMinutes || 30);
+      var pctDone = isCur ? Math.min(100, Math.round(((activeTask.elapsedMin || 0) / cyc) * 100)) : 0;
+
+      return '<div class="bow-job bow-work-card' + (isCur ? " bow-task-on" : "") + '">' +
+        '<div class="bow-job-top">' +
+          '<div class="bow-job-info">' +
+            '<div class="bow-job-head"><b>' + esc(w.title) + '</b>' +
+              (isCur ? '<span class="bow-good"> · в работе (кругов: ' + (activeTask.cycles || 0) + ')</span>' : '') +
+            '</div>' +
+            '<div class="bow-job-note">' + esc(w.desc) + '</div>' +
+            '<div class="bow-job-meta">' +
+              '<span>круг ' + cyc + ' мин.</span>' +
+              (yieldInfo.length ? '<span>добыча: ' + esc(yieldInfo.join(", ")) + '</span>' : '') +
+              '<span>рост: ' + esc(trainInfo.join(", ")) + '</span>' +
+            '</div>' +
+          '</div>' +
+          (payTxt ? '<div class="bow-job-pay">' + esc(payTxt) + ' / круг</div>' : '') +
+        '</div>' +
+        (isCur
+          ? '<div class="bow-work-progress"><div class="bow-bar"><i class="bow-fill bow-good" style="width:' + pctDone + '%"></i></div>' +
+            '<span class="bow-dim">' + Math.round(activeTask.elapsedMin || 0) + ' / ' + cyc + ' мин.</span></div>' +
+            '<button type="button" class="bow-btn bow-btn-sm bow-btn-danger" data-act="task-stop">⏹ Прекратить работу</button>'
+          : '<button type="button" class="bow-btn bow-btn-sm bow-job-go" data-act="task-start" data-task="' + esc(w.key) + '">Взяться за работу</button>') +
+      '</div>';
+    }).join("");
   }
 
   function renderAllPeople(state) {
@@ -820,15 +790,21 @@
     }
 
     if (sel.kind === "jobs") {
-      var jobs = Bow.work.listAt(state);
-      var jRows = jobs.map(function (j) {
-        if (!j.available) {
-          return '<div class="bow-stage-mini-row bow-stage-mini-locked"><span class="bow-dim">' + esc(j.title) + ' — не доверят</span></div>';
+      var works = Bow.work.worksAt ? Bow.work.worksAt(state) : [];
+      var curTask = state.task;
+      var jRows = works.map(function (w) {
+        var locked = typeof w.minRep === "number" && w.org && Bow.work.reputation(state, w.org) < w.minRep;
+        if (locked) {
+          return '<div class="bow-stage-mini-row bow-stage-mini-locked"><span class="bow-dim">' + esc(w.title) + ' — не доверят</span></div>';
         }
+        var isCur = !!(curTask && curTask.key === w.key);
+        var payHint = (w.pay && w.pay[1] > 0) ? (w.pay[0] + "–" + w.pay[1] + " м.") : "добыча в сумку";
         return '<div class="bow-stage-mini-row">' +
-          '<span class="bow-stage-mini-name">' + esc(j.title) + ' <i class="bow-dim">(' + j.hours + ' ч., ' + Math.round(j.chance * 100) + '%)</i></span>' +
-          '<b class="bow-gold-txt">' + j.payMin + '–' + j.payMax + ' м.</b>' +
-          '<button type="button" class="bow-trade-btn" data-act="work" data-job="' + esc(j.key) + '">Взяться</button>' +
+          '<span class="bow-stage-mini-name">' + esc(w.title) + ' <i class="bow-dim">(' + (w.cycleMinutes || 30) + ' мин.)</i></span>' +
+          '<b class="bow-gold-txt">' + esc(payHint) + '</b>' +
+          (isCur
+            ? '<button type="button" class="bow-trade-btn bow-fight-btn" data-act="task-stop">⏹ Прекратить</button>'
+            : '<button type="button" class="bow-trade-btn" data-act="task-start" data-task="' + esc(w.key) + '">Взяться за работу</button>') +
         '</div>';
       }).join("") || '<div class="bow-empty">Работы нет.</div>';
 
@@ -912,12 +888,18 @@
         lootLines.push('<div class="bow-stage-mini-row"><span class="bow-stage-mini-name">' + esc(def ? def.name : it.itemId) + '</span><span class="bow-dim">' + (it.qty > 1 ? "×" + it.qty : "снаряжение") + '</span><span></span></div>');
       });
       var canLoot = !corpse.looted && lootLines.length > 0;
+      var cStg = (Bow.actions && Bow.actions.corpseStage) ? Bow.actions.corpseStage(state, corpse) : { label: "свежее тело", hoursAge: 0, maxHours: 48 };
+      var hoursLeft = Math.max(1, Math.round((cStg.maxHours || 48) - (cStg.hoursAge || 0)));
+      var decayNote = corpse.location === "forest"
+        ? "Состояние: " + cStg.label + " · через ~" + hoursLeft + " ч. растащит зверьё."
+        : "Состояние: " + cStg.label + " · через ~" + hoursLeft + " ч. тело уберут за околицу.";
 
       pop.innerHTML = '<div class="bow-stage-card">' +
         '<div class="bow-stage-card-head">' +
           '<div class="bow-stage-card-title"><b>☠ ' + esc(corpse.name) + '</b><span class="bow-dim">· ' + esc(corpse.role || "труп") + '</span></div>' +
           closeBtn +
         '</div>' +
+        '<div class="bow-stage-card-meta">' + esc(decayNote) + '</div>' +
         (canLoot
           ? '<div class="bow-stage-mini-list">' + lootLines.join("") + '</div>' +
             '<div class="bow-person-acts" style="margin-top:8px">' +
@@ -1059,7 +1041,7 @@
     }
 
     var tabCounts = {
-      jobs: Bow.work.listAt(state).length + (Bow.work.tasksAt ? Bow.work.tasksAt(state).length : 0),
+      jobs: Bow.work.worksAt ? Bow.work.worksAt(state).length : Bow.work.listAt(state).length,
       map: Object.keys(Bow.data.locations || {}).length,
       trade: ((loc && loc.trades) ? loc.trades.length : 0)
     };
@@ -1266,15 +1248,21 @@
     }
   }
 
-  function fightChip(u, aimedAt, strikingKeys, targetKey, state) {
+  function fightChip(u, aimedAt, strikingKeys, targetKey, state, strikeOut, strikeIn, roundNo) {
     var A = Bow.data.fightRules.arena;
     var num = u.index;
+    var animParity = (roundNo || 0) % 2 === 0 ? "a" : "b";
     var cls = "bow-chip bow-chip-" + (u.side === "ally" ? "ally" : "enemy");
     if (u.dead) { cls += " bow-chip-dead"; }
     else if (u.down) { cls += " bow-chip-down"; }
     if (u.stance === "guard" && !u.down && !u.dead) { cls += " bow-chip-guard"; }
     if (!u.dead && aimedAt && aimedAt.indexOf(u.key) !== -1) { cls += " bow-chip-aimed"; }
-    if (!u.dead && !u.down && strikingKeys && strikingKeys.indexOf(u.key) !== -1) { cls += " bow-chip-strike"; }
+    if (!u.dead && !u.down && (strikeOut || (strikingKeys && strikingKeys.indexOf(u.key) !== -1))) {
+      cls += " bow-chip-strike bow-swing-" + animParity;
+    }
+    if (!u.dead && strikeIn && strikeIn.hit) {
+      cls += " bow-chip-hit bow-flinch-" + animParity;
+    }
     var isTarget = u.side === "enemy" && !u.dead && u.key === targetKey;
     if (isTarget) { cls += " bow-chip-target"; }
 
@@ -1299,8 +1287,29 @@
         })
       : "";
 
+    /* 1-кадровая вспышка рассечения / промаха при обмене ударами (0.0.7.5) */
+    var fxHtml = "";
+    if (strikeIn) {
+      if (strikeIn.hit) {
+        var slashPath = strikeIn.aim === "head" ? "M10 22 Q32 8 54 20"
+          : strikeIn.aim === "legs" ? "M10 52 Q32 42 54 50"
+          : "M10 48 Q30 24 54 12";
+        fxHtml = '<span class="bow-strike-fx bow-strike-fx-hit bow-fx-' + animParity + '" aria-hidden="true">' +
+          '<svg class="bow-slash-svg" viewBox="0 0 64 64">' +
+            '<path d="' + slashPath + '" fill="none" stroke="#e86a6a" stroke-width="4.2" stroke-linecap="round"/>' +
+            '<path d="' + slashPath + '" fill="none" stroke="#fff3e6" stroke-width="1.8" stroke-linecap="round"/>' +
+          '</svg>' +
+          '<b class="bow-fx-dmg">−' + Math.round(strikeIn.damage) + '</b>' +
+        '</span>';
+      } else {
+        fxHtml = '<span class="bow-strike-fx bow-strike-fx-miss bow-fx-' + animParity + '" aria-hidden="true">' +
+          '<i class="bow-fx-miss">✧ мимо</i>' +
+        '</span>';
+      }
+    }
+
     var leftPct = Math.round(((u.col + 0.5) / A.cols) * 1000) / 10;
-    var topPct = Math.round((13 + u.row * 27) * 10) / 10;
+    var topPct = Math.round((15 + u.row * 26) * 10) / 10;
     var zIdx = 12 + u.row * 3 + (u.key === "player" ? 1 : 0);
 
     var prev = lastFightPos[u.key];
@@ -1323,7 +1332,7 @@
         '<span class="bow-chip-hpbar"><i class="bow-fill bow-' + lvl + '" style="width:' + Math.min(100, hp) + '%"></i></span>' +
         '<span class="bow-chip-hp bow-' + lvl + '">' + hp + '</span>' +
       '</span>' +
-      '<span class="bow-chip-body">' + fig + '<b>' + num + '</b></span>' +
+      '<span class="bow-chip-body">' + fig + fxHtml + '<b>' + num + '</b></span>' +
       '<span class="bow-chip-name">' + esc(u.name) + '</span>' +
       (mark ? '<span class="bow-chip-mark">' + mark + '</span>' : "") +
     '</div>';
@@ -1364,6 +1373,15 @@
 
     var aimedAt = (f.aim || []).map(function (a) { return a.to; });
     var strikingKeys = (f.aim || []).map(function (a) { return a.from; });
+    var outMap = {};
+    var inMap = {};
+    (f.lastStrikes || []).forEach(function (st) {
+      if (!st || st.round !== f.round) { return; }
+      outMap[st.from] = st;
+      /* Если по цели били несколько раз за круг, приоритет попаданию */
+      if (!inMap[st.to] || st.hit) { inMap[st.to] = st; }
+    });
+
     var bg = (Bow.stage && state) ? Bow.stage.backdropSvg(state.player.location, state, true) : "";
     var wHtml = (Bow.stage && Bow.stage.weatherOverlayHtml && state)
       ? Bow.stage.weatherOverlayHtml(state, state.player.location, true)
@@ -1374,7 +1392,9 @@
       arenaHtml:
         '<div class="bow-arena" style="--cols:' + A.cols + ';--rows:' + A.rows + '">' +
           '<div class="bow-arena-tracks">' + steps.join("") + '</div>' +
-          units.map(function (u) { return fightChip(u, aimedAt, strikingKeys, f.target, state); }).join("") +
+          units.map(function (u) {
+            return fightChip(u, aimedAt, strikingKeys, f.target, state, outMap[u.key] || null, inMap[u.key] || null, f.round || 0);
+          }).join("") +
         '</div>',
       rosterHtml: roster
     };
@@ -1687,6 +1707,42 @@
     }
   }
 
+  /* ---------- Бессознательное состояние при минусе в области тела (Kenshi, 0.0.7.5) ---------- */
+  function renderComa(state) {
+    var box = $("bow-coma");
+    if (!box) { return; }
+    var isComa = !!(state && state.player && !state.dead && !state.fight && !state.jail &&
+      Bow.state && Bow.state.isComatose && Bow.state.isComatose(state.player));
+    if (!isComa) {
+      box.classList.remove("bow-fight-open");
+      box.innerHTML = "";
+      return;
+    }
+    var crit = Bow.state.criticalVitalOf(state.player);
+    var hasComp = Object.keys(state.people || {}).some(function (id) {
+      var n = state.people[id];
+      return n && n.alive && n.following;
+    });
+    var inSettlement = state.player.location !== "forest";
+    var fee = Math.min(state.player.money || 0, 6);
+
+    box.innerHTML = '<div class="bow-fight-card bow-coma-card">' +
+      '<div class="bow-fight-head"><b>Без сознания · область «' + esc(crit.label) + '» в минусе (' + Math.round(crit.hp) + '%)</b>' +
+        '<span class="bow-critical">не встать самому</span></div>' +
+      '<div class="bow-fight-note">Жизненно важная область пробита ниже нуля. В таком состоянии вы не можете встать или перевязать себя сами — при −100% наступит гибель от потери крови.</div>' +
+      '<div class="bow-fight-acts">' +
+        (hasComp
+          ? '<button class="bow-btn bow-btn-sm" data-act="rescue-coma" data-how="companion">✚ Спутник перевяжет раны</button>'
+          : '') +
+        (inSettlement
+          ? '<button class="bow-btn bow-btn-sm" data-act="rescue-coma" data-how="passerby">✚ Помощь жителей Брода' + (fee > 0 ? ' · ' + fee + ' м.' : ' · в долг') + '</button>'
+          : '') +
+        '<button class="bow-btn bow-btn-sm" data-act="rescue-coma" data-how="wait">⏳ Ждать прохожего (1 ч.)</button>' +
+      '</div>' +
+    '</div>';
+    box.classList.add("bow-fight-open");
+  }
+
   /* ---------- Стража на улице ----------
      Не «вы пойманы», а разговор: у игрока есть выбор, и каждый
      вариант чем-то стоит. */
@@ -1823,6 +1879,7 @@
     }
 
     renderFight(state);
+    renderComa(state);
     renderGuard(state);
     renderJail(state);
     renderEncounter(state);

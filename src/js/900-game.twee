@@ -221,6 +221,9 @@
     "task-stop": function () {
       return Bow.adapter.act.taskStop(getState());
     },
+    "rescue-coma": function (el) {
+      return Bow.adapter.act.rescueComa(getState(), el.getAttribute("data-how") || "wait");
+    },
     "toggle-autoeat": function () {
       return Bow.adapter.act.toggleAutoEat(getState());
     },

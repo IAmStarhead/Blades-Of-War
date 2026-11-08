@@ -605,9 +605,9 @@ body {
 
 /* --- Умения --- */
 .bow-skills {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 5px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
 
 .bow-skill-name { color: var(--bow-text); }
@@ -4438,4 +4438,385 @@ html.bow-motion-calm .bow-fog-band {
   .bow-limbs-grid,
   .bow-organs-row { grid-template-columns: 1fr; }
 }
+
+/* ============================================================
+   КРУГ 17 (0.0.7.5) — ВЁРСТКА ОКОН, НЕПОДВИЖНАЯ ШАПКА,
+   ЦВЕТА ЧАСТЕЙ ТЕЛА, ПОЛНОРАЗМЕРНОЕ ОКНО БОЯ И АНИМАЦИЯ УДАРОВ
+   ============================================================ */
+
+/* 1. Светофор здоровья конечностей и частей тела:
+      зелёный (>=70%), жёлтый (35..69%), красный (<35%), багровый минус (<0%). */
+.bow-limb-bar {
+  height: 7px;
+  background: #0c1117;
+  border: 1px solid rgba(145, 165, 184, 0.16);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.bow-limb-bar .bow-fill.bow-good {
+  background: linear-gradient(90deg, #439365 0%, #5bbd82 100%);
+}
+
+.bow-limb-bar .bow-fill.bow-ok,
+.bow-limb-bar .bow-fill.bow-warn {
+  background: linear-gradient(90deg, #b88b32 0%, #deb252 100%);
+}
+
+.bow-limb-bar .bow-fill.bow-critical,
+.bow-limb-bar .bow-fill.bow-crit,
+.bow-limb-bar .bow-fill.bow-low {
+  background: linear-gradient(90deg, #a83838 0%, #d95757 100%);
+}
+
+.bow-limb-bar .bow-fill.bow-neg {
+  background: repeating-linear-gradient(
+    -45deg,
+    #8d1d24,
+    #8d1d24 5px,
+    #c6363e 5px,
+    #c6363e 10px
+  );
+}
+
+.bow-limb-row.bow-limb-neg {
+  border-color: rgba(217, 87, 87, 0.55);
+  background: rgba(58, 18, 22, 0.35);
+}
+
+.bow-coma-card {
+  border-color: rgba(217, 87, 87, 0.65);
+  background: linear-gradient(180deg, rgba(44, 16, 20, 0.92), rgba(22, 14, 18, 0.95));
+}
+
+/* 2. Чистая сетка окна «Характеристики и навыки» без вылезающих полос и чисел */
+#bow-skills {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+  min-width: 0;
+}
+
+.bow-skill-cat {
+  min-width: 0;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.bow-skill-cat .bow-skill {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 46px 26px;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.bow-skill-cat .bow-skill-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bow-skill-cat .bow-skill b {
+  text-align: right;
+  font-size: 0.72rem;
+}
+
+/* 3. Неподвижная верхняя шапка в одну ровную линию во всех локациях и при любой погоде */
+@media (min-width: 921px) {
+  .bow-topbar {
+    flex-wrap: nowrap !important;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .bow-logo-btn {
+    flex: 0 0 auto;
+  }
+
+  .bow-topbar-info {
+    flex: 1 1 200px;
+    min-width: 155px;
+    max-width: 245px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 2px;
+    overflow: hidden;
+  }
+
+  .bow-topbar-line1,
+  .bow-topbar-line2 {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.2;
+  }
+
+  .bow-topbar-line2 .bow-weather {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .bow-rail.bow-top-nav {
+    flex: 0 0 auto;
+    flex-wrap: nowrap;
+  }
+
+  .bow-topbar-right {
+    flex: 0 0 auto;
+    margin-left: 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: nowrap;
+  }
+}
+
+/* 4. Прогресс единой непрерывной работы прямо внутри карточки */
+.bow-work-card.bow-task-on {
+  border-color: rgba(91, 189, 130, 0.55);
+  background: rgba(24, 40, 34, 0.34);
+}
+
+.bow-work-progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 6px 0 8px;
+}
+
+.bow-work-progress .bow-bar {
+  flex: 1 1 auto;
+}
+
+.bow-work-progress .bow-dim {
+  font-family: var(--bow-mono);
+  font-size: 0.72rem;
+  white-space: nowrap;
+}
+
+/* Визуальные стадии тлена трупов на сцене */
+.bow-corpse-cold .bow-fig-svg {
+  opacity: 0.82;
+  filter: saturate(0.65);
+}
+
+.bow-corpse-rotting .bow-fig-svg {
+  opacity: 0.62;
+  filter: sepia(0.35) saturate(0.55) brightness(0.82);
+}
+
+/* 5. Поле боя строго в размер главного окна (#bow-stage: 1088px × 368px) */
+.bow-fight-page {
+  padding: 16px 16px 28px;
+}
+
+.bow-fight-page-inner {
+  max-width: 1088px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.bow-arena-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 8px 0 10px;
+}
+
+.bow-arena-scene {
+  width: 100%;
+  height: 368px;
+  min-height: 368px;
+  border-radius: 6px;
+  box-sizing: border-box;
+}
+
+.bow-arena-scene .bow-arena {
+  height: 368px;
+  min-height: 368px;
+  box-sizing: border-box;
+}
+
+.bow-roster {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.bow-roster .bow-roster-row {
+  flex: 1 1 200px;
+  margin: 0;
+}
+
+/* Компактные кнопки управления скоростью боя в один ряд (не во всю ширину!) */
+.bow-fight-speed-btns {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: nowrap;
+}
+
+.bow-fight-speed-btns .bow-btn {
+  width: auto !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 6px 12px;
+  min-height: 34px;
+  white-space: nowrap;
+}
+
+@media (max-width: 720px) {
+  .bow-arena-scene,
+  .bow-arena-scene .bow-arena {
+    height: 284px;
+    min-height: 284px;
+  }
+  .bow-fight-speed-btns {
+    flex-wrap: wrap;
+  }
+}
+
+/* 6. Анимация удара (замах и выпад оружия + дуга рассечения по цели, 0.0.7.5) */
+.bow-subh-modal-dup {
+  display: none !important;
+}
+
+.bow-fig-weapon,
+.bow-fig-fist {
+  transform-box: fill-box;
+  transform-origin: 20% 85%;
+}
+
+@keyframes bow-lunge-ally-a {
+  0%   { transform: translate(-50%, 0) scale(1); }
+  28%  { transform: translate(calc(-50% + 15px), -3px) scale(1.04); }
+  100% { transform: translate(-50%, 0) scale(1); }
+}
+@keyframes bow-lunge-ally-b {
+  0%   { transform: translate(-50%, 0) scale(1); }
+  28%  { transform: translate(calc(-50% + 15px), -3px) scale(1.04); }
+  100% { transform: translate(-50%, 0) scale(1); }
+}
+
+@keyframes bow-lunge-enemy-a {
+  0%   { transform: translate(-50%, 0) scale(1); }
+  28%  { transform: translate(calc(-50% - 15px), -3px) scale(1.04); }
+  100% { transform: translate(-50%, 0) scale(1); }
+}
+@keyframes bow-lunge-enemy-b {
+  0%   { transform: translate(-50%, 0) scale(1); }
+  28%  { transform: translate(calc(-50% - 15px), -3px) scale(1.04); }
+  100% { transform: translate(-50%, 0) scale(1); }
+}
+
+@keyframes bow-weapon-slash-a {
+  0%   { transform: rotate(-22deg); }
+  32%  { transform: rotate(46deg); }
+  100% { transform: rotate(0deg); }
+}
+@keyframes bow-weapon-slash-b {
+  0%   { transform: rotate(-22deg); }
+  32%  { transform: rotate(46deg); }
+  100% { transform: rotate(0deg); }
+}
+
+@keyframes bow-hit-shake-a {
+  0%   { filter: brightness(1); }
+  22%  { filter: brightness(1.55) drop-shadow(0 0 8px rgba(232, 90, 90, 0.85)); }
+  100% { filter: brightness(1); }
+}
+@keyframes bow-hit-shake-b {
+  0%   { filter: brightness(1); }
+  22%  { filter: brightness(1.55) drop-shadow(0 0 8px rgba(232, 90, 90, 0.85)); }
+  100% { filter: brightness(1); }
+}
+
+@keyframes bow-slash-pop-a {
+  0%   { opacity: 0; transform: scale(0.65) translateY(4px); }
+  22%  { opacity: 1; transform: scale(1.08) translateY(-2px); }
+  75%  { opacity: 0.92; transform: scale(1) translateY(-8px); }
+  100% { opacity: 0; transform: scale(0.96) translateY(-14px); }
+}
+@keyframes bow-slash-pop-b {
+  0%   { opacity: 0; transform: scale(0.65) translateY(4px); }
+  22%  { opacity: 1; transform: scale(1.08) translateY(-2px); }
+  75%  { opacity: 0.92; transform: scale(1) translateY(-8px); }
+  100% { opacity: 0; transform: scale(0.96) translateY(-14px); }
+}
+
+.bow-chip-ally.bow-swing-a { animation: bow-lunge-ally-a 520ms cubic-bezier(0.22, 0.8, 0.28, 1); }
+.bow-chip-ally.bow-swing-b { animation: bow-lunge-ally-b 520ms cubic-bezier(0.22, 0.8, 0.28, 1); }
+.bow-chip-enemy.bow-swing-a { animation: bow-lunge-enemy-a 520ms cubic-bezier(0.22, 0.8, 0.28, 1); }
+.bow-chip-enemy.bow-swing-b { animation: bow-lunge-enemy-b 520ms cubic-bezier(0.22, 0.8, 0.28, 1); }
+
+.bow-swing-a .bow-fig-weapon,
+.bow-swing-a .bow-fig-fist { animation: bow-weapon-slash-a 480ms ease-out; }
+.bow-swing-b .bow-fig-weapon,
+.bow-swing-b .bow-fig-fist { animation: bow-weapon-slash-b 480ms ease-out; }
+
+.bow-flinch-a .bow-fig-svg { animation: bow-hit-shake-a 460ms ease-out; }
+.bow-flinch-b .bow-fig-svg { animation: bow-hit-shake-b 460ms ease-out; }
+
+.bow-strike-fx {
+  position: absolute;
+  inset: -6px -10px auto -10px;
+  height: 68px;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 30;
+  opacity: 0;
+}
+
+.bow-strike-fx.bow-fx-a { animation: bow-slash-pop-a 920ms ease-out forwards; }
+.bow-strike-fx.bow-fx-b { animation: bow-slash-pop-b 920ms ease-out forwards; }
+
+.bow-slash-svg {
+  width: 56px;
+  height: 56px;
+  filter: drop-shadow(0 0 6px rgba(232, 106, 106, 0.8));
+}
+
+.bow-fx-dmg {
+  margin-top: -12px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: rgba(42, 12, 16, 0.92);
+  border: 1px solid rgba(232, 106, 106, 0.75);
+  color: #ffd6d6 !important;
+  font-family: var(--bow-mono);
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-shadow: 0 1px 2px #000;
+}
+
+.bow-fx-miss {
+  font-style: normal;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: rgba(18, 25, 34, 0.88);
+  border: 1px solid rgba(160, 180, 200, 0.45);
+  color: #b8cadc;
+  font-family: var(--bow-mono);
+  font-size: 0.68rem;
+}
+
 

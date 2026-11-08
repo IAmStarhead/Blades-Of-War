@@ -61,17 +61,26 @@
              драка оставляла игрока калекой до конца игры. */
           n.health += healRate(person);
         }
-        /* Заживление раненых (но не отрубленных) конечностей за час. */
-        if (!hungry && !tired && person.body) {
-          var limbHeal = healRate(person) * 1.4;
+        /* Заживление и кровопотеря частей тела за час (в духе Kenshi, 0.0.7.5):
+           если голова/грудь/живот ушли в минус и не перевязаны — рана не затягивается сама,
+           а медленно теряет кровь (-1.5 в час, на -100 — смерть). Перевязанная рана идёт вверх. */
+        if (person.body) {
+          var limbHeal = (!hungry && !tired) ? healRate(person) * 1.4 : healRate(person) * 0.45;
           Object.keys(person.body).forEach(function (bk) {
             var limb = person.body[bk];
-            if (limb && !limb.lost && limb.hp < limb.max) {
-              var bonus = limb.bandaged ? 1.6 : 1.0;
+            if (!limb || limb.lost) { return; }
+            var isVital = (bk === "head" || bk === "chest" || bk === "stomach");
+            if (limb.hp < 0 && !limb.bandaged) {
+              if (isVital) {
+                limb.hp = Math.max(-100, Bow.util.round1(limb.hp - 1.5));
+              }
+            } else if (limb.hp < limb.max) {
+              var bonus = limb.bandaged ? 1.7 : 1.0;
               limb.hp = Math.min(limb.max, Bow.util.round1(limb.hp + limbHeal * bonus));
               if (limb.hp >= limb.max) { limb.bandaged = false; }
             }
           });
+          syncComaState(state);
         }
         if (hungry) {
           n.mood += rules.moodPenaltyHunger;
@@ -121,6 +130,13 @@
   function treat(state, rng) {
     var p = state.player;
     var n = p.needs;
+    if (Bow.state && Bow.state.isComatose && Bow.state.isComatose(p)) {
+      var crit = Bow.state.criticalVitalOf(p);
+      return {
+        ok: false,
+        message: "Область «" + crit.label + "» ушла в минус (" + Math.round(crit.hp) + "%) — вы без сознания и не можете перевязать себя сами. Нужна чужая помощь."
+      };
+    }
     var limbHurt = hasWoundedLimbs(p);
     if (n.health >= 100 && !limbHurt) { return { ok: false, message: "Вы целы. Лечить нечего." }; }
     if (n.fatigue < 8) { return { ok: false, message: "Руки не держат бинт. Нужен отдых." }; }
@@ -233,7 +249,7 @@
     return { health: "Здоровье", hunger: "Сытость", fatigue: "Бодрость", mood: "Расположение духа" }[key] || key;
   }
 
-  /* Цвет-подсказка для полосы: 3 ступени, без «красивостей». */
+  /* Цвет-подсказка для полосы потребностей. */
   function level(value) {
     if (value <= 20) { return "critical"; }
     if (value <= 45) { return "low"; }
@@ -241,9 +257,138 @@
     return "good";
   }
 
+  /* Наглядный светофор для частей тела (0.0.7.5):
+     зелёный (>=70%) — цела, жёлтый (35..69%) — не очень, красный (<35% и минус) — плохо. */
+  function limbLevel(pct, lost) {
+    if (lost || pct < 0) { return "critical"; }
+    if (pct < 35) { return "low"; }
+    if (pct < 70) { return "ok"; }
+    return "good";
+  }
+
+  /* Синхронизация состояния беспамятства (комы) при уходе головы/груди/живота в минус. */
+  function syncComaState(state) {
+    if (!state || !state.player || state.dead) { return null; }
+    var p = state.player;
+    var crit = Bow.state && Bow.state.criticalVitalOf ? Bow.state.criticalVitalOf(p) : null;
+    if (crit && crit.hp <= -100) {
+      state.coma = null;
+      state.dead = {
+        cause: "bleedout",
+        text: "Тяжёлая рана («" + crit.label + "») ушла до −100% без чужой перевязки. Дыхание оборвалось на снегу.",
+        hours: state.time ? state.time.totalHours : 0
+      };
+      Bow.journal.add(state, "Гибель от неостановленной кровопотери («" + crit.label + "» −100%).", "death");
+      return state.dead;
+    }
+    if (crit && crit.hp < 0 && !crit.bandaged) {
+      if (state.task && Bow.work && Bow.work.stopTask) {
+        Bow.work.stopTask(state, "Вы рухнули без сознания — работа прервана.");
+      }
+      if (state.time && state.time.scale !== "paused" && Bow.time && Bow.time.setScale) {
+        Bow.time.setScale(state, "paused");
+      }
+      state.coma = {
+        partKey: crit.key,
+        partLabel: crit.label,
+        hp: crit.hp,
+        sinceHours: (state.coma && typeof state.coma.sinceHours === "number")
+          ? state.coma.sinceHours
+          : (state.time ? state.time.totalHours : 0)
+      };
+      return state.coma;
+    }
+    state.coma = null;
+    return null;
+  }
+
+  /* Чужая помощь лежачему в минусе персонажу (спутник, житель поселения или ожидание прохожего). */
+  function rescueComa(state, how, rng) {
+    if (!state || !state.player) { return { ok: false, message: "Нет состояния." }; }
+    var p = state.player;
+    var crit = Bow.state && Bow.state.criticalVitalOf ? Bow.state.criticalVitalOf(p) : null;
+    if (!crit || (crit.hp >= 0 && !state.coma)) {
+      state.coma = null;
+      return { ok: false, message: "Вы уже в сознании и можете держаться на ногах." };
+    }
+    var r = rng || (Bow.adapter ? Bow.adapter.rng : Math.random);
+
+    function stabilize(helperName, restoreMin) {
+      Object.keys(p.body || {}).forEach(function (bk) {
+        var l = p.body[bk];
+        if (!l || l.lost) { return; }
+        if (l.hp < 0) {
+          l.hp = Math.min(l.max, Math.max(restoreMin, Math.round(l.hp + 26)));
+          l.bandaged = true;
+        } else if (l.hp < 55) {
+          l.hp = Math.min(l.max, l.hp + 12);
+          l.bandaged = true;
+        }
+      });
+      if (p.needs.health < 18) { p.needs.health = 18; }
+      state.coma = null;
+      syncComaState(state);
+      var msg = helperName + " туго перевязывает ваши раны и приводит вас в чувство. Вы снова можете стоять на ногах.";
+      Bow.journal.add(state, msg, "heal");
+      return { ok: true, rescued: true, message: msg };
+    }
+
+    if (how === "companion") {
+      var comp = null;
+      Object.keys(state.people || {}).forEach(function (id) {
+        var n = state.people[id];
+        if (!comp && n && n.alive && n.following) { comp = n; }
+      });
+      if (!comp) {
+        return { ok: false, message: "Рядом нет спутника, который шёл бы с вами." };
+      }
+      Bow.time.advance(state, 1);
+      return stabilize(comp.name, 10);
+    }
+
+    if (how === "passerby") {
+      if (p.location === "forest") {
+        return { ok: false, message: "В тайге нет лавок и дворов — остаётся только ждать случайного следопыта." };
+      }
+      var fee = Math.min(p.money, 6);
+      if (fee > 0) {
+        p.money -= fee;
+      } else if (state.reputation && typeof state.reputation["org:brod"] === "number") {
+        state.reputation["org:brod"] = Math.max(-100, state.reputation["org:brod"] - 2);
+      }
+      Bow.time.advance(state, 1);
+      var helper = fee > 0
+        ? "Прохожий из Студёного Брода (взяв " + fee + " м. за чистую тряпицу и травы)"
+        : "Сердобольная жительница Брода (в долг под честное слово)";
+      return stabilize(helper, 8);
+    }
+
+    /* how === "wait": пролежать час в надежде, что кто-нибудь пройдёт мимо. */
+    var chance = p.location === "forest" ? 0.25 : 0.68;
+    Bow.time.advance(state, 1);
+    if (state.dead) {
+      return { ok: false, dead: true, message: state.dead.text };
+    }
+    if (r() < chance) {
+      var finder = p.location === "forest" ? "Проходивший по тропе охотник" : "Случайный возчик";
+      return stabilize(finder, 6);
+    }
+    syncComaState(state);
+    var updated = Bow.state.criticalVitalOf(p);
+    return {
+      ok: true,
+      rescued: false,
+      message: "Час прошёл в полузабытьи на холоде — никто не подошёл («" +
+        (updated ? updated.label + ": " + Math.round(updated.hp) + "%" : "") + "»)."
+    };
+  }
+
   Bow.needs = {
     treat: treat,
     hasWoundedLimbs: hasWoundedLimbs,
+    limbLevel: limbLevel,
+    syncComaState: syncComaState,
+    rescueComa: rescueComa,
     autoEatCheck: autoEatCheck,
     toggleAutoEat: toggleAutoEat,
     healRate: healRate,

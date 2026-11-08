@@ -153,6 +153,9 @@
     taskStop: function (state) {
       return Bow.work.stopTask(state);
     },
+    rescueComa: function (state, how) {
+      return Bow.needs.rescueComa(state, how, rng);
+    },
     toggleAutoEat: function (state) {
       var on = Bow.needs.toggleAutoEat(state);
       return { ok: true, message: on ? "Авто-еда включена: герой сам перекусит из сумки." : "Авто-еда выключена." };

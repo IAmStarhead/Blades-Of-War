@@ -705,7 +705,8 @@
        До 0.0.6.3 здесь стоял порог stunAt (8), и он сбрасывал
        падение, поставленное тяжёлым ударом в голову: фишка ложилась,
        а через строку вставала обратно, потому что здоровья 25 > 8. */
-    if (unit.down && !unit.dead && p.needs.health > rules().yieldAt.npc) {
+    var vitalDown = Bow.state && Bow.state.criticalVitalOf ? Bow.state.criticalVitalOf(p) : null;
+    if (unit.down && !unit.dead && p.needs.health > rules().yieldAt.npc && !(vitalDown && vitalDown.hp < 0)) {
       unit.down = false;
     }
   }
@@ -744,8 +745,14 @@
       var dc = target.col > mover.col ? 1 : (target.col < mover.col ? -1 : 0);
       var dr = target.row > mover.row ? 1 : (target.row < mover.row ? -1 : 0);
       var candidates = [];
-      if (dc !== 0 && dr !== 0) { candidates.push([mover.col + dc, mover.row + dr]); }
-      if (dc !== 0) { candidates.push([mover.col + dc, mover.row]); }
+      /* Сначала держим свою полосу при сближении шеренгой, и только вблизи или при помехе смещаемся по ряду. */
+      if (dc !== 0 && Math.abs(target.col - mover.col) > 1) {
+        candidates.push([mover.col + dc, mover.row]);
+        if (dr !== 0) { candidates.push([mover.col + dc, mover.row + dr]); }
+      } else {
+        if (dc !== 0 && dr !== 0) { candidates.push([mover.col + dc, mover.row + dr]); }
+        if (dc !== 0) { candidates.push([mover.col + dc, mover.row]); }
+      }
       if (dr !== 0) { candidates.push([mover.col, mover.row + dr]); }
       if (dc !== 0) {
         candidates.push([mover.col + dc, mover.row - 1]);
@@ -832,23 +839,24 @@
     f.target = foe.key;
 
     f.aim = [];
+    f.lastStrikes = [];
     ensureOrders(f);
     playerUnit.stance = stance;
 
-    /* --- 1. Ход героя --- */
+    /* --- 1. Ход героя (постепенное сближение по 1 клетке за круг, 0.0.7.5) --- */
     if (!playerUnit.down) {
       if (stance === "press") {
-        /* В напоре герой сам сближается с целью (рывок до 2 шагов). */
-        if (!inMelee(playerUnit, foe)) {
-          stepToward(f, playerUnit, foe, 2);
-        }
         if (inMelee(playerUnit, foe)) {
           strike(state, playerUnit, foe, stance, rng, aimKey || (f.orders && f.orders.aim) || "body");
           syncUnit(state, playerUnit);
           syncUnit(state, foe);
           f.aim.push({ from: playerUnit.key, to: foe.key });
+        } else if (stepToward(f, playerUnit, foe, 1)) {
+          /* Постепенно сближаемся на 1 клетку к выбранной цели (без прыжка на 2 клетки). */
+          Bow.needs.applyChange(state.player, "fatigue", -0.5);
+          log(f, "you", "Вы делаете шаг навстречу (" + foe.name + ").");
         } else {
-          /* Если до выбранного не дотянуться из-за строя, бьём того, кто вплотную. */
+          /* Если проход к выбранной цели плотно перекрыт строем, бьём того, кто мешает вплотную. */
           var adjFoe = aliveUnits(f, "enemy").filter(function (e) { return inMelee(playerUnit, e); })[0];
           if (adjFoe) {
             strike(state, playerUnit, adjFoe, stance, rng, aimKey || (f.orders && f.orders.aim) || "body");
@@ -856,8 +864,8 @@
             syncUnit(state, adjFoe);
             f.aim.push({ from: playerUnit.key, to: adjFoe.key });
           } else {
-            Bow.needs.applyChange(state.player, "fatigue", -1);
-            log(f, "you", "Вы сближаетесь с " + foe.name + ".");
+            Bow.needs.applyChange(state.player, "fatigue", -0.5);
+            log(f, "you", "Вы ищете проход к " + foe.name + ".");
           }
         }
       } else {
@@ -923,27 +931,28 @@
         return;
       }
 
-      if (!inMelee(u, prey)) {
-        stepToward(f, u, prey, 2);
-      }
-      if (!inMelee(u, prey)) {
-        var nearAny = live.filter(function (e) { return inMelee(u, e); })[0];
-        if (nearAny) { prey = nearAny; }
-      }
       if (inMelee(u, prey)) {
         strike(state, u, prey, allyStance, rng, allyAim);
         syncUnit(state, u);
         syncUnit(state, prey);
         f.aim.push({ from: u.key, to: prey.key });
+      } else if (stepToward(f, u, prey, 1)) {
+        log(f, "you", u.name + " сближается на шаг.");
       } else {
-        log(f, "you", u.name + " подходит ближе к врагу.");
+        var nearAny = live.filter(function (e) { return inMelee(u, e); })[0];
+        if (nearAny) {
+          strike(state, u, nearAny, allyStance, rng, allyAim);
+          syncUnit(state, u);
+          syncUnit(state, nearAny);
+          f.aim.push({ from: u.key, to: nearAny.key });
+        }
       }
     });
 
     if (!aliveUnits(f, "enemy").length) { endBySide(state, "ally"); return { ok: true, message: "" }; }
     if (enemyGivesUp(f)) { endBySide(state, "ally"); return { ok: true, message: "" }; }
 
-    /* --- 3. Противник сближается и отвечает --- */
+    /* --- 3. Противник сближается по 1 клетке и отвечает вплотную --- */
     aliveUnits(f, "enemy").forEach(function (foeUnit) {
       /* Если игрок уже сбит до порога и стоящих союзников не осталось —
          остальные стражники не бьют лежачего на «−0 здор.». */
@@ -957,8 +966,7 @@
       foeUnit.stance = foeStance;
       if (foeStance === "yield") { return; }
 
-      /* Сначала те, кто реально стоит перед врагом вплотную!
-         Так союзник, вышедший вперёд, прикрывает героя за спиной. */
+      /* Сначала те, кто реально уже стоит перед врагом вплотную! */
       var engaged = ours.filter(function (a) { return inMelee(foeUnit, a); });
       var victim = null;
       if (engaged.length) {
@@ -972,18 +980,9 @@
         victim = ours[0];
         if (foeStance === "press") {
           stepToward(f, foeUnit, victim, 1);
+          log(f, "them", foeUnit.name + " делает шаг навстречу.");
         }
-        /* После шага проверяем, дотянулся ли до кого-то из наших. */
-        var nowEngaged = aliveUnits(f, "ally").filter(function (a) { return inMelee(foeUnit, a); });
-        if (nowEngaged.length) {
-          nowEngaged.sort(function (a, b) { return a.hp - b.hp; });
-          victim = nowEngaged[0];
-        } else {
-          if (foeStance === "press") {
-            log(f, "them", foeUnit.name + " сближается по снегу.");
-          }
-          return;
-        }
+        return;
       }
 
       strike(state, foeUnit, victim, foeStance, rng, chooseAim(foeUnit, state));
@@ -1055,7 +1054,17 @@
 
     var who = attacker.side === "ally" ? "you" : "them";
 
+    if (!Array.isArray(f.lastStrikes)) { f.lastStrikes = []; }
+
     if (!hit) {
+      f.lastStrikes.push({
+        from: attacker.key,
+        to: defender.key,
+        hit: false,
+        damage: 0,
+        aim: aimKey || "body",
+        round: f.round || 1
+      });
       log(f, who, sideName(attacker) + " " + (attacker.key === "player" ? "бьёте" : "бьёт") +
         " " + aim.short + " — мимо.");
       return;
@@ -1075,16 +1084,34 @@
       }
     }
 
-    /* Попадание бьёт в конкретную конечность или часть тела. */
+    /* Попадание бьёт в конкретную конечность или часть тела.
+       В духе Kenshi здоровье части тела может уходить в минус (-100..100). */
     var sideParity = (((f.round || 0) + (attacker.col || 0)) % 2) === 0;
     var hitPartKey = aimKey === "head" ? "head"
       : aimKey === "arms" ? (sideParity ? "right_arm" : "left_arm")
       : aimKey === "legs" ? (sideParity ? "left_leg" : "right_leg")
       : (sideParity ? "chest" : "stomach");
 
+    var vitalKnockedNegative = false;
     if (dP.body && dP.body[hitPartKey] && !dP.body[hitPartKey].lost && mode !== "spar") {
-      dP.body[hitPartKey].hp = clamp(Math.round(dP.body[hitPartKey].hp - damage * 1.15), 0, dP.body[hitPartKey].max || 100);
+      dP.body[hitPartKey].hp = clamp(Math.round(dP.body[hitPartKey].hp - damage * 0.9), -100, dP.body[hitPartKey].max || 100);
+      if (dP.body[hitPartKey].hp < 0) {
+        dP.body[hitPartKey].bandaged = false;
+        if (hitPartKey === "head" || hitPartKey === "chest" || hitPartKey === "stomach") {
+          vitalKnockedNegative = true;
+        }
+      }
     }
+
+    f.lastStrikes.push({
+      from: attacker.key,
+      to: defender.key,
+      hit: true,
+      damage: damage,
+      aim: aimKey || "body",
+      part: hitPartKey,
+      round: f.round || 1
+    });
 
     /* Рост боевых навыков и Крепости от реального дела (как в Kenshi). */
     if (Bow.work && Bow.work.growSkill) {
@@ -1160,6 +1187,19 @@
     }
 
     Bow.needs.applyChange(dP, "health", -damage);
+    /* Если жизненно важная часть тела (голова / грудь / живот) ушла в минус —
+       боец сразу теряет сознание и падает на землю (в духе Kenshi, 0.0.7.5). */
+    if (vitalKnockedNegative) {
+      defender.down = true;
+      var vLabel = (dP.body && dP.body[hitPartKey] && dP.body[hitPartKey].name) || hitPartKey;
+      if (defender.key === "player") {
+        if (dP.needs.health > R.yieldAt.player) { dP.needs.health = R.yieldAt.player; }
+        log(f, "narr", "Тяжёлый удар в «" + vLabel + "» уводит область в минус — в глазах темнеет, вы не можете удержаться на ногах!");
+      } else {
+        if (dP.needs.health > R.yieldAt.npc) { dP.needs.health = R.yieldAt.npc; }
+        log(f, "narr", dP.name + " рушится без сознания (пробита область «" + vLabel + "»).");
+      }
+    }
     defender.hp = dP.needs.health;
 
     /* Куда пришёлся удар — видно в каждой строке: без этого выбор
@@ -1263,6 +1303,9 @@
       (lost ? "Из кошеля пропало " + lost + " м." : "Ваш кошель не тронут."));
     squadAftermath(state, "loss", lostAlly);
     finish(state, "loss", { lost: lost });
+    if (Bow.needs && Bow.needs.syncComaState) {
+      Bow.needs.syncComaState(state);
+    }
   }
 
   /* ---------- Отступление ---------- */

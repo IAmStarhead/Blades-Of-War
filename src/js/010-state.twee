@@ -127,7 +127,7 @@
 
     if (["blades", "axes", "blunt", "polearms", "heavy_weapons", "combat", "melee_defense", "weaponsmith", "armorsmith"].indexOf(key) !== -1) {
       if (b.right_arm && b.right_arm.lost) { mult *= 0.55; }
-      else if (b.right_arm && b.right_arm.hp < 60) { mult *= (0.72 + (b.right_arm.hp / 60) * 0.28); }
+      else if (b.right_arm && b.right_arm.hp < 60) { mult *= (0.72 + (Math.max(0, b.right_arm.hp) / 60) * 0.28); }
       if (b.left_arm && b.left_arm.lost) { mult *= (key === "heavy_weapons" || key === "polearms" ? 0.35 : 0.78); }
     }
     if (["bows", "precision"].indexOf(key) !== -1) {
@@ -139,7 +139,7 @@
       if (legHurt) { mult *= 0.42; }
       else {
         var minLeg = Math.min((b.left_leg ? b.left_leg.hp : 100), (b.right_leg ? b.right_leg.hp : 100));
-        if (minLeg < 65) { mult *= (0.65 + (minLeg / 65) * 0.35); }
+        if (minLeg < 65) { mult *= (0.65 + (Math.max(0, minLeg) / 65) * 0.35); }
       }
       if (earLost > 0 && key === "dodge") { flat += earLost * 3; }
     }
@@ -412,6 +412,20 @@
       }
       state.version = "0.0.7.4";
       return state;
+    },
+
+    /* 0.0.7.4 → 0.0.7.5: отрицательное здоровье частей тела и кома как в Kenshi,
+       гниение и исчезновение трупов со временем, единая непрерывная работа. */
+    "0.0.7.4": function (state) {
+      if (!("coma" in state)) { state.coma = null; }
+      if (Array.isArray(state.corpses)) {
+        var nowH = (state.time && typeof state.time.totalHours === "number") ? state.time.totalHours : 0;
+        state.corpses.forEach(function (c) {
+          if (typeof c.createdAtHours !== "number") { c.createdAtHours = nowH; }
+        });
+      }
+      state.version = "0.0.7.5";
+      return state;
     }
   };
 
@@ -486,6 +500,9 @@
       encounter: null,
       /* Трупы на локациях: [{ id, personId, roleKey, name, role, location, money, items[], looted, killedAt }] */
       corpses: [],
+      /* Бессознательное состояние при минусовом здоровье головы/груди/живота (как в Kenshi):
+         { partKey, partLabel, sinceHours } — сам не встанет, пока кто-нибудь не перевяжет. */
+      coma: null,
       /* Смерть: { cause, text, hours }. Игра после неё не продолжается. */
       dead: null,
       /* Счётчик визитов в локации — для сюжетных условий */
@@ -669,6 +686,30 @@
     return { state: state, applied: applied };
   }
 
+  var VITAL_LABELS = { head: "Голова", chest: "Грудь", stomach: "Живот" };
+
+  /* Жизненно важная область (голова / грудь / живот), ушедшая в минус (< 0).
+     В духе Kenshi: если такая область в минусе и ещё никем не перевязана,
+     персонаж лежит без сознания и не может подняться самостоятельно. */
+  function criticalVitalOf(person) {
+    if (!person || !person.body) { return null; }
+    var worst = null;
+    ["head", "chest", "stomach"].forEach(function (k) {
+      var l = person.body[k];
+      if (l && l.hp < 0) {
+        if (!worst || l.hp < worst.hp) {
+          worst = { key: k, label: l.name || VITAL_LABELS[k] || k, hp: l.hp, bandaged: !!l.bandaged };
+        }
+      }
+    });
+    return worst;
+  }
+
+  function isComatose(person) {
+    var crit = criticalVitalOf(person);
+    return !!(crit && crit.hp < 0 && !crit.bandaged);
+  }
+
   Bow.state = {
     create: create,
     validate: validate,
@@ -677,6 +718,8 @@
     effectiveAttr: effectiveAttr,
     effectiveSkill: effectiveSkill,
     maxCarryWeight: maxCarryWeight,
+    criticalVitalOf: criticalVitalOf,
+    isComatose: isComatose,
     isCurrentVersion: function (state) {
       return state && state.version === Bow.data.meta.version;
     }

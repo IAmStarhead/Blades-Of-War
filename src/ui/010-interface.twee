@@ -15,11 +15,15 @@
     </button>
 
     <div class="bow-topbar-info">
-      <span id="bow-time" class="bow-tb-time">—</span>
-      <span class="bow-tb-sep">·</span>
-      <span id="bow-where" class="bow-tb-place bow-sr-only">—</span>
-      <span class="bow-tb-money" title="Монеты"><b id="bow-money">0</b> м.</span>
-      <span id="bow-weather" class="bow-weather"></span>
+      <div class="bow-topbar-line1">
+        <span id="bow-time" class="bow-tb-time">—</span>
+        <span id="bow-where" class="bow-tb-place bow-sr-only">—</span>
+      </div>
+      <div class="bow-topbar-line2">
+        <span class="bow-tb-money" title="Монеты"><b id="bow-money">0</b> м.</span>
+        <span class="bow-tb-sep">·</span>
+        <span id="bow-weather" class="bow-weather"></span>
+      </div>
     </div>
 
     <nav class="bow-rail bow-top-nav" id="bow-rail" aria-label="Окна разделов">
@@ -107,7 +111,8 @@
         </div>
       </section>
 
-      <!-- Неотложные встречи и разговор -->
+      <!-- Неотложные состояния, встречи и разговор -->
+      <section id="bow-coma" class="bow-fight" aria-live="polite"></section>
       <section id="bow-guard" class="bow-fight" aria-live="polite"></section>
       <section id="bow-encounter" class="bow-fight" aria-live="polite"></section>
       <section id="bow-jail" class="bow-fight" aria-live="polite"></section>
@@ -179,27 +184,27 @@
             </section>
 
             <section class="bow-dpanel" data-section="skills">
-              <h3 class="bow-subh">Характеристики и навыки</h3>
+              <h3 class="bow-subh bow-subh-modal-dup">Характеристики и навыки</h3>
               <div id="bow-skills" class="bow-skills"></div>
             </section>
 
             <section class="bow-dpanel" data-section="inv">
-              <h3 class="bow-subh">При себе</h3>
+              <h3 class="bow-subh bow-subh-modal-dup">При себе</h3>
               <div id="bow-inventory" class="bow-inventory"></div>
             </section>
 
             <section class="bow-dpanel" data-section="people">
-              <h3 class="bow-subh">Жители поселения</h3>
+              <h3 class="bow-subh bow-subh-modal-dup">Жители поселения</h3>
               <div id="bow-all-people" class="bow-all-people"></div>
             </section>
 
             <section class="bow-dpanel" data-section="orgs">
-              <h3 class="bow-subh">Общины</h3>
+              <h3 class="bow-subh bow-subh-modal-dup">Общины</h3>
               <div id="bow-orgs" class="bow-orgs"></div>
             </section>
 
             <section class="bow-dpanel" data-section="journal">
-              <h3 class="bow-subh">Хроника</h3>
+              <h3 class="bow-subh bow-subh-modal-dup">Хроника</h3>
               <div id="bow-journal" class="bow-journal"></div>
             </section>
 
@@ -241,7 +246,7 @@
   <div id="bow-sheet" class="bow-sheet" aria-hidden="true"></div>
 
   <footer class="bow-footer">
-    <span>Blades Of War · прототип 0.0.7.4 · Хладные Ветра · Студёный Брод</span>
+    <span>Blades Of War · прототип 0.0.7.5 · Хладные Ветра · Студёный Брод</span>
     <span class="bow-dim">Север Эдемских земель · малое поселение у переправы</span>
   </footer>
 

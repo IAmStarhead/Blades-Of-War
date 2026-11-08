@@ -183,6 +183,12 @@
         '<line x1="46" y1="56" x2="52" y2="32" stroke="#9d8768" stroke-width="2.2"/>' +
         '<rect x="47" y="28" width="11" height="6" rx="1" fill="#aeb8c2"/>' +
       '</g>';
+    } else if (side !== "neutral") {
+      /* Поднятый кулак в рукопашной схватке без оружия (для анимации удара). */
+      weaponSvg = '<g class="bow-fig-fist">' +
+        '<line x1="41" y1="45" x2="53" y2="39" stroke="' + stroke + '" stroke-width="2.4" stroke-linecap="round"/>' +
+        '<circle cx="54.2" cy="38.5" r="2.1" fill="' + stroke + '"/>' +
+      '</g>';
     }
 
     var shieldSvg = "";
@@ -546,18 +552,21 @@
       stageEntities.push({ kind: "corpse", corpse: c });
     });
 
-    /* 2. Фигурка самого игрока слева на переднем плане */
+    /* 2. Фигурка самого игрока слева на переднем плане (или без сознания на снегу при минусе в области тела) */
     var playerX = stageEntities.length >= 5 ? 16 : (stageEntities.length === 4 ? 18 : 20);
     var pWeapon = weaponKindOf(state, state.player);
     var selfActive = selected && selected.kind === "self" ? " bow-actor-on" : "";
-    var activeTaskDef = (state.task && Bow.work && Bow.work.taskByKey) ? Bow.work.taskByKey(state.task.key) : null;
-    var playerSub = activeTaskDef
-      ? ('<i class="bow-tone bow-warm">' + esc(activeTaskDef.short) + ' · ' + Math.round(state.task.elapsedMin) + '/' + (activeTaskDef.cycleMinutes || 30) + 'м</i>')
-      : "";
+    var isComa = !!(Bow.state && Bow.state.isComatose && Bow.state.isComatose(state.player));
+    var activeTaskDef = (!isComa && state.task && Bow.work && Bow.work.taskByKey) ? Bow.work.taskByKey(state.task.key) : null;
+    var playerSub = isComa
+      ? '<i class="bow-tone bow-cold">без сознания</i>'
+      : activeTaskDef
+        ? ('<i class="bow-tone bow-warm">' + esc(activeTaskDef.short) + ' · ' + Math.round(state.task.elapsedMin) + '/' + (activeTaskDef.cycleMinutes || 30) + 'м</i>')
+        : "";
     html.push(
-      '<button type="button" class="bow-actor bow-actor-player' + selfActive + (activeTaskDef ? " bow-actor-working" : "") + '" style="left:' + playerX + '%;bottom:42px" ' +
+      '<button type="button" class="bow-actor bow-actor-player' + selfActive + (activeTaskDef ? " bow-actor-working" : "") + (isComa ? " bow-actor-coma" : "") + '" style="left:' + playerX + '%;bottom:42px" ' +
         'data-act="stage-select" data-kind="self" data-x="' + playerX + '" title="Вы — припасы, отдых и перевязка">' +
-        figureSvg({ roleKey: "player", side: "player", weapon: pWeapon }) +
+        figureSvg({ roleKey: "player", side: "player", weapon: pWeapon, down: isComa }) +
         '<span class="bow-actor-tag"><b>Вы</b>' + playerSub + '</span>' +
       '</button>'
     );
@@ -607,15 +616,17 @@
         var c = ent.corpse;
         var cSel = selected && selected.kind === "corpse" && selected.corpseId === c.id;
         var hasLoot = !c.looted && ((c.money || 0) > 0 || (c.items && c.items.length > 0));
+        var stg = (Bow.actions && Bow.actions.corpseStage) ? Bow.actions.corpseStage(state, c) : { key: "fresh", label: "свежее тело" };
+        var subLabel = hasLoot ? ("обыскать · " + stg.label) : stg.label;
         html.push(
-          '<button type="button" class="bow-actor bow-actor-corpse' + (cSel ? " bow-actor-on" : "") + (hasLoot ? " bow-actor-corpse-loot" : "") + '" ' +
+          '<button type="button" class="bow-actor bow-actor-corpse bow-corpse-' + stg.key + (cSel ? " bow-actor-on" : "") + (hasLoot ? " bow-actor-corpse-loot" : "") + '" ' +
             'style="left:' + x + '%;bottom:42px" ' +
             'data-act="stage-select" data-kind="corpse" data-corpse="' + esc(c.id) + '" data-x="' + x + '" ' +
-            'title="' + esc("Труп: " + c.name + (hasLoot ? " (можно обыскать)" : " (обыскан)")) + '">' +
+            'title="' + esc("Труп: " + c.name + " (" + stg.label + ")" + (hasLoot ? " — можно обыскать" : "")) + '">' +
             figureSvg({ roleKey: c.roleKey || "villager", side: "enemy", dead: true }) +
             '<span class="bow-actor-tag bow-actor-tag-corpse">' +
               '<b>☠ ' + esc(c.name) + '</b>' +
-              '<i class="bow-dim">' + (hasLoot ? "обыскать" : "пусто") + '</i>' +
+              '<i class="bow-dim">' + esc(subLabel) + '</i>' +
             '</span>' +
           '</button>'
         );
