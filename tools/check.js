@@ -808,7 +808,7 @@ function byAct(act, key) {
 
     const back = win.Bow.save.deserialize(win.Bow.save.serialize(g, 1));
     assert(back.ok, "старое сохранение не загрузилось: " + back.reason);
-    eq(back.state.version, "0.0.7.6", "версия после миграции");
+    eq(back.state.version, "0.0.7.7", "версия после миграции");
     assert(back.state.fight === null, "после миграции нет пустого слота боя");
     assert(back.state.people["person:tarn"].weapon, "кузнец остался без топора");
     return "0.0.5 → " + back.state.version + ", топор кузнеца на месте";
@@ -1007,7 +1007,7 @@ function byAct(act, key) {
     delete g.flags.huntedHeat;
 
     const back = win.Bow.save.deserialize(win.Bow.save.serialize(g, 1));
-    eq(back.state.version, "0.0.7.6", "версия после миграции");
+    eq(back.state.version, "0.0.7.7", "версия после миграции");
     assert(back.state.guard && back.state.guard.arrived === true,
       "стража из старого сохранения осталась «непришедшей» — из неё не выбраться");
     eq(back.state.flags.huntedUntil, null, "поле срока розыска");
@@ -1771,7 +1771,7 @@ function byAct(act, key) {
 
     const back = win.Bow.save.deserialize(win.Bow.save.serialize(g, 1));
     assert(back.ok, "сохранение 0.0.6.2 не загрузилось: " + back.reason);
-    eq(back.state.version, "0.0.7.6", "версия после миграции");
+    eq(back.state.version, "0.0.7.7", "версия после миграции");
     assert(back.state.steal && typeof back.state.steal === "object", "нет слота подготовки кражи");
     eq(back.state.player.lastTreat, null, "lastTreat после миграции");
     assert(typeof back.state.player.skills.medicine === "number", "навык лечения не восстановлен");
@@ -1971,9 +1971,9 @@ function byAct(act, key) {
     };
     const back = win.Bow.save.deserialize(win.Bow.save.serialize(g, 1));
     assert(back.ok, "сохранение 0.0.6.3 не загрузилось: " + back.reason);
-    eq(back.state.version, "0.0.7.6", "версия после миграции");
+    eq(back.state.version, "0.0.7.7", "версия после миграции");
     assert(back.state.fight.orders && back.state.fight.orders.aim === "body", "приказы боя созданы при миграции");
-    return "0.0.6.3 → 0.0.7.6, приказы боя созданы";
+    return "0.0.6.3 → 0.0.7.7, приказы боя созданы";
   });
 
   /* 8н. Круг 13 (0.0.7.1): фикс зависания в клетке, честная дистанция боя, логотип и Меню игры */
@@ -3861,10 +3861,29 @@ function byAct(act, key) {
     }
   });
 
-  check("0.0.7.6: миграция состояний доводит версию игры до 0.0.7.6", () => {
-    assert(win.Bow.data.meta.version === "0.0.7.6", "версия в Bow.data.meta не 0.0.7.6");
-    assert(game().version === "0.0.7.6", "версия активного состояния не 0.0.7.6");
-    return "версия 0.0.7.6 подтверждена";
+  check("0.0.7.7: миграция состояний доводит версию игры до 0.0.7.7", () => {
+    assert(win.Bow.data.meta.version === "0.0.7.7", "версия в Bow.data.meta не 0.0.7.7");
+    assert(game().version === "0.0.7.7", "версия активного состояния не 0.0.7.7");
+    return "версия 0.0.7.7 подтверждена";
+  });
+
+  check("0.0.7.7: щипковые удары по струнам полностью вырезаны из саундтрека", () => {
+    const audioSrc = fs.readFileSync(path.join(__dirname, "..", "src", "js", "108-audio.twee"), "utf8");
+    assert(!/playPluck|getPluckBuffer|pluckCache|\bharp\s*:/.test(audioSrc),
+      "в 108-audio.twee остались щипковые удары по струнам");
+    assert(/playHearthPad/.test(audioSrc) && /playBowedChord/.test(audioSrc) && /playFrostHarmonic/.test(audioSrc),
+      "плавные смычковые/камерные инструменты отсутствуют");
+    return "0 щипковых ударов, плавные виолы/флейта/рога/хор на месте";
+  });
+
+  check("0.0.7.7: время в верхней шапке не зажато узким max-width и отображается целиком (фикс image-17)", () => {
+    const styles = [...doc().querySelectorAll("style")].map((s) => s.textContent).join("\n");
+    assert(!/max-width:\s*245px/.test(styles), "у .bow-topbar-info остался узкий потолок max-width: 245px");
+    assert(/\.bow-topbar-line1\s*\{[^}]*overflow:\s*visible/.test(styles),
+      "первая строка шапки (#bow-time) всё ещё режет часы через overflow: hidden");
+    const timeText = doc().getElementById("bow-time").textContent;
+    assert(/\d{2}:\d{2}$/.test(timeText), "в #bow-time нет полных часов и минут ЧЧ:ММ: " + timeText);
+    return "полное время в шапке: " + timeText;
   });
 
   /* ---------- Итоги ---------- */

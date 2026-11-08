@@ -2071,7 +2071,7 @@
           '<span class="bow-dim">' +
             (Bow.audio && Bow.audio.currentTrack
               ? ('Сейчас: «' + esc(Bow.audio.currentTrack().title) + '» — ' + esc(Bow.audio.currentTrack().subtitle))
-              : 'Лютня у очага для помещений и смычковые/рога/хор для улиц') +
+              : 'Деревянная флейта и камерные виолы у очага · рога, хор и смычковые для улиц') +
           '</span>' +
         '</div>' +
         '<div class="bow-setting-opts">' +
