@@ -435,8 +435,23 @@
       return true;
     }
 
+    var fCur = state.fight || {};
+    var enemyCnt = (fCur.enemies || []).length;
+    var isBigBattle = (fCur.mode === "battle") || (fCur.enemies || []).some(function (e) {
+      return e && (e.isStack || (e.count && e.count > 1));
+    });
+
     function place(side, index) {
-      var list = A.spawn[side];
+      var list;
+      if (side === "ally") {
+        list = A.spawn.ally;
+      } else if (isBigBattle && A.spawn.enemyBattle) {
+        list = A.spawn.enemyBattle;
+      } else if (enemyCnt > 1 && A.spawn.enemyGroup) {
+        list = A.spawn.enemyGroup;
+      } else {
+        list = A.spawn.enemy;
+      }
       if (index < list.length) { return list[index].slice(); }
       var extra = A.extra[side];
       return extra[(index - list.length) % extra.length].slice();
@@ -891,8 +906,8 @@
       var dc = target.col > mover.col ? 1 : (target.col < mover.col ? -1 : 0);
       var dr = target.row > mover.row ? 1 : (target.row < mover.row ? -1 : 0);
       var candidates = [];
-      /* Сначала держим свою полосу при сближении шеренгой, и только вблизи или при помехе смещаемся по ряду. */
-      if (dc !== 0 && Math.abs(target.col - mover.col) > 1) {
+      /* Если цель уже в пределах соседнего ряда (±1) — держим свою полосу шеренги; если дальше по вертикали — идём наискось по гексу на охват. */
+      if (dc !== 0 && Math.abs(target.col - mover.col) > 1 && Math.abs(target.row - mover.row) <= 1) {
         candidates.push([mover.col + dc, mover.row]);
         if (dr !== 0) { candidates.push([mover.col + dc, mover.row + dr]); }
       } else {

@@ -5285,6 +5285,151 @@ html.bow-motion-calm .bow-fog-band {
 
 .bow-battle-intro.bow-battle-intro-play .bow-intro-sword-r {
   animation: bow-ff-sword-r 1050ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* ============================================================
+   КРУГ 21 (0.0.8.1) — ГЕКСАГОНАЛЬНОЕ ПОЛЕ БОЯ 7×5 (KING'S BOUNTY / HEROES III),
+   ХИТБОКС ПО СИЛУЭТУ ФИГУРКИ И ГЕКСУ, И ЖИВАЯ СЦЕНА КЛЕТКИ С РЕШЁТКОЙ
+   ============================================================ */
+
+/* 1. Передняя кованая решётка острога поверх узника на Главном окне (фикс image-20) */
+.bow-stage-cage-bars {
+  position: absolute;
+  left: 12%;
+  bottom: 28px;
+  width: 44%;
+  height: 192px;
+  pointer-events: none;
+  z-index: 4;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.85));
+}
+
+/* 2. Шестиугольные соты врагов кликабельны строго по 6-граннику SVG <polygon> */
+.bow-tactical-grid .bow-hex-enemy-hit {
+  pointer-events: all !important;
+  cursor: pointer;
+  transition: fill 0.14s ease, stroke 0.14s ease;
+}
+
+.bow-tactical-grid .bow-hex-enemy-hit:hover {
+  fill: rgba(236, 194, 96, 0.34);
+  stroke: #ffe39d;
+  stroke-width: 2.3px;
+}
+
+/* 3. Полный отказ от невидимого прямоугольного хитбокса вокруг бойца (фикс image-19):
+      сам контейнер .bow-chip прозрачен для мыши и не имеет прямоугольных рамок! */
+.bow-arena-scene .bow-chip,
+.bow-arena-scene .bow-chip:hover,
+.bow-arena-scene .bow-chip-target,
+.bow-arena-scene .bow-chip-aimed {
+  pointer-events: none !important;
+  background: transparent !important;
+  border: 0 !important;
+  outline: none !important;
+  box-shadow: none !important;
+  min-width: 0 !important;
+  padding: 0 !important;
+}
+
+/* Область нажатия повторяет форму силуэта воина (голова, плечи, щит, ноги) без углов прямоугольника! */
+.bow-arena-scene .bow-chip-hitshape {
+  display: block;
+  clip-path: polygon(50% 2%, 75% 13%, 92% 38%, 86% 78%, 70% 98%, 30% 98%, 14% 78%, 8% 38%, 25% 13%);
+}
+
+.bow-arena-scene .bow-chip-enemy:not(.bow-chip-dead) .bow-chip-hitshape,
+.bow-arena-scene .bow-chip-enemy:not(.bow-chip-dead) .bow-chip-foot {
+  pointer-events: auto !important;
+  cursor: pointer;
+}
+
+/* При наведении или выборе цели светится сам силуэт бойца, а не пустой прямоугольник */
+.bow-arena-scene .bow-chip-enemy:not(.bow-chip-dead):hover {
+  z-index: 65 !important;
+}
+
+.bow-arena-scene .bow-chip-enemy:not(.bow-chip-dead):hover .bow-fig-svg {
+  filter: brightness(1.22) drop-shadow(0 0 7px rgba(255, 216, 122, 0.95));
+}
+
+.bow-arena-scene .bow-chip-target .bow-fig-svg {
+  filter: drop-shadow(0 0 5px rgba(242, 198, 98, 0.92));
+}
+
+.bow-arena-scene .bow-chip-aimed .bow-fig-svg {
+  filter: drop-shadow(0 0 5px rgba(224, 92, 92, 0.85));
+}
+
+/* 4. Компактная плашка прямо у ног бойца (в духе King's Bounty и Heroes III) вместо громоздкой плашки над головой */
+.bow-chip-foot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  margin-top: -7px;
+  position: relative;
+  z-index: 16;
+}
+
+.bow-chip-foot .bow-chip-stack {
+  position: static;
+  min-width: 24px;
+  padding: 0 5px;
+  border-radius: 999px;
+  font-size: 0.66rem;
+  line-height: 1.3;
+}
+
+.bow-chip-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgba(11, 16, 22, 0.92);
+  border: 1px solid rgba(145, 168, 192, 0.45);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.72);
+}
+
+.bow-chip-enemy .bow-chip-pill {
+  border-color: rgba(214, 102, 108, 0.62);
+}
+
+.bow-chip-target .bow-chip-pill {
+  border-color: #f0c96f !important;
+  box-shadow: 0 0 8px rgba(240, 201, 111, 0.58);
+}
+
+.bow-chip-pill .bow-chip-hp {
+  position: static;
+  font-family: var(--bow-mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.bow-chip-pill .bow-chip-hpbar {
+  width: 24px;
+  height: 4px;
+  border-radius: 2px;
+}
+
+.bow-arena-scene .bow-chip-name {
+  margin-top: 1px;
+  padding: 0 4px;
+  border-radius: 3px;
+  background: rgba(8, 12, 16, 0.68);
+  color: #cfdbe6;
+  font-size: 0.58rem;
+  line-height: 1.25;
+  pointer-events: none;
+}
+
+.bow-arena-scene .bow-chip-enemy:not(.bow-chip-dead):hover .bow-chip-name,
+.bow-arena-scene .bow-chip-target .bow-chip-name {
+  color: #ffeab5;
+  background: rgba(24, 18, 10, 0.92);
 }</style>
 	<script role="script" id="twine-user-script" type="text/twine-javascript">/* ============================================================
    BOW CORE — базовые утилиты, ГПСЧ, шина событий.
@@ -5364,12 +5509,12 @@ html.bow-motion-calm .bow-fog-band {
         var idx = list.indexOf(fn);
         if (idx !== -1) { list.splice(idx, 1); }
       },
-      emit: function (name, payload) {
+      emit: function (name, payload, extra) {
         var list = handlers[name];
         if (!list) { return; }
         for (var i = 0; i < list.length; i++) {
           try {
-            list[i](payload);
+            list[i](payload, extra);
           } catch (err) {
             if (global.console) { global.console.error("[Bow.bus] Ошибка в обработчике " + name, err); }
           }
@@ -5396,7 +5541,7 @@ html.bow-motion-calm .bow-fog-band {
   Bow.data = {
 
     meta: {
-      version: "0.0.8.0",
+      version: "0.0.8.1",
       title: "Blades Of War",
       worldName: "Эдем · Королевство Хладных Ветров",
       regionShort: "Хладные Ветра",
@@ -6167,18 +6312,21 @@ html.bow-motion-calm .bow-fog-band {
          Позиция — только чтобы бой читался глазами. */
       arena: {
         cols: 7,
-        rows: 4,
-        /* Тактическая сетка 7×4 (28 клеток с глубиной в 4 полосы):
-           герой встаёт по центру слева [0,1], спутники и отряды — по соседним
-           рядам [0,2], [0,0], [0,3], а противник — напротив [3,*]..[5,*]. */
+        rows: 5,
+        hex: true,
+        /* Гексагональное поле боя 7×5 (35 крупных сот, как в King's Bounty и Heroes III, 0.0.8.1):
+           чётные и нечётные ряды разнесены в шахматном порядке на полгекса, а по вертикали
+           между одинаковыми X — два полных ряда (110px), поэтому бойцы никогда не заслоняют друг друга. */
         spawn: {
-          ally:  [[0, 1], [0, 2], [0, 0], [0, 3]],
-          enemy: [[3, 1], [3, 2], [3, 0], [3, 3]]
+          ally:        [[0, 2], [0, 0], [0, 4], [1, 1], [1, 3]],
+          enemy:       [[3, 2], [3, 0], [4, 4], [5, 1], [5, 3]],
+          enemyGroup:  [[4, 2], [3, 0], [4, 4], [5, 1], [5, 3]],
+          enemyBattle: [[6, 2], [5, 0], [5, 4], [6, 1], [6, 3]]
         },
-        /* Запасные места второй и третьей линии для крупных стычек отрядов. */
+        /* Запасные гексы для крупных отрядов. */
         extra: {
-          ally:  [[1, 1], [1, 2], [1, 0], [1, 3]],
-          enemy: [[4, 1], [4, 2], [4, 0], [4, 3], [5, 1], [5, 2], [5, 0], [5, 3]]
+          ally:  [[1, 2], [1, 0], [1, 4], [2, 1], [2, 3]],
+          enemy: [[5, 2], [4, 0], [5, 4], [6, 0], [6, 4], [6, 2]]
         },
         stunAt: 8,
         allySpawns: ["bror", "tarn"]
@@ -6768,6 +6916,16 @@ html.bow-motion-calm .bow-fog-band {
     "0.0.7.7": function (state) {
       state.version = "0.0.8.0";
       return state;
+    },
+
+    /* 0.0.8.0 → 0.0.8.1: 3 оркестровые темы боя Skyrim, гексы 7×5 (King's Bounty / Heroes III), хитбокс по силуэту и живая клетка. */
+    "0.0.8.0": function (state) {
+      if (state.jail && typeof state.jail.minutesLeft !== "number") {
+        state.jail.minutesLeft = Math.max(0, Math.round((state.jail.hoursLeft || 1) * 60));
+        state.jail._syncedHours = state.jail.hoursLeft;
+      }
+      state.version = "0.0.8.1";
+      return state;
     }
   };
 
@@ -7153,7 +7311,7 @@ html.bow-motion-calm .bow-fog-band {
       stepOneHour(state, mood);
     }
 
-    Bow.bus.emit("tick:minute", state);
+    Bow.bus.emit("tick:minute", state, mins);
 
     return {
       minutesPassed: mins,
@@ -9354,8 +9512,23 @@ html.bow-motion-calm .bow-fog-band {
       return true;
     }
 
+    var fCur = state.fight || {};
+    var enemyCnt = (fCur.enemies || []).length;
+    var isBigBattle = (fCur.mode === "battle") || (fCur.enemies || []).some(function (e) {
+      return e && (e.isStack || (e.count && e.count > 1));
+    });
+
     function place(side, index) {
-      var list = A.spawn[side];
+      var list;
+      if (side === "ally") {
+        list = A.spawn.ally;
+      } else if (isBigBattle && A.spawn.enemyBattle) {
+        list = A.spawn.enemyBattle;
+      } else if (enemyCnt > 1 && A.spawn.enemyGroup) {
+        list = A.spawn.enemyGroup;
+      } else {
+        list = A.spawn.enemy;
+      }
       if (index < list.length) { return list[index].slice(); }
       var extra = A.extra[side];
       return extra[(index - list.length) % extra.length].slice();
@@ -9810,8 +9983,8 @@ html.bow-motion-calm .bow-fog-band {
       var dc = target.col > mover.col ? 1 : (target.col < mover.col ? -1 : 0);
       var dr = target.row > mover.row ? 1 : (target.row < mover.row ? -1 : 0);
       var candidates = [];
-      /* Сначала держим свою полосу при сближении шеренгой, и только вблизи или при помехе смещаемся по ряду. */
-      if (dc !== 0 && Math.abs(target.col - mover.col) > 1) {
+      /* Если цель уже в пределах соседнего ряда (±1) — держим свою полосу шеренги; если дальше по вертикали — идём наискось по гексу на охват. */
+      if (dc !== 0 && Math.abs(target.col - mover.col) > 1 && Math.abs(target.row - mover.row) <= 1) {
         candidates.push([mover.col + dc, mover.row]);
         if (dr !== 0) { candidates.push([mover.col + dc, mover.row + dr]); }
       } else {
@@ -11821,14 +11994,69 @@ html.bow-motion-calm .bow-fog-band {
     return Bow.fight.start(state, "guard");
   }
 
-  /* ---------- Клетка ---------- */
+  /* ---------- Клетка (с живым поминутным отсчётом срока, 0.0.8.1) ---------- */
+  var jailPauseTick = false;
+
+  function syncJailMinutes(jail) {
+    if (!jail) { return 0; }
+    var h = Math.max(0, Number(jail.hoursLeft) || 0);
+    if (typeof jail.minutesLeft !== "number" || isNaN(jail.minutesLeft) || jail._syncedHours !== h) {
+      jail.minutesLeft = Math.max(0, Math.round(h * 60));
+      jail._syncedHours = h;
+    }
+    return jail.minutesLeft;
+  }
+
+  function formatJailLeft(jail) {
+    if (!jail) { return "0 мин."; }
+    var totalMin = Math.max(0, Math.round(syncJailMinutes(jail)));
+    var hrs = Math.floor(totalMin / 60);
+    var mins = totalMin % 60;
+    if (hrs <= 0) { return mins + " мин."; }
+    if (mins === 0) { return hrs + " ч."; }
+    return hrs + " ч. " + (mins < 10 ? "0" : "") + mins + " мин.";
+  }
+
+  function stepJailMinutes(state, mins) {
+    if (!state || !state.jail || jailPauseTick) { return false; }
+    var delta = Math.max(0, Math.round(Number(mins) || 0));
+    if (!delta) { return false; }
+
+    var curMin = syncJailMinutes(state.jail);
+    var nextMin = Math.max(0, curMin - delta);
+    state.jail.minutesLeft = nextMin;
+    state.jail.hoursLeft = Math.ceil(nextMin / 60);
+    state.jail._syncedHours = state.jail.hoursLeft;
+
+    /* В клетке кормят скудной баландой, умереть с голоду не дают; на соломе уходит усталость. */
+    if (state.player && state.player.needs) {
+      if (state.player.needs.hunger < 35) {
+        state.player.needs.hunger = 42;
+      }
+      Bow.needs.applyChange(state.player, "fatigue", (delta / 60) * 1.6);
+      Bow.needs.applyChange(state.player, "mood", -(delta / 60) * 0.45);
+    }
+
+    if (nextMin <= 0) {
+      release(state);
+      if (Bow.ui && Bow.ui.setMessage) {
+        Bow.ui.setMessage("Срок вышел. Сторож отпирает засов и выпускает вас из клетки.");
+      }
+      return true;
+    }
+    return false;
+  }
+
   function toJail(state, reason) {
     var g = R();
     state.jail = {
       hoursLeft: g.cellsHours,
+      minutesLeft: g.cellsHours * 60,
+      _syncedHours: g.cellsHours,
       reason: reason || "вина",
       since: state.time.totalHours
     };
+    if (state.task) { state.task = null; }
     state.guard = null;
     state.flags.guardAt = null;
     state.flags.hunted = false;
@@ -11837,25 +12065,23 @@ html.bow-motion-calm .bow-fog-band {
     return state.jail;
   }
 
-  /* Отсидеть: время идёт, розыск спадает сам (подписка на сутки). */
+  /* Отсидеть: ускоренно перемотать несколько часов (или до конца срока). */
   function serve(state, hours) {
     if (!state.jail) { return { ok: false, message: "Вы не в клетке." }; }
-    var h = Math.max(1, Math.min(hours || 4, state.jail.hoursLeft));
+    var curMin = syncJailMinutes(state.jail);
+    var wantMin = Math.max(60, Math.round((hours || 4) * 60));
+    var passMin = Math.min(wantMin, curMin);
 
-    Bow.time.advance(state, h);
-    state.jail.hoursLeft -= h;
-    /* В клетке кормят скудно, раз в день, но умереть с голоду не дают. */
-    if (state.player.needs.hunger < 35) {
-      state.player.needs.hunger = 42;
-    }
-    Bow.needs.applyChange(state.player, "mood", -3);
-    Bow.needs.applyChange(state.player, "fatigue", 6);
+    /* advanceMinutes сам вызовет tick:minute → stepJailMinutes ровно на passMin! */
+    Bow.time.advanceMinutes(state, passMin);
 
-    if (state.jail.hoursLeft <= 0) {
-      release(state);
-      return { ok: true, released: true, message: "Срок вышел. Вас выпускают." };
+    if (!state.jail) {
+      return { ok: true, released: true, message: "Срок вышел. Вас выпускают из клетки." };
     }
-    return { ok: true, message: "Прошло " + h + " ч. Осталось " + state.jail.hoursLeft + " ч." };
+    return {
+      ok: true,
+      message: "Прошло " + Math.round(passMin / 60) + " ч. Осталось " + formatJailLeft(state.jail) + "."
+    };
   }
 
   function release(state) {
@@ -11874,7 +12100,12 @@ html.bow-motion-calm .bow-fog-band {
     if (state.time.hour >= 22 || state.time.hour < 5) { base += 0.12; }
     base = clamp(base, 0.05, 0.7);
 
-    Bow.time.advance(state, 2);
+    jailPauseTick = true;
+    try {
+      Bow.time.advance(state, 2);
+    } finally {
+      jailPauseTick = false;
+    }
 
     if (rnd(rng) < base) {
       state.jail = null;
@@ -11893,6 +12124,7 @@ html.bow-motion-calm .bow-fog-band {
   /* Подкуп в клетке: дешевле, чем на улице, но и денег уже меньше. */
   function bribeJail(state) {
     if (!state.jail) { return { ok: false, message: "Вы не в клетке." }; }
+    syncJailMinutes(state.jail);
     var cost = Math.round(R().bribeBase * 0.8 + state.jail.hoursLeft);
     if (state.player.money < cost) {
       return { ok: false, message: "Нужно " + cost + " м., у вас " + state.player.money + "." };
@@ -11904,7 +12136,12 @@ html.bow-motion-calm .bow-fog-band {
     return { ok: true, released: true, message: "Сторож отворачивается. Вы уходите." };
   }
 
-  /* ---------- Каждый час и каждый переход ---------- */
+  /* ---------- Каждый час, каждая минута (в клетке) и каждый переход ---------- */
+  Bow.bus.on("tick:minute", function (state, mins) {
+    if (!state || state.dead || !state.jail) { return; }
+    stepJailMinutes(state, mins || 1);
+  });
+
   Bow.bus.on("tick:hour", function (state) {
     if (state.dead || state.jail) { return; }
     schedule(state);
@@ -11963,6 +12200,8 @@ html.bow-motion-calm .bow-fog-band {
     release: release,
     escapeJail: escapeJail,
     bribeJail: bribeJail,
+    formatJailLeft: formatJailLeft,
+    syncJailMinutes: syncJailMinutes,
     onMove: onMove,
     THRESHOLD: function () { return R().threshold; }
   };
@@ -13012,9 +13251,51 @@ html.bow-motion-calm .bow-fog-band {
   }
 
   function backdropSvg(locKey, state, forBattle) {
+    if (forBattle) {
+      return battlefieldSvg(locKey, state);
+    }
     var pal = skyOf(state);
-    var indoor = (locKey === "tavern" || locKey === "smithy") && !forBattle;
+    var indoor = (locKey === "tavern" || locKey === "smithy" || locKey === "jail");
     var svg = skyBaseSvg(pal, indoor);
+
+    if (locKey === "jail") {
+      svg +=
+        /* Бревенчатые стены острога у частокола */
+        '<rect x="0" y="0" width="960" height="214" fill="#10151c"/>' +
+        '<g stroke="#1f2833" stroke-width="2">' +
+          '<line x1="0" y1="36" x2="960" y2="36"/><line x1="0" y1="72" x2="960" y2="72"/>' +
+          '<line x1="0" y1="108" x2="960" y2="108"/><line x1="0" y1="144" x2="960" y2="144"/>' +
+          '<line x1="0" y1="180" x2="960" y2="180"/>' +
+        '</g>' +
+        /* Узкое зарешёченное продушина-окно высоко под балкой с живым небом Брода */
+        '<rect x="218" y="42" width="116" height="46" rx="3" fill="' + pal.skyTop + '" stroke="#465566" stroke-width="2"/>' +
+        '<line x1="247" y1="42" x2="247" y2="88" stroke="#2c3744" stroke-width="3"/>' +
+        '<line x1="276" y1="42" x2="276" y2="88" stroke="#2c3744" stroke-width="3"/>' +
+        '<line x1="305" y1="42" x2="305" y2="88" stroke="#2c3744" stroke-width="3"/>' +
+        /* Холодный дощато-каменный пол острога */
+        '<rect x="0" y="214" width="960" height="106" fill="#141a21"/>' +
+        '<line x1="0" y1="214" x2="960" y2="214" stroke="#3c4a58" stroke-width="1.6"/>' +
+        /* Задняя и боковая стенки самой клети (слева до x=530) */
+        '<rect x="118" y="64" width="412" height="162" fill="rgba(9,13,18,0.55)" stroke="#3b4958" stroke-width="2"/>' +
+        /* Охапка мёрзлой соломы и глиняная миска внутри клетки */
+        '<path d="M148 228 Q192 206 246 226 Q216 234 148 228 Z" fill="#594a2c" stroke="#7d683f" stroke-width="1.2"/>' +
+        '<line x1="164" y1="223" x2="212" y2="215" stroke="#8c7548" stroke-width="1.3"/>' +
+        '<line x1="182" y1="226" x2="232" y2="220" stroke="#8c7548" stroke-width="1.3"/>' +
+        '<ellipse cx="432" cy="228" rx="13" ry="5" fill="#3a2f28" stroke="#645347" stroke-width="1.1"/>' +
+        /* Железное кольцо в стене и цепь */
+        '<circle cx="348" cy="152" r="6" fill="none" stroke="#596878" stroke-width="2"/>' +
+        /* Смоляной факел в железной скобе снаружи у сторожа */
+        '<radialGradient id="bowJailTorch" cx="0.64" cy="0.42" r="0.32">' +
+          '<stop offset="0%" stop-color="#e8943a" stop-opacity="0.32"/>' +
+          '<stop offset="100%" stop-color="#e8943a" stop-opacity="0"/>' +
+        '</radialGradient>' +
+        '<rect x="0" y="0" width="960" height="320" fill="url(#bowJailTorch)"/>' +
+        '<line x1="612" y1="146" x2="622" y2="118" stroke="#5b4634" stroke-width="4" stroke-linecap="round"/>' +
+        '<path d="M622 118 Q616 102 624 94 Q632 104 625 118 Z" fill="#f09d3e" opacity="0.9"/>' +
+        '<path d="M623 115 Q620 106 624 100 Q628 106 624 115 Z" fill="#ffd98e"/>';
+      return '<svg class="bow-stage-bg" viewBox="0 0 960 320" preserveAspectRatio="xMidYMid slice" aria-hidden="true">' +
+        svg + '</svg>';
+    }
 
     if (locKey === "square") {
       svg +=
@@ -13148,6 +13429,98 @@ html.bow-motion-calm .bow-fog-band {
       svg + '</svg>';
   }
 
+  /* ---------- Панорама поля боя с высокой тактической камерой (как в Heroes III и King's Bounty, 0.0.8.1) ----------
+     Узкая полоса горизонта сверху (0..62px) и просторная поверхность земли/снега/досок (62..368px)
+     под крупную гексагональную сетку 7×5, чтобы бойцы никогда не перекрывали друг друга. */
+  function battlefieldSvg(locKey, state) {
+    var pal = skyOf(state);
+    var indoor = (locKey === "tavern" || locKey === "smithy");
+
+    if (indoor) {
+      var isSmithy = (locKey === "smithy");
+      return '<svg class="bow-stage-bg bow-battlefield-bg" viewBox="0 0 1088 368" preserveAspectRatio="none" aria-hidden="true">' +
+        '<defs>' +
+          '<linearGradient id="bowBfWall" x1="0" y1="0" x2="0" y2="1">' +
+            '<stop offset="0%" stop-color="#0d1117"/>' +
+            '<stop offset="100%" stop-color="#171d26"/>' +
+          '</linearGradient>' +
+          '<linearGradient id="bowBfFloor" x1="0" y1="0" x2="0" y2="1">' +
+            '<stop offset="0%" stop-color="' + (isSmithy ? "#181e26" : "#1c1916") + '"/>' +
+            '<stop offset="55%" stop-color="' + (isSmithy ? "#141a22" : "#171513") + '"/>' +
+            '<stop offset="100%" stop-color="#0f1318"/>' +
+          '</linearGradient>' +
+          '<radialGradient id="bowBfFire" cx="' + (isSmithy ? "0.22" : "0.5") + '" cy="0.14" r="0.55">' +
+            '<stop offset="0%" stop-color="#e38836" stop-opacity="0.28"/>' +
+            '<stop offset="100%" stop-color="#e38836" stop-opacity="0"/>' +
+          '</radialGradient>' +
+        '</defs>' +
+        /* Узкая верхняя стена зала / кузницы (0..62px) */
+        '<rect x="0" y="0" width="1088" height="62" fill="url(#bowBfWall)"/>' +
+        '<rect x="0" y="62" width="1088" height="306" fill="url(#bowBfFloor)"/>' +
+        '<rect x="0" y="0" width="1088" height="368" fill="url(#bowBfFire)"/>' +
+        '<line x1="0" y1="62" x2="1088" y2="62" stroke="#3c4957" stroke-width="1.6"/>' +
+        /* Очаг / горн и стойки вдоль дальней стены */
+        (isSmithy
+          ? '<rect x="196" y="14" width="96" height="48" fill="#1e252e" stroke="#465463" stroke-width="1.4"/>' +
+            '<ellipse cx="244" cy="46" rx="26" ry="9" fill="#e67e28" opacity="0.82"/>' +
+            '<path d="M780 62 L792 38 L832 38 L844 62 Z" fill="#252e38" stroke="#536373" stroke-width="1.2"/>'
+          : '<rect x="492" y="12" width="104" height="50" fill="#221c18" stroke="#4d4339" stroke-width="1.4"/>' +
+            '<path d="M524 58 Q544 30 564 58 Z" fill="#e88a34" opacity="0.82"/>' +
+            '<rect x="130" y="34" width="120" height="26" fill="#201b17" stroke="#463d34" stroke-width="1.2"/>' +
+            '<rect x="838" y="34" width="120" height="26" fill="#201b17" stroke="#463d34" stroke-width="1.2"/>') +
+        /* Широкие половицы / каменные плиты под гексами */
+        '<g stroke="rgba(140,156,174,0.07)" stroke-width="1">' +
+          '<line x1="0" y1="122" x2="1088" y2="122"/>' +
+          '<line x1="0" y1="184" x2="1088" y2="184"/>' +
+          '<line x1="0" y1="246" x2="1088" y2="246"/>' +
+          '<line x1="0" y1="308" x2="1088" y2="308"/>' +
+        '</g>' +
+      '</svg>';
+    }
+
+    /* Уличные локации: узкое северное небо и кромка леса/крыш сверху (0..62px) + широкое снежное поле (62..368px), как в Heroes III */
+    var treelines = "";
+    for (var tx = 24; tx < 1070; tx += 46) {
+      var th = 22 + ((tx * 17) % 18);
+      if (locKey === "square" && tx > 220 && tx < 860 && (tx % 92 === 0)) {
+        /* Контуры крыш Брода и дым на горизонте площади */
+        treelines += '<polygon points="' + (tx - 24) + ',62 ' + tx + ',' + (62 - th + 4) + ' ' + (tx + 24) + ',62" fill="' + pal.far + '" stroke="' + pal.line + '" stroke-width="0.9"/>';
+      } else {
+        treelines += '<polygon points="' + (tx - 14) + ',62 ' + tx + ',' + (62 - th) + ' ' + (tx + 14) + ',62" fill="' + pal.far + '"/>';
+      }
+    }
+
+    var skyStars = pal.stars
+      ? '<g opacity="0.6" fill="#dce6f0"><circle cx="140" cy="18" r="1.2"/><circle cx="330" cy="12" r="1"/><circle cx="540" cy="22" r="1.3"/><circle cx="770" cy="15" r="1.1"/><circle cx="940" cy="24" r="1.2"/></g>'
+      : '';
+
+    return '<svg class="bow-stage-bg bow-battlefield-bg" viewBox="0 0 1088 368" preserveAspectRatio="none" aria-hidden="true">' +
+      '<defs>' +
+        '<linearGradient id="bowBfSky" x1="0" y1="0" x2="0" y2="1">' +
+          '<stop offset="0%" stop-color="' + pal.skyTop + '"/>' +
+          '<stop offset="100%" stop-color="' + pal.skyBot + '"/>' +
+        '</linearGradient>' +
+        '<linearGradient id="bowBfGround" x1="0" y1="0" x2="0" y2="1">' +
+          '<stop offset="0%" stop-color="' + pal.snowTop + '"/>' +
+          '<stop offset="45%" stop-color="' + pal.mid + '"/>' +
+          '<stop offset="100%" stop-color="' + pal.snowBot + '"/>' +
+        '</linearGradient>' +
+      '</defs>' +
+      '<rect x="0" y="0" width="1088" height="64" fill="url(#bowBfSky)"/>' +
+      skyStars +
+      treelines +
+      '<rect x="0" y="62" width="1088" height="306" fill="url(#bowBfGround)"/>' +
+      '<line x1="0" y1="62" x2="1088" y2="62" stroke="' + pal.line + '" stroke-width="1.2"/>' +
+      /* Естественные неровности снежного наста и валуны по краям поля (не мешают гексам) */
+      '<g opacity="0.34" fill="' + pal.far + '" stroke="' + pal.line + '" stroke-width="0.9">' +
+        '<ellipse cx="44" cy="96" rx="22" ry="8"/>' +
+        '<ellipse cx="1042" cy="102" rx="24" ry="9"/>' +
+        '<ellipse cx="38" cy="344" rx="26" ry="9"/>' +
+        '<ellipse cx="1048" cy="342" rx="24" ry="8"/>' +
+      '</g>' +
+    '</svg>';
+  }
+
   /* ---------- Интерактивные точки локации на сцене ----------
      Верхний ярус (y = 32%..41%) — ориентиры окружения над головами,
      нижний ярус (bottom = 42px) — живые люди на земле. Хитбоксы
@@ -13187,6 +13560,56 @@ html.bow-motion-calm .bow-fog-band {
   }
 
   function renderHotspotsAndActors(state, selected) {
+    /* Отдельная живая сцена острога / клетки у частокола (фикс image-20, 0.0.8.1):
+       узник сидит за железной решёткой без оружия, снаружи дежурит сторож с факелом. */
+    if (state.jail) {
+      var leftLabel = (Bow.guard && Bow.guard.formatJailLeft) ? Bow.guard.formatJailLeft(state.jail) : (state.jail.hoursLeft + " ч.");
+      var bribeCost = Math.round(((Bow.data && Bow.data.fightRules && Bow.data.fightRules.guard && Bow.data.fightRules.guard.bribeBase) || 25) * 0.8 + (state.jail.hoursLeft || 1));
+      var selfOn = selected && selected.kind === "self" ? " bow-actor-on" : "";
+      return [
+        '<button type="button" class="bow-spot bow-spot-prop" style="left:22%;top:32%" data-act="jail-serve" title="Вздремнуть на соломе и отсидеть 4 часа">' +
+          '<span class="bow-spot-dot"></span>' +
+          '<span class="bow-spot-txt"><b>Охапка соломы</b><i>отсидеть 4 ч. (' + esc(leftLabel) + ')</i></span>' +
+        '</button>',
+        '<button type="button" class="bow-spot bow-spot-exit" style="left:48%;top:30%" data-act="jail-escape" title="Попробовать расшатать засов и бежать">' +
+          '<span class="bow-spot-dot"></span>' +
+          '<span class="bow-spot-txt"><b>Ржавый засов</b><i>попытка побега</i></span>' +
+        '</button>',
+        '<button type="button" class="bow-spot bow-spot-prop" style="left:75%;top:32%" data-act="jail-bribe" title="Сунуть монеты сторожу через прутья">' +
+          '<span class="bow-spot-dot"></span>' +
+          '<span class="bow-spot-txt"><b>Подкупить сторожа</b><i>' + bribeCost + ' м.</i></span>' +
+        '</button>',
+        /* Узник внутри клетки (разоружён на время заключения) */
+        '<button type="button" class="bow-actor bow-actor-player' + selfOn + '" style="left:33%;bottom:42px;z-index:3" ' +
+          'data-act="stage-select" data-kind="self" data-x="33" title="Вы в клетке · осталось ' + esc(leftLabel) + '">' +
+          figureSvg({ roleKey: "player", side: "player", weapon: null }) +
+          '<span class="bow-actor-tag"><b>Вы (в клетке)</b><i class="bow-tone bow-cold">' + esc(leftLabel) + '</i></span>' +
+        '</button>',
+        /* Передняя кованая решётка клетки поверх фигурки узника! */
+        '<svg class="bow-stage-cage-bars" viewBox="0 0 420 200" preserveAspectRatio="none" aria-hidden="true">' +
+          '<rect x="4" y="6" width="412" height="190" fill="none" stroke="#4d5c6c" stroke-width="5"/>' +
+          '<line x1="4" y1="54" x2="416" y2="54" stroke="#455362" stroke-width="4.5"/>' +
+          '<line x1="4" y1="144" x2="416" y2="144" stroke="#455362" stroke-width="4.5"/>' +
+          '<g stroke="#647587" stroke-width="4">' +
+            '<line x1="46" y1="6" x2="46" y2="196"/><line x1="88" y1="6" x2="88" y2="196"/>' +
+            '<line x1="130" y1="6" x2="130" y2="196"/><line x1="172" y1="6" x2="172" y2="196"/>' +
+            '<line x1="214" y1="6" x2="214" y2="196"/><line x1="256" y1="6" x2="256" y2="196"/>' +
+            '<line x1="298" y1="6" x2="298" y2="196"/><line x1="340" y1="6" x2="340" y2="196"/>' +
+            '<line x1="382" y1="6" x2="382" y2="196"/>' +
+          '</g>' +
+          /* Тяжёлый висячий замок на засове справа */
+          '<rect x="392" y="92" width="20" height="24" rx="3" fill="#2c3640" stroke="#8fa1b3" stroke-width="2"/>' +
+          '<path d="M396 92 C396 82, 408 82, 408 92" fill="none" stroke="#8fa1b3" stroke-width="2.4"/>' +
+        '</svg>',
+        /* Сторож снаружи у факела */
+        '<button type="button" class="bow-actor bow-actor-enemy bow-actor-guard" style="left:72%;bottom:42px;z-index:5" ' +
+          'data-act="jail-bribe" title="Сторож у клети — подкупить за ' + bribeCost + ' м.">' +
+          figureSvg({ roleKey: "guard", side: "enemy", weapon: "axe", stance: "guard" }) +
+          '<span class="bow-actor-tag bow-actor-tag-threat"><b>⛨ Сторож</b><i class="bow-tone bow-cold">караул</i></span>' +
+        '</button>'
+      ].join("");
+    }
+
     var locKey = state.player.location;
     var props = STAGE_PROPS[locKey] || [];
     var people = Bow.actions.peopleAt(state, locKey);
@@ -13559,6 +13982,7 @@ html.bow-motion-calm .bow-fog-band {
     figureSvg: figureSvg,
     weaponKindOf: weaponKindOf,
     backdropSvg: backdropSvg,
+    battlefieldSvg: battlefieldSvg,
     weatherOverlayHtml: weatherOverlayHtml,
     renderHotspotsAndActors: renderHotspotsAndActors,
     renderMap: renderMap
@@ -13787,45 +14211,72 @@ html.bow-motion-calm .bow-fog-band {
       ]
     },
 
-    /* ==================== 3. МУЗЫКА СРАЖЕНИЙ (в духе драки в Skyrim) ==================== */
+    /* ==================== 3. МУЗЫКА СРАЖЕНИЙ (3 оркестровые боевые темы по мотивам Skyrim Battle 1 / 3 / 7) ==================== */
     {
-      id: "blood_on_snow",
-      title: "Кровь на насте",
-      subtitle: "Схватка в Хладных Ветрах · боевые барабаны, рога и северный хор",
+      id: "tooth_and_claw",
+      title: "Клык и сталь",
+      subtitle: "Яростный северный бой 6/8 (в духе Skyrim Battle 1) · спиккато виолончелей, валторны, тайко и боевой хор",
       realm: "combat",
-      bpm: 118,        // Напористый трёхдольный боевой ритм 3/4 (как Steel on Steel в Skyrim)
-      meter: 3,
-      subPerBeat: 2,   // 6 восьмых в такте
-      style: "combat_skyrim",
+      bpm: 78,         // 6/8 (три восьмых на долю → пульс 234 восьмых в минуту, фирменный галоп Tooth and Claw!)
+      meter: 2,
+      subPerBeat: 3,   // 6 подшагов в такте: [0, 1, 2, 3, 4, 5] = РАЗ-два-три ЧЕТЫРЕ-пять-шесть
+      style: "skyrim_68",
       bars: [
-        { bass: 38, pad: [38, 50, 57, 62], horn: 62, choir: 62, pulse: [38, 38, 50, 38, 45, 38], warDrum: [2, 0, 1, 0, 2, 1] },
-        { bass: 38, pad: [38, 50, 58, 62], horn: 65, choir: -1, pulse: [38, 38, 50, 38, 46, 45], warDrum: [2, 0, 1, 1, 2, 0] },
-        { bass: 46, pad: [46, 53, 58, 62], horn: 62, choir: 65, pulse: [46, 46, 53, 46, 50, 46], warDrum: [2, 0, 1, 0, 2, 1] },
-        { bass: 45, pad: [45, 52, 57, 61], horn: 61, choir: 64, pulse: [45, 45, 52, 45, 49, 45], warDrum: [2, 1, 1, 0, 2, 2] },
-        { bass: 38, pad: [38, 50, 57, 65], horn: 69, choir: 69, pulse: [38, 50, 57, 50, 53, 50], warDrum: [2, 0, 1, 0, 2, 1] },
-        { bass: 43, pad: [43, 50, 58, 62], horn: 67, choir: 67, pulse: [43, 43, 55, 43, 50, 43], warDrum: [2, 0, 1, 1, 2, 0] },
-        { bass: 41, pad: [41, 48, 53, 60], horn: 65, choir: 65, pulse: [41, 41, 53, 41, 48, 41], warDrum: [2, 0, 1, 0, 2, 1] },
-        { bass: 45, pad: [45, 52, 57, 61], horn: 57, choir: 61, pulse: [45, 45, 52, 55, 57, 45], warDrum: [2, 1, 2, 0, 2, 2] }
+        /* Часть A: Натиск спиккато-струнных в ре миноре и вступление боевых валторн */
+        { bass: 38, pad: [38, 50, 57], str: [38, 38, 50, 38, 40, 41], brass: [62, -1, -1, 69, -1, 67], choir: [62, 0, 0, 0, 0, 0], drum: ["boom", ".", "tom", "boom", ".", "tom"] },
+        { bass: 38, pad: [38, 50, 58], str: [43, 43, 50, 41, 40, 38], brass: [65, -1, 64, 62, -1, -1], choir: [0, 0, 0, 65, 0, 0],  drum: ["boom", ".", "tom", "boom", "tom", "rim"] },
+        { bass: 34, pad: [34, 46, 53], str: [34, 34, 46, 36, 36, 48], brass: [58, -1, 60, 62, -1, 65], choir: [58, 0, 0, 60, 0, 0],  drum: ["boom", ".", "tom", "boom", ".", "tom"] },
+        { bass: 33, pad: [33, 45, 52], str: [33, 45, 45, 49, 45, 43], brass: [64, -1, -1, 61, -1, -1], choir: [64, 0, 0, 69, 0, 69], drum: ["boom", "tom", "tom", "boom", "tom", "boom"] },
+        /* Часть B: Героический взлёт рогов на октаву и скандирующий мужской хор Довакина! */
+        { bass: 38, pad: [38, 50, 62], str: [38, 50, 50, 38, 52, 53], brass: [74, -1, -1, 72, -1, 70], choir: [74, 0, 0, 72, 0, 0],  drum: ["boom", ".", "tom", "boom", ".", "tom"] },
+        { bass: 43, pad: [43, 50, 58], str: [43, 55, 55, 43, 53, 50], brass: [69, -1, 70, 67, -1, -1], choir: [67, 0, 0, 70, 0, 0],  drum: ["boom", ".", "tom", "boom", "tom", "rim"] },
+        { bass: 41, pad: [41, 48, 57], str: [41, 53, 53, 40, 52, 48], brass: [65, -1, 67, 69, -1, 65], choir: [65, 0, 0, 64, 0, 0],  drum: ["boom", ".", "tom", "boom", ".", "tom"] },
+        { bass: 33, pad: [33, 45, 57], str: [33, 45, 49, 52, 49, 45], brass: [64, -1, 62, 61, -1, -1], choir: [69, 0, 69, 69, 0, 0],  drum: ["boom", "tom", "boom", "boom", "tom", "boom"] },
+        /* Часть C: Кульминация с высоким скрипичным контррифом */
+        { bass: 34, pad: [34, 46, 58], str: [46, 46, 53, 46, 50, 53], brass: [70, -1, -1, 74, -1, 72], highStr: [82, -1, 81, 79, -1, 77], choir: [70, 0, 0, 74, 0, 0], drum: ["boom", ".", "tom", "boom", "tom", "tom"] },
+        { bass: 36, pad: [36, 48, 55], str: [48, 48, 55, 48, 52, 55], brass: [72, -1, -1, 76, -1, 74], highStr: [84, -1, 82, 79, -1, 76], choir: [72, 0, 0, 76, 0, 0], drum: ["boom", ".", "tom", "boom", "tom", "rim"] },
+        { bass: 38, pad: [38, 50, 57], str: [50, 38, 50, 53, 50, 45], brass: [74, -1, 69, 65, -1, 64], highStr: [74, -1, 81, 77, -1, 76], choir: [74, 0, 0, 69, 0, 0], drum: ["boom", "tom", "tom", "boom", ".", "tom"] },
+        { bass: 38, pad: [38, 50, 57], str: [38, 38, 50, 45, 41, 38], brass: [62, -1, -1, -1, -1, 61], highStr: [74, -1, -1, -1, -1, -1], choir: [62, 0, 0, 62, 0, 0], drum: ["boom", ".", "rim", "boom", "tom", "boom"] }
       ]
     },
     {
-      id: "iron_at_the_ford",
-      title: "Сталь у переправы",
-      subtitle: "Сеча со стражей и отрядами · тяжёлые литавры, медь и мужской хор",
+      id: "steel_on_steel",
+      title: "Сталь о сталь",
+      subtitle: "Тревожный боевой марш 4/4 (в духе Skyrim Battle 3) · низкая медь, рваные литавры и грозный хор",
       realm: "combat",
-      bpm: 122,
+      bpm: 128,
       meter: 4,
       subPerBeat: 2,   // 8 восьмых в такте
-      style: "combat_march",
+      style: "skyrim_44",
       bars: [
-        { bass: 45, pad: [45, 52, 57, 60], horn: 57, choir: 69, pulse: [45, 45, 52, 45, 57, 45, 52, 45], warDrum: [2, 0, 1, 0, 2, 0, 1, 1] },
-        { bass: 41, pad: [41, 48, 53, 60], horn: 60, choir: -1, pulse: [41, 41, 48, 41, 53, 41, 52, 48], warDrum: [2, 0, 1, 0, 2, 1, 1, 0] },
-        { bass: 43, pad: [43, 50, 55, 59], horn: 62, choir: 67, pulse: [43, 43, 50, 43, 55, 43, 50, 47], warDrum: [2, 0, 1, 0, 2, 0, 1, 1] },
-        { bass: 40, pad: [40, 47, 52, 56], horn: 56, choir: 64, pulse: [40, 40, 47, 52, 56, 52, 47, 44], warDrum: [2, 1, 1, 0, 2, 1, 2, 2] },
-        { bass: 45, pad: [45, 52, 57, 64], horn: 69, choir: 69, pulse: [45, 45, 57, 45, 60, 57, 52, 45], warDrum: [2, 0, 1, 0, 2, 0, 1, 1] },
-        { bass: 50, pad: [50, 57, 62, 65], horn: 65, choir: 74, pulse: [50, 50, 57, 50, 62, 57, 53, 50], warDrum: [2, 0, 1, 1, 2, 0, 1, 0] },
-        { bass: 41, pad: [41, 48, 53, 60], horn: 64, choir: 72, pulse: [41, 41, 53, 48, 57, 53, 48, 45], warDrum: [2, 0, 1, 0, 2, 1, 1, 1] },
-        { bass: 40, pad: [40, 47, 52, 59], horn: 59, choir: 68, pulse: [40, 44, 47, 52, 56, 52, 47, 40], warDrum: [2, 1, 2, 0, 2, 1, 2, 2] }
+        { bass: 36, pad: [36, 48, 55], str: [36, 36, 48, 36, 43, 36, 46, 43], brass: [60, -1, -1, 67, -1, -1, 68, -1], choir: [60, 0, 0, 0, 67, 0, 0, 0], drum: ["boom", ".", "tom", "boom", ".", "tom", "boom", "rim"] },
+        { bass: 36, pad: [36, 48, 56], str: [36, 36, 48, 36, 44, 43, 41, 39], brass: [67, -1, 65, -1, 63, -1, 62, -1], choir: [0, 0, 0, 0, 63, 0, 62, 0],  drum: ["boom", ".", "tom", "boom", "tom", ".", "boom", "tom"] },
+        { bass: 32, pad: [32, 44, 51], str: [32, 32, 44, 32, 39, 32, 44, 43], brass: [63, -1, -1, 68, -1, -1, 67, -1], choir: [68, 0, 0, 0, 67, 0, 0, 0],  drum: ["boom", ".", "tom", "boom", ".", "tom", "boom", "rim"] },
+        { bass: 31, pad: [31, 43, 50], str: [31, 43, 43, 31, 47, 43, 38, 35], brass: [62, -1, -1, 67, -1, 65, 62, -1], choir: [62, 0, 0, 67, 0, 0, 67, 0],  drum: ["boom", "tom", "tom", "boom", "tom", "boom", "tom", "boom"] },
+        { bass: 36, pad: [36, 48, 60], str: [48, 36, 48, 51, 55, 51, 48, 43], brass: [72, -1, -1, 75, -1, 74, 72, -1], highStr: [84, -1, 79, -1, 87, -1, 86, 84], choir: [72, 0, 0, 75, 0, 0, 0, 0], drum: ["boom", ".", "tom", "boom", ".", "tom", "boom", "tom"] },
+        { bass: 41, pad: [41, 48, 56], str: [41, 41, 53, 41, 56, 53, 48, 44], brass: [68, -1, 72, -1, 70, -1, 68, -1], highStr: [80, -1, 84, -1, 82, -1, 80, -1], choir: [68, 0, 0, 0, 70, 0, 0, 0],  drum: ["boom", ".", "tom", "boom", "tom", "rim", "boom", "tom"] },
+        { bass: 34, pad: [34, 46, 53], str: [34, 34, 46, 34, 50, 46, 43, 41], brass: [70, -1, -1, 74, -1, 72, 70, -1], highStr: [82, -1, -1, 86, -1, 84, 82, -1], choir: [70, 0, 0, 74, 0, 0, 0, 0],  drum: ["boom", ".", "tom", "boom", ".", "tom", "boom", "rim"] },
+        { bass: 31, pad: [31, 43, 55], str: [31, 43, 47, 50, 55, 50, 47, 43], brass: [67, -1, 68, 67, -1, 62, 59, -1], highStr: [79, -1, 80, 79, -1, -1, -1, -1], choir: [67, 0, 68, 67, 0, 0, 67, 0], drum: ["boom", "tom", "boom", "tom", "boom", "tom", "boom", "boom"] }
+      ]
+    },
+    {
+      id: "blood_and_glory",
+      title: "Смерть или слава",
+      subtitle: "Стремительная сеча 3/4 (в духе Skyrim Battle 7) · боевой напор струнных, рога Совнгарда и ратный хор",
+      realm: "combat",
+      bpm: 142,
+      meter: 3,
+      subPerBeat: 2,   // 6 восьмых в такте
+      style: "skyrim_34",
+      bars: [
+        { bass: 40, pad: [40, 52, 59], str: [40, 40, 52, 40, 47, 52], brass: [64, -1, 67, -1, 71, -1], choir: [64, 0, 0, 0, 71, 0], drum: ["boom", ".", "tom", "tom", "boom", "tom"] },
+        { bass: 40, pad: [40, 52, 60], str: [40, 40, 52, 48, 47, 45], brass: [72, -1, 71, -1, 67, -1], choir: [72, 0, 0, 0, 0, 0],  drum: ["boom", ".", "tom", "rim", "boom", "tom"] },
+        { bass: 36, pad: [36, 48, 55], str: [36, 36, 48, 36, 43, 48], brass: [67, -1, 69, -1, 72, -1], choir: [67, 0, 0, 0, 72, 0], drum: ["boom", ".", "tom", "tom", "boom", "tom"] },
+        { bass: 38, pad: [38, 50, 57], str: [38, 38, 50, 45, 50, 54], brass: [74, -1, 69, -1, 66, -1], choir: [74, 0, 69, 0, 66, 0], drum: ["boom", "tom", "tom", "boom", "tom", "boom"] },
+        { bass: 40, pad: [40, 52, 64], str: [52, 40, 52, 55, 59, 55], brass: [76, -1, 74, -1, 71, -1], highStr: [88, -1, 86, -1, 83, -1], choir: [76, 0, 0, 0, 71, 0], drum: ["boom", ".", "tom", "tom", "boom", "tom"] },
+        { bass: 36, pad: [36, 48, 60], str: [48, 36, 48, 52, 55, 52], brass: [72, -1, 74, -1, 76, -1], highStr: [84, -1, 86, -1, 88, -1], choir: [72, 0, 0, 0, 76, 0], drum: ["boom", ".", "tom", "rim", "boom", "tom"] },
+        { bass: 33, pad: [33, 45, 57], str: [45, 33, 45, 48, 52, 48], brass: [69, -1, 72, -1, 71, -1], highStr: [81, -1, 84, -1, 83, -1], choir: [69, 0, 0, 0, 72, 0], drum: ["boom", ".", "tom", "tom", "boom", "tom"] },
+        { bass: 35, pad: [35, 47, 59], str: [35, 47, 51, 54, 59, 47], brass: [71, -1, -1, -1, 63, -1], highStr: [83, -1, -1, -1, 75, -1], choir: [71, 0, 71, 0, 71, 0], drum: ["boom", "tom", "boom", "tom", "boom", "boom"] }
       ]
     }
   ];
@@ -13890,8 +14341,12 @@ html.bow-motion-calm .bow-fog-band {
     return isNight ? "rime_and_stars" : "citadel_of_ford";
   }
 
+  var combatRotSeq = 0;
   function preferredCombatTrack(fightMode) {
-    return (fightMode === "guard" || fightMode === "crime") ? "iron_at_the_ford" : "blood_on_snow";
+    if (fightMode === "guard") { return "steel_on_steel"; }
+    if (fightMode === "battle") { return "blood_and_glory"; }
+    var picks = ["tooth_and_claw", "steel_on_steel", "blood_and_glory"];
+    return picks[(combatRotSeq++) % picks.length];
   }
 
   function loadPrefs() {
@@ -14523,7 +14978,252 @@ html.bow-motion-calm .bow-fog-band {
     osc.stop(when + dur + 0.05);
   }
 
-  /* ---------- Звук перехода в бой (звон скрещённых клинков + тревожный рог Final Fantasy / Skyrim) ---------- */
+  /* ---------- Инструмент 8: Оркестровые боевые партии Skyrim (спиккато струнных, героическая медь, хор Довакина и тайко) ---------- */
+
+  /* 8а. Спиккато / маркато виолончелей, альтов и контрабасов (живой упругий смычок без щипков, хорошо читаемый на любых колонках) */
+  function playSpiccatoStrings(midi, when, durSec, accent, highSection) {
+    if (!ctx || midi < 28) { return; }
+    var voices = highSection ? [midi, midi - 12] : [midi, midi + 12];
+    for (var v = 0; v < voices.length; v++) {
+      var m = voices[v];
+      var freq = midiToFreq(m);
+      var osc1 = ctx.createOscillator();
+      var osc2 = ctx.createOscillator();
+      var osc3 = ctx.createOscillator();
+      var lp = ctx.createBiquadFilter();
+      var bodyPeak = ctx.createBiquadFilter();
+      var env = ctx.createGain();
+
+      osc1.type = "sawtooth";
+      osc2.type = "sawtooth";
+      osc3.type = "triangle";
+      osc1.frequency.setValueAtTime(freq * 0.9965, when);
+      osc2.frequency.setValueAtTime(freq * 1.0035, when);
+      osc3.frequency.setValueAtTime(freq, when);
+
+      /* Деревянный резонанс деки виолончели / скрипки */
+      bodyPeak.type = "peaking";
+      bodyPeak.frequency.value = highSection ? 1350 : 520;
+      bodyPeak.Q.value = 1.4;
+      bodyPeak.gain.value = 4.5;
+
+      /* Яркий смычковый штрих в начале ноты с плавным уходом в тёплое дерево */
+      lp.type = "lowpass";
+      var openF = highSection ? (accent ? 3200 : 2400) : (accent ? 2150 : 1550);
+      var tailF = highSection ? 1400 : 720;
+      lp.frequency.setValueAtTime(openF, when);
+      lp.frequency.exponentialRampToValueAtTime(tailF, when + Math.max(0.08, durSec * 0.78));
+      lp.Q.value = 0.9;
+
+      var peak = (highSection ? 0.032 : (v === 0 ? 0.046 : 0.034)) * (accent ? 1.22 : 0.9);
+      env.gain.setValueAtTime(0.0001, when);
+      env.gain.linearRampToValueAtTime(peak, when + 0.018);
+      env.gain.exponentialRampToValueAtTime(peak * 0.42, when + Math.max(0.05, durSec * 0.72));
+      env.gain.exponentialRampToValueAtTime(0.0002, when + durSec + 0.08);
+
+      osc1.connect(bodyPeak);
+      osc2.connect(bodyPeak);
+      osc3.connect(bodyPeak);
+      bodyPeak.connect(lp);
+      lp.connect(env);
+      routeToRealm(env, "combat", highSection ? 0.28 : (v === 0 ? -0.22 : 0.16));
+
+      osc1.start(when);
+      osc2.start(when);
+      osc3.start(when);
+      osc1.stop(when + durSec + 0.11);
+      osc2.stop(when + durSec + 0.11);
+      osc3.stop(when + durSec + 0.11);
+    }
+  }
+
+  /* 8б. Героические валторны и тромбоны Skyrim (мелодическая медь с мощным раскрытием раструба) */
+  function playHeroicBrass(midi, when, durSec, gainVal) {
+    if (!ctx || midi < 34) { return; }
+    var notes = [midi, midi - 12];
+    for (var i = 0; i < notes.length; i++) {
+      var m = notes[i];
+      if (m < 32) { continue; }
+      var freq = midiToFreq(m);
+      var osc1 = ctx.createOscillator();
+      var osc2 = ctx.createOscillator();
+      var brassFormant = ctx.createBiquadFilter();
+      var lp = ctx.createBiquadFilter();
+      var env = ctx.createGain();
+
+      osc1.type = "sawtooth";
+      osc2.type = "sawtooth";
+      osc1.frequency.setValueAtTime(freq * 0.996, when);
+      osc1.frequency.linearRampToValueAtTime(freq * 0.999, when + 0.045);
+      osc2.frequency.setValueAtTime(freq * 1.004, when);
+
+      brassFormant.type = "peaking";
+      brassFormant.frequency.value = 940;
+      brassFormant.Q.value = 1.6;
+      brassFormant.gain.value = 5.0;
+
+      lp.type = "lowpass";
+      lp.frequency.setValueAtTime(640, when);
+      lp.frequency.linearRampToValueAtTime(2480, when + Math.min(0.14, durSec * 0.35));
+      lp.frequency.exponentialRampToValueAtTime(1150, when + durSec + 0.12);
+      lp.Q.value = 1.25;
+
+      var vPeak = (i === 0 ? 1.0 : 0.58) * (gainVal || 0.052);
+      env.gain.setValueAtTime(0.0001, when);
+      env.gain.linearRampToValueAtTime(vPeak, when + 0.032);
+      env.gain.setValueAtTime(vPeak * 0.85, when + Math.max(0.06, durSec * 0.72));
+      env.gain.exponentialRampToValueAtTime(0.0002, when + durSec + 0.22);
+
+      osc1.connect(brassFormant);
+      osc2.connect(brassFormant);
+      brassFormant.connect(lp);
+      lp.connect(env);
+      routeToRealm(env, "combat", i === 0 ? -0.14 : 0.22);
+
+      osc1.start(when);
+      osc2.start(when);
+      osc1.stop(when + durSec + 0.26);
+      osc2.stop(when + durSec + 0.26);
+    }
+  }
+
+  /* 8в. Северный мужской ратный хор в духе Довакина (резкие выкрики «ХУ! / ХА! / ДО!» на гласных формантах) */
+  function playNordicWarChoir(midi, when, durSec) {
+    if (!ctx || midi <= 0) { return; }
+    var chord = [midi - 12, midi - 5, midi];
+    for (var i = 0; i < chord.length; i++) {
+      var m = chord[i];
+      if (m < 34) { continue; }
+      var freq = midiToFreq(m);
+      var osc1 = ctx.createOscillator();
+      var osc2 = ctx.createOscillator();
+      var f1 = ctx.createBiquadFilter();
+      var f2 = ctx.createBiquadFilter();
+      var sum = ctx.createGain();
+      var env = ctx.createGain();
+
+      osc1.type = "sawtooth";
+      osc2.type = "sawtooth";
+      osc1.frequency.setValueAtTime(freq * 0.995, when);
+      osc2.frequency.setValueAtTime(freq * 1.005, when);
+
+      /* Открытая мужская гласная «А-О» (F1 = 660 Гц, F2 = 1120 Гц) */
+      f1.type = "bandpass";
+      f1.frequency.value = 660;
+      f1.Q.value = 3.8;
+
+      f2.type = "bandpass";
+      f2.frequency.value = 1120;
+      f2.Q.value = 4.4;
+
+      osc1.connect(f1);
+      osc2.connect(f1);
+      osc1.connect(f2);
+      osc2.connect(f2);
+      f1.connect(sum);
+      f2.connect(sum);
+
+      /* Выдох согласной в начале скандирования */
+      var breath = ctx.createBufferSource();
+      breath.buffer = getVelvetNoiseBuffer(ctx);
+      var bBp = ctx.createBiquadFilter();
+      bBp.type = "bandpass";
+      bBp.frequency.value = 900;
+      bBp.Q.value = 1.8;
+      var bEnv = ctx.createGain();
+      bEnv.gain.setValueAtTime(0.0001, when);
+      bEnv.gain.linearRampToValueAtTime(0.018, when + 0.015);
+      bEnv.gain.exponentialRampToValueAtTime(0.0001, when + 0.09);
+      breath.connect(bBp);
+      bBp.connect(bEnv);
+      routeToRealm(bEnv, "combat", 0);
+
+      var peak = i === 2 ? 0.068 : 0.052;
+      env.gain.setValueAtTime(0.0001, when);
+      env.gain.linearRampToValueAtTime(peak, when + 0.028);
+      env.gain.setValueAtTime(peak * 0.78, when + Math.max(0.06, durSec * 0.65));
+      env.gain.exponentialRampToValueAtTime(0.0002, when + durSec + 0.32);
+
+      sum.connect(env);
+      routeToRealm(env, "combat", (i - 1) * 0.26);
+
+      breath.start(when);
+      breath.stop(when + 0.11);
+      osc1.start(when);
+      osc2.start(when);
+      osc1.stop(when + durSec + 0.36);
+      osc2.stop(when + durSec + 0.36);
+    }
+  }
+
+  /* 8г. Оркестровые боевые литавры, кожаные тайко и удар древком о щит */
+  function playSkyrimWarDrum(when, kind, rootMidi) {
+    if (!ctx || !kind || kind === ".") { return; }
+
+    if (kind === "rim") {
+      /* Удар по окованному краю щита — сухой деревянно-кованный отклик без резкого щелчка */
+      var rSrc = ctx.createBufferSource();
+      rSrc.buffer = getVelvetNoiseBuffer(ctx);
+      var rBp = ctx.createBiquadFilter();
+      rBp.type = "bandpass";
+      rBp.frequency.value = 590;
+      rBp.Q.value = 2.6;
+      var rEnv = ctx.createGain();
+      rEnv.gain.setValueAtTime(0.0001, when);
+      rEnv.gain.linearRampToValueAtTime(0.036, when + 0.010);
+      rEnv.gain.exponentialRampToValueAtTime(0.0001, when + 0.12);
+      rSrc.connect(rBp);
+      rBp.connect(rEnv);
+      routeToRealm(rEnv, "combat", 0.18);
+      rSrc.start(when);
+      rSrc.stop(when + 0.14);
+      return;
+    }
+
+    var isBoom = (kind === "boom");
+    var baseFreq = rootMidi ? midiToFreq(rootMidi) : 73.4;
+
+    /* 1. Котёл литавры / большого северного тайко (читаемый в районе 60–145 Гц на любых динамиках) */
+    var osc = ctx.createOscillator();
+    var bodyEnv = ctx.createGain();
+    osc.type = "triangle";
+    osc.frequency.setValueAtTime(isBoom ? 138 : 176, when);
+    osc.frequency.exponentialRampToValueAtTime(isBoom ? Math.max(52, baseFreq * 0.75) : 86, when + (isBoom ? 0.24 : 0.15));
+
+    var lp = ctx.createBiquadFilter();
+    lp.type = "lowpass";
+    lp.frequency.value = isBoom ? 340 : 420;
+
+    var dur = isBoom ? 0.42 : 0.24;
+    bodyEnv.gain.setValueAtTime(0.0001, when);
+    bodyEnv.gain.linearRampToValueAtTime(isBoom ? 0.088 : 0.048, when + 0.014);
+    bodyEnv.gain.exponentialRampToValueAtTime(0.0002, when + dur);
+
+    osc.connect(lp);
+    lp.connect(bodyEnv);
+    routeToRealm(bodyEnv, "combat", isBoom ? 0 : -0.16);
+
+    /* 2. Удар колотушки по натянутой коже барабана (плотный среднечастотный шлепок 360 Гц) */
+    var skin = ctx.createBufferSource();
+    skin.buffer = getVelvetNoiseBuffer(ctx);
+    var skinBp = ctx.createBiquadFilter();
+    skinBp.type = "bandpass";
+    skinBp.frequency.value = isBoom ? 340 : 440;
+    skinBp.Q.value = 1.35;
+    var skinEnv = ctx.createGain();
+    skinEnv.gain.setValueAtTime(0.0001, when);
+    skinEnv.gain.linearRampToValueAtTime(isBoom ? 0.045 : 0.028, when + 0.011);
+    skinEnv.gain.exponentialRampToValueAtTime(0.0001, when + 0.11);
+
+    skin.connect(skinBp);
+    skinBp.connect(skinEnv);
+    routeToRealm(skinEnv, "combat", isBoom ? 0.04 : 0.16);
+
+    osc.start(when);
+    skin.start(when);
+    osc.stop(when + dur + 0.04);
+    skin.stop(when + 0.13);
+  }
   function playBattleIntro() {
     if (!state.enabled || !ensureContext()) { return false; }
     if (ctx.state === "suspended" && typeof ctx.resume === "function") {
@@ -14550,9 +15250,9 @@ html.bow-motion-calm .bow-fog-band {
     }
 
     /* 2. Грозный низкий удар литавры и тревожный клич боевого рога */
-    playFrameDrum(now + 0.03, true, true, "combat");
-    playHorn(38, now + 0.06, 0.95, 0.052, "combat");
-    playHorn(50, now + 0.14, 0.88, 0.044, "combat");
+    playSkyrimWarDrum(now + 0.02, "boom", 38);
+    playHeroicBrass(50, now + 0.05, 0.85, 0.058);
+    playHeroicBrass(57, now + 0.14, 0.80, 0.048);
     return true;
   }
 
@@ -14593,30 +15293,47 @@ html.bow-motion-calm .bow-fog-band {
       return;
     }
 
-    /* === 2. БОЕВАЯ МУЗЫКА В ДУХЕ SKYRIM (Кровь на насте / Сталь у переправы) === */
+    /* === 2. БОЕВАЯ ОРКЕСТРОВАЯ СЮИТА В ДУХЕ SKYRIM (Клык и сталь / Сталь о сталь / Смерть или слава) === */
     if (realm === "combat") {
-      if (sub === 0) {
-        playBowedChord(bar.pad || [bar.bass], when, barDur * 0.92, 0.030, "combat");
-        if (bar.horn && bar.horn > 0) {
-          playHorn(bar.horn, when + 0.02, barDur * 0.82, 0.045, "combat");
-        }
-        if (bar.choir && bar.choir > 0) {
-          playChoir(bar.choir, when + 0.04, barDur * 0.86, 0.042, "combat");
-        }
+      if (sub === 0 && bar.pad && bar.pad.length) {
+        playBowedChord(bar.pad, when, barDur * 0.94, 0.024, "combat");
       }
 
-      /* Напористая басовая фигура низких виолончелей (плавный смычок без щелчка) */
-      var pNote = bar.pulse && bar.pulse[sub];
-      if (pNote && pNote > 0) {
-        playSoloViola(pNote, when, subDur * 0.92, sub === 0 ? 0.038 : 0.024, "combat", -0.12);
+      /* 1. Упругий спиккато-пульс виолончелей и альтов на каждую восьмую */
+      var strNote = bar.str && bar.str[sub];
+      if (strNote && strNote > 0) {
+        var isStrongBeat = (sub === 0) || (track.style === "skyrim_68" && sub === 3) || (track.style === "skyrim_44" && sub === 4);
+        playSpiccatoStrings(strNote, when, subDur * 0.88, isStrongBeat, false);
       }
 
-      /* Боевые северные барабаны */
-      var wd = bar.warDrum && bar.warDrum[sub];
-      if (wd === 2) {
-        playFrameDrum(when, true, true, "combat");
-      } else if (wd === 1) {
-        playFrameDrum(when, false, true, "combat");
+      /* 2. Контрмелодия высоких скрипок в кульминации */
+      var hiNote = bar.highStr && bar.highStr[sub];
+      if (hiNote && hiNote > 0) {
+        playSpiccatoStrings(hiNote, when, subDur * 1.65, sub === 0 || sub === 3, true);
+      }
+
+      /* 3. Героическая мелодия валторн и тромбонов */
+      var brNote = bar.brass && bar.brass[sub];
+      if (brNote && brNote > 0) {
+        /* Считаем длительность до следующей ноты меди, чтобы фанфара пела слитно и мощно */
+        var holdSubs = 1;
+        for (var look = sub + 1; look < totalSubs; look++) {
+          if (bar.brass[look] && bar.brass[look] > 0) { break; }
+          holdSubs++;
+        }
+        playHeroicBrass(brNote, when, subDur * holdSubs * 0.92, 0.054);
+      }
+
+      /* 4. Ратные выкрики северного мужского хора («ХУ! / ХА! / ДО-РА!») */
+      var chNote = bar.choir && bar.choir[sub];
+      if (chNote && chNote > 0) {
+        playNordicWarChoir(chNote, when, subDur * 1.85);
+      }
+
+      /* 5. Боевые литавры, кожаные тайко и удары о щит */
+      var drKind = bar.drum && bar.drum[sub];
+      if (drKind && drKind !== ".") {
+        playSkyrimWarDrum(when, drKind, bar.bass);
       }
       return;
     }
@@ -14854,7 +15571,7 @@ html.bow-motion-calm .bow-fog-band {
 
     if (inActiveCombat) {
       state.mood = "combat";
-      if (state.mode === "auto" && state.realm !== "combat") {
+      if (state.realm !== "combat") {
         state.preCombatTrackId = state.trackId;
         var cbId = preferredCombatTrack(gameState.fight.mode);
         state.realm = "combat";
@@ -14863,7 +15580,7 @@ html.bow-motion-calm .bow-fog-band {
         curSubIdx = 0;
         barsPlayedInTrack = 0;
         if (ctx) {
-          nextSubTime = ctx.currentTime + 0.14;
+          nextSubTime = ctx.currentTime + 0.12;
           updateRealmCrossfade();
         }
       }
@@ -14883,6 +15600,20 @@ html.bow-motion-calm .bow-fog-band {
       state.preCombatTrackId = null;
       if (nextId !== state.trackId || leavingCombat) {
         state.trackId = nextId;
+        curBarIdx = 0;
+        curSubIdx = 0;
+        barsPlayedInTrack = 0;
+        if (ctx) {
+          nextSubTime = ctx.currentTime + 0.1;
+          updateRealmCrossfade();
+        }
+      }
+    } else if (state.mode === "manual" && leavingCombat && state.preCombatTrackId) {
+      var restore = trackById(state.preCombatTrackId);
+      state.preCombatTrackId = null;
+      if (restore) {
+        state.trackId = restore.id;
+        state.realm = restore.realm;
         curBarIdx = 0;
         curSubIdx = 0;
         barsPlayedInTrack = 0;
@@ -15912,7 +16643,7 @@ html.bow-motion-calm .bow-fog-band {
     var canvas = $("bow-stage-canvas");
     if (!canvas || !Bow.stage) { return; }
 
-    var locKey = state.player.location;
+    var locKey = state.jail ? "jail" : state.player.location;
     var pal = Bow.stage.skyOf(state);
     var bgKey = locKey + "|" + pal.phase + "|" + pal.weatherKind;
     var wKey = locKey + "|" + pal.weatherKind;
@@ -15955,12 +16686,23 @@ html.bow-motion-calm .bow-fog-band {
     var stage = $("bow-stage");
     var scene = $("bow-scene");
 
-    if (title && loc) { title.textContent = loc.name; }
-    if (sub && loc) { sub.textContent = loc.sub; }
-    if (text && loc) {
-      text.innerHTML = loc.desc.map(function (p) { return '<p>' + esc(p) + '</p>'; }).join("");
+    if (state.jail) {
+      if (title) { title.textContent = "Клетка у частокола"; }
+      if (sub) { sub.textContent = "СТУДЁНЫЙ БРОД · ПОД ЗАСОВОМ"; }
+      if (text) {
+        text.innerHTML = '<p>Тяжёлая бревенчатая клеть за кованой решёткой у северного частокола. Снаружи у смоляного факела переминается сторож.</p>';
+      }
+      if (amb) {
+        amb.textContent = "Сквозь узкую продушину тянет стужей. Срок уходит с каждой минутой живого времени.";
+      }
+    } else {
+      if (title && loc) { title.textContent = loc.name; }
+      if (sub && loc) { sub.textContent = loc.sub; }
+      if (text && loc) {
+        text.innerHTML = loc.desc.map(function (p) { return '<p>' + esc(p) + '</p>'; }).join("");
+      }
+      if (amb) { amb.textContent = state.flags.ambience || ""; }
     }
-    if (amb) { amb.textContent = state.flags.ambience || ""; }
 
     if (animate) {
       runVeil();
@@ -16192,67 +16934,90 @@ html.bow-motion-calm .bow-fog-band {
     }
   }
 
-  /* Перспективные координаты тактической сетки 7×4 на плоскости земли (0.0.8.0) */
+  /* Гексагональная сотовая сетка 7×5 (как в King's Bounty и Heroes III, 0.0.8.1):
+     остроконечные гексы без щелей, нечётные ряды сдвинуты на полгекса вправо (+rx),
+     поэтому бойцы разнесены по всему полю и никогда не заслоняют друг друга. */
+  var HEX_VIEW_W = 1088;
+  var HEX_VIEW_H = 368;
+  var HEX_RX = 64;
+  var HEX_RY = 34;
+
+  function hexCenterPx(col, row) {
+    var oddShift = (row % 2 === 1) ? HEX_RX : 0;
+    var cx = 128 + col * (HEX_RX * 2) + oddShift;
+    var cy = 108 + row * (HEX_RY * 1.5);
+    return { cx: cx, cy: cy };
+  }
+
+  function hexPolygonPts(cx, cy, rx, ry) {
+    var h = ry * 0.5;
+    return [
+      cx + "," + (cy - ry),
+      (cx + rx) + "," + (cy - h),
+      (cx + rx) + "," + (cy + h),
+      cx + "," + (cy + ry),
+      (cx - rx) + "," + (cy + h),
+      (cx - rx) + "," + (cy - h)
+    ].join(" ");
+  }
+
   function arenaPoint(col, row, cols, rows) {
-    var tRow = rows > 1 ? (row / (rows - 1)) : 0.5;
-    var margin = 9.0 - tRow * 4.2; // сужение к горизонту (9% вдали → 4.8% вблизи)
-    var span = 100 - margin * 2;
-    var xPct = margin + ((col + 0.5) / cols) * span;
-    var footPct = 62.5 + tRow * 26.5; // линия земли от 62.5% до 89%
-    var topPct = footPct - 21.5;
-    var scale = 0.90 + tRow * 0.16;
+    var c = hexCenterPx(col || 0, row || 0);
+    var xPct = (c.cx / HEX_VIEW_W) * 100;
+    /* Ноги фигурки стоят в центре гекса, а компактная плашка — прямо под сапогами внутри соты */
+    var topPct = ((c.cy - 54) / HEX_VIEW_H) * 100;
+    var footPct = ((c.cy + 8) / HEX_VIEW_H) * 100;
     return {
-      left: Math.round(xPct * 10) / 10,
-      top: Math.round(topPct * 10) / 10,
-      footY: Math.round(footPct * 10) / 10,
-      scale: Math.round(scale * 100) / 100
+      left: Math.round(xPct * 100) / 100,
+      top: Math.round(topPct * 100) / 100,
+      footY: Math.round(footPct * 100) / 100,
+      scale: 1
     };
   }
 
   function tacticalGridSvg(A, units, targetKey) {
     var cols = A.cols || 7;
-    var rows = A.rows || 4;
-    var W = 1000;
-    var H = 368;
-    function edgePt(cEdge, rEdge) {
-      var t = rEdge / rows;
-      var m = (9.5 - t * 4.6) * 10;
-      var sp = W - m * 2;
-      var x = m + (cEdge / cols) * sp;
-      var y = (58.5 + t * 34.0) * (H / 100);
-      return [Math.round(x * 10) / 10, Math.round(y * 10) / 10];
-    }
-
-    var lines = [];
-    for (var r = 0; r <= rows; r++) {
-      var pL = edgePt(0, r);
-      var pR = edgePt(cols, r);
-      lines.push('<line x1="' + pL[0] + '" y1="' + pL[1] + '" x2="' + pR[0] + '" y2="' + pR[1] + '" stroke="rgba(168,192,214,0.16)" stroke-width="1"/>');
-    }
-    for (var c = 0; c <= cols; c++) {
-      var pT = edgePt(c, 0);
-      var pB = edgePt(c, rows);
-      lines.push('<line x1="' + pT[0] + '" y1="' + pT[1] + '" x2="' + pB[0] + '" y2="' + pB[1] + '" stroke="rgba(168,192,214,0.13)" stroke-width="1"/>');
-    }
-
-    var highlights = [];
+    var rows = A.rows || 5;
+    var unitAt = {};
     (units || []).forEach(function (u) {
-      if (u.dead) { return; }
-      var tl = edgePt(u.col, u.row);
-      var tr = edgePt(u.col + 1, u.row);
-      var br = edgePt(u.col + 1, u.row + 1);
-      var bl = edgePt(u.col, u.row + 1);
-      var pts = tl[0] + "," + tl[1] + " " + tr[0] + "," + tr[1] + " " + br[0] + "," + br[1] + " " + bl[0] + "," + bl[1];
-      var isTgt = (u.side === "enemy" && u.key === targetKey);
-      var fill = isTgt ? "rgba(214,173,92,0.22)"
-        : (u.side === "ally" ? "rgba(126,166,204,0.14)" : "rgba(196,92,98,0.15)");
-      var strk = isTgt ? "rgba(232,194,112,0.78)"
-        : (u.side === "ally" ? "rgba(143,182,217,0.42)" : "rgba(214,108,114,0.44)");
-      highlights.push('<polygon points="' + pts + '" fill="' + fill + '" stroke="' + strk + '" stroke-width="' + (isTgt ? "1.8" : "1.1") + '"/>');
+      if (!u.dead) {
+        unitAt[(u.col || 0) + ":" + (u.row || 0)] = u;
+      }
     });
 
-    return '<svg class="bow-tactical-grid" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" aria-hidden="true">' +
-      lines.join("") + highlights.join("") + '</svg>';
+    var cells = [];
+    for (var r = 0; r < rows; r++) {
+      for (var c = 0; c < cols; c++) {
+        var ctr = hexCenterPx(c, r);
+        var pts = hexPolygonPts(ctr.cx, ctr.cy, HEX_RX, HEX_RY);
+        var occ = unitAt[c + ":" + r] || null;
+        if (!occ) {
+          cells.push(
+            '<polygon class="bow-hex-cell" points="' + pts + '" fill="rgba(14,22,30,0.18)" stroke="rgba(168,196,220,0.24)" stroke-width="1.15"/>'
+          );
+        } else {
+          var isEnemy = occ.side === "enemy";
+          var isTgt = isEnemy && occ.key === targetKey;
+          var fill = isTgt
+            ? "rgba(218,176,84,0.28)"
+            : (isEnemy ? "rgba(198,84,92,0.22)" : "rgba(104,158,208,0.22)");
+          var strk = isTgt
+            ? "rgba(246,208,116,0.92)"
+            : (isEnemy ? "rgba(228,108,116,0.68)" : "rgba(138,186,228,0.65)");
+          var clickAttr = isEnemy
+            ? (' class="bow-hex-cell bow-hex-enemy-hit' + (isTgt ? ' bow-hex-target' : '') + '" data-act="fight-target" data-target="' + esc(occ.key) + '"')
+            : ' class="bow-hex-cell bow-hex-ally"';
+          cells.push(
+            '<polygon' + clickAttr + ' points="' + pts + '" fill="' + fill + '" stroke="' + strk + '" stroke-width="' + (isTgt ? "2.2" : "1.5") + '">' +
+              (isEnemy ? '<title>Выбрать цель: ' + esc(occ.name) + '</title>' : '') +
+            '</polygon>'
+          );
+        }
+      }
+    }
+
+    return '<svg class="bow-tactical-grid" viewBox="0 0 ' + HEX_VIEW_W + ' ' + HEX_VIEW_H + '" preserveAspectRatio="none">' +
+      cells.join("") + '</svg>';
   }
 
   function animateArenaMoves(page) {
@@ -16351,7 +17116,7 @@ html.bow-motion-calm .bow-fog-band {
       }
     }
 
-    var pt = arenaPoint(u.col || 0, u.row || 0, A.cols || 7, A.rows || 4);
+    var pt = arenaPoint(u.col || 0, u.row || 0, A.cols || 7, A.rows || 5);
     var leftPct = pt.left;
     var topPct = pt.top;
     var zIdx = 12 + (u.row || 0) * 4 + (u.key === "player" ? 1 : 0);
@@ -16371,22 +17136,28 @@ html.bow-motion-calm .bow-fog-band {
       : '';
 
     var attrs = u.side === "enemy" && !u.dead
-      ? ' data-act="fight-target" data-target="' + esc(u.key) + '" role="button" tabindex="0" title="Назначить целью"'
+      ? ' data-act="fight-target" data-target="' + esc(u.key) + '" role="button" tabindex="0" title="Назначить целью: ' + esc(u.name) + '"'
       : "";
     var animAttrs = moved
       ? ' data-to-left="' + leftPct + '" data-to-top="' + topPct + '"'
       : "";
 
+    /* Компактная плашка прямо у ног бойца (как в King's Bounty и Heroes III) —
+       никаких громоздких прямоугольников над головой, а область нажатия повторяет силуэт фигурки! */
     return '<div class="' + cls + '" data-unit="' + esc(u.key) + '"' + attrs + animAttrs +
       ' style="left:' + startLeft + '%;top:' + startTop + '%;z-index:' + zIdx + ';--chip-scale:' + pt.scale + '">' +
-      '<span class="bow-chip-overhead">' +
-        '<b class="bow-chip-num">' + num + '</b>' +
-        '<span class="bow-chip-hpbar"><i class="bow-fill bow-' + lvl + '" style="width:' + Math.min(100, hp) + '%"></i></span>' +
-        '<span class="bow-chip-hp bow-' + lvl + '">' + hp + '</span>' +
+      '<span class="bow-chip-body">' +
+        '<span class="bow-chip-hitshape">' + fig + '</span>' +
+        fxHtml +
       '</span>' +
-      '<span class="bow-chip-body">' + fig + fxHtml + stackHtml + '<b>' + num + '</b></span>' +
-      '<span class="bow-chip-name">' + esc(u.name) + '</span>' +
-      (mark ? '<span class="bow-chip-mark">' + mark + '</span>' : "") +
+      '<span class="bow-chip-foot">' +
+        stackHtml +
+        '<span class="bow-chip-pill">' +
+          '<span class="bow-chip-hpbar"><i class="bow-fill bow-' + lvl + '" style="width:' + Math.min(100, hp) + '%"></i></span>' +
+          '<b class="bow-chip-hp bow-' + lvl + '">' + hp + '</b>' +
+        '</span>' +
+      '</span>' +
+      '<span class="bow-chip-name">' + esc(u.name) + (mark ? (' · ' + mark) : '') + '</span>' +
     '</div>';
   }
 
@@ -16856,10 +17627,18 @@ html.bow-motion-calm .bow-fog-band {
     if (!box) { return; }
     if (!state.jail) { box.classList.remove("bow-fight-open"); box.innerHTML = ""; return; }
 
+    var leftStr = (Bow.guard && Bow.guard.formatJailLeft)
+      ? Bow.guard.formatJailLeft(state.jail)
+      : (state.jail.hoursLeft + " ч.");
+    var isRunning = state.time && state.time.scale !== "paused";
+
     box.innerHTML = '<div class="bow-fight-card bow-jail-card">' +
-      '<div class="bow-fight-head"><b>Клетка</b><span>осталось ' + state.jail.hoursLeft + ' ч.</span></div>' +
-      '<div class="bow-fight-note">Плетень, засов и снег. Кормят раз в день. ' +
-        'Розыск спадает сам, пока вы сидите.</div>' +
+      '<div class="bow-fight-head"><b>Клетка у частокола</b><span>осталось ' + esc(leftStr) + '</span></div>' +
+      '<div class="bow-fight-note">Бревенчатая клеть, кованая решётка и стылая солома. Кормят раз в день. ' +
+        (isRunning
+          ? 'Живое время идёт — срок уменьшается сам с каждой минутой.'
+          : 'Часы сейчас на паузе — включите ход времени (▸ / ▸▸) в шапке или нажмите «Отсидеть 4 ч.».') +
+      '</div>' +
       '<div class="bow-fight-acts">' +
         '<button class="bow-btn bow-btn-sm" data-act="jail-serve">Отсидеть 4 ч.</button>' +
         '<button class="bow-btn bow-btn-sm" data-act="jail-escape">Бежать</button>' +
@@ -17135,11 +17914,11 @@ html.bow-motion-calm .bow-fog-band {
       '</div>' +
       '<div class="bow-setting-row bow-setting-soundtrack">' +
         '<div class="bow-setting-label">' +
-          '<b>Северный саундтрек (10 композиций)</b>' +
+          '<b>Северный саундтрек (11 композиций)</b>' +
           '<span class="bow-dim">' +
             (Bow.audio && Bow.audio.currentTrack
               ? ('Сейчас: «' + esc(Bow.audio.currentTrack().title) + '» — ' + esc(Bow.audio.currentTrack().subtitle))
-              : 'Очаг для помещений · меланхоличный грув Enigma для улицы · боевые темы Skyrim для сражений') +
+              : 'Очаг для помещений · меланхоличный грув Enigma для улицы · оркестровые боевые темы Skyrim для сражений') +
           '</span>' +
         '</div>' +
         '<div class="bow-setting-opts">' +
@@ -17677,6 +18456,11 @@ html.bow-motion-calm .bow-fog-band {
     "jail-serve": true,
     "jail-escape": true,
     "jail-bribe": true,
+    "stage-select": true,
+    "eat": true,
+    "drink": true,
+    "treat": true,
+    "auto-eat": true,
     "fight-close": true,
     "panel": true,
     "close-panel": true,
@@ -17787,8 +18571,8 @@ html.bow-motion-calm .bow-fog-band {
     /* Бой и его незакрытый итог — пошаговые: часы не тикают во время схватки. */
     if (state.fight) { return false; }
     if (state.flags && state.flags.lastFight) { return false; }
-    /* Стража, грабитель и клетка ждут решения игрока, а не фоновых часов. */
-    if (state.guard || state.encounter || state.jail) { return false; }
+    /* Стража на улице и грабитель ждут решения игрока; в клетке живое время ТЕПЕРЬ идёт само и мотает срок (0.0.8.1)! */
+    if (state.guard || state.encounter) { return false; }
     if (state.dead) { return false; }
     if (Bow.ui.isDrawerOpen()) { return false; }
     if (openPersonId) { return false; }
@@ -18371,7 +19155,7 @@ html.bow-motion-calm .bow-fog-band {
   &lt;div id=&quot;bow-sheet&quot; class=&quot;bow-sheet&quot; aria-hidden=&quot;true&quot;&gt;&lt;/div&gt;
 
   &lt;footer class=&quot;bow-footer&quot;&gt;
-    &lt;span&gt;Blades Of War · прототип 0.0.8.0 · Хладные Ветра · Студёный Брод&lt;/span&gt;
+    &lt;span&gt;Blades Of War · прототип 0.0.8.1 · Хладные Ветра · Студёный Брод&lt;/span&gt;
     &lt;span class=&quot;bow-dim&quot;&gt;Север Эдемских земель · малое поселение у переправы&lt;/span&gt;
   &lt;/footer&gt;
 

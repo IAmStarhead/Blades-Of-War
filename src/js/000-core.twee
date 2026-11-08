@@ -77,12 +77,12 @@
         var idx = list.indexOf(fn);
         if (idx !== -1) { list.splice(idx, 1); }
       },
-      emit: function (name, payload) {
+      emit: function (name, payload, extra) {
         var list = handlers[name];
         if (!list) { return; }
         for (var i = 0; i < list.length; i++) {
           try {
-            list[i](payload);
+            list[i](payload, extra);
           } catch (err) {
             if (global.console) { global.console.error("[Bow.bus] Ошибка в обработчике " + name, err); }
           }

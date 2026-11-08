@@ -85,7 +85,7 @@
       stepOneHour(state, mood);
     }
 
-    Bow.bus.emit("tick:minute", state);
+    Bow.bus.emit("tick:minute", state, mins);
 
     return {
       minutesPassed: mins,

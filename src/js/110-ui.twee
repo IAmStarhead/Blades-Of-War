@@ -965,7 +965,7 @@
     var canvas = $("bow-stage-canvas");
     if (!canvas || !Bow.stage) { return; }
 
-    var locKey = state.player.location;
+    var locKey = state.jail ? "jail" : state.player.location;
     var pal = Bow.stage.skyOf(state);
     var bgKey = locKey + "|" + pal.phase + "|" + pal.weatherKind;
     var wKey = locKey + "|" + pal.weatherKind;
@@ -1008,12 +1008,23 @@
     var stage = $("bow-stage");
     var scene = $("bow-scene");
 
-    if (title && loc) { title.textContent = loc.name; }
-    if (sub && loc) { sub.textContent = loc.sub; }
-    if (text && loc) {
-      text.innerHTML = loc.desc.map(function (p) { return '<p>' + esc(p) + '</p>'; }).join("");
+    if (state.jail) {
+      if (title) { title.textContent = "Клетка у частокола"; }
+      if (sub) { sub.textContent = "СТУДЁНЫЙ БРОД · ПОД ЗАСОВОМ"; }
+      if (text) {
+        text.innerHTML = '<p>Тяжёлая бревенчатая клеть за кованой решёткой у северного частокола. Снаружи у смоляного факела переминается сторож.</p>';
+      }
+      if (amb) {
+        amb.textContent = "Сквозь узкую продушину тянет стужей. Срок уходит с каждой минутой живого времени.";
+      }
+    } else {
+      if (title && loc) { title.textContent = loc.name; }
+      if (sub && loc) { sub.textContent = loc.sub; }
+      if (text && loc) {
+        text.innerHTML = loc.desc.map(function (p) { return '<p>' + esc(p) + '</p>'; }).join("");
+      }
+      if (amb) { amb.textContent = state.flags.ambience || ""; }
     }
-    if (amb) { amb.textContent = state.flags.ambience || ""; }
 
     if (animate) {
       runVeil();
@@ -1245,67 +1256,90 @@
     }
   }
 
-  /* Перспективные координаты тактической сетки 7×4 на плоскости земли (0.0.8.0) */
+  /* Гексагональная сотовая сетка 7×5 (как в King's Bounty и Heroes III, 0.0.8.1):
+     остроконечные гексы без щелей, нечётные ряды сдвинуты на полгекса вправо (+rx),
+     поэтому бойцы разнесены по всему полю и никогда не заслоняют друг друга. */
+  var HEX_VIEW_W = 1088;
+  var HEX_VIEW_H = 368;
+  var HEX_RX = 64;
+  var HEX_RY = 34;
+
+  function hexCenterPx(col, row) {
+    var oddShift = (row % 2 === 1) ? HEX_RX : 0;
+    var cx = 128 + col * (HEX_RX * 2) + oddShift;
+    var cy = 108 + row * (HEX_RY * 1.5);
+    return { cx: cx, cy: cy };
+  }
+
+  function hexPolygonPts(cx, cy, rx, ry) {
+    var h = ry * 0.5;
+    return [
+      cx + "," + (cy - ry),
+      (cx + rx) + "," + (cy - h),
+      (cx + rx) + "," + (cy + h),
+      cx + "," + (cy + ry),
+      (cx - rx) + "," + (cy + h),
+      (cx - rx) + "," + (cy - h)
+    ].join(" ");
+  }
+
   function arenaPoint(col, row, cols, rows) {
-    var tRow = rows > 1 ? (row / (rows - 1)) : 0.5;
-    var margin = 9.0 - tRow * 4.2; // сужение к горизонту (9% вдали → 4.8% вблизи)
-    var span = 100 - margin * 2;
-    var xPct = margin + ((col + 0.5) / cols) * span;
-    var footPct = 62.5 + tRow * 26.5; // линия земли от 62.5% до 89%
-    var topPct = footPct - 21.5;
-    var scale = 0.90 + tRow * 0.16;
+    var c = hexCenterPx(col || 0, row || 0);
+    var xPct = (c.cx / HEX_VIEW_W) * 100;
+    /* Ноги фигурки стоят в центре гекса, а компактная плашка — прямо под сапогами внутри соты */
+    var topPct = ((c.cy - 54) / HEX_VIEW_H) * 100;
+    var footPct = ((c.cy + 8) / HEX_VIEW_H) * 100;
     return {
-      left: Math.round(xPct * 10) / 10,
-      top: Math.round(topPct * 10) / 10,
-      footY: Math.round(footPct * 10) / 10,
-      scale: Math.round(scale * 100) / 100
+      left: Math.round(xPct * 100) / 100,
+      top: Math.round(topPct * 100) / 100,
+      footY: Math.round(footPct * 100) / 100,
+      scale: 1
     };
   }
 
   function tacticalGridSvg(A, units, targetKey) {
     var cols = A.cols || 7;
-    var rows = A.rows || 4;
-    var W = 1000;
-    var H = 368;
-    function edgePt(cEdge, rEdge) {
-      var t = rEdge / rows;
-      var m = (9.5 - t * 4.6) * 10;
-      var sp = W - m * 2;
-      var x = m + (cEdge / cols) * sp;
-      var y = (58.5 + t * 34.0) * (H / 100);
-      return [Math.round(x * 10) / 10, Math.round(y * 10) / 10];
-    }
-
-    var lines = [];
-    for (var r = 0; r <= rows; r++) {
-      var pL = edgePt(0, r);
-      var pR = edgePt(cols, r);
-      lines.push('<line x1="' + pL[0] + '" y1="' + pL[1] + '" x2="' + pR[0] + '" y2="' + pR[1] + '" stroke="rgba(168,192,214,0.16)" stroke-width="1"/>');
-    }
-    for (var c = 0; c <= cols; c++) {
-      var pT = edgePt(c, 0);
-      var pB = edgePt(c, rows);
-      lines.push('<line x1="' + pT[0] + '" y1="' + pT[1] + '" x2="' + pB[0] + '" y2="' + pB[1] + '" stroke="rgba(168,192,214,0.13)" stroke-width="1"/>');
-    }
-
-    var highlights = [];
+    var rows = A.rows || 5;
+    var unitAt = {};
     (units || []).forEach(function (u) {
-      if (u.dead) { return; }
-      var tl = edgePt(u.col, u.row);
-      var tr = edgePt(u.col + 1, u.row);
-      var br = edgePt(u.col + 1, u.row + 1);
-      var bl = edgePt(u.col, u.row + 1);
-      var pts = tl[0] + "," + tl[1] + " " + tr[0] + "," + tr[1] + " " + br[0] + "," + br[1] + " " + bl[0] + "," + bl[1];
-      var isTgt = (u.side === "enemy" && u.key === targetKey);
-      var fill = isTgt ? "rgba(214,173,92,0.22)"
-        : (u.side === "ally" ? "rgba(126,166,204,0.14)" : "rgba(196,92,98,0.15)");
-      var strk = isTgt ? "rgba(232,194,112,0.78)"
-        : (u.side === "ally" ? "rgba(143,182,217,0.42)" : "rgba(214,108,114,0.44)");
-      highlights.push('<polygon points="' + pts + '" fill="' + fill + '" stroke="' + strk + '" stroke-width="' + (isTgt ? "1.8" : "1.1") + '"/>');
+      if (!u.dead) {
+        unitAt[(u.col || 0) + ":" + (u.row || 0)] = u;
+      }
     });
 
-    return '<svg class="bow-tactical-grid" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" aria-hidden="true">' +
-      lines.join("") + highlights.join("") + '</svg>';
+    var cells = [];
+    for (var r = 0; r < rows; r++) {
+      for (var c = 0; c < cols; c++) {
+        var ctr = hexCenterPx(c, r);
+        var pts = hexPolygonPts(ctr.cx, ctr.cy, HEX_RX, HEX_RY);
+        var occ = unitAt[c + ":" + r] || null;
+        if (!occ) {
+          cells.push(
+            '<polygon class="bow-hex-cell" points="' + pts + '" fill="rgba(14,22,30,0.18)" stroke="rgba(168,196,220,0.24)" stroke-width="1.15"/>'
+          );
+        } else {
+          var isEnemy = occ.side === "enemy";
+          var isTgt = isEnemy && occ.key === targetKey;
+          var fill = isTgt
+            ? "rgba(218,176,84,0.28)"
+            : (isEnemy ? "rgba(198,84,92,0.22)" : "rgba(104,158,208,0.22)");
+          var strk = isTgt
+            ? "rgba(246,208,116,0.92)"
+            : (isEnemy ? "rgba(228,108,116,0.68)" : "rgba(138,186,228,0.65)");
+          var clickAttr = isEnemy
+            ? (' class="bow-hex-cell bow-hex-enemy-hit' + (isTgt ? ' bow-hex-target' : '') + '" data-act="fight-target" data-target="' + esc(occ.key) + '"')
+            : ' class="bow-hex-cell bow-hex-ally"';
+          cells.push(
+            '<polygon' + clickAttr + ' points="' + pts + '" fill="' + fill + '" stroke="' + strk + '" stroke-width="' + (isTgt ? "2.2" : "1.5") + '">' +
+              (isEnemy ? '<title>Выбрать цель: ' + esc(occ.name) + '</title>' : '') +
+            '</polygon>'
+          );
+        }
+      }
+    }
+
+    return '<svg class="bow-tactical-grid" viewBox="0 0 ' + HEX_VIEW_W + ' ' + HEX_VIEW_H + '" preserveAspectRatio="none">' +
+      cells.join("") + '</svg>';
   }
 
   function animateArenaMoves(page) {
@@ -1404,7 +1438,7 @@
       }
     }
 
-    var pt = arenaPoint(u.col || 0, u.row || 0, A.cols || 7, A.rows || 4);
+    var pt = arenaPoint(u.col || 0, u.row || 0, A.cols || 7, A.rows || 5);
     var leftPct = pt.left;
     var topPct = pt.top;
     var zIdx = 12 + (u.row || 0) * 4 + (u.key === "player" ? 1 : 0);
@@ -1424,22 +1458,28 @@
       : '';
 
     var attrs = u.side === "enemy" && !u.dead
-      ? ' data-act="fight-target" data-target="' + esc(u.key) + '" role="button" tabindex="0" title="Назначить целью"'
+      ? ' data-act="fight-target" data-target="' + esc(u.key) + '" role="button" tabindex="0" title="Назначить целью: ' + esc(u.name) + '"'
       : "";
     var animAttrs = moved
       ? ' data-to-left="' + leftPct + '" data-to-top="' + topPct + '"'
       : "";
 
+    /* Компактная плашка прямо у ног бойца (как в King's Bounty и Heroes III) —
+       никаких громоздких прямоугольников над головой, а область нажатия повторяет силуэт фигурки! */
     return '<div class="' + cls + '" data-unit="' + esc(u.key) + '"' + attrs + animAttrs +
       ' style="left:' + startLeft + '%;top:' + startTop + '%;z-index:' + zIdx + ';--chip-scale:' + pt.scale + '">' +
-      '<span class="bow-chip-overhead">' +
-        '<b class="bow-chip-num">' + num + '</b>' +
-        '<span class="bow-chip-hpbar"><i class="bow-fill bow-' + lvl + '" style="width:' + Math.min(100, hp) + '%"></i></span>' +
-        '<span class="bow-chip-hp bow-' + lvl + '">' + hp + '</span>' +
+      '<span class="bow-chip-body">' +
+        '<span class="bow-chip-hitshape">' + fig + '</span>' +
+        fxHtml +
       '</span>' +
-      '<span class="bow-chip-body">' + fig + fxHtml + stackHtml + '<b>' + num + '</b></span>' +
-      '<span class="bow-chip-name">' + esc(u.name) + '</span>' +
-      (mark ? '<span class="bow-chip-mark">' + mark + '</span>' : "") +
+      '<span class="bow-chip-foot">' +
+        stackHtml +
+        '<span class="bow-chip-pill">' +
+          '<span class="bow-chip-hpbar"><i class="bow-fill bow-' + lvl + '" style="width:' + Math.min(100, hp) + '%"></i></span>' +
+          '<b class="bow-chip-hp bow-' + lvl + '">' + hp + '</b>' +
+        '</span>' +
+      '</span>' +
+      '<span class="bow-chip-name">' + esc(u.name) + (mark ? (' · ' + mark) : '') + '</span>' +
     '</div>';
   }
 
@@ -1909,10 +1949,18 @@
     if (!box) { return; }
     if (!state.jail) { box.classList.remove("bow-fight-open"); box.innerHTML = ""; return; }
 
+    var leftStr = (Bow.guard && Bow.guard.formatJailLeft)
+      ? Bow.guard.formatJailLeft(state.jail)
+      : (state.jail.hoursLeft + " ч.");
+    var isRunning = state.time && state.time.scale !== "paused";
+
     box.innerHTML = '<div class="bow-fight-card bow-jail-card">' +
-      '<div class="bow-fight-head"><b>Клетка</b><span>осталось ' + state.jail.hoursLeft + ' ч.</span></div>' +
-      '<div class="bow-fight-note">Плетень, засов и снег. Кормят раз в день. ' +
-        'Розыск спадает сам, пока вы сидите.</div>' +
+      '<div class="bow-fight-head"><b>Клетка у частокола</b><span>осталось ' + esc(leftStr) + '</span></div>' +
+      '<div class="bow-fight-note">Бревенчатая клеть, кованая решётка и стылая солома. Кормят раз в день. ' +
+        (isRunning
+          ? 'Живое время идёт — срок уменьшается сам с каждой минутой.'
+          : 'Часы сейчас на паузе — включите ход времени (▸ / ▸▸) в шапке или нажмите «Отсидеть 4 ч.».') +
+      '</div>' +
       '<div class="bow-fight-acts">' +
         '<button class="bow-btn bow-btn-sm" data-act="jail-serve">Отсидеть 4 ч.</button>' +
         '<button class="bow-btn bow-btn-sm" data-act="jail-escape">Бежать</button>' +
@@ -2188,11 +2236,11 @@
       '</div>' +
       '<div class="bow-setting-row bow-setting-soundtrack">' +
         '<div class="bow-setting-label">' +
-          '<b>Северный саундтрек (10 композиций)</b>' +
+          '<b>Северный саундтрек (11 композиций)</b>' +
           '<span class="bow-dim">' +
             (Bow.audio && Bow.audio.currentTrack
               ? ('Сейчас: «' + esc(Bow.audio.currentTrack().title) + '» — ' + esc(Bow.audio.currentTrack().subtitle))
-              : 'Очаг для помещений · меланхоличный грув Enigma для улицы · боевые темы Skyrim для сражений') +
+              : 'Очаг для помещений · меланхоличный грув Enigma для улицы · оркестровые боевые темы Skyrim для сражений') +
           '</span>' +
         '</div>' +
         '<div class="bow-setting-opts">' +

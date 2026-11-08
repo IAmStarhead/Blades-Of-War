@@ -405,6 +405,11 @@
     "jail-serve": true,
     "jail-escape": true,
     "jail-bribe": true,
+    "stage-select": true,
+    "eat": true,
+    "drink": true,
+    "treat": true,
+    "auto-eat": true,
     "fight-close": true,
     "panel": true,
     "close-panel": true,
@@ -515,8 +520,8 @@
     /* Бой и его незакрытый итог — пошаговые: часы не тикают во время схватки. */
     if (state.fight) { return false; }
     if (state.flags && state.flags.lastFight) { return false; }
-    /* Стража, грабитель и клетка ждут решения игрока, а не фоновых часов. */
-    if (state.guard || state.encounter || state.jail) { return false; }
+    /* Стража на улице и грабитель ждут решения игрока; в клетке живое время ТЕПЕРЬ идёт само и мотает срок (0.0.8.1)! */
+    if (state.guard || state.encounter) { return false; }
     if (state.dead) { return false; }
     if (Bow.ui.isDrawerOpen()) { return false; }
     if (openPersonId) { return false; }

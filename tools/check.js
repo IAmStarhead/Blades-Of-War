@@ -808,7 +808,7 @@ function byAct(act, key) {
 
     const back = win.Bow.save.deserialize(win.Bow.save.serialize(g, 1));
     assert(back.ok, "старое сохранение не загрузилось: " + back.reason);
-    eq(back.state.version, "0.0.8.0", "версия после миграции");
+    eq(back.state.version, "0.0.8.1", "версия после миграции");
     assert(back.state.fight === null, "после миграции нет пустого слота боя");
     assert(back.state.people["person:tarn"].weapon, "кузнец остался без топора");
     return "0.0.5 → " + back.state.version + ", топор кузнеца на месте";
@@ -1007,7 +1007,7 @@ function byAct(act, key) {
     delete g.flags.huntedHeat;
 
     const back = win.Bow.save.deserialize(win.Bow.save.serialize(g, 1));
-    eq(back.state.version, "0.0.8.0", "версия после миграции");
+    eq(back.state.version, "0.0.8.1", "версия после миграции");
     assert(back.state.guard && back.state.guard.arrived === true,
       "стража из старого сохранения осталась «непришедшей» — из неё не выбраться");
     eq(back.state.flags.huntedUntil, null, "поле срока розыска");
@@ -1771,7 +1771,7 @@ function byAct(act, key) {
 
     const back = win.Bow.save.deserialize(win.Bow.save.serialize(g, 1));
     assert(back.ok, "сохранение 0.0.6.2 не загрузилось: " + back.reason);
-    eq(back.state.version, "0.0.8.0", "версия после миграции");
+    eq(back.state.version, "0.0.8.1", "версия после миграции");
     assert(back.state.steal && typeof back.state.steal === "object", "нет слота подготовки кражи");
     eq(back.state.player.lastTreat, null, "lastTreat после миграции");
     assert(typeof back.state.player.skills.medicine === "number", "навык лечения не восстановлен");
@@ -1971,9 +1971,9 @@ function byAct(act, key) {
     };
     const back = win.Bow.save.deserialize(win.Bow.save.serialize(g, 1));
     assert(back.ok, "сохранение 0.0.6.3 не загрузилось: " + back.reason);
-    eq(back.state.version, "0.0.8.0", "версия после миграции");
+    eq(back.state.version, "0.0.8.1", "версия после миграции");
     assert(back.state.fight.orders && back.state.fight.orders.aim === "body", "приказы боя созданы при миграции");
-    return "0.0.6.3 → 0.0.8.0, приказы боя созданы";
+    return "0.0.6.3 → 0.0.8.1, приказы боя созданы";
   });
 
   /* 8н. Круг 13 (0.0.7.1): фикс зависания в клетке, честная дистанция боя, логотип и Меню игры */
@@ -2145,16 +2145,31 @@ function byAct(act, key) {
     return "логотип 56px → Меню игры (Продолжить + Настройки + Сохранения)";
   });
 
-  check("В клетке живые часы стоят, а заключённого раз в сутки кормят баландой", () => {
+  check("В клетке живые часы идут сами и мотают срок поминутно, а заключённого кормят баландой (0.0.8.1)", () => {
     const g = clone(game());
+    g.fight = null;
+    g.guard = null;
+    g.encounter = null;
+    g.dialog = null;
+    g.dead = null;
+    win.Bow.ui.setDrawer(false);
     g.time.scale = "4x";
     g.jail = { hoursLeft: 16, reason: "воровство" };
-    assert(!win.BowGame.clockShouldRun(g), "живые часы продолжают бежать мимо срока в клетке!");
+    assert(win.BowGame.clockShouldRun(g), "живые часы в клетке всё ещё заблокированы!");
+
+    /* Живой минутный тик уменьшает срок в минутах */
+    win.Bow.time.tickMinute(g);
+    assert(g.jail.minutesLeft === 16 * 60 - 1, "минутный тик не уменьшил срок в клетке: " + g.jail.minutesLeft);
+    assert(/15 ч\. 59 мин\./.test(win.Bow.guard.formatJailLeft(g.jail)), "неверный формат остатка срока: " + win.Bow.guard.formatJailLeft(g.jail));
 
     g.player.needs.hunger = 18;
     win.Bow.guard.serve(g, 4);
     assert(g.player.needs.hunger >= 35, "заключённого не покормили при голоде: " + g.player.needs.hunger);
-    return "часы в клетке остановлены, пайка выдана (сытость " + g.player.needs.hunger + ")";
+
+    /* Когда оставшиеся минуты истекают в живом времени — узника выпускают автоматически */
+    win.Bow.time.advanceMinutes(g, g.jail.minutesLeft);
+    assert(!g.jail, "по истечении живого времени узника не выпустили из клетки");
+    return "живой отсчёт 16 ч. → 15 ч. 59 мин. → автоосвобождение, пайка выдана (сытость " + g.player.needs.hunger + ")";
   });
 
   /* 8о. Круг 14 (0.0.7.2): 60 FPS дождь без рывков, точные хитбоксы и ровная геометрия окон */
@@ -3776,21 +3791,21 @@ function byAct(act, key) {
 
   /* ---------- Круг 18 (0.0.7.6): Северный саундтрек — 8 композиций (помещения и улица) ---------- */
 
-  check("0.0.8.0: саундтрек содержит 10 композиций (4 помещения, 4 улица Enigma и 2 боевые Skyrim)", () => {
+  check("0.0.8.1: саундтрек содержит 11 композиций (4 помещения, 4 улица Enigma и 3 оркестровые боевые Skyrim)", () => {
     assert(win.Bow.audio && typeof win.Bow.audio.listTracks === "function", "нет Bow.audio.listTracks");
     const tracks = win.Bow.audio.listTracks();
-    assert(tracks.length === 10, "ожидалось 10 композиций, найдено: " + tracks.length);
+    assert(tracks.length === 11, "ожидалось 11 композиций, найдено: " + tracks.length);
     const indoor = tracks.filter((t) => t.realm === "indoor");
     const outdoor = tracks.filter((t) => t.realm === "outdoor");
     const combat = tracks.filter((t) => t.realm === "combat");
     assert(indoor.length === 4, "ожидалось 4 камерные композиции для помещений, найдено: " + indoor.length);
     assert(outdoor.length === 4, "ожидалось 4 уличные композиции, найдено: " + outdoor.length);
-    assert(combat.length === 2, "ожидалось 2 боевые композиции Skyrim, найдено: " + combat.length);
+    assert(combat.length === 3, "ожидалось 3 оркестровые боевые композиции Skyrim, найдено: " + combat.length);
     const titles = tracks.map((t) => t.title);
     assert(titles.includes("Угли у очага") && titles.includes("Мёд и наковальня"), "нет названий камерных тем");
     assert(titles.includes("Чертоги Студёного Брода") && titles.includes("Непреклонный тракт"), "нет названий уличных тем");
-    assert(titles.includes("Кровь на насте") && titles.includes("Сталь у переправы"), "нет названий боевых тем");
-    return "4 indoor | 4 outdoor | 2 combat (" + combat.map((t) => t.title).join(", ") + ")";
+    assert(titles.includes("Клык и сталь") && titles.includes("Сталь о сталь") && titles.includes("Смерть или слава"), "нет названий 3 боевых тем Skyrim");
+    return "4 indoor | 4 outdoor | 3 combat (" + combat.map((t) => t.title).join(", ") + ")";
   });
 
   check("0.0.7.6: авто-режим саундтрека переключает помещения (трактир/кузница) и улицу (площадь/околица/тайга)", () => {
@@ -3837,13 +3852,13 @@ function byAct(act, key) {
     }
   });
 
-  check("0.0.8.0: ручной выбор любой из 10 композиций, тумблер бита Enigma и кнопка «След.» работают в Настройках", () => {
+  check("0.0.8.1: ручной выбор любой из 11 композиций, тумблер бита Enigma и кнопка «След.» работают в Настройках", () => {
     const g = game();
     try {
       win.Bow.ui.openModal("save");
       const settings = doc().getElementById("bow-settings");
       const pills = settings.querySelectorAll('[data-act="audio-track"]');
-      assert(pills.length === 10, "в Настройках должно быть 10 кнопок композиций, найдено: " + pills.length);
+      assert(pills.length === 11, "в Настройках должно быть 11 кнопок композиций, найдено: " + pills.length);
 
       assert(win.Bow.audio.isStreetBeat() === true, "уличный бит Enigma должен быть включён по умолчанию");
       click(settings.querySelector('[data-act="audio-beat"]'));
@@ -3871,10 +3886,10 @@ function byAct(act, key) {
     }
   });
 
-  check("0.0.8.0: миграция состояний доводит версию игры до 0.0.8.0", () => {
-    assert(win.Bow.data.meta.version === "0.0.8.0", "версия в Bow.data.meta не 0.0.8.0");
-    assert(game().version === "0.0.8.0", "версия активного состояния не 0.0.8.0");
-    return "версия 0.0.8.0 подтверждена";
+  check("0.0.8.1: миграция состояний доводит версию игры до 0.0.8.1", () => {
+    assert(win.Bow.data.meta.version === "0.0.8.1", "версия в Bow.data.meta не 0.0.8.1");
+    assert(game().version === "0.0.8.1", "версия активного состояния не 0.0.8.1");
+    return "версия 0.0.8.1 подтверждена";
   });
 
   check("0.0.7.7: щипковые удары по струнам полностью вырезаны из саундтрека", () => {
@@ -3941,15 +3956,15 @@ function byAct(act, key) {
     }
   });
 
-  check("0.0.8.0: пустые квадраты .bow-roster скрыты (фикс image-18), а арена рисует перспективную сетку 7×4", () => {
+  check("0.0.8.1: пустые квадраты .bow-roster скрыты, а арена рисует гексагональную сотовую сетку 7×5 (35 гексов, как в King's Bounty и Heroes III)", () => {
     const g = game();
     const snap = clone(g);
     try {
       const styles = [...doc().querySelectorAll("style")].map((s) => s.textContent).join("\n");
       assert(/#bow-fight-page\s+\.bow-roster\s*\{[^}]*display:\s*none\s*!important/.test(styles),
         "пустые прямоугольники .bow-roster под полем боя всё ещё видны");
-      eq(win.Bow.data.fightRules.arena.cols, 7, "ширина тактической сетки");
-      eq(win.Bow.data.fightRules.arena.rows, 4, "глубина тактической сетки (4 ряда)");
+      eq(win.Bow.data.fightRules.arena.cols, 7, "ширина гексагональной сетки");
+      eq(win.Bow.data.fightRules.arena.rows, 5, "глубина гексагональной сетки (5 рядов)");
 
       g.fight = null;
       g.flags.lastFight = null;
@@ -3965,10 +3980,11 @@ function byAct(act, key) {
       win.BowGame.refresh(true);
 
       const page = doc().getElementById("bow-fight-page");
-      assert(page.querySelector("svg.bow-tactical-grid"), "на поле боя нет перспективной тактической сетки svg.bow-tactical-grid");
+      const hexes = page.querySelectorAll("svg.bow-tactical-grid polygon.bow-hex-cell");
+      eq(hexes.length, 35, "на поле боя должно быть ровно 35 шестиугольных гексов (7×5)");
       const headB = page.querySelector(".bow-fight-head b").textContent;
       assert(/Бой с Брором/.test(headB), "ожидался заголовок «Бой с Брором», получено: " + headB);
-      return "сетка 7×4 (28 клеток) + скрыт .bow-roster + заголовок «" + headB + "»";
+      return "гексы 7×5 (35 сот) + скрыт .bow-roster + заголовок «" + headB + "»";
     } finally {
       Object.keys(snap).forEach((k) => { g[k] = snap[k]; });
       win.BowGame.refresh(true);
@@ -4064,6 +4080,89 @@ function byAct(act, key) {
         "значок стека на арене не обновил численность: " + (badgeAfter ? badgeAfter.textContent : "null"));
 
       return "1 фигурка = ×100 (союзники ×80) → удар списал бойцов до ×" + foeStack.count;
+    } finally {
+      Object.keys(snap).forEach((k) => { g[k] = snap[k]; });
+      win.BowGame.refresh(true);
+    }
+  });
+
+  /* ---------- Круг 21 (0.0.8.1): оркестровый бой Skyrim, сцена Клетки, разнесение стражи и хитбокс по форме ---------- */
+
+  check("0.0.8.1: боевой синтезатор содержит спиккато струнных, валторны, мужской хор Довакина и тайко/литавры", () => {
+    const audioSrc = fs.readFileSync(path.join(__dirname, "..", "src", "js", "108-audio.twee"), "utf8");
+    assert(/playSpiccatoStrings/.test(audioSrc), "нет спиккато струнных playSpiccatoStrings");
+    assert(/playHeroicBrass/.test(audioSrc), "нет мелодических валторн/тромбонов playHeroicBrass");
+    assert(/playNordicWarChoir/.test(audioSrc), "нет ратного мужского хора playNordicWarChoir");
+    assert(/playSkyrimWarDrum/.test(audioSrc), "нет боевых литавр и тайко playSkyrimWarDrum");
+    return "спиккато + валторны + ратный хор + тайко/литавры активны";
+  });
+
+  check("0.0.8.1: в заключении Главное окно рисует сцену «Клетка у частокола» с кованой решёткой поверх узника (фикс image-20)", () => {
+    const g = game();
+    const snap = clone(g);
+    try {
+      g.fight = null;
+      g.guard = null;
+      g.jail = { hoursLeft: 4, minutesLeft: 240, _syncedHours: 4, reason: "драка" };
+      win.BowGame.refresh(true);
+
+      const locName = doc().getElementById("bow-loc-name").textContent;
+      assert(locName === "Клетка у частокола", "вместо клетки показана обычная локация: " + locName);
+      assert(doc().querySelector("#bow-stage svg.bow-stage-cage-bars"), "нет передней кованой решётки клетки поверх узника");
+      const prisoner = doc().querySelector("#bow-stage .bow-actor-player");
+      assert(prisoner && !prisoner.querySelector(".bow-fig-weapon"), "у заключённого в клетке осталось оружие в руке");
+      assert(doc().querySelector('#bow-stage [data-act="jail-escape"]'), "на сцене клетки нет интерактивного засова");
+      return "сцена «Клетка у частокола» + кованая решётка + караульный";
+    } finally {
+      Object.keys(snap).forEach((k) => { g[k] = snap[k]; });
+      win.BowGame.refresh(true);
+    }
+  });
+
+  check("0.0.8.1: стражники на гексах разнесены по разным рядам без наложения (фикс image-19), а клик работает по силуэту и 6-граннику гекса", () => {
+    const g = game();
+    const snap = clone(g);
+    try {
+      const styles = [...doc().querySelectorAll("style")].map((s) => s.textContent).join("\n");
+      assert(/\.bow-arena-scene\s+\.bow-chip[\s\S]*?pointer-events:\s*none\s*!important/.test(styles),
+        "прямоугольный контейнер .bow-chip всё ещё перехватывает клики");
+      assert(/\.bow-arena-scene\s+\.bow-chip-hitshape\s*\{[^}]*clip-path:\s*polygon/.test(styles),
+        "у фигурки нет контурного хитбокса clip-path: polygon(...)");
+
+      g.fight = null;
+      g.jail = null;
+      g.player.location = "square";
+      g.player.needs.health = 100;
+      g.player.needs.fatigue = 100;
+      g.heat["org:guard"] = 80;
+      g.flags.guardAt = g.time.totalHours;
+
+      win.Bow.guard.checkArrival(g);
+      win.Bow.guard.fight(g);
+      win.BowGame.refresh(true);
+
+      const foes = g.fight.units.filter((u) => u.side === "enemy");
+      eq(foes.length, 3, "стражников трое");
+      const rowsUsed = new Set(foes.map((u) => u.row));
+      assert(rowsUsed.size === 3, "стражники свалены в один ряд вместо разнесения по гексам: " + [...rowsUsed].join(","));
+      /* Расстояние между рядами стражников минимум 2 гекса (0, 2, 4) — никто никого не перекрывает */
+      const sortedRows = [...rowsUsed].sort((a, b) => a - b);
+      assert(sortedRows[0] === 0 && sortedRows[1] === 2 && sortedRows[2] === 4,
+        "ряды стражников должны быть разнесены через ряд (0, 2, 4): " + sortedRows.join(","));
+
+      /* Проверяем клик прямо по 6-угольному SVG-гексу врага! */
+      const hexPoly = doc().querySelector('#bow-fight-page svg.bow-tactical-grid polygon.bow-hex-enemy-hit[data-target="' + foes[1].key + '"]');
+      assert(hexPoly, "у врага нет кликабельного 6-угольного гекса");
+      hexPoly.dispatchEvent(new win.MouseEvent("click", { bubbles: true, cancelable: true }));
+      eq(g.fight.target, foes[1].key, "клик по 6-угольному гексу не выбрал цель");
+
+      /* И клик по силуэту (.bow-chip-hitshape) другого врага! */
+      const hitShape = doc().querySelector('#bow-fight-page .bow-chip[data-target="' + foes[2].key + '"] .bow-chip-hitshape');
+      assert(hitShape, "нет контурной области .bow-chip-hitshape");
+      click(hitShape);
+      eq(g.fight.target, foes[2].key, "клик по силуэту бойца не выбрал цель");
+
+      return "стража разнесена на ряды 0/2/4 + клик по 6-граннику гекса и по силуэту работает";
     } finally {
       Object.keys(snap).forEach((k) => { g[k] = snap[k]; });
       win.BowGame.refresh(true);

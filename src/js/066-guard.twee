@@ -268,14 +268,69 @@
     return Bow.fight.start(state, "guard");
   }
 
-  /* ---------- Клетка ---------- */
+  /* ---------- Клетка (с живым поминутным отсчётом срока, 0.0.8.1) ---------- */
+  var jailPauseTick = false;
+
+  function syncJailMinutes(jail) {
+    if (!jail) { return 0; }
+    var h = Math.max(0, Number(jail.hoursLeft) || 0);
+    if (typeof jail.minutesLeft !== "number" || isNaN(jail.minutesLeft) || jail._syncedHours !== h) {
+      jail.minutesLeft = Math.max(0, Math.round(h * 60));
+      jail._syncedHours = h;
+    }
+    return jail.minutesLeft;
+  }
+
+  function formatJailLeft(jail) {
+    if (!jail) { return "0 мин."; }
+    var totalMin = Math.max(0, Math.round(syncJailMinutes(jail)));
+    var hrs = Math.floor(totalMin / 60);
+    var mins = totalMin % 60;
+    if (hrs <= 0) { return mins + " мин."; }
+    if (mins === 0) { return hrs + " ч."; }
+    return hrs + " ч. " + (mins < 10 ? "0" : "") + mins + " мин.";
+  }
+
+  function stepJailMinutes(state, mins) {
+    if (!state || !state.jail || jailPauseTick) { return false; }
+    var delta = Math.max(0, Math.round(Number(mins) || 0));
+    if (!delta) { return false; }
+
+    var curMin = syncJailMinutes(state.jail);
+    var nextMin = Math.max(0, curMin - delta);
+    state.jail.minutesLeft = nextMin;
+    state.jail.hoursLeft = Math.ceil(nextMin / 60);
+    state.jail._syncedHours = state.jail.hoursLeft;
+
+    /* В клетке кормят скудной баландой, умереть с голоду не дают; на соломе уходит усталость. */
+    if (state.player && state.player.needs) {
+      if (state.player.needs.hunger < 35) {
+        state.player.needs.hunger = 42;
+      }
+      Bow.needs.applyChange(state.player, "fatigue", (delta / 60) * 1.6);
+      Bow.needs.applyChange(state.player, "mood", -(delta / 60) * 0.45);
+    }
+
+    if (nextMin <= 0) {
+      release(state);
+      if (Bow.ui && Bow.ui.setMessage) {
+        Bow.ui.setMessage("Срок вышел. Сторож отпирает засов и выпускает вас из клетки.");
+      }
+      return true;
+    }
+    return false;
+  }
+
   function toJail(state, reason) {
     var g = R();
     state.jail = {
       hoursLeft: g.cellsHours,
+      minutesLeft: g.cellsHours * 60,
+      _syncedHours: g.cellsHours,
       reason: reason || "вина",
       since: state.time.totalHours
     };
+    if (state.task) { state.task = null; }
     state.guard = null;
     state.flags.guardAt = null;
     state.flags.hunted = false;
@@ -284,25 +339,23 @@
     return state.jail;
   }
 
-  /* Отсидеть: время идёт, розыск спадает сам (подписка на сутки). */
+  /* Отсидеть: ускоренно перемотать несколько часов (или до конца срока). */
   function serve(state, hours) {
     if (!state.jail) { return { ok: false, message: "Вы не в клетке." }; }
-    var h = Math.max(1, Math.min(hours || 4, state.jail.hoursLeft));
+    var curMin = syncJailMinutes(state.jail);
+    var wantMin = Math.max(60, Math.round((hours || 4) * 60));
+    var passMin = Math.min(wantMin, curMin);
 
-    Bow.time.advance(state, h);
-    state.jail.hoursLeft -= h;
-    /* В клетке кормят скудно, раз в день, но умереть с голоду не дают. */
-    if (state.player.needs.hunger < 35) {
-      state.player.needs.hunger = 42;
-    }
-    Bow.needs.applyChange(state.player, "mood", -3);
-    Bow.needs.applyChange(state.player, "fatigue", 6);
+    /* advanceMinutes сам вызовет tick:minute → stepJailMinutes ровно на passMin! */
+    Bow.time.advanceMinutes(state, passMin);
 
-    if (state.jail.hoursLeft <= 0) {
-      release(state);
-      return { ok: true, released: true, message: "Срок вышел. Вас выпускают." };
+    if (!state.jail) {
+      return { ok: true, released: true, message: "Срок вышел. Вас выпускают из клетки." };
     }
-    return { ok: true, message: "Прошло " + h + " ч. Осталось " + state.jail.hoursLeft + " ч." };
+    return {
+      ok: true,
+      message: "Прошло " + Math.round(passMin / 60) + " ч. Осталось " + formatJailLeft(state.jail) + "."
+    };
   }
 
   function release(state) {
@@ -321,7 +374,12 @@
     if (state.time.hour >= 22 || state.time.hour < 5) { base += 0.12; }
     base = clamp(base, 0.05, 0.7);
 
-    Bow.time.advance(state, 2);
+    jailPauseTick = true;
+    try {
+      Bow.time.advance(state, 2);
+    } finally {
+      jailPauseTick = false;
+    }
 
     if (rnd(rng) < base) {
       state.jail = null;
@@ -340,6 +398,7 @@
   /* Подкуп в клетке: дешевле, чем на улице, но и денег уже меньше. */
   function bribeJail(state) {
     if (!state.jail) { return { ok: false, message: "Вы не в клетке." }; }
+    syncJailMinutes(state.jail);
     var cost = Math.round(R().bribeBase * 0.8 + state.jail.hoursLeft);
     if (state.player.money < cost) {
       return { ok: false, message: "Нужно " + cost + " м., у вас " + state.player.money + "." };
@@ -351,7 +410,12 @@
     return { ok: true, released: true, message: "Сторож отворачивается. Вы уходите." };
   }
 
-  /* ---------- Каждый час и каждый переход ---------- */
+  /* ---------- Каждый час, каждая минута (в клетке) и каждый переход ---------- */
+  Bow.bus.on("tick:minute", function (state, mins) {
+    if (!state || state.dead || !state.jail) { return; }
+    stepJailMinutes(state, mins || 1);
+  });
+
   Bow.bus.on("tick:hour", function (state) {
     if (state.dead || state.jail) { return; }
     schedule(state);
@@ -410,6 +474,8 @@
     release: release,
     escapeJail: escapeJail,
     bribeJail: bribeJail,
+    formatJailLeft: formatJailLeft,
+    syncJailMinutes: syncJailMinutes,
     onMove: onMove,
     THRESHOLD: function () { return R().threshold; }
   };

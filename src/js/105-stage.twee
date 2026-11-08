@@ -313,9 +313,51 @@
   }
 
   function backdropSvg(locKey, state, forBattle) {
+    if (forBattle) {
+      return battlefieldSvg(locKey, state);
+    }
     var pal = skyOf(state);
-    var indoor = (locKey === "tavern" || locKey === "smithy") && !forBattle;
+    var indoor = (locKey === "tavern" || locKey === "smithy" || locKey === "jail");
     var svg = skyBaseSvg(pal, indoor);
+
+    if (locKey === "jail") {
+      svg +=
+        /* Бревенчатые стены острога у частокола */
+        '<rect x="0" y="0" width="960" height="214" fill="#10151c"/>' +
+        '<g stroke="#1f2833" stroke-width="2">' +
+          '<line x1="0" y1="36" x2="960" y2="36"/><line x1="0" y1="72" x2="960" y2="72"/>' +
+          '<line x1="0" y1="108" x2="960" y2="108"/><line x1="0" y1="144" x2="960" y2="144"/>' +
+          '<line x1="0" y1="180" x2="960" y2="180"/>' +
+        '</g>' +
+        /* Узкое зарешёченное продушина-окно высоко под балкой с живым небом Брода */
+        '<rect x="218" y="42" width="116" height="46" rx="3" fill="' + pal.skyTop + '" stroke="#465566" stroke-width="2"/>' +
+        '<line x1="247" y1="42" x2="247" y2="88" stroke="#2c3744" stroke-width="3"/>' +
+        '<line x1="276" y1="42" x2="276" y2="88" stroke="#2c3744" stroke-width="3"/>' +
+        '<line x1="305" y1="42" x2="305" y2="88" stroke="#2c3744" stroke-width="3"/>' +
+        /* Холодный дощато-каменный пол острога */
+        '<rect x="0" y="214" width="960" height="106" fill="#141a21"/>' +
+        '<line x1="0" y1="214" x2="960" y2="214" stroke="#3c4a58" stroke-width="1.6"/>' +
+        /* Задняя и боковая стенки самой клети (слева до x=530) */
+        '<rect x="118" y="64" width="412" height="162" fill="rgba(9,13,18,0.55)" stroke="#3b4958" stroke-width="2"/>' +
+        /* Охапка мёрзлой соломы и глиняная миска внутри клетки */
+        '<path d="M148 228 Q192 206 246 226 Q216 234 148 228 Z" fill="#594a2c" stroke="#7d683f" stroke-width="1.2"/>' +
+        '<line x1="164" y1="223" x2="212" y2="215" stroke="#8c7548" stroke-width="1.3"/>' +
+        '<line x1="182" y1="226" x2="232" y2="220" stroke="#8c7548" stroke-width="1.3"/>' +
+        '<ellipse cx="432" cy="228" rx="13" ry="5" fill="#3a2f28" stroke="#645347" stroke-width="1.1"/>' +
+        /* Железное кольцо в стене и цепь */
+        '<circle cx="348" cy="152" r="6" fill="none" stroke="#596878" stroke-width="2"/>' +
+        /* Смоляной факел в железной скобе снаружи у сторожа */
+        '<radialGradient id="bowJailTorch" cx="0.64" cy="0.42" r="0.32">' +
+          '<stop offset="0%" stop-color="#e8943a" stop-opacity="0.32"/>' +
+          '<stop offset="100%" stop-color="#e8943a" stop-opacity="0"/>' +
+        '</radialGradient>' +
+        '<rect x="0" y="0" width="960" height="320" fill="url(#bowJailTorch)"/>' +
+        '<line x1="612" y1="146" x2="622" y2="118" stroke="#5b4634" stroke-width="4" stroke-linecap="round"/>' +
+        '<path d="M622 118 Q616 102 624 94 Q632 104 625 118 Z" fill="#f09d3e" opacity="0.9"/>' +
+        '<path d="M623 115 Q620 106 624 100 Q628 106 624 115 Z" fill="#ffd98e"/>';
+      return '<svg class="bow-stage-bg" viewBox="0 0 960 320" preserveAspectRatio="xMidYMid slice" aria-hidden="true">' +
+        svg + '</svg>';
+    }
 
     if (locKey === "square") {
       svg +=
@@ -449,6 +491,98 @@
       svg + '</svg>';
   }
 
+  /* ---------- Панорама поля боя с высокой тактической камерой (как в Heroes III и King's Bounty, 0.0.8.1) ----------
+     Узкая полоса горизонта сверху (0..62px) и просторная поверхность земли/снега/досок (62..368px)
+     под крупную гексагональную сетку 7×5, чтобы бойцы никогда не перекрывали друг друга. */
+  function battlefieldSvg(locKey, state) {
+    var pal = skyOf(state);
+    var indoor = (locKey === "tavern" || locKey === "smithy");
+
+    if (indoor) {
+      var isSmithy = (locKey === "smithy");
+      return '<svg class="bow-stage-bg bow-battlefield-bg" viewBox="0 0 1088 368" preserveAspectRatio="none" aria-hidden="true">' +
+        '<defs>' +
+          '<linearGradient id="bowBfWall" x1="0" y1="0" x2="0" y2="1">' +
+            '<stop offset="0%" stop-color="#0d1117"/>' +
+            '<stop offset="100%" stop-color="#171d26"/>' +
+          '</linearGradient>' +
+          '<linearGradient id="bowBfFloor" x1="0" y1="0" x2="0" y2="1">' +
+            '<stop offset="0%" stop-color="' + (isSmithy ? "#181e26" : "#1c1916") + '"/>' +
+            '<stop offset="55%" stop-color="' + (isSmithy ? "#141a22" : "#171513") + '"/>' +
+            '<stop offset="100%" stop-color="#0f1318"/>' +
+          '</linearGradient>' +
+          '<radialGradient id="bowBfFire" cx="' + (isSmithy ? "0.22" : "0.5") + '" cy="0.14" r="0.55">' +
+            '<stop offset="0%" stop-color="#e38836" stop-opacity="0.28"/>' +
+            '<stop offset="100%" stop-color="#e38836" stop-opacity="0"/>' +
+          '</radialGradient>' +
+        '</defs>' +
+        /* Узкая верхняя стена зала / кузницы (0..62px) */
+        '<rect x="0" y="0" width="1088" height="62" fill="url(#bowBfWall)"/>' +
+        '<rect x="0" y="62" width="1088" height="306" fill="url(#bowBfFloor)"/>' +
+        '<rect x="0" y="0" width="1088" height="368" fill="url(#bowBfFire)"/>' +
+        '<line x1="0" y1="62" x2="1088" y2="62" stroke="#3c4957" stroke-width="1.6"/>' +
+        /* Очаг / горн и стойки вдоль дальней стены */
+        (isSmithy
+          ? '<rect x="196" y="14" width="96" height="48" fill="#1e252e" stroke="#465463" stroke-width="1.4"/>' +
+            '<ellipse cx="244" cy="46" rx="26" ry="9" fill="#e67e28" opacity="0.82"/>' +
+            '<path d="M780 62 L792 38 L832 38 L844 62 Z" fill="#252e38" stroke="#536373" stroke-width="1.2"/>'
+          : '<rect x="492" y="12" width="104" height="50" fill="#221c18" stroke="#4d4339" stroke-width="1.4"/>' +
+            '<path d="M524 58 Q544 30 564 58 Z" fill="#e88a34" opacity="0.82"/>' +
+            '<rect x="130" y="34" width="120" height="26" fill="#201b17" stroke="#463d34" stroke-width="1.2"/>' +
+            '<rect x="838" y="34" width="120" height="26" fill="#201b17" stroke="#463d34" stroke-width="1.2"/>') +
+        /* Широкие половицы / каменные плиты под гексами */
+        '<g stroke="rgba(140,156,174,0.07)" stroke-width="1">' +
+          '<line x1="0" y1="122" x2="1088" y2="122"/>' +
+          '<line x1="0" y1="184" x2="1088" y2="184"/>' +
+          '<line x1="0" y1="246" x2="1088" y2="246"/>' +
+          '<line x1="0" y1="308" x2="1088" y2="308"/>' +
+        '</g>' +
+      '</svg>';
+    }
+
+    /* Уличные локации: узкое северное небо и кромка леса/крыш сверху (0..62px) + широкое снежное поле (62..368px), как в Heroes III */
+    var treelines = "";
+    for (var tx = 24; tx < 1070; tx += 46) {
+      var th = 22 + ((tx * 17) % 18);
+      if (locKey === "square" && tx > 220 && tx < 860 && (tx % 92 === 0)) {
+        /* Контуры крыш Брода и дым на горизонте площади */
+        treelines += '<polygon points="' + (tx - 24) + ',62 ' + tx + ',' + (62 - th + 4) + ' ' + (tx + 24) + ',62" fill="' + pal.far + '" stroke="' + pal.line + '" stroke-width="0.9"/>';
+      } else {
+        treelines += '<polygon points="' + (tx - 14) + ',62 ' + tx + ',' + (62 - th) + ' ' + (tx + 14) + ',62" fill="' + pal.far + '"/>';
+      }
+    }
+
+    var skyStars = pal.stars
+      ? '<g opacity="0.6" fill="#dce6f0"><circle cx="140" cy="18" r="1.2"/><circle cx="330" cy="12" r="1"/><circle cx="540" cy="22" r="1.3"/><circle cx="770" cy="15" r="1.1"/><circle cx="940" cy="24" r="1.2"/></g>'
+      : '';
+
+    return '<svg class="bow-stage-bg bow-battlefield-bg" viewBox="0 0 1088 368" preserveAspectRatio="none" aria-hidden="true">' +
+      '<defs>' +
+        '<linearGradient id="bowBfSky" x1="0" y1="0" x2="0" y2="1">' +
+          '<stop offset="0%" stop-color="' + pal.skyTop + '"/>' +
+          '<stop offset="100%" stop-color="' + pal.skyBot + '"/>' +
+        '</linearGradient>' +
+        '<linearGradient id="bowBfGround" x1="0" y1="0" x2="0" y2="1">' +
+          '<stop offset="0%" stop-color="' + pal.snowTop + '"/>' +
+          '<stop offset="45%" stop-color="' + pal.mid + '"/>' +
+          '<stop offset="100%" stop-color="' + pal.snowBot + '"/>' +
+        '</linearGradient>' +
+      '</defs>' +
+      '<rect x="0" y="0" width="1088" height="64" fill="url(#bowBfSky)"/>' +
+      skyStars +
+      treelines +
+      '<rect x="0" y="62" width="1088" height="306" fill="url(#bowBfGround)"/>' +
+      '<line x1="0" y1="62" x2="1088" y2="62" stroke="' + pal.line + '" stroke-width="1.2"/>' +
+      /* Естественные неровности снежного наста и валуны по краям поля (не мешают гексам) */
+      '<g opacity="0.34" fill="' + pal.far + '" stroke="' + pal.line + '" stroke-width="0.9">' +
+        '<ellipse cx="44" cy="96" rx="22" ry="8"/>' +
+        '<ellipse cx="1042" cy="102" rx="24" ry="9"/>' +
+        '<ellipse cx="38" cy="344" rx="26" ry="9"/>' +
+        '<ellipse cx="1048" cy="342" rx="24" ry="8"/>' +
+      '</g>' +
+    '</svg>';
+  }
+
   /* ---------- Интерактивные точки локации на сцене ----------
      Верхний ярус (y = 32%..41%) — ориентиры окружения над головами,
      нижний ярус (bottom = 42px) — живые люди на земле. Хитбоксы
@@ -488,6 +622,56 @@
   }
 
   function renderHotspotsAndActors(state, selected) {
+    /* Отдельная живая сцена острога / клетки у частокола (фикс image-20, 0.0.8.1):
+       узник сидит за железной решёткой без оружия, снаружи дежурит сторож с факелом. */
+    if (state.jail) {
+      var leftLabel = (Bow.guard && Bow.guard.formatJailLeft) ? Bow.guard.formatJailLeft(state.jail) : (state.jail.hoursLeft + " ч.");
+      var bribeCost = Math.round(((Bow.data && Bow.data.fightRules && Bow.data.fightRules.guard && Bow.data.fightRules.guard.bribeBase) || 25) * 0.8 + (state.jail.hoursLeft || 1));
+      var selfOn = selected && selected.kind === "self" ? " bow-actor-on" : "";
+      return [
+        '<button type="button" class="bow-spot bow-spot-prop" style="left:22%;top:32%" data-act="jail-serve" title="Вздремнуть на соломе и отсидеть 4 часа">' +
+          '<span class="bow-spot-dot"></span>' +
+          '<span class="bow-spot-txt"><b>Охапка соломы</b><i>отсидеть 4 ч. (' + esc(leftLabel) + ')</i></span>' +
+        '</button>',
+        '<button type="button" class="bow-spot bow-spot-exit" style="left:48%;top:30%" data-act="jail-escape" title="Попробовать расшатать засов и бежать">' +
+          '<span class="bow-spot-dot"></span>' +
+          '<span class="bow-spot-txt"><b>Ржавый засов</b><i>попытка побега</i></span>' +
+        '</button>',
+        '<button type="button" class="bow-spot bow-spot-prop" style="left:75%;top:32%" data-act="jail-bribe" title="Сунуть монеты сторожу через прутья">' +
+          '<span class="bow-spot-dot"></span>' +
+          '<span class="bow-spot-txt"><b>Подкупить сторожа</b><i>' + bribeCost + ' м.</i></span>' +
+        '</button>',
+        /* Узник внутри клетки (разоружён на время заключения) */
+        '<button type="button" class="bow-actor bow-actor-player' + selfOn + '" style="left:33%;bottom:42px;z-index:3" ' +
+          'data-act="stage-select" data-kind="self" data-x="33" title="Вы в клетке · осталось ' + esc(leftLabel) + '">' +
+          figureSvg({ roleKey: "player", side: "player", weapon: null }) +
+          '<span class="bow-actor-tag"><b>Вы (в клетке)</b><i class="bow-tone bow-cold">' + esc(leftLabel) + '</i></span>' +
+        '</button>',
+        /* Передняя кованая решётка клетки поверх фигурки узника! */
+        '<svg class="bow-stage-cage-bars" viewBox="0 0 420 200" preserveAspectRatio="none" aria-hidden="true">' +
+          '<rect x="4" y="6" width="412" height="190" fill="none" stroke="#4d5c6c" stroke-width="5"/>' +
+          '<line x1="4" y1="54" x2="416" y2="54" stroke="#455362" stroke-width="4.5"/>' +
+          '<line x1="4" y1="144" x2="416" y2="144" stroke="#455362" stroke-width="4.5"/>' +
+          '<g stroke="#647587" stroke-width="4">' +
+            '<line x1="46" y1="6" x2="46" y2="196"/><line x1="88" y1="6" x2="88" y2="196"/>' +
+            '<line x1="130" y1="6" x2="130" y2="196"/><line x1="172" y1="6" x2="172" y2="196"/>' +
+            '<line x1="214" y1="6" x2="214" y2="196"/><line x1="256" y1="6" x2="256" y2="196"/>' +
+            '<line x1="298" y1="6" x2="298" y2="196"/><line x1="340" y1="6" x2="340" y2="196"/>' +
+            '<line x1="382" y1="6" x2="382" y2="196"/>' +
+          '</g>' +
+          /* Тяжёлый висячий замок на засове справа */
+          '<rect x="392" y="92" width="20" height="24" rx="3" fill="#2c3640" stroke="#8fa1b3" stroke-width="2"/>' +
+          '<path d="M396 92 C396 82, 408 82, 408 92" fill="none" stroke="#8fa1b3" stroke-width="2.4"/>' +
+        '</svg>',
+        /* Сторож снаружи у факела */
+        '<button type="button" class="bow-actor bow-actor-enemy bow-actor-guard" style="left:72%;bottom:42px;z-index:5" ' +
+          'data-act="jail-bribe" title="Сторож у клети — подкупить за ' + bribeCost + ' м.">' +
+          figureSvg({ roleKey: "guard", side: "enemy", weapon: "axe", stance: "guard" }) +
+          '<span class="bow-actor-tag bow-actor-tag-threat"><b>⛨ Сторож</b><i class="bow-tone bow-cold">караул</i></span>' +
+        '</button>'
+      ].join("");
+    }
+
     var locKey = state.player.location;
     var props = STAGE_PROPS[locKey] || [];
     var people = Bow.actions.peopleAt(state, locKey);
@@ -860,6 +1044,7 @@
     figureSvg: figureSvg,
     weaponKindOf: weaponKindOf,
     backdropSvg: backdropSvg,
+    battlefieldSvg: battlefieldSvg,
     weatherOverlayHtml: weatherOverlayHtml,
     renderHotspotsAndActors: renderHotspotsAndActors,
     renderMap: renderMap
