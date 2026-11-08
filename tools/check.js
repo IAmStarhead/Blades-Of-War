@@ -808,7 +808,7 @@ function byAct(act, key) {
 
     const back = win.Bow.save.deserialize(win.Bow.save.serialize(g, 1));
     assert(back.ok, "старое сохранение не загрузилось: " + back.reason);
-    eq(back.state.version, "0.0.7.5", "версия после миграции");
+    eq(back.state.version, "0.0.7.6", "версия после миграции");
     assert(back.state.fight === null, "после миграции нет пустого слота боя");
     assert(back.state.people["person:tarn"].weapon, "кузнец остался без топора");
     return "0.0.5 → " + back.state.version + ", топор кузнеца на месте";
@@ -1007,7 +1007,7 @@ function byAct(act, key) {
     delete g.flags.huntedHeat;
 
     const back = win.Bow.save.deserialize(win.Bow.save.serialize(g, 1));
-    eq(back.state.version, "0.0.7.5", "версия после миграции");
+    eq(back.state.version, "0.0.7.6", "версия после миграции");
     assert(back.state.guard && back.state.guard.arrived === true,
       "стража из старого сохранения осталась «непришедшей» — из неё не выбраться");
     eq(back.state.flags.huntedUntil, null, "поле срока розыска");
@@ -1771,7 +1771,7 @@ function byAct(act, key) {
 
     const back = win.Bow.save.deserialize(win.Bow.save.serialize(g, 1));
     assert(back.ok, "сохранение 0.0.6.2 не загрузилось: " + back.reason);
-    eq(back.state.version, "0.0.7.5", "версия после миграции");
+    eq(back.state.version, "0.0.7.6", "версия после миграции");
     assert(back.state.steal && typeof back.state.steal === "object", "нет слота подготовки кражи");
     eq(back.state.player.lastTreat, null, "lastTreat после миграции");
     assert(typeof back.state.player.skills.medicine === "number", "навык лечения не восстановлен");
@@ -1971,9 +1971,9 @@ function byAct(act, key) {
     };
     const back = win.Bow.save.deserialize(win.Bow.save.serialize(g, 1));
     assert(back.ok, "сохранение 0.0.6.3 не загрузилось: " + back.reason);
-    eq(back.state.version, "0.0.7.5", "версия после миграции");
+    eq(back.state.version, "0.0.7.6", "версия после миграции");
     assert(back.state.fight.orders && back.state.fight.orders.aim === "body", "приказы боя созданы при миграции");
-    return "0.0.6.3 → 0.0.7.5, приказы боя созданы";
+    return "0.0.6.3 → 0.0.7.6, приказы боя созданы";
   });
 
   /* 8н. Круг 13 (0.0.7.1): фикс зависания в клетке, честная дистанция боя, логотип и Меню игры */
@@ -3772,6 +3772,99 @@ function byAct(act, key) {
       .filter((u) => u && !/motoslave\.net|twinery\.org/.test(u));
     assert(bad.length === 0, "внешние ресурсы: " + bad.join(", "));
     return "игра автономна";
+  });
+
+  /* ---------- Круг 18 (0.0.7.6): Северный саундтрек — 8 композиций (помещения и улица) ---------- */
+
+  check("0.0.7.6: саундтрек содержит 8 авторских композиций (4 для помещений и 4 для улицы)", () => {
+    assert(win.Bow.audio && typeof win.Bow.audio.listTracks === "function", "нет Bow.audio.listTracks");
+    const tracks = win.Bow.audio.listTracks();
+    assert(tracks.length === 8, "ожидалось 8 композиций, найдено: " + tracks.length);
+    const indoor = tracks.filter((t) => t.realm === "indoor");
+    const outdoor = tracks.filter((t) => t.realm === "outdoor");
+    assert(indoor.length === 4, "ожидалось 4 камерные композиции для помещений, найдено: " + indoor.length);
+    assert(outdoor.length === 4, "ожидалось 4 уличные композиции, найдено: " + outdoor.length);
+    const titles = tracks.map((t) => t.title);
+    assert(titles.includes("Угли у очага") && titles.includes("Мёд и наковальня"), "нет названий камерных тем");
+    assert(titles.includes("Чертоги Студёного Брода") && titles.includes("Непреклонный тракт"), "нет названий уличных тем");
+    return indoor.map((t) => t.title).join(", ") + " | " + outdoor.map((t) => t.title).join(", ");
+  });
+
+  check("0.0.7.6: авто-режим саундтрека переключает помещения (трактир/кузница) и улицу (площадь/околица/тайга)", () => {
+    const g = game();
+    const snap = clone(g);
+    try {
+      win.Bow.audio.setAutoMode(g);
+
+      g.player.location = "tavern";
+      g.time.hour = 19;
+      win.Bow.audio.syncMood(g);
+      assert(win.Bow.audio.getRealm() === "indoor", "трактир должен включать камерный режим indoor");
+      assert(win.Bow.audio.currentTrack().realm === "indoor", "в трактире выбран не камерный трек");
+
+      g.player.location = "smithy";
+      g.time.hour = 12;
+      win.Bow.audio.syncMood(g);
+      assert(win.Bow.audio.getRealm() === "indoor" && win.Bow.audio.currentTrack().id === "mead_and_anvil",
+        "в кузнице должна включаться «Мёд и наковальня»");
+
+      g.player.location = "square";
+      g.time.hour = 13;
+      win.Bow.audio.syncMood(g);
+      assert(win.Bow.audio.getRealm() === "outdoor" && win.Bow.audio.currentTrack().id === "citadel_of_ford",
+        "на площади должна включаться «Чертоги Студёного Брода»");
+
+      g.player.location = "outskirts";
+      g.time.hour = 15;
+      win.Bow.audio.syncMood(g);
+      assert(win.Bow.audio.getRealm() === "outdoor" && win.Bow.audio.currentTrack().id === "white_silence",
+        "на околице днём должна включаться «Белое безмолвие»");
+
+      g.player.location = "forest";
+      g.time.hour = 16;
+      win.Bow.audio.syncMood(g);
+      assert(win.Bow.audio.getRealm() === "outdoor" && win.Bow.audio.currentTrack().id === "unbroken_tract",
+        "у тайги должна включаться «Непреклонный тракт»");
+
+      return "tavern/smithy → indoor, square/outskirts/forest → outdoor";
+    } finally {
+      Object.keys(snap).forEach((k) => { g[k] = snap[k]; });
+      win.Bow.audio.setAutoMode(g);
+      win.BowGame.refresh(true);
+    }
+  });
+
+  check("0.0.7.6: ручной выбор любой из 8 композиций и кнопка «След.» работают в Настройках", () => {
+    const g = game();
+    try {
+      win.Bow.ui.openModal("save");
+      const settings = doc().getElementById("bow-settings");
+      const pills = settings.querySelectorAll('[data-act="audio-track"]');
+      assert(pills.length === 8, "в Настройках должно быть 8 кнопок композиций, найдено: " + pills.length);
+
+      click(settings.querySelector('[data-track="rime_and_stars"]'));
+      assert(win.Bow.audio.getMode() === "manual", "клик по мелодии должен переводить плеер в ручной режим");
+      assert(win.Bow.audio.currentTrack().id === "rime_and_stars", "не включилась композиция «Хладный иней»");
+
+      click(settings.querySelector('[data-act="audio-next"]'));
+      assert(win.Bow.audio.currentTrack().id !== "rime_and_stars", "кнопка «След.» не переключила композицию");
+
+      click(settings.querySelector('[data-act="audio-auto"]'));
+      assert(win.Bow.audio.getMode() === "auto", "кнопка «Авто по месту» не вернула авторежим");
+      win.Bow.audio.stop();
+      return "8 кнопок в UI + переключение треков и возврат в авторежим";
+    } finally {
+      win.Bow.audio.stop();
+      win.Bow.audio.setAutoMode(g);
+      win.Bow.ui.setDrawer(false);
+      win.BowGame.refresh(true);
+    }
+  });
+
+  check("0.0.7.6: миграция состояний доводит версию игры до 0.0.7.6", () => {
+    assert(win.Bow.data.meta.version === "0.0.7.6", "версия в Bow.data.meta не 0.0.7.6");
+    assert(game().version === "0.0.7.6", "версия активного состояния не 0.0.7.6");
+    return "версия 0.0.7.6 подтверждена";
   });
 
   /* ---------- Итоги ---------- */

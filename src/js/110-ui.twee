@@ -196,8 +196,12 @@
     var audioBtn = $("bow-audio-btn");
     if (audioBtn && Bow.audio) {
       var aOn = Bow.audio.isEnabled();
+      var curTrk = Bow.audio.currentTrack ? Bow.audio.currentTrack() : null;
       audioBtn.classList.toggle("bow-audio-on", aOn);
       audioBtn.setAttribute("aria-pressed", aOn ? "true" : "false");
+      audioBtn.setAttribute("title", aOn && curTrk
+        ? ("♪ Играет: «" + curTrk.title + "» (" + (curTrk.realm === "indoor" ? "помещение" : "улица") + ") — нажмите, чтобы выключить")
+        : "Включить северный саундтрек («Угли у очага», «Чертоги Студёного Брода» и др.)");
     }
 
     var autoEatBtn = $("bow-autoeat-btn");
@@ -2061,15 +2065,42 @@
           '<button class="bow-btn bow-btn-sm' + (s.motion === "calm" ? " bow-order-on" : "") + '" data-act="setting" data-key="motion" data-val="calm">Спокойно</button>' +
         '</div>' +
       '</div>' +
-      '<div class="bow-setting-row">' +
-        '<div class="bow-setting-label"><b>Северный средневековый эмбиент</b><span class="bow-dim">Неспешная лютня, бурдон и флейта (синтез внутри игры без интернета)</span></div>' +
+      '<div class="bow-setting-row bow-setting-soundtrack">' +
+        '<div class="bow-setting-label">' +
+          '<b>Северный саундтрек (8 композиций)</b>' +
+          '<span class="bow-dim">' +
+            (Bow.audio && Bow.audio.currentTrack
+              ? ('Сейчас: «' + esc(Bow.audio.currentTrack().title) + '» — ' + esc(Bow.audio.currentTrack().subtitle))
+              : 'Лютня у очага для помещений и смычковые/рога/хор для улиц') +
+          '</span>' +
+        '</div>' +
         '<div class="bow-setting-opts">' +
           '<button type="button" class="bow-btn bow-btn-sm' + ((Bow.audio && Bow.audio.isEnabled()) ? " bow-order-on" : "") + '" data-act="audio-toggle">' +
             ((Bow.audio && Bow.audio.isEnabled()) ? "♪ Музыка: вкл" : "♪ Музыка: выкл") +
           '</button>' +
+          '<button type="button" class="bow-btn bow-btn-sm' + ((Bow.audio && Bow.audio.getMode && Bow.audio.getMode() === "auto") ? " bow-order-on" : "") + '" data-act="audio-auto" title="Автоматически менять музыку между помещениями (трактир, кузница) и улицей">' +
+            'Авто по месту' +
+          '</button>' +
+          '<button type="button" class="bow-btn bow-btn-sm" data-act="audio-next" title="Следующая композиция">⏭ След.</button>' +
           '<input type="range" class="bow-vol-range" data-act="audio-vol" min="0" max="100" step="5" value="' +
             Math.round((Bow.audio ? Bow.audio.getVolume() : 0.45) * 100) + '" aria-label="Громкость музыки" title="Громкость музыки"/>' +
         '</div>' +
+        ((Bow.audio && Bow.audio.listTracks) ? (function () {
+          var allT = Bow.audio.listTracks();
+          var curId = Bow.audio.currentTrack() ? Bow.audio.currentTrack().id : "";
+          var inHtml = allT.filter(function (t) { return t.realm === "indoor"; }).map(function (t) {
+            return '<button type="button" class="bow-btn bow-btn-sm bow-track-pill' + (t.id === curId ? " bow-order-on" : "") + '" ' +
+              'data-act="audio-track" data-track="' + esc(t.id) + '" title="' + esc(t.subtitle) + '">♪ ' + esc(t.title) + '</button>';
+          }).join("");
+          var outHtml = allT.filter(function (t) { return t.realm === "outdoor"; }).map(function (t) {
+            return '<button type="button" class="bow-btn bow-btn-sm bow-track-pill' + (t.id === curId ? " bow-order-on" : "") + '" ' +
+              'data-act="audio-track" data-track="' + esc(t.id) + '" title="' + esc(t.subtitle) + '">❄ ' + esc(t.title) + '</button>';
+          }).join("");
+          return '<div class="bow-soundtrack-lists">' +
+            '<div class="bow-st-group"><span class="bow-dim">Помещения (трактир, кузница):</span><div class="bow-st-pills">' + inHtml + '</div></div>' +
+            '<div class="bow-st-group"><span class="bow-dim">Улица, околица и тайга:</span><div class="bow-st-pills">' + outHtml + '</div></div>' +
+          '</div>';
+        })() : '') +
       '</div>';
   }
 

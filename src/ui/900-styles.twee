@@ -4819,4 +4819,49 @@ html.bow-motion-calm .bow-fog-band {
   font-size: 0.68rem;
 }
 
+/* 7. Панель северного саундтрека (8 композиций: помещения и улица, 0.0.7.6) */
+.bow-setting-soundtrack {
+  flex-direction: column;
+  align-items: stretch !important;
+  gap: 8px;
+}
+
+.bow-setting-soundtrack .bow-setting-opts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.bow-soundtrack-lists {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+  padding-top: 8px;
+  border-top: 1px solid var(--bow-line-soft);
+}
+
+.bow-st-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 0.74rem;
+}
+
+.bow-st-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.bow-track-pill {
+  width: auto !important;
+  margin: 0;
+  padding: 4px 9px;
+  min-height: 30px;
+  font-size: 0.74rem;
+}
+
+
 

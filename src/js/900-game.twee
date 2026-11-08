@@ -229,9 +229,37 @@
     },
     "audio-toggle": function () {
       if (!Bow.audio) { return { ok: true, message: "" }; }
+      var st = getState();
+      if (Bow.audio.syncMood) { Bow.audio.syncMood(st); }
       var on = Bow.audio.toggle();
+      var trk = Bow.audio.currentTrack ? Bow.audio.currentTrack() : null;
       if (Bow.ui.renderSettings) { Bow.ui.renderSettings(); }
-      return { ok: true, message: on ? "Включён северный средневековый эмбиент." : "Музыка выключена." };
+      return {
+        ok: true,
+        message: on
+          ? ("♪ Звучит: «" + (trk ? trk.title : "Северный саундтрек") + "».")
+          : "Музыка выключена."
+      };
+    },
+    "audio-track": function (el) {
+      if (!Bow.audio || !Bow.audio.selectTrack) { return { ok: true, message: "" }; }
+      var chosen = Bow.audio.selectTrack(el.getAttribute("data-track"));
+      if (!Bow.audio.isEnabled()) { Bow.audio.start(); }
+      if (Bow.ui.renderSettings) { Bow.ui.renderSettings(); }
+      return { ok: true, message: chosen ? ("♪ Включена композиция: «" + chosen.title + "».") : "" };
+    },
+    "audio-next": function () {
+      if (!Bow.audio || !Bow.audio.nextTrack) { return { ok: true, message: "" }; }
+      var nxt = Bow.audio.nextTrack();
+      if (!Bow.audio.isEnabled()) { Bow.audio.start(); }
+      if (Bow.ui.renderSettings) { Bow.ui.renderSettings(); }
+      return { ok: true, message: nxt ? ("♪ Следующая композиция: «" + nxt.title + "».") : "" };
+    },
+    "audio-auto": function () {
+      if (!Bow.audio || !Bow.audio.setAutoMode) { return { ok: true, message: "" }; }
+      var cur = Bow.audio.setAutoMode(getState());
+      if (Bow.ui.renderSettings) { Bow.ui.renderSettings(); }
+      return { ok: true, message: "Автовыбор музыки по месту: «" + (cur ? cur.title : "") + "»." };
     },
     buy: function (el) { return Bow.adapter.act.buy(getState(), el.getAttribute("data-key"), 1); },
     sell: function (el) { return Bow.adapter.act.sell(getState(), el.getAttribute("data-key"), 1); },

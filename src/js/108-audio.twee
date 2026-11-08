@@ -1,59 +1,292 @@
 :: bow-audio [script]
 /* ============================================================
-   BOW AUDIO — спокойный средневековый северный эмбиент (Web Audio API).
-   Работает полностью офлайн внутри одного HTML без внешних файлов:
-     • глубокий тёплый бурдон квинты (виола / тальхарпа в ре-дорийском ладу);
-     • неспешный мягкий перебор лютни / северных гуслей с живыми паузами;
-     • редкое дыхание продольной деревянной флейты;
-     • процедурная пространственная реверберация деревянного зала.
+   BOW AUDIO 0.0.7.6 — Северный средневековый саундтрек (Web Audio API).
+   Полностью автономный процедурно-акустический движок без внешних MP3:
+     • Физическое моделирование щипковой жильной лютни и северной арфы
+       (волновод Карплуса — Стронга с точной дробной задержкой и резонансом деки);
+     • Бархатный ансамбль смычковых (виолончели / виолы), благородные рога,
+       продольная деревянная флейта с дыханием, далёкий северный хор (форманты)
+       и мягкий кожаный бубен бодран / походные литавры;
+     • Два раздельных свёрточных пространства (ConvolverNode):
+       1) «Тёплый сруб» (1.45 с) — для публичных помещений (трактир, кузница);
+       2) «Морозная долина» (3.6 с) — для улиц, площади, околицы и тайги;
+     • 8 авторских композиций-вариаций в двух пулах:
+       — В ПОМЕЩЕНИИ (в духе Around the Fire):
+         1. «Угли у очага»
+         2. «Мёд и наковальня»
+         3. «Былина старого сруба»
+         4. «Янтарный хмель»
+       — НА УЛИЦЕ (в духе Dragonsreach, Frostfall, Tundra, Unbroken Road):
+         5. «Чертоги Студёного Брода»
+         6. «Хладный иней»
+         7. «Белое безмолвие»
+         8. «Непреклонный тракт»
    Безопасно деградирует в средах без Web Audio (например, JSDOM-тесты).
    ============================================================ */
 (function (global) {
   "use strict";
 
   var Bow = global.Bow = global.Bow || {};
-  var STORAGE_KEY = "bow-audio-v1";
+  var STORAGE_KEY = "bow-audio-v2";
+
+  /* ---------- Каталог 8 композиций саундтрека ----------
+     MIDI-ноты:
+     D2=38, E2=40, F2=41, G2=43, A2=45, Bb2=46, B2=47,
+     C3=48, D3=50, E3=52, F3=53, G3=55, G#3=56, A3=57, Bb3=58, B3=59,
+     C4=60, D4=62, E4=64, F4=65, F#4=66, G4=67, G#4=68, A4=69, Bb4=70, B4=71,
+     C5=72, D5=74, E5=76, F5=77, G5=79, A5=81 */
+  var TRACKS = [
+    /* ==================== ПУБЛИЧНЫЕ ПОМЕЩЕНИЯ (Трактир, Кузница) ==================== */
+    {
+      id: "hearth_embers",
+      title: "Угли у очага",
+      subtitle: "Трактир и тёплый сруб · лютня, флейта и бубен",
+      realm: "indoor",
+      bpm: 82,
+      meter: 3,        // 3/4 средневековая баллада (по духу Around the Fire, A minor / Dorian)
+      subPerBeat: 2,   // 6 восьмых в такте
+      style: "tavern_waltz",
+      bars: [
+        /* Раздел A (8 тактов): Am - G - Dm - E7 - Am - C - Dm7 - E7 */
+        { bass: 45, chord: [57, 60, 64, 69], mel: [69, -1, 72, 71, 69, 67], drum: 1 },
+        { bass: 43, chord: [55, 59, 62, 67], mel: [67, -1, 69, 67, 64, -1], drum: 1 },
+        { bass: 50, chord: [57, 62, 65, 69], mel: [65, -1, 67, 65, 64, 62], drum: 1 },
+        { bass: 40, chord: [56, 59, 64, 68], mel: [64, -1, -1, 62, 64, 68], drum: 1 },
+        { bass: 45, chord: [57, 60, 64, 69], mel: [69, -1, 72, 74, 72, 69], drum: 1 },
+        { bass: 48, chord: [55, 60, 64, 67], mel: [76, -1, 74, 72, 69, 67], drum: 1 },
+        { bass: 50, chord: [57, 60, 65, 69], mel: [65, 67, 69, -1, 67, 65], drum: 1 },
+        { bass: 40, chord: [52, 56, 59, 64], mel: [64, -1, -1, -1, -1, -1], drum: 1 },
+        /* Раздел B (8 тактов): Fmaj7 - G - Em7 - Am - Dm - G - C/E7 - Am */
+        { bass: 41, chord: [53, 57, 60, 64], mel: [69, -1, 69, 72, 71, 69], drum: 1 },
+        { bass: 43, chord: [55, 59, 62, 67], mel: [71, -1, 72, 74, 71, 67], drum: 1 },
+        { bass: 40, chord: [52, 55, 59, 64], mel: [67, -1, 64, 67, 69, 71], drum: 1 },
+        { bass: 45, chord: [57, 60, 64, 69], mel: [69, -1, 64, -1, 64, 67], drum: 1 },
+        { bass: 50, chord: [57, 62, 65, 69], mel: [69, -1, 74, 72, 69, 65], drum: 1 },
+        { bass: 43, chord: [55, 59, 62, 67], mel: [67, -1, 69, 67, 64, 62], drum: 1 },
+        { bass: 48, chord: [55, 60, 64, 68], mel: [64, 65, 64, 62, 60, 59], drum: 1 },
+        { bass: 45, chord: [52, 57, 60, 69], mel: [57, -1, -1, -1, -1, -1], drum: 1 }
+      ]
+    },
+    {
+      id: "mead_and_anvil",
+      title: "Мёд и наковальня",
+      subtitle: "Кузница и людная зала · перекличка лютен и арфы",
+      realm: "indoor",
+      bpm: 88,
+      meter: 3,        // Упругий ремесленно-трактирный шаг в Ре дорийском ладу (D Dorian)
+      subPerBeat: 2,
+      style: "tavern_lively",
+      bars: [
+        /* D Dorian: Dm - C - G/B - Dm - F - C - Am7 - Dm */
+        { bass: 50, chord: [57, 62, 65, 69], mel: [62, 64, 65, 69, 67, 65], drum: 2 },
+        { bass: 48, chord: [55, 60, 64, 67], mel: [64, -1, 67, 64, 60, -1], drum: 2 },
+        { bass: 47, chord: [55, 59, 62, 67], mel: [67, 69, 71, -1, 69, 67], drum: 2 },
+        { bass: 50, chord: [57, 62, 65, 69], mel: [69, -1, 65, 62, -1, -1], drum: 2 },
+        { bass: 41, chord: [53, 57, 60, 65], mel: [69, 72, 74, -1, 72, 69], drum: 2 },
+        { bass: 48, chord: [55, 60, 64, 67], mel: [72, -1, 69, 67, 64, 60], drum: 2 },
+        { bass: 45, chord: [52, 57, 60, 64], mel: [64, 65, 67, 65, 64, 60], drum: 2 },
+        { bass: 50, chord: [57, 62, 65, 69], mel: [62, -1, -1, -1, -1, -1], drum: 2 },
+        /* Раздел B: Gm - Dm - C - F - Bb - C - Asus4 - Dm */
+        { bass: 43, chord: [55, 58, 62, 67], mel: [70, -1, 69, 67, 65, 62], drum: 2 },
+        { bass: 50, chord: [57, 62, 65, 69], mel: [65, -1, 69, 74, 72, 69], drum: 2 },
+        { bass: 48, chord: [55, 60, 64, 67], mel: [72, -1, 67, -1, 64, 67], drum: 2 },
+        { bass: 41, chord: [53, 57, 60, 65], mel: [69, -1, 65, 60, -1, -1], drum: 2 },
+        { bass: 46, chord: [53, 58, 62, 65], mel: [65, 67, 70, -1, 69, 65], drum: 2 },
+        { bass: 48, chord: [55, 60, 64, 67], mel: [67, -1, 69, 67, 64, 60], drum: 2 },
+        { bass: 45, chord: [52, 57, 62, 64], mel: [64, -1, 62, 61, 62, 64], drum: 2 },
+        { bass: 50, chord: [57, 62, 65, 69], mel: [62, -1, -1, -1, -1, -1], drum: 2 }
+      ]
+    },
+    {
+      id: "timber_hall_tale",
+      title: "Былина старого сруба",
+      subtitle: "Ночной очаг · глубокая лютня и продольная флейта",
+      realm: "indoor",
+      bpm: 72,
+      meter: 3,        // Задумчивая вечерняя баллада в Ми эолийском/дорийском ладу (E minor)
+      subPerBeat: 2,
+      style: "tavern_calm",
+      bars: [
+        { bass: 40, chord: [52, 55, 59, 64], mel: [64, -1, 67, 66, 64, 59], drum: 0 },
+        { bass: 50, chord: [54, 57, 62, 66], mel: [66, -1, 64, 62, -1, -1], drum: 0 },
+        { bass: 48, chord: [55, 59, 60, 64], mel: [64, -1, 67, 71, 69, 67], drum: 0 },
+        { bass: 47, chord: [54, 59, 63, 66], mel: [66, -1, -1, -1, -1, -1], drum: 0 },
+        { bass: 40, chord: [52, 55, 59, 64], mel: [71, -1, 74, 71, 67, 64], drum: 1 },
+        { bass: 43, chord: [55, 59, 62, 67], mel: [67, -1, 69, 67, 62, -1], drum: 1 },
+        { bass: 45, chord: [52, 57, 60, 64], mel: [64, 66, 67, -1, 66, 64], drum: 1 },
+        { bass: 47, chord: [54, 59, 62, 66], mel: [63, -1, -1, -1, -1, -1], drum: 0 },
+        { bass: 48, chord: [55, 60, 64, 67], mel: [72, -1, 71, 69, 67, 64], drum: 1 },
+        { bass: 50, chord: [57, 62, 66, 69], mel: [69, -1, 66, 62, -1, -1], drum: 1 },
+        { bass: 47, chord: [54, 59, 62, 66], mel: [66, -1, 67, 66, 62, 59], drum: 1 },
+        { bass: 40, chord: [52, 55, 59, 64], mel: [64, -1, -1, -1, -1, -1], drum: 0 }
+      ]
+    },
+    {
+      id: "amber_ale",
+      title: "Янтарный хмель",
+      subtitle: "Кружка у печи · светлый дуэт лютни и северной арфы",
+      realm: "indoor",
+      bpm: 86,
+      meter: 3,        // Светлая баллада G / Em (в духе тёплой середины Around the Fire)
+      subPerBeat: 2,
+      style: "tavern_waltz",
+      bars: [
+        { bass: 43, chord: [55, 59, 62, 67], mel: [67, -1, 71, 74, 71, 67], drum: 1 },
+        { bass: 50, chord: [57, 62, 66, 69], mel: [69, -1, 66, 62, 66, 69], drum: 1 },
+        { bass: 40, chord: [52, 55, 59, 64], mel: [67, -1, 64, 59, -1, -1], drum: 1 },
+        { bass: 48, chord: [55, 60, 64, 67], mel: [64, 67, 69, -1, 67, 64], drum: 1 },
+        { bass: 43, chord: [55, 59, 62, 67], mel: [71, -1, 74, 76, 74, 71], drum: 1 },
+        { bass: 45, chord: [52, 57, 60, 64], mel: [72, -1, 69, 67, 64, -1], drum: 1 },
+        { bass: 48, chord: [55, 60, 64, 67], mel: [67, -1, 69, 67, 66, 62], drum: 1 },
+        { bass: 50, chord: [54, 57, 62, 66], mel: [66, -1, -1, -1, -1, -1], drum: 1 },
+        { bass: 40, chord: [52, 55, 59, 64], mel: [64, -1, 67, 71, 69, 67], drum: 1 },
+        { bass: 48, chord: [55, 60, 64, 67], mel: [72, -1, 71, 67, 64, -1], drum: 1 },
+        { bass: 43, chord: [55, 59, 62, 67], mel: [67, 69, 71, -1, 69, 66], drum: 1 },
+        { bass: 40, chord: [52, 55, 59, 64], mel: [64, -1, -1, -1, -1, -1], drum: 1 }
+      ]
+    },
+
+    /* ==================== УЛИЦА, ПЛОЩАДЬ, ОКОЛИЦА И ТАЙГА ==================== */
+    {
+      id: "citadel_of_ford",
+      title: "Чертоги Студёного Брода",
+      subtitle: "Площадь и переправа · виолончели, рога и арфа",
+      realm: "outdoor",
+      bpm: 62,
+      meter: 3,        // Строгая северная тема поселения (по духу Dragonsreach, D minor)
+      subPerBeat: 2,
+      style: "outdoor_noble",
+      bars: [
+        { bass: 38, pad: [50, 57, 62, 65], harp: [50, 57, 62, 65, 62, 57], horn: 57, mel: [-1, -1, -1, -1, -1, -1] },
+        { bass: 46, pad: [46, 53, 58, 62], harp: [53, 58, 62, 65, 62, 58], horn: -1, mel: [65, -1, 64, 62, -1, -1] },
+        { bass: 48, pad: [48, 55, 60, 64], harp: [55, 60, 64, 67, 64, 60], horn: 60, mel: [-1, -1, -1, -1, -1, -1] },
+        { bass: 38, pad: [50, 57, 62, 65], harp: [50, 57, 62, 69, 65, 62], horn: -1, mel: [62, -1, -1, -1, -1, -1] },
+        { bass: 43, pad: [43, 55, 58, 62], harp: [55, 58, 62, 67, 62, 58], horn: 62, mel: [67, -1, 69, 70, 69, 67] },
+        { bass: 41, pad: [41, 53, 57, 62], harp: [53, 57, 62, 65, 62, 57], horn: -1, mel: [65, -1, 62, 57, -1, -1] },
+        { bass: 48, pad: [48, 55, 60, 64], harp: [55, 60, 64, 67, 64, 55], horn: 55, mel: [60, -1, 62, 64, -1, -1] },
+        { bass: 45, pad: [45, 52, 57, 62], harp: [52, 57, 62, 64, 61, 57], horn: 57, mel: [61, -1, -1, -1, -1, -1] },
+        { bass: 38, pad: [50, 57, 62, 65], harp: [50, 57, 62, 69, 74, 69], horn: 62, mel: [69, -1, 74, 72, 69, 65] },
+        { bass: 46, pad: [46, 53, 58, 65], harp: [53, 58, 62, 70, 65, 58], horn: -1, mel: [70, -1, 69, 65, 62, -1] },
+        { bass: 43, pad: [43, 50, 58, 62], harp: [50, 55, 58, 67, 62, 55], horn: 58, mel: [67, -1, 65, 64, 62, 60] },
+        { bass: 38, pad: [38, 50, 57, 62], harp: [50, 57, 62, 65, 62, 50], horn: 50, mel: [62, -1, -1, -1, -1, -1] }
+      ]
+    },
+    {
+      id: "rime_and_stars",
+      title: "Хладный иней",
+      subtitle: "Морозный воздух и сумерки · хрустальная арфа и хор",
+      realm: "outdoor",
+      bpm: 64,
+      meter: 4,        // Прозрачная зимняя магия (по духу Frostfall, Em9 / Asus2 / Dadd9)
+      subPerBeat: 2,   // 8 восьмых в такте
+      style: "outdoor_frost",
+      bars: [
+        { bass: 40, pad: [52, 59, 64, 66], choir: 64, harp: [64, 66, 71, 76, 71, 66, 64, 59], mel: [-1, -1, 76, -1, 74, 71, -1, -1] },
+        { bass: 48, pad: [48, 55, 60, 66], choir: -1, harp: [60, 64, 67, 74, 71, 67, 64, 60], mel: [-1, -1, -1, -1, -1, -1, -1, -1] },
+        { bass: 45, pad: [45, 52, 57, 59], choir: 69, harp: [57, 59, 64, 71, 69, 64, 59, 57], mel: [-1, -1, 71, -1, 69, 64, -1, -1] },
+        { bass: 50, pad: [50, 57, 62, 64], choir: -1, harp: [57, 62, 66, 74, 69, 66, 62, 57], mel: [-1, -1, -1, -1, -1, -1, -1, -1] },
+        { bass: 40, pad: [52, 59, 64, 67], choir: 71, harp: [64, 67, 71, 79, 76, 71, 67, 64], mel: [79, -1, 76, -1, 74, -1, 71, -1] },
+        { bass: 43, pad: [43, 55, 59, 66], choir: -1, harp: [59, 62, 67, 74, 71, 67, 62, 59], mel: [-1, -1, -1, -1, -1, -1, -1, -1] },
+        { bass: 48, pad: [48, 55, 60, 64], choir: 67, harp: [60, 64, 67, 72, 67, 64, 60, 55], mel: [72, -1, 71, -1, 69, -1, 67, -1] },
+        { bass: 47, pad: [47, 54, 59, 64], choir: 66, harp: [54, 59, 64, 71, 66, 64, 59, 54], mel: [66, -1, -1, -1, -1, -1, -1, -1] }
+      ]
+    },
+    {
+      id: "white_silence",
+      title: "Белое безмолвие",
+      subtitle: "Околица и речной ветер · смычковые волны и северный хор",
+      realm: "outdoor",
+      bpm: 54,
+      meter: 4,        // Одинокий северный простор (по духу Tundra, D Aeolian: Dm - Bbmaj7 - Gm6 - Asus4)
+      subPerBeat: 2,
+      style: "outdoor_tundra",
+      bars: [
+        { bass: 38, pad: [50, 57, 62, 64], choir: 69, harp: [57, -1, 62, -1, 65, -1, 69, -1], mel: [-1, -1, 69, -1, 70, 69, 65, -1] },
+        { bass: 46, pad: [46, 53, 58, 65], choir: 70, harp: [58, -1, 62, -1, 65, -1, 70, -1], mel: [65, -1, -1, -1, -1, -1, -1, -1] },
+        { bass: 43, pad: [43, 50, 58, 64], choir: 67, harp: [55, -1, 58, -1, 62, -1, 67, -1], mel: [-1, -1, 67, -1, 65, 64, 62, -1] },
+        { bass: 45, pad: [45, 52, 57, 62], choir: 64, harp: [52, -1, 57, -1, 61, -1, 64, -1], mel: [64, -1, 61, -1, -1, -1, -1, -1] },
+        { bass: 38, pad: [50, 57, 62, 65], choir: 74, harp: [57, -1, 62, -1, 69, -1, 74, -1], mel: [74, -1, 72, -1, 70, -1, 69, -1] },
+        { bass: 46, pad: [46, 53, 58, 62], choir: 70, harp: [53, -1, 58, -1, 65, -1, 70, -1], mel: [70, -1, 69, 65, 62, -1, -1, -1] },
+        { bass: 48, pad: [48, 55, 60, 64], choir: 67, harp: [55, -1, 60, -1, 64, -1, 67, -1], mel: [64, -1, 65, -1, 67, -1, 69, -1] },
+        { bass: 38, pad: [38, 50, 57, 62], choir: 62, harp: [50, -1, 57, -1, 62, -1, -1, -1], mel: [62, -1, -1, -1, -1, -1, -1, -1] }
+      ]
+    },
+    {
+      id: "unbroken_tract",
+      title: "Непреклонный тракт",
+      subtitle: "Опушка Матери-Тайги и дальний путь · рога, литавры и струнные",
+      realm: "outdoor",
+      bpm: 68,
+      meter: 4,        // Суровая величавая поступь севера (по духу Unbroken Road, A Aeolian)
+      subPerBeat: 2,
+      style: "outdoor_epic",
+      bars: [
+        { bass: 45, pad: [45, 52, 57, 60], horn: 57, choir: -1, harp: [57, 60, 64, 69, 64, 60, 57, 52], drum: 3, mel: [57, -1, 60, -1, 62, -1, 64, -1] },
+        { bass: 41, pad: [41, 53, 57, 60], horn: 60, choir: 69, harp: [53, 57, 60, 69, 64, 60, 57, 53], drum: 3, mel: [65, -1, 64, -1, 60, -1, -1, -1] },
+        { bass: 50, pad: [50, 57, 62, 65], horn: 62, choir: -1, harp: [57, 62, 65, 69, 65, 62, 57, 50], drum: 3, mel: [62, -1, 64, -1, 65, -1, 69, -1] },
+        { bass: 43, pad: [43, 55, 59, 62], horn: 59, choir: 67, harp: [55, 59, 62, 67, 64, 59, 56, 52], drum: 3, mel: [67, -1, 64, -1, 68, -1, -1, -1] },
+        { bass: 45, pad: [45, 52, 57, 64], horn: 69, choir: 69, harp: [57, 60, 64, 72, 69, 64, 60, 57], drum: 3, mel: [69, -1, 72, -1, 74, -1, 72, 69] },
+        { bass: 41, pad: [41, 53, 57, 64], horn: 65, choir: 72, harp: [53, 57, 60, 72, 69, 65, 60, 57], drum: 3, mel: [76, -1, 74, 72, 69, -1, -1, -1] },
+        { bass: 50, pad: [50, 57, 62, 65], horn: 62, choir: 69, harp: [57, 62, 65, 74, 71, 67, 62, 59], drum: 3, mel: [71, -1, 72, 71, 69, -1, 68, -1] },
+        { bass: 45, pad: [45, 52, 57, 60], horn: 57, choir: 69, harp: [52, 57, 60, 69, 64, 60, 57, -1], drum: 3, mel: [69, -1, -1, -1, -1, -1, -1, -1] }
+      ]
+    }
+  ];
 
   var state = {
     enabled: false,
     volume: 0.45,
-    mood: "calm" // calm | tavern | wild | combat
+    mode: "auto",         // "auto" (по локации: помещение vs улица) | "manual"
+    realm: "outdoor",     // "indoor" | "outdoor"
+    location: "square",
+    mood: "calm",
+    trackId: "citadel_of_ford"
   };
 
+  /* Внутренние узлы Web Audio */
   var ctx = null;
   var masterGain = null;
-  var reverbNode = null;
-  var dryGain = null;
-  var wetGain = null;
-  var droneNodes = null;
-  var phraseTimer = null;
-  var stepIdx = 0;
+  var indoorBus = null;
+  var outdoorBus = null;
+  var indoorDry = null;
+  var indoorWet = null;
+  var outdoorDry = null;
+  var outdoorWet = null;
+  var pluckCache = {};
 
-  /* Ре-дорийский северный средневековый звукоряд (D Dorian, тёплый строй) */
-  var DORIAN_LUTE = [
-    146.83, // D3
-    164.81, // E3
-    174.61, // F3
-    196.00, // G3
-    220.00, // A3
-    246.94, // B3
-    261.63, // C4
-    293.66, // D4
-    329.63, // E4
-    349.23, // F4
-    392.00, // G4
-    440.00  // A4
-  ];
+  /* Планировщик точного времени Web Audio */
+  var schedulerTimer = null;
+  var nextSubTime = 0;
+  var curBarIdx = 0;
+  var curSubIdx = 0;
+  var barsPlayedInTrack = 0;
 
-  /* Спокойные средневековые фразы (индексы в DORIAN_LUTE, -1 = пауза дыхания) */
-  var PHRASES = [
-    [0, 4, 7, 6, 4, -1, -1],
-    [2, 4, 7, 9, 7, -1, -1],
-    [0, 3, 4, 7, -1, 4, -1],
-    [4, 7, 8, 7, 4, 2, -1],
-    [0, 4, 6, 7, -1, -1, -1],
-    [3, 6, 7, 10, 7, 4, -1]
-  ];
+  function midiToFreq(midi) {
+    return 440 * Math.pow(2, (midi - 69) / 12);
+  }
+
+  function trackById(id) {
+    for (var i = 0; i < TRACKS.length; i++) {
+      if (TRACKS[i].id === id) { return TRACKS[i]; }
+    }
+    return TRACKS[0];
+  }
+
+  function tracksByRealm(realm) {
+    return TRACKS.filter(function (t) { return t.realm === realm; });
+  }
+
+  function realmForLocation(locKey) {
+    return (locKey === "tavern" || locKey === "smithy") ? "indoor" : "outdoor";
+  }
+
+  function preferredTrackForLocation(locKey, isNight) {
+    if (locKey === "tavern") { return isNight ? "timber_hall_tale" : "hearth_embers"; }
+    if (locKey === "smithy") { return "mead_and_anvil"; }
+    if (locKey === "forest") { return "unbroken_tract"; }
+    if (locKey === "outskirts") { return isNight ? "rime_and_stars" : "white_silence"; }
+    return isNight ? "rime_and_stars" : "citadel_of_ford";
+  }
 
   function loadPrefs() {
     try {
@@ -66,6 +299,12 @@
       if (parsed && typeof parsed.enabled === "boolean") {
         state.enabled = parsed.enabled;
       }
+      if (parsed && (parsed.mode === "auto" || parsed.mode === "manual")) {
+        state.mode = parsed.mode;
+      }
+      if (parsed && typeof parsed.trackId === "string" && trackById(parsed.trackId)) {
+        state.trackId = parsed.trackId;
+      }
     } catch (e) {}
   }
 
@@ -74,7 +313,9 @@
       if (global.localStorage) {
         global.localStorage.setItem(STORAGE_KEY, JSON.stringify({
           enabled: state.enabled,
-          volume: state.volume
+          volume: state.volume,
+          mode: state.mode,
+          trackId: state.trackId
         }));
       }
     } catch (e) {}
@@ -84,30 +325,94 @@
     return !!(global.AudioContext || global.webkitAudioContext);
   }
 
-  /* Создаём мягкий импульс деревянного зала / северного сруба для ConvolverNode */
-  function buildReverbImpulse(audioCtx) {
+  /* ---------- Импульсные отклики свёрточной реверберации ----------
+     1) Тёплый бревенчатый зал трактира / кузни (1.45 с, мягкое дерево);
+     2) Просторная морозная долина Хладных Ветров (3.6 с, широкая стереопанорама). */
+  function buildImpulseResponse(audioCtx, seconds, damping, earlyBoost, seedStart) {
     var rate = audioCtx.sampleRate || 44100;
-    var seconds = 2.6;
     var len = Math.floor(rate * seconds);
-    var impulse = audioCtx.createBuffer(2, len, rate);
-    var seed = 918273;
+    var buf = audioCtx.createBuffer(2, len, rate);
+    var seed = seedStart || 419283;
     function nextRand() {
       seed = (seed * 1664525 + 1013904223) >>> 0;
       return (seed / 4294967296) * 2 - 1;
     }
     for (var ch = 0; ch < 2; ch++) {
-      var data = impulse.getChannelData(ch);
-      var prev = 0;
+      var d = buf.getChannelData(ch);
+      var lp = 0;
       for (var i = 0; i < len; i++) {
         var t = i / len;
-        var env = Math.pow(1 - t, 2.8);
-        /* Мягкая фильтрация ВЧ, чтобы эхо было тёплым, как дерево и камень */
-        var white = nextRand();
-        prev = prev * 0.72 + white * 0.28;
-        data[i] = prev * env * 0.55;
+        var env = Math.pow(1 - t, 2.55);
+        var w = nextRand();
+        lp = lp * damping + w * (1 - damping);
+        var sample = lp * env * 0.48;
+        /* Ранние отражения бревенчатых стен для камерности трактира */
+        if (earlyBoost && i > 0 && (i === Math.floor(rate * 0.019) || i === Math.floor(rate * 0.037) || i === Math.floor(rate * 0.061))) {
+          sample += (ch === 0 ? 0.22 : -0.19) * earlyBoost;
+        }
+        d[i] = sample;
       }
     }
-    return impulse;
+    return buf;
+  }
+
+  /* ---------- Физическая модель щипковой жильной струны Карплуса — Стронга ----------
+     Генерирует реалистичный акустический буфер щипка лютни или арфы
+     с точной линейной интерполяцией длины струны и тёплым деревянным затуханием. */
+  function getPluckBuffer(midi, kind) {
+    if (!ctx) { return null; }
+    var key = kind + ":" + midi;
+    if (pluckCache[key]) { return pluckCache[key]; }
+
+    var sr = ctx.sampleRate || 44100;
+    var freq = midiToFreq(midi);
+    var dur = kind === "harp" ? 3.2 : 2.5;
+    var total = Math.floor(sr * dur);
+    var buf = ctx.createBuffer(1, total, sr);
+    var out = buf.getChannelData(0);
+
+    var exactPeriod = sr / freq;
+    var N = Math.max(8, Math.floor(exactPeriod));
+    var frac = exactPeriod - N;
+    var ring = new Float32Array(N + 2);
+
+    /* Начальное возбуждение пальцем по жильной струне (мягкое, без металлического треска) */
+    var seed = (midi * 977 + (kind === "harp" ? 31337 : 12345)) >>> 0;
+    var smooth = 0;
+    var alpha = kind === "harp" ? 0.46 : 0.34;
+    for (var i = 0; i < N + 2; i++) {
+      seed = (seed * 1664525 + 1013904223) >>> 0;
+      var n = (seed / 4294967296) * 2 - 1;
+      /* Плавное купольное окно щипка посередине струны */
+      var windowShape = Math.sin(Math.PI * Math.min(1, i / N));
+      smooth = smooth * (1 - alpha) + n * alpha;
+      ring[i] = smooth * (0.65 + 0.35 * windowShape);
+    }
+
+    var decay = kind === "harp"
+      ? Math.min(0.9978, 0.9925 + (midi - 38) * 0.0001)
+      : Math.min(0.9958, 0.9895 + (midi - 38) * 0.00011);
+    var brightness = kind === "harp" ? 0.34 : 0.46; // 0.5 = максимальное сглаживание (тёплая жила)
+
+    var idx = 0;
+    var prevOut = 0;
+    for (var s = 0; s < total; s++) {
+      var nextIdx = (idx + 1) % N;
+      var nextIdx2 = (idx + 2) % N;
+      /* Дробная задержка для безупречного строя на высоких ладах */
+      var delayed = ring[idx] * (1 - frac) + ring[nextIdx] * frac;
+      var delayedNext = ring[nextIdx] * (1 - frac) + ring[nextIdx2] * frac;
+      var filtered = ((1 - brightness) * delayed + brightness * delayedNext) * decay;
+      ring[idx] = filtered;
+      idx = nextIdx;
+
+      /* Лёгкий резонанс корпуса в первых миллисекундах */
+      prevOut = prevOut * 0.14 + delayed * 0.86;
+      out[s] = prevOut;
+    }
+
+    pluckCache[key] = buf;
+    return buf;
   }
 
   function ensureContext() {
@@ -118,233 +423,517 @@
       ctx = new Ctor();
       masterGain = ctx.createGain();
       masterGain.gain.value = 0.0001;
-
-      dryGain = ctx.createGain();
-      dryGain.gain.value = 0.52;
-
-      wetGain = ctx.createGain();
-      wetGain.gain.value = 0.58;
-
-      reverbNode = ctx.createConvolver();
-      reverbNode.buffer = buildReverbImpulse(ctx);
-
-      dryGain.connect(masterGain);
-      wetGain.connect(reverbNode);
-      reverbNode.connect(masterGain);
       masterGain.connect(ctx.destination);
+
+      /* Шина 1: Тёплое помещение (Трактир, Кузница) */
+      indoorBus = ctx.createGain();
+      indoorBus.gain.value = 1.0;
+      indoorDry = ctx.createGain();
+      indoorDry.gain.value = 0.72;
+      indoorWet = ctx.createGain();
+      indoorWet.gain.value = 0.38;
+      var inRev = ctx.createConvolver();
+      inRev.buffer = buildImpulseResponse(ctx, 1.45, 0.76, 0.8, 108271);
+      indoorDry.connect(indoorBus);
+      indoorWet.connect(inRev);
+      inRev.connect(indoorBus);
+      indoorBus.connect(masterGain);
+
+      /* Шина 2: Северный простор (Площадь, Околица, Тайга) */
+      outdoorBus = ctx.createGain();
+      outdoorBus.gain.value = 1.0;
+      outdoorDry = ctx.createGain();
+      outdoorDry.gain.value = 0.48;
+      outdoorWet = ctx.createGain();
+      outdoorWet.gain.value = 0.68;
+      var outRev = ctx.createConvolver();
+      outRev.buffer = buildImpulseResponse(ctx, 3.55, 0.82, 0.25, 791233);
+      outdoorDry.connect(outdoorBus);
+      outdoorWet.connect(outRev);
+      outRev.connect(outdoorBus);
+      outdoorBus.connect(masterGain);
     } catch (e) {
       ctx = null;
     }
     return ctx;
   }
 
-  function startDrone() {
-    if (!ctx || droneNodes) { return; }
-    var now = ctx.currentTime;
-
-    var rootOsc = ctx.createOscillator();
-    var fifthOsc = ctx.createOscillator();
-    var lfo = ctx.createOscillator();
-    var lfoGain = ctx.createGain();
-    var filter = ctx.createBiquadFilter();
-    var gain = ctx.createGain();
-
-    rootOsc.type = "triangle";
-    rootOsc.frequency.setValueAtTime(73.42, now); // D2
-
-    fifthOsc.type = "sine";
-    fifthOsc.frequency.setValueAtTime(110.00, now); // A2
-
-    filter.type = "lowpass";
-    filter.frequency.setValueAtTime(210, now);
-    filter.Q.value = 0.7;
-
-    lfo.type = "sine";
-    lfo.frequency.setValueAtTime(0.065, now);
-    lfoGain.gain.value = 42;
-    lfo.connect(lfoGain);
-    lfoGain.connect(filter.frequency);
-
-    gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.linearRampToValueAtTime(0.055, now + 2.4);
-
-    rootOsc.connect(filter);
-    fifthOsc.connect(filter);
-    filter.connect(gain);
-    gain.connect(dryGain);
-    gain.connect(wetGain);
-
-    rootOsc.start(now);
-    fifthOsc.start(now);
-    lfo.start(now);
-
-    droneNodes = { rootOsc: rootOsc, fifthOsc: fifthOsc, lfo: lfo, filter: filter, gain: gain };
+  function routeToRealm(node, realm, panVal) {
+    var targetDry = realm === "indoor" ? indoorDry : outdoorDry;
+    var targetWet = realm === "indoor" ? indoorWet : outdoorWet;
+    if (ctx.createStereoPanner && typeof panVal === "number") {
+      var panner = ctx.createStereoPanner();
+      panner.pan.value = Math.max(-0.85, Math.min(0.85, panVal));
+      node.connect(panner);
+      panner.connect(targetDry);
+      panner.connect(targetWet);
+    } else {
+      node.connect(targetDry);
+      node.connect(targetWet);
+    }
   }
 
-  function stopDrone() {
-    if (!droneNodes || !ctx) { droneNodes = null; return; }
-    var n = droneNodes;
-    droneNodes = null;
-    try {
-      var now = ctx.currentTime;
-      n.gain.gain.cancelScheduledValues(now);
-      n.gain.gain.setValueAtTime(n.gain.gain.value || 0.03, now);
-      n.gain.gain.linearRampToValueAtTime(0.0001, now + 0.8);
-      global.setTimeout(function () {
-        try { n.rootOsc.stop(); n.fifthOsc.stop(); n.lfo.stop(); } catch (e) {}
-      }, 900);
-    } catch (e) {}
-  }
+  /* ---------- Инструмент 1: Щипковая лютня / северная арфа ---------- */
+  function playPluck(midi, when, gainVal, kind, realm, pan) {
+    if (!ctx || midi < 30) { return; }
+    var buf = getPluckBuffer(midi, kind || "lute");
+    if (!buf) { return; }
+    var src = ctx.createBufferSource();
+    src.buffer = buf;
 
-  /* Мягкий щипок деревянной лютни / гуслей */
-  function pluckNote(freq, delaySec, velocity) {
-    if (!ctx || !state.enabled) { return; }
-    var t0 = ctx.currentTime + (delaySec || 0);
-    var vel = (velocity || 0.5) * 0.11;
+    /* Деревянная дека лютни (подъём тёплой середины 235 Гц) */
+    var bodyEq = ctx.createBiquadFilter();
+    bodyEq.type = "peaking";
+    bodyEq.frequency.value = kind === "harp" ? 340 : 235;
+    bodyEq.Q.value = 1.1;
+    bodyEq.gain.value = kind === "harp" ? 2.5 : 4.2;
 
-    var osc1 = ctx.createOscillator();
-    var osc2 = ctx.createOscillator();
-    var filter = ctx.createBiquadFilter();
     var env = ctx.createGain();
+    env.gain.setValueAtTime(0.0001, when);
+    env.gain.linearRampToValueAtTime(gainVal, when + 0.006);
+    env.gain.exponentialRampToValueAtTime(0.0002, when + (kind === "harp" ? 2.9 : 2.2));
 
-    osc1.type = "triangle";
-    osc1.frequency.setValueAtTime(freq, t0);
+    src.connect(bodyEq);
+    bodyEq.connect(env);
+    routeToRealm(env, realm, pan || 0);
 
-    osc2.type = "sine";
-    osc2.frequency.setValueAtTime(freq * 2, t0);
-
-    var g2 = ctx.createGain();
-    g2.gain.value = 0.24;
-
-    filter.type = "lowpass";
-    filter.frequency.setValueAtTime(Math.min(1300, freq * 4.2), t0);
-    filter.frequency.exponentialRampToValueAtTime(Math.max(220, freq * 1.3), t0 + 2.2);
-
-    env.gain.setValueAtTime(0.0001, t0);
-    env.gain.linearRampToValueAtTime(vel, t0 + 0.028);
-    env.gain.exponentialRampToValueAtTime(0.0004, t0 + 3.1);
-
-    osc1.connect(filter);
-    osc2.connect(g2);
-    g2.connect(filter);
-    filter.connect(env);
-    env.connect(dryGain);
-    env.connect(wetGain);
-
-    osc1.start(t0);
-    osc2.start(t0);
-    osc1.stop(t0 + 3.25);
-    osc2.stop(t0 + 3.25);
+    src.start(when);
+    src.stop(when + (kind === "harp" ? 3.05 : 2.35));
   }
 
-  /* Редкое мягкое дыхание деревянной продольной флейты */
-  function fluteBreath(freq, delaySec) {
-    if (!ctx || !state.enabled) { return; }
-    var t0 = ctx.currentTime + (delaySec || 0);
-
+  /* ---------- Инструмент 2: Продольная деревянная флейта с дыханием ---------- */
+  function playFlute(midi, when, durSec, gainVal, realm, pan) {
+    if (!ctx || midi < 48) { return; }
+    var freq = midiToFreq(midi);
     var osc = ctx.createOscillator();
-    var vibrato = ctx.createOscillator();
+    var subHarm = ctx.createOscillator();
+    var vib = ctx.createOscillator();
     var vibGain = ctx.createGain();
-    var filter = ctx.createBiquadFilter();
+    var lp = ctx.createBiquadFilter();
     var env = ctx.createGain();
 
-    osc.type = "sine";
-    osc.frequency.setValueAtTime(freq, t0);
+    osc.type = "triangle";
+    osc.frequency.setValueAtTime(freq * 0.997, when);
+    osc.frequency.exponentialRampToValueAtTime(freq, when + 0.05);
 
-    vibrato.type = "sine";
-    vibrato.frequency.setValueAtTime(4.2, t0);
-    vibGain.gain.value = freq * 0.006;
-    vibrato.connect(vibGain);
+    subHarm.type = "sine";
+    subHarm.frequency.setValueAtTime(freq * 2, when);
+    var g2 = ctx.createGain();
+    g2.gain.value = 0.14;
+
+    /* Живое вибрато дыхания */
+    vib.type = "sine";
+    vib.frequency.setValueAtTime(4.7, when);
+    vibGain.gain.setValueAtTime(0.0, when);
+    vibGain.gain.linearRampToValueAtTime(freq * 0.0065, when + Math.min(0.35, durSec * 0.4));
+    vib.connect(vibGain);
     vibGain.connect(osc.frequency);
 
-    filter.type = "lowpass";
-    filter.frequency.value = 950;
+    lp.type = "lowpass";
+    lp.frequency.value = Math.min(1850, freq * 2.7);
+    lp.Q.value = 0.8;
 
-    env.gain.setValueAtTime(0.0001, t0);
-    env.gain.linearRampToValueAtTime(0.042, t0 + 1.1);
-    env.gain.setValueAtTime(0.038, t0 + 2.2);
-    env.gain.exponentialRampToValueAtTime(0.0002, t0 + 4.4);
+    var attack = Math.min(0.11, durSec * 0.28);
+    env.gain.setValueAtTime(0.0001, when);
+    env.gain.linearRampToValueAtTime(gainVal, when + attack);
+    env.gain.setValueAtTime(gainVal * 0.88, when + Math.max(attack + 0.02, durSec * 0.72));
+    env.gain.exponentialRampToValueAtTime(0.0002, when + durSec + 0.18);
 
-    osc.connect(filter);
-    filter.connect(env);
-    env.connect(wetGain);
-    env.connect(dryGain);
+    osc.connect(lp);
+    subHarm.connect(g2);
+    g2.connect(lp);
+    lp.connect(env);
+    routeToRealm(env, realm, pan || 0.12);
 
-    osc.start(t0);
-    vibrato.start(t0);
-    osc.stop(t0 + 4.55);
-    vibrato.stop(t0 + 4.55);
+    osc.start(when);
+    subHarm.start(when);
+    vib.start(when);
+    osc.stop(when + durSec + 0.22);
+    subHarm.stop(when + durSec + 0.22);
+    vib.stop(when + durSec + 0.22);
   }
 
-  function scheduleNextPhrase() {
-    if (phraseTimer) {
-      global.clearTimeout(phraseTimer);
-      phraseTimer = null;
+  /* ---------- Инструмент 3: Бархатный ансамбль смычковых (виолончели и виолы) ---------- */
+  function playBowedChord(midis, when, durSec, gainPerVoice, realm) {
+    if (!ctx || !midis || !midis.length) { return; }
+    for (var i = 0; i < midis.length; i++) {
+      var m = midis[i];
+      if (m < 30) { continue; }
+      var freq = midiToFreq(m);
+      var oscA = ctx.createOscillator();
+      var oscB = ctx.createOscillator();
+      var lp = ctx.createBiquadFilter();
+      var env = ctx.createGain();
+
+      oscA.type = "sawtooth";
+      oscB.type = "sawtooth";
+      oscA.frequency.setValueAtTime(freq * 0.9972, when);
+      oscB.frequency.setValueAtTime(freq * 1.0028, when);
+
+      /* Мягкий смычковый фильтр (как в Dragonsreach: тёплый спектр ~560–750 Гц без рези) */
+      lp.type = "lowpass";
+      lp.frequency.setValueAtTime(Math.min(720, freq * 2.6), when);
+      lp.frequency.linearRampToValueAtTime(Math.min(920, freq * 3.2), when + durSec * 0.48);
+      lp.frequency.linearRampToValueAtTime(Math.min(620, freq * 2.2), when + durSec);
+      lp.Q.value = 0.65;
+
+      var att = Math.min(1.15, durSec * 0.36);
+      env.gain.setValueAtTime(0.0001, when);
+      env.gain.linearRampToValueAtTime(gainPerVoice, when + att);
+      env.gain.setValueAtTime(gainPerVoice * 0.9, when + durSec * 0.68);
+      env.gain.exponentialRampToValueAtTime(0.0002, when + durSec + 0.65);
+
+      oscA.connect(lp);
+      oscB.connect(lp);
+      lp.connect(env);
+      var pan = ((i / Math.max(1, midis.length - 1)) - 0.5) * 0.7;
+      routeToRealm(env, realm, pan);
+
+      oscA.start(when);
+      oscB.start(when);
+      oscA.stop(when + durSec + 0.72);
+      oscB.stop(when + durSec + 0.72);
     }
+  }
+
+  /* ---------- Инструмент 4: Северный рог / валторна ---------- */
+  function playHorn(midi, when, durSec, gainVal) {
+    if (!ctx || midi < 36) { return; }
+    var freq = midiToFreq(midi);
+    var osc1 = ctx.createOscillator();
+    var osc2 = ctx.createOscillator();
+    var lp = ctx.createBiquadFilter();
+    var env = ctx.createGain();
+
+    osc1.type = "sawtooth";
+    osc2.type = "triangle";
+    osc1.frequency.setValueAtTime(freq * 0.998, when);
+    osc2.frequency.setValueAtTime(freq * 1.002, when);
+
+    lp.type = "lowpass";
+    lp.frequency.setValueAtTime(260, when);
+    lp.frequency.exponentialRampToValueAtTime(Math.min(820, freq * 3.4), when + durSec * 0.38);
+    lp.frequency.exponentialRampToValueAtTime(340, when + durSec + 0.3);
+    lp.Q.value = 1.25;
+
+    env.gain.setValueAtTime(0.0001, when);
+    env.gain.linearRampToValueAtTime(gainVal, when + Math.min(0.65, durSec * 0.32));
+    env.gain.exponentialRampToValueAtTime(0.0002, when + durSec + 0.45);
+
+    osc1.connect(lp);
+    osc2.connect(lp);
+    lp.connect(env);
+    routeToRealm(env, "outdoor", -0.18);
+
+    osc1.start(when);
+    osc2.start(when);
+    osc1.stop(when + durSec + 0.5);
+    osc2.stop(when + durSec + 0.5);
+  }
+
+  /* ---------- Инструмент 5: Далёкий северный хор (формантный синтез гласных «А / О») ---------- */
+  function playChoir(midi, when, durSec, gainVal) {
+    if (!ctx || midi < 48) { return; }
+    var freq = midiToFreq(midi);
+    var osc1 = ctx.createOscillator();
+    var osc2 = ctx.createOscillator();
+    var f1 = ctx.createBiquadFilter();
+    var f2 = ctx.createBiquadFilter();
+    var env = ctx.createGain();
+
+    osc1.type = "sawtooth";
+    osc2.type = "sawtooth";
+    osc1.frequency.setValueAtTime(freq * 0.996, when);
+    osc2.frequency.setValueAtTime(freq * 1.004, when);
+
+    /* Голосовые форманты мягкого хорового «О-А» */
+    f1.type = "bandpass";
+    f1.frequency.value = 560;
+    f1.Q.value = 3.8;
+
+    f2.type = "bandpass";
+    f2.frequency.value = 1040;
+    f2.Q.value = 4.2;
+
+    env.gain.setValueAtTime(0.0001, when);
+    env.gain.linearRampToValueAtTime(gainVal, when + Math.min(1.1, durSec * 0.42));
+    env.gain.exponentialRampToValueAtTime(0.0002, when + durSec + 0.8);
+
+    osc1.connect(f1);
+    osc2.connect(f1);
+    osc1.connect(f2);
+    osc2.connect(f2);
+    f1.connect(env);
+    f2.connect(env);
+    routeToRealm(env, "outdoor", 0.22);
+
+    osc1.start(when);
+    osc2.start(when);
+    osc1.stop(when + durSec + 0.85);
+    osc2.stop(when + durSec + 0.85);
+  }
+
+  /* ---------- Инструмент 6: Кожаный бубен бодран / походная литавра ---------- */
+  function playFrameDrum(when, accent, deepTimpani, realm) {
+    if (!ctx) { return; }
+    var osc = ctx.createOscillator();
+    var env = ctx.createGain();
+    osc.type = "sine";
+
+    var startF = deepTimpani ? 86 : (accent ? 116 : 148);
+    var endF = deepTimpani ? 43 : (accent ? 56 : 82);
+    var dur = deepTimpani ? 0.62 : 0.24;
+    var vol = (accent ? 0.085 : 0.042) * (deepTimpani ? 1.15 : 1.0);
+
+    osc.frequency.setValueAtTime(startF, when);
+    osc.frequency.exponentialRampToValueAtTime(endF, when + dur * 0.7);
+
+    env.gain.setValueAtTime(0.0001, when);
+    env.gain.linearRampToValueAtTime(vol, when + 0.008);
+    env.gain.exponentialRampToValueAtTime(0.0002, when + dur);
+
+    osc.connect(env);
+    routeToRealm(env, realm, -0.08);
+
+    osc.start(when);
+    osc.stop(when + dur + 0.04);
+  }
+
+  /* ---------- Озвучивание одного подшага (восьмой длительности) текущей композиции ---------- */
+  function scheduleSubStep(track, bar, sub, totalSubs, subDur, when) {
+    var realm = track.realm;
+
+    if (realm === "indoor") {
+      /* === ТРАКТИР И КУЗНИЦА (в духе Around the Fire) === */
+      var chord = bar.chord || [];
+      /* На сильную долю — тёплый бас лютни + мягкий аккорд */
+      if (sub === 0 && bar.bass > 0) {
+        playPluck(bar.bass, when, 0.14, "lute", "indoor", -0.18);
+        if (chord[0]) { playPluck(chord[0], when + 0.018, 0.085, "lute", "indoor", -0.06); }
+      }
+      /* Перебор струн лютни по восьмым долям (живой арпеджиатор 3/4) */
+      var arpPattern = track.style === "tavern_lively"
+        ? [0, 1, 2, 3, 2, 1]
+        : [0, 1, 3, 2, 3, 1];
+      var cIdx = arpPattern[sub % arpPattern.length];
+      if (sub > 0 && chord[cIdx] !== undefined) {
+        var humanJitter = ((sub * 17 + curBarIdx * 7) % 9) * 0.0022;
+        playPluck(chord[cIdx], when + humanJitter, sub === 2 || sub === 4 ? 0.085 : 0.065, "lute", "indoor", -0.12 + (sub % 3) * 0.08);
+      }
+
+      /* Вторая партия: деревянная флейта (или звонкая арфа в кузнице) ведёт мелодию */
+      var mNote = bar.mel && bar.mel[sub];
+      if (mNote && mNote > 0) {
+        if (track.style === "tavern_lively") {
+          playPluck(mNote, when + 0.008, 0.095, "harp", "indoor", 0.22);
+          /* Во втором проведении подключается и флейта */
+          if (barsPlayedInTrack >= 4) {
+            playFlute(mNote, when, subDur * 1.65, 0.036, "indoor", 0.18);
+          }
+        } else {
+          playFlute(mNote, when, subDur * 1.85, 0.046, "indoor", 0.16);
+          if (sub === 0) {
+            playPluck(mNote + 12, when + 0.02, 0.032, "harp", "indoor", 0.28);
+          }
+        }
+      }
+
+      /* Мягкий кожаный бубен бодран (дум — · — так — так) */
+      if (bar.drum === 1 && (sub === 0 || sub === 4)) {
+        playFrameDrum(when, sub === 0, false, "indoor");
+      } else if (bar.drum === 2 && (sub === 0 || sub === 3 || sub === 4)) {
+        playFrameDrum(when, sub === 0, false, "indoor");
+      }
+      return;
+    }
+
+    /* === УЛИЦА, ПЛОЩАДЬ, ОКОЛИЦА И ТАЙГА (Dragonsreach / Frostfall / Tundra / Unbroken Road) === */
+    var barDur = subDur * totalSubs;
+
+    if (sub === 0) {
+      /* Полный смычковый аккорд на весь такт с глубоким басом */
+      var fullStrings = [];
+      if (bar.bass > 0) { fullStrings.push(bar.bass); }
+      (bar.pad || []).forEach(function (n) { fullStrings.push(n); });
+      playBowedChord(fullStrings, when, barDur * 0.98, 0.026, "outdoor");
+
+      /* Благородный северный рог */
+      if (bar.horn && bar.horn > 0) {
+        playHorn(bar.horn, when + 0.08, barDur * 0.88, 0.034);
+      }
+
+      /* Далёкий северный хор с формантами */
+      if (bar.choir && bar.choir > 0) {
+        playChoir(bar.choir, when + 0.12, barDur * 0.92, 0.032);
+      }
+
+      /* Глубокая походная литавра на тракте */
+      if (bar.drum === 3) {
+        playFrameDrum(when, true, true, "outdoor");
+      }
+    } else if (bar.drum === 3 && sub === 6) {
+      playFrameDrum(when, false, true, "outdoor");
+    }
+
+    /* Переливы северной мёрзлой арфы */
+    var hNote = bar.harp && bar.harp[sub];
+    if (hNote && hNote > 0) {
+      var hGain = track.style === "outdoor_frost" ? 0.068 : 0.052;
+      playPluck(hNote, when, hGain, "harp", "outdoor", ((sub % 4) - 1.5) * 0.22);
+    }
+
+    /* Одинокая высокая мелодия (флейта / хрустальный флажолет) */
+    var outMel = bar.mel && bar.mel[sub];
+    if (outMel && outMel > 0) {
+      if (track.style === "outdoor_frost") {
+        playPluck(outMel, when + 0.01, 0.062, "harp", "outdoor", 0.28);
+      } else {
+        playFlute(outMel, when, subDur * 2.1, 0.038, "outdoor", 0.2);
+      }
+    }
+  }
+
+  /* Автоматическая ротация вариаций внутри текущего пула (помещение / улица),
+     чтобы музыка никогда не приедалась одним коротким кольцом. */
+  function rotateVariationInRealm() {
+    if (state.mode !== "auto") { return; }
+    var pool = tracksByRealm(state.realm);
+    if (pool.length <= 1) { return; }
+    var curIdx = 0;
+    for (var i = 0; i < pool.length; i++) {
+      if (pool[i].id === state.trackId) { curIdx = i; break; }
+    }
+    state.trackId = pool[(curIdx + 1) % pool.length].id;
+    curBarIdx = 0;
+    curSubIdx = 0;
+    barsPlayedInTrack = 0;
+  }
+
+  function schedulerTick() {
     if (!state.enabled || !ctx) { return; }
+    var track = trackById(state.trackId);
+    var totalSubs = (track.meter || 3) * (track.subPerBeat || 2);
+    var beatSec = 60 / (track.bpm || 72);
+    var subDur = beatSec / (track.subPerBeat || 2);
 
-    var phrase = PHRASES[stepIdx % PHRASES.length];
-    stepIdx += 1;
+    /* Если вкладка спала — аккуратно подтягиваем указатель времени */
+    if (nextSubTime < ctx.currentTime - 0.2) {
+      nextSubTime = ctx.currentTime + 0.05;
+    }
 
-    var beatSec = state.mood === "combat" ? 0.95 : (state.mood === "tavern" ? 1.12 : 1.32);
-    for (var i = 0; i < phrase.length; i++) {
-      var noteIdx = phrase[i];
-      if (noteIdx >= 0 && DORIAN_LUTE[noteIdx]) {
-        var jitter = ((i * 37 + stepIdx * 13) % 11) * 0.012;
-        var accent = (i === 0) ? 0.72 : 0.48;
-        pluckNote(DORIAN_LUTE[noteIdx], i * beatSec + jitter, accent);
-        /* Мягкая квинта на сильной доле через раз */
-        if (i === 0 && stepIdx % 2 === 0 && DORIAN_LUTE[0]) {
-          pluckNote(DORIAN_LUTE[0] * 0.5, jitter + 0.03, 0.42);
+    while (nextSubTime < ctx.currentTime + 0.36) {
+      var bar = track.bars[curBarIdx % track.bars.length];
+      scheduleSubStep(track, bar, curSubIdx, totalSubs, subDur, nextSubTime);
+
+      nextSubTime += subDur;
+      curSubIdx += 1;
+      if (curSubIdx >= totalSubs) {
+        curSubIdx = 0;
+        curBarIdx += 1;
+        barsPlayedInTrack += 1;
+        if (curBarIdx >= track.bars.length) {
+          curBarIdx = 0;
+          /* После двух полных проведений плавно переходим к следующей вариации этого же мира */
+          if (barsPlayedInTrack >= track.bars.length * 2) {
+            rotateVariationInRealm();
+            track = trackById(state.trackId);
+          }
         }
       }
     }
+  }
 
-    /* Каждую третью фразу — тихий вздох деревянной флейты на высокой ноте */
-    if (stepIdx % 3 === 0) {
-      var fluteNotes = [293.66, 349.23, 440.00, 329.63];
-      var fn = fluteNotes[(stepIdx / 3) % fluteNotes.length | 0];
-      fluteBreath(fn, beatSec * 1.5);
-    }
-
-    var pauseExtra = state.mood === "combat" ? 1400 : 2800;
-    var nextMs = Math.round(phrase.length * beatSec * 1000 + pauseExtra);
-    phraseTimer = global.setTimeout(scheduleNextPhrase, nextMs);
+  function updateRealmCrossfade() {
+    if (!ctx || !indoorBus || !outdoorBus) { return; }
+    var now = ctx.currentTime;
+    var activeRealm = trackById(state.trackId).realm;
+    indoorBus.gain.cancelScheduledValues(now);
+    outdoorBus.gain.cancelScheduledValues(now);
+    indoorBus.gain.setTargetAtTime(activeRealm === "indoor" ? 1.0 : 0.0001, now, 0.45);
+    outdoorBus.gain.setTargetAtTime(activeRealm === "outdoor" ? 1.0 : 0.0001, now, 0.45);
   }
 
   function applyMasterGain() {
     if (!ctx || !masterGain) { return; }
     var now = ctx.currentTime;
-    var target = state.enabled ? Math.max(0.0001, state.volume * 0.85) : 0.0001;
+    var target = state.enabled ? Math.max(0.0001, state.volume * 0.95) : 0.0001;
     masterGain.gain.cancelScheduledValues(now);
     masterGain.gain.setValueAtTime(Math.max(0.0001, masterGain.gain.value || 0.0001), now);
-    masterGain.gain.linearRampToValueAtTime(target, now + 0.6);
+    masterGain.gain.linearRampToValueAtTime(target, now + 0.5);
+  }
+
+  function startScheduler() {
+    if (schedulerTimer) { return; }
+    if (!ctx) { return; }
+    nextSubTime = ctx.currentTime + 0.06;
+    schedulerTick();
+    schedulerTimer = global.setInterval(schedulerTick, 160);
+  }
+
+  function stopScheduler() {
+    if (schedulerTimer) {
+      global.clearInterval(schedulerTimer);
+      schedulerTimer = null;
+    }
+  }
+
+  function switchToTrack(trackId, manual) {
+    var found = trackById(trackId);
+    if (!found) { return null; }
+    state.mode = manual ? "manual" : state.mode;
+    state.trackId = found.id;
+    state.realm = found.realm;
+    curBarIdx = 0;
+    curSubIdx = 0;
+    barsPlayedInTrack = 0;
+    savePrefs();
+    if (ctx) {
+      nextSubTime = ctx.currentTime + 0.08;
+      updateRealmCrossfade();
+    }
+    return found;
+  }
+
+  function setAutoMode(gameState) {
+    state.mode = "auto";
+    if (gameState) {
+      syncMood(gameState, true);
+    } else {
+      var pick = preferredTrackForLocation(state.location || "square", false);
+      switchToTrack(pick, false);
+    }
+    savePrefs();
+    return currentTrack();
+  }
+
+  function nextTrack() {
+    var cur = trackById(state.trackId);
+    var idx = 0;
+    for (var i = 0; i < TRACKS.length; i++) {
+      if (TRACKS[i].id === cur.id) { idx = i; break; }
+    }
+    var next = TRACKS[(idx + 1) % TRACKS.length];
+    return switchToTrack(next.id, true);
   }
 
   function start() {
     state.enabled = true;
     savePrefs();
-    if (!ensureContext()) { return false; }
+    if (!ensureContext()) { return true; }
     if (ctx.state === "suspended" && typeof ctx.resume === "function") {
       ctx.resume();
     }
+    updateRealmCrossfade();
     applyMasterGain();
-    startDrone();
-    if (!phraseTimer) {
-      scheduleNextPhrase();
-    }
+    startScheduler();
     return true;
   }
 
   function stop() {
     state.enabled = false;
     savePrefs();
-    if (phraseTimer) {
-      global.clearTimeout(phraseTimer);
-      phraseTimer = null;
-    }
+    stopScheduler();
     applyMasterGain();
-    stopDrone();
     return false;
   }
 
@@ -361,30 +950,62 @@
     return state.volume;
   }
 
-  function syncMood(gameState) {
-    if (!gameState) { return; }
-    var next = "calm";
-    if (gameState.fight) { next = "combat"; }
-    else if (gameState.player && gameState.player.location === "tavern") { next = "tavern"; }
-    else if (gameState.player && gameState.player.location === "forest") { next = "wild"; }
-    state.mood = next;
+  /* Автоматическое переключение между музыкой помещений (трактир, кузница)
+     и музыкой улицы/тайги при переходах игрока. */
+  function syncMood(gameState, forcePick) {
+    if (!gameState || !gameState.player) { return; }
+    var loc = gameState.player.location || "square";
+    var hour = (gameState.time && typeof gameState.time.hour === "number") ? gameState.time.hour : 12;
+    var isNight = (hour >= 21 || hour < 6);
+    var targetRealm = realmForLocation(loc);
 
-    if (droneNodes && ctx) {
-      var cutoff = next === "tavern" ? 260 : next === "combat" ? 185 : 210;
-      try {
-        droneNodes.filter.frequency.setTargetAtTime(cutoff, ctx.currentTime, 0.8);
-      } catch (e) {}
+    var locChanged = loc !== state.location;
+    var realmChanged = targetRealm !== state.realm;
+    state.location = loc;
+    state.mood = gameState.fight ? "combat" : (targetRealm === "indoor" ? "tavern" : "calm");
+
+    if (state.mode === "auto" && (forcePick || realmChanged || locChanged)) {
+      var nextId = preferredTrackForLocation(loc, isNight);
+      state.realm = targetRealm;
+      if (nextId !== state.trackId) {
+        state.trackId = nextId;
+        curBarIdx = 0;
+        curSubIdx = 0;
+        barsPlayedInTrack = 0;
+        if (ctx) {
+          nextSubTime = ctx.currentTime + 0.1;
+          updateRealmCrossfade();
+        }
+      }
     }
   }
 
-  /* Если музыка была включена ранее, пробуждаем AudioContext при первом клике игрока */
   function wakeOnGesture() {
     if (!state.enabled) { return; }
     if (!ctx) {
       start();
-    } else if (ctx.state === "suspended" && typeof ctx.resume === "function") {
-      ctx.resume();
+    } else {
+      if (ctx.state === "suspended" && typeof ctx.resume === "function") {
+        ctx.resume();
+      }
+      if (!schedulerTimer) { startScheduler(); }
     }
+  }
+
+  function currentTrack() {
+    return trackById(state.trackId);
+  }
+
+  function listTracks() {
+    return TRACKS.map(function (t) {
+      return {
+        id: t.id,
+        title: t.title,
+        subtitle: t.subtitle,
+        realm: t.realm,
+        bpm: t.bpm
+      };
+    });
   }
 
   loadPrefs();
@@ -396,6 +1017,13 @@
     setVolume: setVolume,
     syncMood: syncMood,
     wakeOnGesture: wakeOnGesture,
+    selectTrack: function (id) { return switchToTrack(id, true); },
+    setAutoMode: setAutoMode,
+    nextTrack: nextTrack,
+    currentTrack: currentTrack,
+    listTracks: listTracks,
+    getMode: function () { return state.mode; },
+    getRealm: function () { return trackById(state.trackId).realm; },
     isEnabled: function () { return !!state.enabled; },
     getVolume: function () { return state.volume; },
     isSupported: hasWebAudio

@@ -426,6 +426,12 @@
       }
       state.version = "0.0.7.5";
       return state;
+    },
+
+    /* 0.0.7.5 → 0.0.7.6: 8 авторских северных композиций (помещения vs улица) на Karplus-Strong лютне, смычковых, рогах и хоре. */
+    "0.0.7.5": function (state) {
+      state.version = "0.0.7.6";
+      return state;
     }
   };
 

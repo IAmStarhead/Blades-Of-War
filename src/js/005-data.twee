@@ -16,7 +16,7 @@
   Bow.data = {
 
     meta: {
-      version: "0.0.7.5",
+      version: "0.0.7.6",
       title: "Blades Of War",
       worldName: "Эдем · Королевство Хладных Ветров",
       regionShort: "Хладные Ветра",
