@@ -161,6 +161,15 @@
     "fight-target": function (el) {
       return Bow.adapter.act.fightTarget(getState(), el.getAttribute("data-target"));
     },
+    "fight-hex": function (el) {
+      var state = getState();
+      if (Bow.fight.isActive(state) && state.fight.phase === "aftermath") {
+        return { ok: false, message: "Бой уже окончен — выберите решение." };
+      }
+      var c = parseInt(el.getAttribute("data-col"), 10);
+      var r = parseInt(el.getAttribute("data-row"), 10);
+      return Bow.adapter.act.fightHex(state, c, r);
+    },
     "fight-decide": function (el) {
       stopFightClock();
       return Bow.adapter.act.fightDecide(getState(), el.getAttribute("data-choice"));
@@ -184,10 +193,72 @@
       return res;
     },
 
-    /* ---------- Клетка ---------- */
+    /* ---------- Клетка и гибридный взлом замка (0.0.8.2) ---------- */
     "jail-serve": function () { return Bow.adapter.act.jailServe(getState()); },
-    "jail-escape": function () { return Bow.adapter.act.jailEscape(getState()); },
+    "jail-escape": function () {
+      var res = Bow.adapter.act.jailEscape(getState());
+      if (res && !res.escaped && Bow.ui.triggerVeil) { Bow.ui.triggerVeil(); }
+      return res;
+    },
     "jail-bribe": function () { return Bow.adapter.act.jailBribe(getState()); },
+    "jail-pick-toggle": function () {
+      var st = getState();
+      jailUserWakeUntil = Date.now() + 60000;
+      var res = Bow.adapter.act.jailPickToggle(st);
+      startJailClock();
+      if (res && res.fadeVeil && Bow.ui.triggerVeil) { Bow.ui.triggerVeil(); }
+      return res;
+    },
+    "jail-pick-manual": function () {
+      var st = getState();
+      if (!st.jail) { return { ok: false, message: "Вы не в клетке." }; }
+      jailUserWakeUntil = Date.now() + 60000;
+      Bow.ui.openLockpickModal(st);
+      startJailClock();
+      return { ok: true, message: "" };
+    },
+    "jail-lp-close": function () {
+      Bow.ui.closeLockpickModal();
+      return { ok: true, message: "" };
+    },
+    "jail-lp-nudge": function (el) {
+      var step = parseInt(el.getAttribute("data-step"), 10) || 0;
+      var lp = Bow.ui.getLockpickModalState ? Bow.ui.getLockpickModalState() : null;
+      if (lp) { Bow.ui.setLockpickAngle((lp.pickAngle || 0) + step, getState()); }
+      return { ok: true, message: "" };
+    },
+    "jail-lp-release": function () {
+      var lp = Bow.ui.getLockpickModalState ? Bow.ui.getLockpickModalState() : null;
+      if (lp) {
+        lp.cylinderAngle = 0;
+        lp.jammed = false;
+        lp.hint = "Натяг ослаблен — выберите другой угол отмычки.";
+        Bow.ui.renderLockpickModal(getState());
+      }
+      return { ok: true, message: "" };
+    },
+    "jail-lp-turn": function () {
+      var st = getState();
+      var lp = Bow.ui.getLockpickModalState ? Bow.ui.getLockpickModalState() : null;
+      if (!lp || !st.jail) { return { ok: false, message: "Вы не в клетке." }; }
+      var res = Bow.adapter.act.jailLpTurn(st, lp.pickAngle || 0, lp.cylinderAngle || 0);
+      if (res && res.caught) {
+        Bow.ui.closeLockpickModal();
+        if (Bow.ui.triggerVeil) { Bow.ui.triggerVeil(); }
+        return res;
+      }
+      if (res && res.unlocked) {
+        Bow.ui.closeLockpickModal();
+        if (Bow.ui.triggerVeil) { Bow.ui.triggerVeil(); }
+        return res;
+      }
+      if (res) {
+        lp.cylinderAngle = res.snapped ? 0 : (res.cylinderAngle || 0);
+        lp.jammed = !!res.jammed;
+        if (res.message) { lp.hint = res.message; }
+      }
+      return res;
+    },
 
     /* ---------- Улица ---------- */
     "street-pay": function () { return Bow.adapter.act.streetPay(getState()); },
@@ -345,6 +416,7 @@
     "fight-order": true,
     "fight-step": true,
     "fight-move": true,
+    "fight-hex": true,
     "fight-target": true,
     "fight-decide": true,
     "fight-close": true,
@@ -370,6 +442,7 @@
     "fight-order": true,
     "fight-step": true,
     "fight-move": true,
+    "fight-hex": true,
     "fight-target": true,
     "fight-decide": true,
     "fight-close": true,
@@ -405,6 +478,12 @@
     "jail-serve": true,
     "jail-escape": true,
     "jail-bribe": true,
+    "jail-pick-toggle": true,
+    "jail-pick-manual": true,
+    "jail-lp-close": true,
+    "jail-lp-nudge": true,
+    "jail-lp-release": true,
+    "jail-lp-turn": true,
     "stage-select": true,
     "eat": true,
     "drink": true,
@@ -429,6 +508,7 @@
     "fight-order": true,
     "fight-step": true,
     "fight-move": true,
+    "fight-hex": true,
     "fight-target": true,
     "fight-decide": true,
     "fight-close": true,
@@ -563,6 +643,49 @@
       refresh(true);
       if (!st.fight || st.fight.phase !== "exchange") { stopFightClock(); }
     }, intervalMs);
+  }
+
+  /* ---------- Живой цикл сторожа и полоски взлома Kenshi в клетке (0.0.8.2) ---------- */
+  var jailTimer = null;
+  var jailUserWakeUntil = 0;
+
+  function stopJailClock() {
+    if (jailTimer) {
+      global.clearInterval(jailTimer);
+      jailTimer = null;
+    }
+  }
+
+  function startJailClock() {
+    if (jailTimer) { return; }
+    var st0 = getState();
+    if (!st0 || !st0.jail || st0.dead) { return; }
+    jailTimer = global.setInterval(function () {
+      var st = getState();
+      if (!st || !st.jail || st.dead) {
+        stopJailClock();
+        return;
+      }
+      var lpOpen = !!(Bow.ui.getLockpickModalState && Bow.ui.getLockpickModalState().open);
+      var activeClock = st.time && st.time.scale !== "paused";
+      if (!st.jail.picking && !lpOpen && !activeClock && Date.now() > jailUserWakeUntil) {
+        stopJailClock();
+        return;
+      }
+      if (Bow.ui.isDrawerOpen() || openPersonId) { return; }
+      var tickRes = (Bow.guard && Bow.guard.tickJailScene) ? Bow.guard.tickJailScene(st, Bow.adapter.rng) : null;
+      if (tickRes && tickRes.changed) {
+        if (tickRes.caught) {
+          if (Bow.ui.closeLockpickModal) { Bow.ui.closeLockpickModal(); }
+          if (Bow.ui.triggerVeil) { Bow.ui.triggerVeil(); }
+        } else if (tickRes.unlocked) {
+          if (Bow.ui.closeLockpickModal) { Bow.ui.closeLockpickModal(); }
+          if (Bow.ui.triggerVeil) { Bow.ui.triggerVeil(); }
+        }
+        if (tickRes.message) { Bow.ui.setMessage(tickRes.message); }
+        refresh(true);
+      }
+    }, 950);
   }
 
   function stopClock() {
@@ -732,6 +855,8 @@
     stopClock: stopClock,
     startFightClock: startFightClock,
     stopFightClock: stopFightClock,
+    startJailClock: startJailClock,
+    stopJailClock: stopJailClock,
     exportSave: exportSave,
     importSave: importSave,
     restart: restart,
@@ -750,10 +875,29 @@
     if (!document.getElementById("bow-app")) { return; }
 
     document.getElementById("bow-app").addEventListener("click", onClick);
+    document.getElementById("bow-app").addEventListener("pointermove", function (event) {
+      var st = getState();
+      if (st && st.jail) {
+        jailUserWakeUntil = Date.now() + 45000;
+        if (!jailTimer) { startJailClock(); }
+      }
+      var lpStage = event.target && event.target.closest && event.target.closest("#bow-lp-stage");
+      if (lpStage && Bow.ui.getLockpickModalState && Bow.ui.getLockpickModalState().open) {
+        var rect = lpStage.getBoundingClientRect();
+        if (rect && rect.width > 20) {
+          var ratio = (event.clientX - rect.left) / rect.width;
+          var deg = Math.round((ratio - 0.5) * 170);
+          Bow.ui.setLockpickAngle(deg, st);
+        }
+      }
+    });
     document.getElementById("bow-app").addEventListener("input", function (event) {
       var target = event.target;
       if (target && target.getAttribute && target.getAttribute("data-act") === "audio-vol" && Bow.audio) {
         Bow.audio.setVolume(parseFloat(target.value) / 100);
+      }
+      if (target && target.id === "bow-lp-range" && Bow.ui.setLockpickAngle) {
+        Bow.ui.setLockpickAngle(parseFloat(target.value), getState());
       }
     });
 
@@ -765,8 +909,33 @@
       });
     }
 
-    /* Escape закрывает модальное окно или карточку сцены; Пробел в бою ставит/снимает паузу. */
+    /* Escape закрывает модальное окно или карточку сцены; Пробел и стрелки управляют взломом замка или паузой боя. */
     document.addEventListener("keydown", function (event) {
+      var lp = Bow.ui.getLockpickModalState ? Bow.ui.getLockpickModalState() : null;
+      if (lp && lp.open) {
+        if (event.key === "Escape") {
+          event.preventDefault();
+          Bow.ui.closeLockpickModal();
+          refresh(true);
+          return;
+        }
+        if (event.key === "ArrowLeft" || event.key === "a" || event.key === "A" || event.key === "ф" || event.key === "Ф") {
+          event.preventDefault();
+          Bow.ui.setLockpickAngle((lp.pickAngle || 0) - 6, getState());
+          return;
+        }
+        if (event.key === "ArrowRight" || event.key === "d" || event.key === "D" || event.key === "в" || event.key === "В") {
+          event.preventDefault();
+          Bow.ui.setLockpickAngle((lp.pickAngle || 0) + 6, getState());
+          return;
+        }
+        if (event.key === " " || event.code === "Space" || event.key === "e" || event.key === "E" || event.key === "у" || event.key === "У") {
+          event.preventDefault();
+          var turnRes = handlers["jail-lp-turn"]();
+          say(turnRes);
+          return;
+        }
+      }
       if (event.key === " " || event.code === "Space") {
         var st = getState();
         if (st && st.fight && st.fight.phase === "exchange" && !Bow.ui.isDrawerOpen()) {

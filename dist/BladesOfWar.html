@@ -5429,8 +5429,377 @@ html.bow-motion-calm .bow-fog-band {
 .bow-arena-scene .bow-chip-enemy:not(.bow-chip-dead):hover .bow-chip-name,
 .bow-arena-scene .bow-chip-target .bow-chip-name {
   color: #ffeab5;
-  background: rgba(24, 18, 10, 0.92);
-}</style>
+  background: rgba(16, 22, 30, 0.94);
+}
+
+/* ============================================================
+   КРУГ 22 (0.0.8.2): ХОД ПО ГЕКСАМ, БЕЗ МИГАНИЯ КАРТОЧКИ СЦЕНЫ,
+   РОВНАЯ ВКЛАДКА «ЖИТЕЛИ», ПОВОРОТЫ СТОРОЖА + MGS «!» И
+   ГИБРИДНЫЙ ВЗЛОМ ЗАМКА (ПОЛОСКА KENSHI + РУЧНОЙ ЗАМОК SKYRIM)
+   ============================================================ */
+
+/* 1. Отмена повторной анимации всплытия карточки персонажа при тике живой минуты */
+.bow-stage-card.bow-stage-card-steady {
+  animation: none !important;
+  opacity: 1 !important;
+  transform: none !important;
+}
+
+/* 2. Исправление вёрстки и горизонтального скролла во вкладке «Жители поселения» (image-27) */
+.bow-modal-body.bow-drawer-scroll {
+  overflow-x: hidden !important;
+}
+
+.bow-drawer-inner,
+.bow-all-people,
+.bow-people,
+.bow-person {
+  box-sizing: border-box !important;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.bow-all-people {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+.bow-person-away {
+  border-left-color: #3b4c5e;
+  background: rgba(17, 23, 30, 0.78);
+}
+
+.bow-person-dead {
+  border-left-color: var(--bow-crit);
+  background: rgba(16, 21, 27, 0.86);
+}
+
+.bow-here-pill {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px;
+  font-style: normal;
+  font-family: var(--bow-mono);
+  font-size: 0.62rem;
+  color: #b8dcff;
+  background: rgba(54, 92, 128, 0.28);
+  border: 1px solid rgba(120, 174, 224, 0.42);
+  border-radius: 999px;
+}
+
+.bow-person-away-note {
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+
+.bow-fallen-summary {
+  margin-top: 4px;
+  padding: 8px 10px;
+  border-top: 1px solid var(--bow-line-soft);
+  font-family: var(--bow-mono);
+  font-size: 0.68rem;
+  color: var(--bow-dim);
+}
+
+/* 3. Интерактивные гексы перемещения на поле боя 7×5 (King's Bounty / Heroes III) */
+.bow-tactical-grid .bow-hex-move-hit {
+  pointer-events: auto;
+  cursor: pointer;
+  transition: fill 0.14s ease, stroke 0.14s ease, stroke-width 0.14s ease;
+}
+
+.bow-tactical-grid .bow-hex-move-hit:hover {
+  fill: rgba(110, 176, 228, 0.28);
+  stroke: #b8dcfa;
+  stroke-width: 2;
+}
+
+.bow-tactical-grid .bow-hex-reach:hover {
+  fill: rgba(132, 204, 252, 0.36);
+  stroke: #e2f3ff;
+  stroke-width: 2.3;
+}
+
+/* 4. Полоска взлома Kenshi над героем, повороты сторожа и MGS «!» Alert */
+.bow-kenshi-lockbar {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: 156px;
+  height: 19px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(9, 14, 20, 0.94);
+  border: 1px solid #6b859e;
+  border-radius: 3px;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.78);
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 8;
+}
+
+.bow-kenshi-lockbar.is-paused {
+  border-color: #536475;
+  opacity: 0.88;
+}
+
+.bow-kenshi-lockfill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, #2d5c7f 0%, #5ba4cf 100%);
+  transition: width 0.36s ease;
+}
+
+.bow-kenshi-lockbar.is-paused .bow-kenshi-lockfill {
+  background: linear-gradient(90deg, #3c4d5e 0%, #5b7186 100%);
+}
+
+.bow-kenshi-lockbar b {
+  position: relative;
+  z-index: 2;
+  font-family: var(--bow-mono);
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #eef6ff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95);
+  white-space: nowrap;
+}
+
+.bow-actor-picking svg {
+  transform: translateX(4px);
+  transition: transform 0.22s ease;
+}
+
+.bow-jail-guard-fig {
+  display: inline-block;
+  transition: transform 0.28s ease;
+}
+
+/* Сторож отвернулся от клетки (смотрит вправо, спиной к узнику) */
+.bow-jail-guard-away .bow-jail-guard-fig {
+  transform: scaleX(-1);
+  opacity: 0.88;
+}
+
+.bow-jail-guard-turning .bow-jail-guard-fig {
+  transform: scaleX(-0.78);
+}
+
+.bow-actor-tag-guard {
+  border-color: rgba(128, 152, 176, 0.45);
+}
+
+.bow-jail-guard-away .bow-actor-tag-guard {
+  border-color: rgba(108, 182, 152, 0.55);
+}
+
+.bow-jail-guard-alert .bow-actor-tag-guard {
+  border-color: var(--bow-crit);
+  box-shadow: 0 0 10px rgba(208, 82, 90, 0.48);
+}
+
+@keyframes bow-mgs-pop {
+  0%   { transform: translate(-50%, 10px) scale(0.4); opacity: 0; }
+  65%  { transform: translate(-50%, -4px) scale(1.22); opacity: 1; }
+  100% { transform: translate(-50%, 0) scale(1); opacity: 1; }
+}
+
+.bow-mgs-alert,
+.bow-mgs-warn {
+  position: absolute;
+  bottom: calc(100% + 2px);
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--bow-mono);
+  font-weight: 900;
+  line-height: 1;
+  pointer-events: none;
+  z-index: 9;
+}
+
+.bow-mgs-alert {
+  font-size: 1.65rem;
+  color: #ff4c58;
+  text-shadow: 0 0 12px rgba(255, 76, 88, 0.9), 0 2px 4px #000;
+  animation: bow-mgs-pop 0.24s ease-out both;
+}
+
+.bow-mgs-warn {
+  font-size: 1.18rem;
+  color: #e4c675;
+  text-shadow: 0 2px 4px #000;
+}
+
+.bow-cage-lock-btn {
+  position: absolute;
+  left: 53.5%;
+  bottom: 96px;
+  z-index: 6;
+  min-height: 34px;
+  padding: 4px 9px;
+  font-family: var(--bow-mono);
+  font-size: 0.65rem;
+  color: #dce9f5;
+  background: rgba(14, 21, 29, 0.92);
+  border: 1px solid #5c748c;
+  border-radius: 4px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.65);
+}
+
+.bow-cage-lock-btn:hover {
+  border-color: #9bc4ea;
+  color: #ffffff;
+}
+
+/* 5. Модальное окно ручного взлома замка крупным планом (Skyrim / Fallout) */
+.bow-lockpick-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 88;
+  align-items: center;
+  justify-content: center;
+  padding: 14px;
+}
+
+.bow-lockpick-modal.bow-lp-open {
+  display: flex;
+}
+
+.bow-lp-dialog {
+  position: relative;
+  z-index: 2;
+  width: min(468px, 95vw);
+  box-sizing: border-box;
+  padding: 14px 16px;
+  background: var(--bow-panel);
+  border: 1px solid #415366;
+  border-radius: 6px;
+  box-shadow: 0 22px 56px rgba(0, 0, 0, 0.82);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.bow-lp-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--bow-line-soft);
+  font-size: 0.86rem;
+}
+
+.bow-lp-gaze {
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-family: var(--bow-mono);
+  font-size: 0.72rem;
+  text-align: center;
+  border: 1px solid var(--bow-line);
+}
+
+.bow-lp-gaze-safe {
+  background: rgba(34, 72, 64, 0.34);
+  border-color: rgba(98, 178, 152, 0.55);
+  color: #b9ebd9;
+}
+
+.bow-lp-gaze-warn {
+  background: rgba(68, 62, 34, 0.34);
+  border-color: rgba(208, 182, 98, 0.55);
+  color: #f0df9e;
+}
+
+.bow-lp-gaze-danger {
+  background: rgba(84, 30, 38, 0.44);
+  border-color: rgba(224, 92, 104, 0.72);
+  color: #ffb8be;
+}
+
+.bow-lp-stage {
+  position: relative;
+  background: #0c1117;
+  border: 1px solid var(--bow-line-soft);
+  border-radius: 5px;
+  cursor: ew-resize;
+  user-select: none;
+}
+
+.bow-lp-svg {
+  display: block;
+  width: 100%;
+  height: 214px;
+}
+
+@keyframes bow-lp-tremor {
+  0%, 100% { transform: translate(160px, 118px) rotate(0deg); }
+  25% { transform: translate(158px, 118px); }
+  75% { transform: translate(162px, 118px); }
+}
+
+.bow-lp-shake path {
+  stroke: #ff7a84 !important;
+}
+
+.bow-lp-slider-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bow-lp-range {
+  flex: 1;
+  accent-color: #7ab4e0;
+}
+
+.bow-lp-angle {
+  min-width: 42px;
+  text-align: right;
+  font-family: var(--bow-mono);
+  font-size: 0.74rem;
+  color: var(--bow-silver);
+}
+
+.bow-lp-meta {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--bow-mono);
+  font-size: 0.72rem;
+  color: var(--bow-dim);
+}
+
+.bow-lp-hint {
+  font-size: 0.78rem;
+  color: var(--bow-silver);
+  min-height: 1.3em;
+}
+
+.bow-lp-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.bow-lp-turn-btn {
+  border-color: #5c8db8;
+  color: #e4f2ff;
+}
+
+html.bow-motion-calm .bow-mgs-alert { animation: none !important; }
+html.bow-motion-calm .bow-kenshi-lockfill,
+html.bow-motion-calm .bow-jail-guard-fig { transition: none !important; }</style>
 	<script role="script" id="twine-user-script" type="text/twine-javascript">/* ============================================================
    BOW CORE — базовые утилиты, ГПСЧ, шина событий.
    ВАЖНО: этот модуль ничего не знает про SugarCube и про DOM.
@@ -5541,7 +5910,7 @@ html.bow-motion-calm .bow-fog-band {
   Bow.data = {
 
     meta: {
-      version: "0.0.8.1",
+      version: "0.0.8.2",
       title: "Blades Of War",
       worldName: "Эдем · Королевство Хладных Ветров",
       regionShort: "Хладные Ветра",
@@ -6314,19 +6683,19 @@ html.bow-motion-calm .bow-fog-band {
         cols: 7,
         rows: 5,
         hex: true,
-        /* Гексагональное поле боя 7×5 (35 крупных сот, как в King's Bounty и Heroes III, 0.0.8.1):
-           чётные и нечётные ряды разнесены в шахматном порядке на полгекса, а по вертикали
-           между одинаковыми X — два полных ряда (110px), поэтому бойцы никогда не заслоняют друг друга. */
+        /* Гексагональное поле боя 7×5 (35 крупных сот, как в King's Bounty и Heroes III, 0.0.8.2):
+           свои развёрнуты с левого края (col 0..1), а противники — симметрично с правого края (col 5..6),
+           разнесённо по вертикали на рядах 0, 2, 4 без заслонения соседей. */
         spawn: {
           ally:        [[0, 2], [0, 0], [0, 4], [1, 1], [1, 3]],
-          enemy:       [[3, 2], [3, 0], [4, 4], [5, 1], [5, 3]],
-          enemyGroup:  [[4, 2], [3, 0], [4, 4], [5, 1], [5, 3]],
-          enemyBattle: [[6, 2], [5, 0], [5, 4], [6, 1], [6, 3]]
+          enemy:       [[6, 2], [6, 0], [6, 4], [5, 1], [5, 3]],
+          enemyGroup:  [[6, 2], [6, 0], [6, 4], [5, 1], [5, 3]],
+          enemyBattle: [[6, 2], [6, 0], [6, 4], [5, 1], [5, 3], [5, 2]]
         },
         /* Запасные гексы для крупных отрядов. */
         extra: {
           ally:  [[1, 2], [1, 0], [1, 4], [2, 1], [2, 3]],
-          enemy: [[5, 2], [4, 0], [5, 4], [6, 0], [6, 4], [6, 2]]
+          enemy: [[5, 2], [5, 0], [5, 4], [4, 1], [4, 3], [6, 2]]
         },
         stunAt: 8,
         allySpawns: ["bror", "tarn"]
@@ -6925,6 +7294,22 @@ html.bow-motion-calm .bow-fog-band {
         state.jail._syncedHours = state.jail.hoursLeft;
       }
       state.version = "0.0.8.1";
+      return state;
+    },
+
+    "0.0.8.1": function (state) {
+      if (state.player && state.player.skills && typeof state.player.skills.lockpicking !== "number") {
+        state.player.skills.lockpicking = 5;
+      }
+      if (state.jail) {
+        if (typeof state.jail.lockTier !== "number") { state.jail.lockTier = 1; }
+        if (typeof state.jail.lockProgress !== "number") { state.jail.lockProgress = 0; }
+        if (typeof state.jail.picking !== "boolean") { state.jail.picking = false; }
+        if (!state.jail.guardPhase) { state.jail.guardPhase = "watching"; }
+        if (typeof state.jail.sweetSpot !== "number") { state.jail.sweetSpot = 28; }
+        if (typeof state.jail.pinHp !== "number") { state.jail.pinHp = 100; }
+      }
+      state.version = "0.0.8.2";
       return state;
     }
   };
@@ -8919,6 +9304,10 @@ html.bow-motion-calm .bow-fog-band {
       var org = caughtBy.org || (Bow.data.locations[state.player.location] || {}).org;
       var heat = addHeat(state, org, 22);
       var rep = Bow.work ? Bow.work.addReputation(state, org, -10) : 0;
+      if (org !== "org:guard") {
+        addHeat(state, "org:guard", 10);
+        if (Bow.work) { Bow.work.addReputation(state, "org:guard", -6); }
+      }
 
       caughtBy.memory.push({
         kind: "witness",
@@ -9744,12 +10133,20 @@ html.bow-motion-calm .bow-fog-band {
     /* В пошаговом бою мировые часы стоят на месте (0.0.7.3). */
     Bow.needs.applyChange(state.player, "fatigue", -2);
 
+    if (mode === "guard" && Bow.work) {
+      /* Поднять оружие на караул Брода — прямое падение отношения стражи. */
+      Bow.work.addReputation(state, "org:guard", -14);
+    }
+
     if (mode === "crime") {
       /* Нападение — преступление сразу, а не по итогу боя. */
       var heat = R.crimeHeat + f.witnesses.length * R.witnessHeat;
       f.heatTotal += Bow.steal.addHeat(state, person.org, heat);
       f.repTotal += Bow.work.addReputation(state, person.org, R.crimeRep);
       Bow.steal.addHeat(state, "org:guard", Math.round(heat * 0.5));
+      if (Bow.work && person.org !== "org:guard") {
+        Bow.work.addReputation(state, "org:guard", -8);
+      }
 
       person.memory.push({
         kind: "attacked",
@@ -10011,6 +10408,108 @@ html.bow-motion-calm .bow-fog-band {
     return moved;
   }
 
+  function hexName(col, row) {
+    var letters = ["А", "Б", "В", "Г", "Д", "Е", "Ж", "З"];
+    return (letters[col] || String(col + 1)) + String((row || 0) + 1);
+  }
+
+  /* Карта гексов, куда герой может шагнуть одним тактическим приказом (0.0.8.2):
+     • если враг стоит вплотную (зона контроля) — смещение на 1 соседний гекс;
+     • на свободном просторе без контакта — манёвр до 2 гексов за ход (как в King's Bounty / HoMM3). */
+  function reachableHexes(state) {
+    var map = {};
+    var f = state && state.fight;
+    if (!f || f.phase !== "exchange") { return map; }
+    var A = rules().arena;
+    var playerUnit = unitByKey(f, "player");
+    if (!playerUnit || playerUnit.down || playerUnit.dead) { return map; }
+    var engaged = aliveUnits(f, "enemy").some(function (e) { return inMelee(playerUnit, e); });
+    var maxReach = engaged ? 1 : 2;
+    for (var r = 0; r < A.rows; r++) {
+      for (var c = 0; c < A.cols; c++) {
+        if (c === playerUnit.col && r === playerUnit.row) { continue; }
+        if (cellOccupied(f, c, r, playerUnit.key)) { continue; }
+        var cheb = Math.max(Math.abs(c - playerUnit.col), Math.abs(r - playerUnit.row));
+        if (cheb <= maxReach) {
+          map[c + ":" + r] = true;
+        }
+      }
+    }
+    return map;
+  }
+
+  /* Ручной приказ идти на выбранный гекс поля боя (клик по соте, 0.0.8.2). */
+  function moveTo(state, col, row, rng) {
+    var f = state && state.fight;
+    if (!f || f.phase !== "exchange") { return { ok: false, message: "Сейчас не бой." }; }
+    var A = rules().arena;
+    var c = parseInt(col, 10);
+    var r = parseInt(row, 10);
+    if (isNaN(c) || isNaN(r) || c < 0 || c >= A.cols || r < 0 || r >= A.rows) {
+      return { ok: false, message: "За пределы поля уйти нельзя." };
+    }
+
+    var playerUnit = unitByKey(f, "player");
+    if (!playerUnit || playerUnit.down || playerUnit.dead) {
+      return { ok: false, message: "Вы не можете двигаться." };
+    }
+
+    /* Клик по своей же клетке — удержание позиции в защите. */
+    if (c === playerUnit.col && r === playerUnit.row) {
+      return move(state, "guard", rng, f.target || null);
+    }
+
+    /* Если на этом гексе стоит живой враг — выбираем его целью и атакуем/сближаемся. */
+    var occEnemy = aliveUnits(f, "enemy").filter(function (e) { return e.col === c && e.row === r; })[0];
+    if (occEnemy) {
+      f.target = occEnemy.key;
+      return move(state, "press", rng, occEnemy.key);
+    }
+
+    if (cellOccupied(f, c, r, playerUnit.key)) {
+      return { ok: false, message: "Эта клетка занята союзником." };
+    }
+
+    var engaged = aliveUnits(f, "enemy").some(function (e) { return inMelee(playerUnit, e); });
+    var maxReach = engaged ? 1 : 2;
+    var cheb = Math.max(Math.abs(c - playerUnit.col), Math.abs(r - playerUnit.row));
+    var fromC = playerUnit.col;
+    var fromR = playerUnit.row;
+
+    if (cheb <= maxReach) {
+      playerUnit.col = c;
+      playerUnit.row = r;
+    } else {
+      /* Если кликнули по дальней клетке через всё поле — шагаем прямо к ней на доступный ход. */
+      for (var st = 0; st < maxReach; st++) {
+        if (playerUnit.col === c && playerUnit.row === r) { break; }
+        var dc = c > playerUnit.col ? 1 : (c < playerUnit.col ? -1 : 0);
+        var dr = r > playerUnit.row ? 1 : (r < playerUnit.row ? -1 : 0);
+        var tries = [];
+        if (dc !== 0 && dr !== 0) { tries.push([playerUnit.col + dc, playerUnit.row + dr]); }
+        if (dc !== 0) { tries.push([playerUnit.col + dc, playerUnit.row]); }
+        if (dr !== 0) { tries.push([playerUnit.col, playerUnit.row + dr]); }
+        var stepCell = null;
+        for (var ti = 0; ti < tries.length; ti++) {
+          if (!cellOccupied(f, tries[ti][0], tries[ti][1], playerUnit.key)) {
+            stepCell = tries[ti];
+            break;
+          }
+        }
+        if (!stepCell) { break; }
+        playerUnit.col = stepCell[0];
+        playerUnit.row = stepCell[1];
+      }
+    }
+
+    if (playerUnit.col === fromC && playerUnit.row === fromR) {
+      return { ok: false, message: "Проход к этой клетке перекрыт." };
+    }
+
+    f._manualHexLabel = hexName(playerUnit.col, playerUnit.row);
+    return move(state, "hex-step", rng, f.target || null);
+  }
+
   /* Шаг назад: разорвать контакт за спины спутников и встать в защиту. */
   function stepBack(state, rng) {
     var f = state.fight;
@@ -10048,10 +10547,11 @@ html.bow-motion-calm .bow-fog-band {
 
     if (stance === "flee") { return flee(state, rng); }
     if (stance === "back") { return stepBack(state, rng); }
-    if (stance !== "press" && stance !== "guard") { return { ok: false, message: "Так не дерутся." }; }
+    var isHexStep = (stance === "hex-step");
+    if (!isHexStep && stance !== "press" && stance !== "guard") { return { ok: false, message: "Так не дерутся." }; }
 
     var ordM = ensureOrders(f);
-    ordM.stance = stance;
+    if (!isHexStep) { ordM.stance = stance; }
     if (aimKey && R.aims && R.aims[aimKey]) { ordM.aim = aimKey; }
 
     f.units.forEach(function (u) { syncUnit(state, u); });
@@ -10079,11 +10579,16 @@ html.bow-motion-calm .bow-fog-band {
     f.aim = [];
     f.lastStrikes = [];
     ensureOrders(f);
-    playerUnit.stance = stance;
+    playerUnit.stance = isHexStep ? (ordM.stance || "guard") : stance;
 
-    /* --- 1. Ход героя (постепенное сближение по 1 клетке за круг, 0.0.7.5) --- */
+    /* --- 1. Ход героя (сближение по 1 клетке за круг или ручной переход по гексам, 0.0.8.2) --- */
     if (!playerUnit.down) {
-      if (stance === "press") {
+      if (isHexStep) {
+        var cellLbl = f._manualHexLabel || hexName(playerUnit.col, playerUnit.row);
+        f._manualHexLabel = null;
+        Bow.needs.applyChange(state.player, "fatigue", -0.8);
+        log(f, "you", "Вы переходите на клетку " + cellLbl + ".");
+      } else if (stance === "press") {
         if (inMelee(playerUnit, foe)) {
           strike(state, playerUnit, foe, stance, rng, aimKey || (f.orders && f.orders.aim) || "body");
           syncUnit(state, playerUnit);
@@ -10735,6 +11240,7 @@ html.bow-motion-calm .bow-fog-band {
     if (!npc && f.mode === "guard") {
       if (choice === "spare") {
         var spHeat = Bow.steal.addHeat(state, "org:guard", 15);
+        if (Bow.work) { Bow.work.addReputation(state, "org:guard", -6); }
         f.heatTotal += spHeat;
         log(f, "narr", "Поверженные стражники остаются лежать в снегу.");
         finish(state, "win", { heat: spHeat });
@@ -10760,6 +11266,7 @@ html.bow-motion-calm .bow-fog-band {
           }
         });
         var rbHeat = Bow.steal.addHeat(state, "org:guard", 25);
+        if (Bow.work) { Bow.work.addReputation(state, "org:guard", -14); }
         f.heatTotal += rbHeat;
         log(f, "narr", "Вы снимаете со стражников монеты и снаряжение: " + gGearTaken.join(", ") + ".");
         finish(state, "win", { heat: rbHeat });
@@ -10781,6 +11288,7 @@ html.bow-motion-calm .bow-fog-band {
           return gc.id;
         });
         var klHeat = Bow.steal.addHeat(state, "org:guard", 45);
+        if (Bow.work) { Bow.work.addReputation(state, "org:guard", -30); }
         f.heatTotal += klHeat;
         log(f, "narr", "Стражники добиты на снегу. За такое в Хладных Ветрах вешают без суда.");
         finish(state, "killed", { heat: klHeat, corpseIds: gCorpseIds });
@@ -10837,6 +11345,10 @@ html.bow-motion-calm .bow-fog-band {
 
       heat = Bow.steal.addHeat(state, npc.org, R.robHeat);
       rep = Bow.work.addReputation(state, npc.org, R.robRep);
+      Bow.steal.addHeat(state, "org:guard", Math.round(R.robHeat * 0.5));
+      if (Bow.work && npc.org !== "org:guard") {
+        Bow.work.addReputation(state, "org:guard", -10);
+      }
       npc.attitude = clamp(npc.attitude - 35, -100, 100);
       npc.memory.push({
         kind: "robbed",
@@ -10878,6 +11390,9 @@ html.bow-motion-calm .bow-fog-band {
       }
       /* Убийство — прямой вызов страже. */
       Bow.steal.addHeat(state, "org:guard", Math.round(R.killHeat * 0.8));
+      if (Bow.work && npc.org !== "org:guard") {
+        Bow.work.addReputation(state, "org:guard", -22);
+      }
       if (Bow.guard && Bow.guard.schedule) { Bow.guard.schedule(state); }
       log(f, "narr", "Вы делаете то, после чего в Броде не отмываются. " + npc.name + " остаётся лежать на земле.");
       message = "Убийство: " + npc.name + ". Тело осталось лежать на земле.";
@@ -11050,6 +11565,9 @@ html.bow-motion-calm .bow-fog-band {
     move: move,
     step: step,
     stepBack: stepBack,
+    moveTo: moveTo,
+    reachableHexes: reachableHexes,
+    hexName: hexName,
     inMelee: inMelee,
     stepToward: stepToward,
     setOrder: setOrder,
@@ -11863,9 +12381,9 @@ html.bow-motion-calm .bow-fog-band {
     state.guard = null;
     state.flags.guardAt = null;
     Bow.steal.addHeat(state, GUARD, -Math.round(heat(state) * 0.7));
-    Bow.work.addReputation(state, GUARD, 5);
+    if (Bow.work) { Bow.work.addReputation(state, GUARD, -2); }
     Bow.journal.add(state, "Стражу подкупили за " + cost + " м. Дело закрыли тихо.", "guard");
-    return { ok: true, message: "Отдали " + cost + " м. Десятник отводит глаза и уходит." };
+    return { ok: true, message: "Отдали " + cost + " м. Десятник кривится, прячет монеты и уходит." };
   }
 
   /* Побег: шанс от выживания и увечий. Провал — избиение, возможно,
@@ -11888,6 +12406,7 @@ html.bow-motion-calm .bow-fog-band {
 
     Bow.time.advance(state, 1);
     Bow.needs.applyChange(state.player, "fatigue", -8);
+    if (Bow.work) { Bow.work.addReputation(state, GUARD, -6); }
 
     if (rnd(rng) < fleeChance(state)) {
       /* Ушли — но не исчезли: розыск остаётся, и каждый переход
@@ -11994,8 +12513,281 @@ html.bow-motion-calm .bow-fog-band {
     return Bow.fight.start(state, "guard");
   }
 
-  /* ---------- Клетка (с живым поминутным отсчётом срока, 0.0.8.1) ---------- */
+  /* ---------- Клетка, повороты сторожа и гибридный взлом Kenshi + Skyrim (0.0.8.2) ---------- */
   var jailPauseTick = false;
+
+  var LOCK_TIERS = {
+    1: { tier: 1, name: "Ржавый засов",        rank: "Новичок", reqSkill: 0,  speed: 22, sweetTol: 22 },
+    2: { tier: 2, name: "Кованый замок",       rank: "Ученик",  reqSkill: 15, speed: 16, sweetTol: 16 },
+    3: { tier: 3, name: "Двухштифтовый засов", rank: "Адепт",   reqSkill: 30, speed: 12, sweetTol: 12 },
+    4: { tier: 4, name: "Пудовый замок",       rank: "Эксперт", reqSkill: 50, speed: 9,  sweetTol: 8.5 },
+    5: { tier: 5, name: "Королевский засов",   rank: "Мастер",  reqSkill: 72, speed: 6.5, sweetTol: 5.5 }
+  };
+
+  function rollSweetSpot(seedHint) {
+    var r = (typeof seedHint === "number") ? seedHint : Math.random();
+    return Math.round((r * 148) - 74); /* -74° .. +74° */
+  }
+
+  function ensureJailLock(jail) {
+    if (!jail) { return null; }
+    if (typeof jail.lockTier !== "number" || jail.lockTier < 1) { jail.lockTier = 1; }
+    if (jail.lockTier > 5) { jail.lockTier = 5; }
+    if (typeof jail.lockProgress !== "number" || isNaN(jail.lockProgress)) { jail.lockProgress = 0; }
+    if (typeof jail.picking !== "boolean") { jail.picking = false; }
+    if (!jail.guardPhase) { jail.guardPhase = "away"; }
+    if (typeof jail.guardTick !== "number") { jail.guardTick = 1; }
+    if (typeof jail.sweetSpot !== "number" || isNaN(jail.sweetSpot)) { jail.sweetSpot = rollSweetSpot(); }
+    if (typeof jail.pinHp !== "number" || isNaN(jail.pinHp)) { jail.pinHp = 100; }
+    if (typeof jail.alertCount !== "number") { jail.alertCount = 0; }
+    return LOCK_TIERS[jail.lockTier] || LOCK_TIERS[1];
+  }
+
+  function lockInfo(state) {
+    if (!state || !state.jail) { return LOCK_TIERS[1]; }
+    return ensureJailLock(state.jail);
+  }
+
+  function lockpickSkillOf(state) {
+    var sk = (state && state.player && state.player.skills) || {};
+    return Math.max(0, Number(sk.lockpicking) || 0);
+  }
+
+  function growLockpickSkill(state, amount) {
+    if (!state || !state.player || !state.player.skills) { return; }
+    var cur = lockpickSkillOf(state);
+    state.player.skills.lockpicking = clamp(Math.round((cur + amount) * 100) / 100, 0, 100);
+  }
+
+  function kenshiOpenChance(state) {
+    if (!state || !state.jail) { return 0.5; }
+    var def = ensureJailLock(state.jail);
+    var sk = lockpickSkillOf(state);
+    var dex = (state.player.attrs && state.player.attrs.dexterity) || 12;
+    var raw = 0.48 + ((sk - def.reqSkill) * 0.012) + ((dex - 10) * 0.01);
+    return clamp(raw, 0.16, 0.96);
+  }
+
+  function unlockEscape(state, howLabel) {
+    var def = ensureJailLock(state.jail);
+    state.jail = null;
+    state.flags.guardAt = null;
+    state.flags.hunted = true;
+    state.flags.huntedUntil = state.time.totalHours + 48;
+    state.flags.huntedHeat = Math.max(heat(state) + 12, R().threshold);
+    Bow.steal.addHeat(state, GUARD, 12);
+    if (Bow.work) { Bow.work.addReputation(state, GUARD, -8); }
+    growLockpickSkill(state, howLabel === "manual" ? 2.4 : 1.6);
+    if (Bow.audio && Bow.audio.playLockSound) { Bow.audio.playLockSound("open"); }
+    var msg = "Щелчок ригеля! Вы тихо вскрыли " + def.name.toLowerCase() + " и ускользнули из клетки, пока сторож не смотрел.";
+    Bow.journal.add(state, "Взломан " + def.name.toLowerCase() + " — побег из клетки удался.", "guard");
+    return { ok: true, escaped: true, unlocked: true, message: msg };
+  }
+
+  /* Сторож запалил взлом! Звук MGS «!», восклицательный знак, затухание и более мощный целый замок. */
+  function catchLockpick(state) {
+    if (!state || !state.jail) { return { ok: false, caught: false, message: "" }; }
+    ensureJailLock(state.jail);
+    var prevTier = state.jail.lockTier;
+    var nextTier = Math.min(5, prevTier + 1);
+
+    state.jail.picking = false;
+    state.jail.lockProgress = 0;
+    state.jail.lockTier = nextTier;
+    state.jail.sweetSpot = rollSweetSpot();
+    state.jail.pinHp = 100;
+    state.jail.guardPhase = "alert";
+    state.jail.guardTick = 8;
+    state.jail.alertCount = (state.jail.alertCount || 0) + 1;
+    state.jail.alertFlash = true;
+
+    /* За попытку вскрытия накидывают полчаса срока, падает отношение стражи и растёт розыск. */
+    var curMin = syncJailMinutes(state.jail);
+    state.jail.minutesLeft = curMin + 30;
+    state.jail.hoursLeft = Math.ceil(state.jail.minutesLeft / 60);
+    state.jail._syncedHours = state.jail.hoursLeft;
+
+    Bow.steal.addHeat(state, GUARD, 6);
+    if (Bow.work) { Bow.work.addReputation(state, GUARD, -5); }
+
+    if (Bow.audio && Bow.audio.playMgsAlert) { Bow.audio.playMgsAlert(); }
+
+    var newDef = LOCK_TIERS[nextTier] || LOCK_TIERS[5];
+    var msg = nextTier > prevTier
+      ? ("! Сторож заметил отмычку! Вас оттащили от решётки и повесили целый замок покрепче: «" + newDef.name + "» (" + newDef.rank + ").")
+      : ("! Сторож заметил взлом! Отмычку отобрали, а «" + newDef.name + "» заперли заново на все обороты.");
+    Bow.journal.add(state, msg, "guard");
+    return {
+      ok: true,
+      caught: true,
+      escaped: false,
+      lockTier: nextTier,
+      lockName: newDef.name,
+      fadeVeil: true,
+      message: msg
+    };
+  }
+
+  /* Тоггл взлома полоской Kenshi прямо над героем в клетке. */
+  function toggleKenshiPick(state) {
+    if (!state || !state.jail) { return { ok: false, message: "Вы не в клетке." }; }
+    var def = ensureJailLock(state.jail);
+    if (state.jail.picking) {
+      state.jail.picking = false;
+      return {
+        ok: true,
+        picking: false,
+        message: "Вы замираете и прячете руки за спину (прогресс замка сохранён: " + Math.round(state.jail.lockProgress) + "%)."
+      };
+    }
+    if (state.jail.guardPhase === "watching" || state.jail.guardPhase === "alert") {
+      /* Если начать греметь засовом прямо под взглядом сторожа — сразу палит! */
+      return catchLockpick(state);
+    }
+    state.jail.picking = true;
+    state.jail.alertFlash = false;
+    return {
+      ok: true,
+      picking: true,
+      message: "Вы тихо просовываете щепку в «" + def.name.toLowerCase() + "» (следите за сторожем!)."
+    };
+  }
+
+  /* Живой такт сцены клетки (~0.95 сек): сторож поворачивается, а полоска Kenshi ползёт вперёд. */
+  function tickJailScene(state, rng) {
+    if (!state || !state.jail || state.dead) { return null; }
+    var def = ensureJailLock(state.jail);
+
+    /* Если только что была вспышка «!» — держим её один такт, затем переводим в обычный надзор. */
+    if (state.jail.guardPhase === "alert") {
+      if (state.jail.alertFlash) {
+        state.jail.alertFlash = false;
+        return { changed: true, phase: "alert" };
+      }
+      state.jail.guardPhase = "watching";
+      state.jail.guardTick = 9;
+      return { changed: true, phase: "watching" };
+    }
+
+    /* 12-шаговый цикл поста: 0..5 отвернулся (away), 6..7 поворачивается (turning), 8..11 смотрит (watching). */
+    var t = ((state.jail.guardTick || 0) + 1) % 12;
+    state.jail.guardTick = t;
+    var nextPhase = t <= 5 ? "away" : (t <= 7 ? "turning" : "watching");
+    var phaseChanged = (nextPhase !== state.jail.guardPhase);
+    state.jail.guardPhase = nextPhase;
+
+    if (!state.jail.picking) {
+      return phaseChanged ? { changed: true, phase: nextPhase } : null;
+    }
+
+    /* Если продолжали ковырять засов, когда сторож уже повернулся лицом — ТРЕВОГА «!» */
+    if (nextPhase === "watching") {
+      var caughtRes = catchLockpick(state);
+      caughtRes.changed = true;
+      return caughtRes;
+    }
+
+    /* Полоска Kenshi движется вперёд и растит навык Взлома! */
+    var sk = lockpickSkillOf(state);
+    var dex = (state.player.attrs && state.player.attrs.dexterity) || 12;
+    var step = def.speed * (0.72 + (sk / 110) + ((dex - 10) * 0.025));
+    state.jail.lockProgress = clamp(Math.round((state.jail.lockProgress + step) * 10) / 10, 0, 100);
+    growLockpickSkill(state, 0.22);
+    if (Bow.audio && Bow.audio.playLockSound) { Bow.audio.playLockSound("tick"); }
+
+    if (state.jail.lockProgress >= 100) {
+      if (rnd(rng) < kenshiOpenChance(state)) {
+        var winRes = unlockEscape(state, "kenshi");
+        winRes.changed = true;
+        return winRes;
+      }
+      /* Срыв штифта: полоска откатывается со скрежетом. */
+      state.jail.lockProgress = 38;
+      if (Bow.audio && Bow.audio.playLockSound) { Bow.audio.playLockSound("snap"); }
+      if (nextPhase === "turning") {
+        state.jail.guardTick = 7; /* со следующего такта сторож обернётся! */
+      }
+      return {
+        changed: true,
+        slipped: true,
+        message: "Штифт сорвался со щелчком! Откат до 38% — берегитесь взгляда сторожа."
+      };
+    }
+
+    return { changed: true, progress: state.jail.lockProgress, phase: nextPhase };
+  }
+
+  /* Попытка повернуть цилиндр замка в ручном окне в духе Skyrim / Fallout. */
+  function turnManualLock(state, pickAngle, curTurn, rng) {
+    if (!state || !state.jail) { return { ok: false, message: "Вы не в клетке." }; }
+    var def = ensureJailLock(state.jail);
+
+    if (state.jail.guardPhase === "watching" || state.jail.guardPhase === "alert") {
+      return catchLockpick(state);
+    }
+
+    var ang = clamp(Number(pickAngle) || 0, -85, 85);
+    var sk = lockpickSkillOf(state);
+    var tol = def.sweetTol + (sk * 0.09);
+    var diff = Math.abs(ang - state.jail.sweetSpot);
+
+    growLockpickSkill(state, 0.16);
+
+    if (diff <= tol) {
+      var nextTurn = Math.min(90, (Number(curTurn) || 0) + 34);
+      if (nextTurn >= 88) {
+        var res = unlockEscape(state, "manual");
+        res.cylinderAngle = 90;
+        return res;
+      }
+      if (Bow.audio && Bow.audio.playLockSound) { Bow.audio.playLockSound("tick"); }
+      return {
+        ok: true,
+        jammed: false,
+        cylinderAngle: nextTurn,
+        pinHp: state.jail.pinHp,
+        message: "Замок поддаётся… ещё чуть-чуть до щелчка!"
+      };
+    }
+
+    /* Угол не тот: цилиндр упирается пропорционально промаху (как в Skyrim и Fallout 4)! */
+    var maxAngle = Math.round(clamp(76 * (1 - ((diff - tol) / 115)), 5, 74));
+    var tried = Math.min(maxAngle, (Number(curTurn) || 0) + 26);
+    var wear = Math.round(16 + (def.tier * 5) - Math.min(10, sk * 0.1));
+    state.jail.pinHp = Math.max(0, (state.jail.pinHp || 100) - Math.max(8, wear));
+
+    if (state.jail.pinHp <= 0) {
+      state.jail.pinHp = 100;
+      if (Bow.audio && Bow.audio.playLockSound) { Bow.audio.playLockSound("snap"); }
+      /* Звон лопнувшей отмычки привлекает внимание сторожа! */
+      if (state.jail.guardPhase === "away" && state.jail.guardTick < 5) {
+        state.jail.guardTick = 5;
+      }
+      return {
+        ok: true,
+        jammed: true,
+        snapped: true,
+        cylinderAngle: 0,
+        maxAngle: maxAngle,
+        pinHp: 100,
+        message: "Хруст! Отмычка обломилась (сторож насторожился!). Найдена новая проволока."
+      };
+    }
+
+    if (Bow.audio && Bow.audio.playLockSound) { Bow.audio.playLockSound("scrape"); }
+    var hint = maxAngle >= 52 ? "Совсем близко — замок почти провернулся!"
+      : maxAngle >= 28 ? "Замок упёрся на полпути — сдвиньте отмычку."
+      : "Штифт намертво клинит с самого начала — ищите другой угол.";
+    return {
+      ok: true,
+      jammed: true,
+      snapped: false,
+      cylinderAngle: tried,
+      maxAngle: maxAngle,
+      pinHp: state.jail.pinHp,
+      message: hint
+    };
+  }
 
   function syncJailMinutes(jail) {
     if (!jail) { return 0; }
@@ -12054,7 +12846,15 @@ html.bow-motion-calm .bow-fog-band {
       minutesLeft: g.cellsHours * 60,
       _syncedHours: g.cellsHours,
       reason: reason || "вина",
-      since: state.time.totalHours
+      since: state.time.totalHours,
+      lockTier: 1,
+      lockProgress: 0,
+      picking: false,
+      guardPhase: "away",
+      guardTick: 1,
+      sweetSpot: rollSweetSpot(),
+      pinHp: 100,
+      alertCount: 0
     };
     if (state.task) { state.task = null; }
     state.guard = null;
@@ -12087,18 +12887,28 @@ html.bow-motion-calm .bow-fog-band {
   function release(state) {
     state.jail = null;
     Bow.steal.addHeat(state, GUARD, -Math.round(heat(state) * 0.6));
-    Bow.work.addReputation(state, GUARD, 8);
+    /* Отсидка НЕ делает преступника уважаемым другом стражи (+8 было багом):
+       если отношение было глубоко в минусе, честная отсидка лишь слегка сглаживает вражду (строго не выше 0). */
+    if (Bow.work) {
+      var curRep = Bow.work.reputation(state, GUARD);
+      if (curRep < 0) {
+        Bow.work.addReputation(state, GUARD, Math.min(2, -curRep));
+      }
+    }
     Bow.journal.add(state, "Вас выпустили из клетки.", "guard");
   }
 
   /* Побег из клетки: труднее, чем с улицы, но возможен. */
   function escapeJail(state, rng) {
     if (!state.jail) { return { ok: false, message: "Вы не в клетке." }; }
+    var def = ensureJailLock(state.jail);
     var base = 0.18 + ((state.player.skills.stealth || 0) / 300)
+      + (lockpickSkillOf(state) / 220)
       + ((state.player.skills.survival || 0) / 500)
+      - ((def.tier - 1) * 0.06)
       + Bow.fight.injuryPenalty(state.player, "flee");
     if (state.time.hour >= 22 || state.time.hour < 5) { base += 0.12; }
-    base = clamp(base, 0.05, 0.7);
+    base = clamp(base, 0.05, 0.75);
 
     jailPauseTick = true;
     try {
@@ -12111,14 +12921,21 @@ html.bow-motion-calm .bow-fog-band {
       state.jail = null;
       state.flags.guardAt = null;
       Bow.steal.addHeat(state, GUARD, 15);
+      if (Bow.work) { Bow.work.addReputation(state, GUARD, -8); }
+      growLockpickSkill(state, 1.2);
       Bow.journal.add(state, "Вы выбрались из клетки и ушли в темноту.", "guard");
       return { ok: true, escaped: true, message: "Засов поддался. Вас ищут злее прежнего." };
     }
 
     Bow.steal.addHeat(state, GUARD, 5);
+    if (Bow.work) { Bow.work.addReputation(state, GUARD, -4); }
+    state.jail.lockProgress = 0;
+    state.jail.picking = false;
+    state.jail.lockTier = Math.min(5, (state.jail.lockTier || 1) + 1);
+    state.jail.sweetSpot = rollSweetSpot();
     state.player.needs.health = Math.max(5, Bow.util.round1(state.player.needs.health - 6));
-    Bow.journal.add(state, "Побег из клетки не удался.", "guard");
-    return { ok: true, escaped: false, message: "Вас вернули на место. Теперь следят внимательнее." };
+    Bow.journal.add(state, "Побег из клетки не удался. На дверь повесили замок покрепче.", "guard");
+    return { ok: true, escaped: false, message: "Вас вернули на место и усилили замок. Теперь следят внимательнее." };
   }
 
   /* Подкуп в клетке: дешевле, чем на улице, но и денег уже меньше. */
@@ -12202,6 +13019,13 @@ html.bow-motion-calm .bow-fog-band {
     bribeJail: bribeJail,
     formatJailLeft: formatJailLeft,
     syncJailMinutes: syncJailMinutes,
+    lockInfo: lockInfo,
+    ensureJailLock: ensureJailLock,
+    toggleKenshiPick: toggleKenshiPick,
+    tickJailScene: tickJailScene,
+    turnManualLock: turnManualLock,
+    catchLockpick: catchLockpick,
+    kenshiOpenChance: kenshiOpenChance,
     onMove: onMove,
     THRESHOLD: function () { return R().threshold; }
   };
@@ -12855,6 +13679,14 @@ html.bow-motion-calm .bow-fog-band {
     fightTarget: function (state, key) {
       return Bow.fight.setTarget(state, key);
     },
+    fightHex: function (state, col, row) {
+      var res = Bow.fight.moveTo(state, col, row, rng);
+      if (res.ok) {
+        Bow.needs.ensure(state.player);
+        if (!Bow.fight.isActive(state)) { Bow.events.afterAction(state, rng); }
+      }
+      return res;
+    },
     fightOrder: function (state, kind, value) {
       return Bow.fight.setOrder(state, kind, value);
     },
@@ -12911,6 +13743,16 @@ html.bow-motion-calm .bow-fog-band {
     },
     jailBribe: function (state) {
       return Bow.guard.bribeJail(state);
+    },
+    jailPickToggle: function (state) {
+      var res = Bow.guard.toggleKenshiPick(state);
+      if (res.ok) { Bow.needs.ensure(state.player); }
+      return res;
+    },
+    jailLpTurn: function (state, pickAngle, curTurn) {
+      var res = Bow.guard.turnManualLock(state, pickAngle, curTurn, rng);
+      if (res.ok) { Bow.needs.ensure(state.player); }
+      return res;
     },
 
     /* ---------- Улица ---------- */
@@ -13566,22 +14408,53 @@ html.bow-motion-calm .bow-fog-band {
       var leftLabel = (Bow.guard && Bow.guard.formatJailLeft) ? Bow.guard.formatJailLeft(state.jail) : (state.jail.hoursLeft + " ч.");
       var bribeCost = Math.round(((Bow.data && Bow.data.fightRules && Bow.data.fightRules.guard && Bow.data.fightRules.guard.bribeBase) || 25) * 0.8 + (state.jail.hoursLeft || 1));
       var selfOn = selected && selected.kind === "self" ? " bow-actor-on" : "";
+      var lockDef = (Bow.guard && Bow.guard.lockInfo) ? Bow.guard.lockInfo(state) : { tier: 1, name: "Ржавый засов", rank: "Новичок" };
+      var lpSkill = Math.round((state.player && state.player.skills && state.player.skills.lockpicking) || 5);
+      var lpProg = Math.max(0, Math.min(100, Math.round(state.jail.lockProgress || 0)));
+      var isPicking = !!state.jail.picking;
+      var gPhase = state.jail.guardPhase || "watching";
+
+      var guardSub = gPhase === "away"
+        ? '<i class="bow-tone bow-warm">отвернулся</i>'
+        : gPhase === "turning"
+          ? '<i class="bow-gold-txt">поворачивается…</i>'
+          : gPhase === "alert"
+            ? '<i class="bow-tone bow-cold">тревога!</i>'
+            : '<i class="bow-dim">следит</i>';
+
+      var guardCls = "bow-actor bow-actor-enemy bow-actor-guard bow-jail-guard-" + esc(gPhase);
+      var alertMark = gPhase === "alert"
+        ? '<span class="bow-mgs-alert" aria-label="Сторож заметил взлом">!</span>'
+        : (gPhase === "turning" ? '<span class="bow-mgs-warn" aria-hidden="true">?</span>' : '');
+
+      var kenshiBarHtml = (isPicking || lpProg > 0)
+        ? ('<span class="bow-kenshi-lockbar' + (isPicking ? ' is-active' : ' is-paused') + '">' +
+             '<i class="bow-kenshi-lockfill" style="width:' + lpProg + '%"></i>' +
+             '<b>Взлом · ур. ' + lpSkill + (isPicking ? '' : ' (замер)') + ' · ' + lpProg + '%</b>' +
+           '</span>')
+        : '';
+
+      var lockColor = lockDef.tier >= 4 ? "#d4af5a" : (lockDef.tier >= 2 ? "#a8c0d8" : "#8fa1b3");
+
       return [
-        '<button type="button" class="bow-spot bow-spot-prop" style="left:22%;top:32%" data-act="jail-serve" title="Вздремнуть на соломе и отсидеть 4 часа">' +
+        '<button type="button" class="bow-spot bow-spot-prop" style="left:19%;top:31%" data-act="jail-serve" title="Вздремнуть на соломе и отсидеть 4 часа">' +
           '<span class="bow-spot-dot"></span>' +
           '<span class="bow-spot-txt"><b>Охапка соломы</b><i>отсидеть 4 ч. (' + esc(leftLabel) + ')</i></span>' +
         '</button>',
-        '<button type="button" class="bow-spot bow-spot-exit" style="left:48%;top:30%" data-act="jail-escape" title="Попробовать расшатать засов и бежать">' +
+        '<button type="button" class="bow-spot bow-spot-exit' + (isPicking ? ' bow-spot-on' : '') + '" style="left:46%;top:29%" data-act="jail-pick-toggle" title="Взлом в реальном времени (полоска Kenshi) — ловите момент, пока сторож отвернулся">' +
           '<span class="bow-spot-dot"></span>' +
-          '<span class="bow-spot-txt"><b>Ржавый засов</b><i>попытка побега</i></span>' +
+          '<span class="bow-spot-txt"><b>' + esc(lockDef.name) + ' · ' + esc(lockDef.rank) + '</b><i>' +
+            (isPicking ? ('замереть (' + lpProg + '%)') : ('взлом · нав. ' + lpSkill + (lpProg > 0 ? ' · ' + lpProg + '%' : ''))) +
+          '</i></span>' +
         '</button>',
-        '<button type="button" class="bow-spot bow-spot-prop" style="left:75%;top:32%" data-act="jail-bribe" title="Сунуть монеты сторожу через прутья">' +
+        '<button type="button" class="bow-spot bow-spot-prop" style="left:77%;top:31%" data-act="jail-bribe" title="Сунуть монеты сторожу через прутья">' +
           '<span class="bow-spot-dot"></span>' +
           '<span class="bow-spot-txt"><b>Подкупить сторожа</b><i>' + bribeCost + ' м.</i></span>' +
         '</button>',
-        /* Узник внутри клетки (разоружён на время заключения) */
-        '<button type="button" class="bow-actor bow-actor-player' + selfOn + '" style="left:33%;bottom:42px;z-index:3" ' +
-          'data-act="stage-select" data-kind="self" data-x="33" title="Вы в клетке · осталось ' + esc(leftLabel) + '">' +
+        /* Узник внутри клетки + движущаяся полоска взлома Kenshi прямо над головой */
+        '<button type="button" class="bow-actor bow-actor-player' + selfOn + (isPicking ? ' bow-actor-picking' : '') + '" style="left:36%;bottom:42px;z-index:3" ' +
+          'data-act="stage-select" data-kind="self" data-x="36" title="Вы в клетке · осталось ' + esc(leftLabel) + '">' +
+          kenshiBarHtml +
           figureSvg({ roleKey: "player", side: "player", weapon: null }) +
           '<span class="bow-actor-tag"><b>Вы (в клетке)</b><i class="bow-tone bow-cold">' + esc(leftLabel) + '</i></span>' +
         '</button>',
@@ -13597,15 +14470,21 @@ html.bow-motion-calm .bow-fog-band {
             '<line x1="298" y1="6" x2="298" y2="196"/><line x1="340" y1="6" x2="340" y2="196"/>' +
             '<line x1="382" y1="6" x2="382" y2="196"/>' +
           '</g>' +
-          /* Тяжёлый висячий замок на засове справа */
-          '<rect x="392" y="92" width="20" height="24" rx="3" fill="#2c3640" stroke="#8fa1b3" stroke-width="2"/>' +
-          '<path d="M396 92 C396 82, 408 82, 408 92" fill="none" stroke="#8fa1b3" stroke-width="2.4"/>' +
+          /* Тяжёлый висячий замок на засове справа (усиливается с ростом lockTier) */
+          '<rect x="390" y="90" width="24" height="28" rx="3" fill="#232c35" stroke="' + lockColor + '" stroke-width="2.2"/>' +
+          '<path d="M395 90 C395 79, 409 79, 409 90" fill="none" stroke="' + lockColor + '" stroke-width="2.6"/>' +
+          '<circle cx="402" cy="103" r="2.3" fill="#0d1217"/>' +
         '</svg>',
-        /* Сторож снаружи у факела */
-        '<button type="button" class="bow-actor bow-actor-enemy bow-actor-guard" style="left:72%;bottom:42px;z-index:5" ' +
+        /* Кнопка ручного вскрытия замка крупным планом (Skyrim / Fallout) прямо на засове решётки */
+        '<button type="button" class="bow-cage-lock-btn" data-act="jail-pick-manual" title="Открыть замочную скважину крупным планом и взломать отмычкой вручную (Skyrim / Fallout)">' +
+          '🗝 Вручную' +
+        '</button>',
+        /* Сторож снаружи у факела (следит / поворачивается / отвернулся / «!» тревога MGS) */
+        '<button type="button" class="' + guardCls + '" style="left:73%;bottom:42px;z-index:5" ' +
           'data-act="jail-bribe" title="Сторож у клети — подкупить за ' + bribeCost + ' м.">' +
-          figureSvg({ roleKey: "guard", side: "enemy", weapon: "axe", stance: "guard" }) +
-          '<span class="bow-actor-tag bow-actor-tag-threat"><b>⛨ Сторож</b><i class="bow-tone bow-cold">караул</i></span>' +
+          alertMark +
+          '<span class="bow-jail-guard-fig">' + figureSvg({ roleKey: "guard", side: "enemy", weapon: "axe", stance: "guard" }) + '</span>' +
+          '<span class="bow-actor-tag bow-actor-tag-guard"><b>⛨ Сторож</b>' + guardSub + '</span>' +
         '</button>'
       ].join("");
     }
@@ -14478,15 +15357,15 @@ html.bow-motion-calm .bow-fog-band {
       outRev.connect(outdoorBus);
       outdoorBus.connect(masterGain);
 
-      /* Шина 3: Поле боя (плотная оркестровая сцена Skyrim) */
+      /* Шина 3: Поле боя (единое тёплое акустическое пространство с остальным саундтреком, 0.0.8.2) */
       combatBus = ctx.createGain();
       combatBus.gain.value = 0.0001;
       combatDry = ctx.createGain();
-      combatDry.gain.value = 0.76;
+      combatDry.gain.value = 0.52;
       combatWet = ctx.createGain();
-      combatWet.gain.value = 0.44;
+      combatWet.gain.value = 0.64;
       var cbRev = ctx.createConvolver();
-      cbRev.buffer = buildImpulseResponse(ctx, 2.05, 0.78, 0.55, 553911);
+      cbRev.buffer = buildImpulseResponse(ctx, 3.45, 0.84, 0.42, 553911);
       combatDry.connect(combatBus);
       combatWet.connect(cbRev);
       cbRev.connect(combatBus);
@@ -14980,7 +15859,7 @@ html.bow-motion-calm .bow-fog-band {
 
   /* ---------- Инструмент 8: Оркестровые боевые партии Skyrim (спиккато струнных, героическая медь, хор Довакина и тайко) ---------- */
 
-  /* 8а. Спиккато / маркато виолончелей, альтов и контрабасов (живой упругий смычок без щипков, хорошо читаемый на любых колонках) */
+  /* 8а. Акустическое маркато / спиккато виолончелей и альтов (тёплая дека без синтезаторной «пилы», 0.0.8.2) */
   function playSpiccatoStrings(midi, when, durSec, accent, highSection) {
     if (!ctx || midi < 28) { return; }
     var voices = highSection ? [midi, midi - 12] : [midi, midi + 12];
@@ -14990,54 +15869,82 @@ html.bow-motion-calm .bow-fog-band {
       var osc1 = ctx.createOscillator();
       var osc2 = ctx.createOscillator();
       var osc3 = ctx.createOscillator();
+      var gSaw = ctx.createGain();
       var lp = ctx.createBiquadFilter();
       var bodyPeak = ctx.createBiquadFilter();
       var env = ctx.createGain();
 
-      osc1.type = "sawtooth";
+      /* Основа — тёплый деревянный треугольник + октавный синус, а смычковый обертон подан мягко (0.22) */
+      osc1.type = "triangle";
       osc2.type = "sawtooth";
-      osc3.type = "triangle";
-      osc1.frequency.setValueAtTime(freq * 0.9965, when);
-      osc2.frequency.setValueAtTime(freq * 1.0035, when);
-      osc3.frequency.setValueAtTime(freq, when);
+      osc3.type = "sine";
+      osc1.frequency.setValueAtTime(freq * 0.9982, when);
+      osc2.frequency.setValueAtTime(freq * 1.0020, when);
+      osc3.frequency.setValueAtTime(freq * 2, when);
+      gSaw.gain.value = highSection ? 0.18 : 0.24;
 
-      /* Деревянный резонанс деки виолончели / скрипки */
+      var gHarm = ctx.createGain();
+      gHarm.gain.value = 0.16;
+
+      /* Деревянный корпус деки виолончели / виолы */
       bodyPeak.type = "peaking";
-      bodyPeak.frequency.value = highSection ? 1350 : 520;
-      bodyPeak.Q.value = 1.4;
-      bodyPeak.gain.value = 4.5;
+      bodyPeak.frequency.value = highSection ? 780 : 410;
+      bodyPeak.Q.value = 1.1;
+      bodyPeak.gain.value = 2.4;
 
-      /* Яркий смычковый штрих в начале ноты с плавным уходом в тёплое дерево */
+      /* Тёплый акустический фильтр в том же диапазоне, что и камерные виолы игры */
       lp.type = "lowpass";
-      var openF = highSection ? (accent ? 3200 : 2400) : (accent ? 2150 : 1550);
-      var tailF = highSection ? 1400 : 720;
+      var openF = highSection ? (accent ? 1320 : 1060) : (accent ? 980 : 760);
+      var tailF = highSection ? 780 : 520;
       lp.frequency.setValueAtTime(openF, when);
-      lp.frequency.exponentialRampToValueAtTime(tailF, when + Math.max(0.08, durSec * 0.78));
-      lp.Q.value = 0.9;
+      lp.frequency.exponentialRampToValueAtTime(tailF, when + Math.max(0.10, durSec * 0.85));
+      lp.Q.value = 0.72;
 
-      var peak = (highSection ? 0.032 : (v === 0 ? 0.046 : 0.034)) * (accent ? 1.22 : 0.9);
+      var peak = (highSection ? 0.030 : (v === 0 ? 0.048 : 0.032)) * (accent ? 1.18 : 0.88);
+      var att = Math.min(0.038, durSec * 0.25);
       env.gain.setValueAtTime(0.0001, when);
-      env.gain.linearRampToValueAtTime(peak, when + 0.018);
-      env.gain.exponentialRampToValueAtTime(peak * 0.42, when + Math.max(0.05, durSec * 0.72));
-      env.gain.exponentialRampToValueAtTime(0.0002, when + durSec + 0.08);
+      env.gain.linearRampToValueAtTime(peak, when + att);
+      env.gain.exponentialRampToValueAtTime(peak * 0.52, when + Math.max(att + 0.04, durSec * 0.76));
+      env.gain.exponentialRampToValueAtTime(0.0002, when + durSec + 0.18);
 
       osc1.connect(bodyPeak);
-      osc2.connect(bodyPeak);
-      osc3.connect(bodyPeak);
+      osc2.connect(gSaw);
+      gSaw.connect(bodyPeak);
+      osc3.connect(gHarm);
+      gHarm.connect(bodyPeak);
       bodyPeak.connect(lp);
       lp.connect(env);
-      routeToRealm(env, "combat", highSection ? 0.28 : (v === 0 ? -0.22 : 0.16));
+      routeToRealm(env, "combat", highSection ? 0.24 : (v === 0 ? -0.20 : 0.14));
+
+      /* Лёгкий шорох канифоли смычка на сильной доле для живой акустики */
+      if (accent && v === 0) {
+        var bowAir = ctx.createBufferSource();
+        bowAir.buffer = getVelvetNoiseBuffer(ctx);
+        var bowBp = ctx.createBiquadFilter();
+        bowBp.type = "bandpass";
+        bowBp.frequency.value = highSection ? 920 : 580;
+        bowBp.Q.value = 2.2;
+        var bowEnv = ctx.createGain();
+        bowEnv.gain.setValueAtTime(0.0001, when);
+        bowEnv.gain.linearRampToValueAtTime(peak * 0.22, when + 0.022);
+        bowEnv.gain.exponentialRampToValueAtTime(0.0001, when + 0.11);
+        bowAir.connect(bowBp);
+        bowBp.connect(bowEnv);
+        routeToRealm(bowEnv, "combat", -0.14);
+        bowAir.start(when);
+        bowAir.stop(when + 0.13);
+      }
 
       osc1.start(when);
       osc2.start(when);
       osc3.start(when);
-      osc1.stop(when + durSec + 0.11);
-      osc2.stop(when + durSec + 0.11);
-      osc3.stop(when + durSec + 0.11);
+      osc1.stop(when + durSec + 0.22);
+      osc2.stop(when + durSec + 0.22);
+      osc3.stop(when + durSec + 0.22);
     }
   }
 
-  /* 8б. Героические валторны и тромбоны Skyrim (мелодическая медь с мощным раскрытием раструба) */
+  /* 8б. Северные боевые рога и валторны (глубокий тёплый конический тембр без резкой синтезаторной меди, 0.0.8.2) */
   function playHeroicBrass(midi, when, durSec, gainVal) {
     if (!ctx || midi < 34) { return; }
     var notes = [midi, midi - 12];
@@ -15047,47 +15954,65 @@ html.bow-motion-calm .bow-fog-band {
       var freq = midiToFreq(m);
       var osc1 = ctx.createOscillator();
       var osc2 = ctx.createOscillator();
-      var brassFormant = ctx.createBiquadFilter();
+      var oscSaw = ctx.createOscillator();
+      var gHarm = ctx.createGain();
+      var gSaw = ctx.createGain();
+      var vib = ctx.createOscillator();
+      var vibGain = ctx.createGain();
       var lp = ctx.createBiquadFilter();
       var env = ctx.createGain();
 
-      osc1.type = "sawtooth";
-      osc2.type = "sawtooth";
-      osc1.frequency.setValueAtTime(freq * 0.996, when);
-      osc1.frequency.linearRampToValueAtTime(freq * 0.999, when + 0.045);
-      osc2.frequency.setValueAtTime(freq * 1.004, when);
+      osc1.type = "triangle";
+      osc2.type = "sine";
+      oscSaw.type = "sawtooth";
+      osc1.frequency.setValueAtTime(freq * 0.991, when);
+      osc1.frequency.exponentialRampToValueAtTime(freq * 0.999, when + 0.065);
+      osc2.frequency.setValueAtTime(freq * 2, when);
+      oscSaw.frequency.setValueAtTime(freq * 1.002, when);
 
-      brassFormant.type = "peaking";
-      brassFormant.frequency.value = 940;
-      brassFormant.Q.value = 1.6;
-      brassFormant.gain.value = 5.0;
+      gHarm.gain.value = 0.28;
+      gSaw.gain.value = 0.16;
+
+      vib.type = "sine";
+      vib.frequency.setValueAtTime(4.3, when);
+      vibGain.gain.setValueAtTime(0.0, when);
+      vibGain.gain.linearRampToValueAtTime(freq * 0.0045, when + Math.min(0.35, durSec * 0.5));
+      vib.connect(vibGain);
+      vibGain.connect(osc1.frequency);
 
       lp.type = "lowpass";
-      lp.frequency.setValueAtTime(640, when);
-      lp.frequency.linearRampToValueAtTime(2480, when + Math.min(0.14, durSec * 0.35));
-      lp.frequency.exponentialRampToValueAtTime(1150, when + durSec + 0.12);
-      lp.Q.value = 1.25;
+      lp.frequency.setValueAtTime(Math.min(480, freq * 1.9), when);
+      lp.frequency.linearRampToValueAtTime(Math.min(1080, freq * 3.2), when + Math.min(0.18, durSec * 0.38));
+      lp.frequency.exponentialRampToValueAtTime(Math.min(640, freq * 2.1), when + durSec + 0.24);
+      lp.Q.value = 0.82;
 
-      var vPeak = (i === 0 ? 1.0 : 0.58) * (gainVal || 0.052);
+      var vPeak = (i === 0 ? 1.0 : 0.62) * (gainVal || 0.052);
+      var att = Math.min(0.065, durSec * 0.28);
       env.gain.setValueAtTime(0.0001, when);
-      env.gain.linearRampToValueAtTime(vPeak, when + 0.032);
-      env.gain.setValueAtTime(vPeak * 0.85, when + Math.max(0.06, durSec * 0.72));
-      env.gain.exponentialRampToValueAtTime(0.0002, when + durSec + 0.22);
+      env.gain.linearRampToValueAtTime(vPeak, when + att);
+      env.gain.setValueAtTime(vPeak * 0.86, when + Math.max(att + 0.03, durSec * 0.74));
+      env.gain.exponentialRampToValueAtTime(0.0002, when + durSec + 0.34);
 
-      osc1.connect(brassFormant);
-      osc2.connect(brassFormant);
-      brassFormant.connect(lp);
+      osc1.connect(lp);
+      osc2.connect(gHarm);
+      gHarm.connect(lp);
+      oscSaw.connect(gSaw);
+      gSaw.connect(lp);
       lp.connect(env);
-      routeToRealm(env, "combat", i === 0 ? -0.14 : 0.22);
+      routeToRealm(env, "combat", i === 0 ? -0.14 : 0.20);
 
       osc1.start(when);
       osc2.start(when);
-      osc1.stop(when + durSec + 0.26);
-      osc2.stop(when + durSec + 0.26);
+      oscSaw.start(when);
+      vib.start(when);
+      osc1.stop(when + durSec + 0.38);
+      osc2.stop(when + durSec + 0.38);
+      oscSaw.stop(when + durSec + 0.38);
+      vib.stop(when + durSec + 0.38);
     }
   }
 
-  /* 8в. Северный мужской ратный хор в духе Довакина (резкие выкрики «ХУ! / ХА! / ДО!» на гласных формантах) */
+  /* 8в. Северный мужской ратный хор (мягкий объёмный ансамбль в гулком зале без цифрового звона, 0.0.8.2) */
   function playNordicWarChoir(midi, when, durSec) {
     if (!ctx || midi <= 0) { return; }
     var chord = [midi - 12, midi - 5, midi];
@@ -15097,62 +16022,70 @@ html.bow-motion-calm .bow-fog-band {
       var freq = midiToFreq(m);
       var osc1 = ctx.createOscillator();
       var osc2 = ctx.createOscillator();
+      var g2 = ctx.createGain();
       var f1 = ctx.createBiquadFilter();
       var f2 = ctx.createBiquadFilter();
+      var warmLp = ctx.createBiquadFilter();
       var sum = ctx.createGain();
       var env = ctx.createGain();
 
-      osc1.type = "sawtooth";
+      osc1.type = "triangle";
       osc2.type = "sawtooth";
-      osc1.frequency.setValueAtTime(freq * 0.995, when);
-      osc2.frequency.setValueAtTime(freq * 1.005, when);
+      osc1.frequency.setValueAtTime(freq * 0.996, when);
+      osc2.frequency.setValueAtTime(freq * 1.004, when);
+      g2.gain.value = 0.36;
 
-      /* Открытая мужская гласная «А-О» (F1 = 660 Гц, F2 = 1120 Гц) */
+      /* Глубокая северная мужская гласная «О-У» */
       f1.type = "bandpass";
-      f1.frequency.value = 660;
-      f1.Q.value = 3.8;
+      f1.frequency.value = 510;
+      f1.Q.value = 2.9;
 
       f2.type = "bandpass";
-      f2.frequency.value = 1120;
-      f2.Q.value = 4.4;
+      f2.frequency.value = 910;
+      f2.Q.value = 3.4;
+
+      warmLp.type = "lowpass";
+      warmLp.frequency.value = 1280;
 
       osc1.connect(f1);
-      osc2.connect(f1);
+      osc2.connect(g2);
+      g2.connect(f1);
       osc1.connect(f2);
-      osc2.connect(f2);
+      g2.connect(f2);
       f1.connect(sum);
       f2.connect(sum);
+      sum.connect(warmLp);
 
-      /* Выдох согласной в начале скандирования */
+      /* Живое дыхание хора в начале слога */
       var breath = ctx.createBufferSource();
       breath.buffer = getVelvetNoiseBuffer(ctx);
       var bBp = ctx.createBiquadFilter();
       bBp.type = "bandpass";
-      bBp.frequency.value = 900;
-      bBp.Q.value = 1.8;
+      bBp.frequency.value = 740;
+      bBp.Q.value = 2.0;
       var bEnv = ctx.createGain();
       bEnv.gain.setValueAtTime(0.0001, when);
-      bEnv.gain.linearRampToValueAtTime(0.018, when + 0.015);
-      bEnv.gain.exponentialRampToValueAtTime(0.0001, when + 0.09);
+      bEnv.gain.linearRampToValueAtTime(0.014, when + 0.022);
+      bEnv.gain.exponentialRampToValueAtTime(0.0001, when + 0.11);
       breath.connect(bBp);
       bBp.connect(bEnv);
       routeToRealm(bEnv, "combat", 0);
 
-      var peak = i === 2 ? 0.068 : 0.052;
+      var peak = i === 2 ? 0.064 : 0.050;
       env.gain.setValueAtTime(0.0001, when);
-      env.gain.linearRampToValueAtTime(peak, when + 0.028);
-      env.gain.setValueAtTime(peak * 0.78, when + Math.max(0.06, durSec * 0.65));
-      env.gain.exponentialRampToValueAtTime(0.0002, when + durSec + 0.32);
+      env.gain.linearRampToValueAtTime(peak, when + 0.045);
+      env.gain.setValueAtTime(peak * 0.82, when + Math.max(0.08, durSec * 0.68));
+      env.gain.exponentialRampToValueAtTime(0.0002, when + durSec + 0.42);
 
-      sum.connect(env);
-      routeToRealm(env, "combat", (i - 1) * 0.26);
+      warmLp.connect(env);
+      routeToRealm(env, "combat", (i - 1) * 0.24);
 
       breath.start(when);
-      breath.stop(when + 0.11);
+      breath.stop(when + 0.13);
       osc1.start(when);
       osc2.start(when);
-      osc1.stop(when + durSec + 0.36);
-      osc2.stop(when + durSec + 0.36);
+      osc1.stop(when + durSec + 0.46);
+      osc2.stop(when + durSec + 0.46);
     }
   }
 
@@ -15256,6 +16189,83 @@ html.bow-motion-calm .bow-fog-band {
     return true;
   }
 
+  /* Фирменный тревожный удар «!» в духе Metal Gear Solid при поимке на взломе (0.0.8.2) */
+  function playMgsAlert() {
+    if (!ensureContext()) { return false; }
+    if (ctx.state === "suspended" && typeof ctx.resume === "function") {
+      ctx.resume();
+    }
+    var now = ctx.currentTime + 0.01;
+    /* Стремительный восходящий глиссандо-аккорд (5 голосов) с резким оркестровым акцентом и коротким эхом */
+    var startNotes = [587.3, 740.0, 880.0, 1174.7, 1480.0];
+    var hitNotes   = [784.0, 987.8, 1244.5, 1568.0, 2093.0];
+    for (var i = 0; i < hitNotes.length; i++) {
+      var osc = ctx.createOscillator();
+      var lp = ctx.createBiquadFilter();
+      var env = ctx.createGain();
+      osc.type = (i % 2 === 0) ? "sawtooth" : "triangle";
+      osc.frequency.setValueAtTime(startNotes[i], now);
+      osc.frequency.exponentialRampToValueAtTime(hitNotes[i], now + 0.055);
+      lp.type = "lowpass";
+      lp.frequency.setValueAtTime(3200, now);
+      lp.frequency.exponentialRampToValueAtTime(1400, now + 0.42);
+      var pk = 0.048 * (state.volume || 0.55);
+      env.gain.setValueAtTime(0.0001, now);
+      env.gain.linearRampToValueAtTime(pk, now + 0.018);
+      env.gain.setValueAtTime(pk * 0.92, now + 0.09);
+      env.gain.exponentialRampToValueAtTime(0.0002, now + 0.48);
+      osc.connect(lp);
+      lp.connect(env);
+      env.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.50);
+    }
+    return true;
+  }
+
+  /* Тактильные звуки железных штифтов, натяжения и открытия засова (0.0.8.2) */
+  function playLockSound(kind) {
+    if (!state.enabled || !ensureContext()) { return false; }
+    if (ctx.state === "suspended") { return false; }
+    var now = ctx.currentTime + 0.008;
+    var vol = Math.max(0.15, state.volume || 0.5);
+
+    if (kind === "open") {
+      var freqs = [310, 468, 720];
+      for (var i = 0; i < freqs.length; i++) {
+        var o = ctx.createOscillator();
+        var g = ctx.createGain();
+        o.type = "triangle";
+        o.frequency.setValueAtTime(freqs[i], now + i * 0.045);
+        g.gain.setValueAtTime(0.0001, now + i * 0.045);
+        g.gain.linearRampToValueAtTime(0.045 * vol, now + i * 0.045 + 0.012);
+        g.gain.exponentialRampToValueAtTime(0.0001, now + i * 0.045 + 0.22);
+        o.connect(g);
+        g.connect(ctx.destination);
+        o.start(now + i * 0.045);
+        o.stop(now + i * 0.045 + 0.24);
+      }
+      return true;
+    }
+
+    var o1 = ctx.createOscillator();
+    var g1 = ctx.createGain();
+    o1.type = kind === "snap" ? "sawtooth" : "triangle";
+    var fStart = kind === "snap" ? 890 : (kind === "scrape" ? 520 : 1180);
+    var fEnd   = kind === "snap" ? 240 : (kind === "scrape" ? 390 : 860);
+    var dSec   = kind === "snap" ? 0.16 : (kind === "scrape" ? 0.11 : 0.055);
+    o1.frequency.setValueAtTime(fStart, now);
+    o1.frequency.exponentialRampToValueAtTime(fEnd, now + dSec);
+    g1.gain.setValueAtTime(0.0001, now);
+    g1.gain.linearRampToValueAtTime((kind === "tick" ? 0.018 : 0.032) * vol, now + 0.008);
+    g1.gain.exponentialRampToValueAtTime(0.0001, now + dSec);
+    o1.connect(g1);
+    g1.connect(ctx.destination);
+    o1.start(now);
+    o1.stop(now + dSec + 0.02);
+    return true;
+  }
+
   /* ---------- Озвучивание одного подшага текущей композиции ---------- */
   function scheduleSubStep(track, bar, sub, totalSubs, subDur, when) {
     var realm = track.realm;
@@ -15295,8 +16305,13 @@ html.bow-motion-calm .bow-fog-band {
 
     /* === 2. БОЕВАЯ ОРКЕСТРОВАЯ СЮИТА В ДУХЕ SKYRIM (Клык и сталь / Сталь о сталь / Смерть или слава) === */
     if (realm === "combat") {
-      if (sub === 0 && bar.pad && bar.pad.length) {
-        playBowedChord(bar.pad, when, barDur * 0.94, 0.024, "combat");
+      if (sub === 0) {
+        var bedNotes = [];
+        if (bar.bass && bar.bass > 0) { bedNotes.push(bar.bass); }
+        (bar.pad || []).forEach(function (n) { bedNotes.push(n); });
+        if (bedNotes.length) {
+          playBowedChord(bedNotes, when, barDur * 0.98, 0.030, "combat");
+        }
       }
 
       /* 1. Упругий спиккато-пульс виолончелей и альтов на каждую восьмую */
@@ -15321,13 +16336,17 @@ html.bow-motion-calm .bow-fog-band {
           if (bar.brass[look] && bar.brass[look] > 0) { break; }
           holdSubs++;
         }
-        playHeroicBrass(brNote, when, subDur * holdSubs * 0.92, 0.054);
+        playHeroicBrass(brNote, when, subDur * holdSubs * 0.94, 0.046);
+        if (holdSubs >= 2) {
+          playHorn(brNote, when + 0.02, subDur * holdSubs * 0.90, 0.028, "combat");
+        }
       }
 
       /* 4. Ратные выкрики северного мужского хора («ХУ! / ХА! / ДО-РА!») */
       var chNote = bar.choir && bar.choir[sub];
       if (chNote && chNote > 0) {
-        playNordicWarChoir(chNote, when, subDur * 1.85);
+        playNordicWarChoir(chNote, when, subDur * 1.95);
+        playChoir(chNote, when + 0.03, subDur * 1.85, 0.024, "combat");
       }
 
       /* 5. Боевые литавры, кожаные тайко и удары о щит */
@@ -15663,6 +16682,8 @@ html.bow-motion-calm .bow-fog-band {
     syncMood: syncMood,
     wakeOnGesture: wakeOnGesture,
     playBattleIntro: playBattleIntro,
+    playMgsAlert: playMgsAlert,
+    playLockSound: playLockSound,
     selectTrack: function (id) { return switchToTrack(id, true); },
     setAutoMode: setAutoMode,
     nextTrack: nextTrack,
@@ -16259,24 +17280,84 @@ html.bow-motion-calm .bow-fog-band {
       box.innerHTML = '<div class="bow-empty">Никого не видно.</div>';
       return;
     }
-    box.innerHTML = ids.map(function (id) {
+
+    var inJail = !!state.jail;
+    var corpses = state.corpses || [];
+    var livingCards = [];
+    var localBodyCards = [];
+    var fallenNames = [];
+
+    ids.forEach(function (id) {
       var p = state.people[id];
+      if (!p) { return; }
+      var deadWord = p.pron === "f" ? "погибла" : "погиб";
+
+      if (!p.alive) {
+        /* Мёртвых в других локациях и исчезнувшие тела НЕ показываем карточками для «Осмотра» (фикс image-27, 0.0.8.2). */
+        var corpseHere = null;
+        if (!inJail) {
+          for (var ci = 0; ci < corpses.length; ci++) {
+            if (corpses[ci] && corpses[ci].personId === p.id && corpses[ci].location === state.player.location) {
+              corpseHere = corpses[ci];
+              break;
+            }
+          }
+        }
+        if (corpseHere) {
+          var canLootBody = !corpseHere.looted && ((corpseHere.money || 0) > 0 || (corpseHere.items && corpseHere.items.length > 0));
+          localBodyCards.push(
+            '<div class="bow-person bow-person-dead">' +
+              '<div class="bow-person-head">' +
+                '<span class="bow-person-name">☠ ' + esc(p.name) + '</span>' +
+                '<span class="bow-dim">' + deadWord + '</span>' +
+              '</div>' +
+              '<span class="bow-dim">' + esc(p.role) + ' · тело лежит рядом</span>' +
+              (canLootBody
+                ? '<div class="bow-person-acts"><button class="bow-trade-btn bow-fight-btn" data-act="loot-corpse" data-corpse="' + esc(corpseHere.id) + '">Обыскать тело</button></div>'
+                : '<span class="bow-dim bow-person-away-note">Тело уже обыскано.</span>') +
+            '</div>'
+          );
+        } else {
+          fallenNames.push(esc(p.name) + " (" + deadWord + ")");
+        }
+        return;
+      }
+
       var loc = Bow.data.locations[p.location];
-      var whereName = !p.alive ? "мертва/мёртв" : (loc ? loc.name : p.location);
-      var here = p.alive && p.location === state.player.location;
+      var whereName = loc ? loc.name : p.location;
+      var here = !inJail && p.location === state.player.location;
       var tone = p.attitude >= 20 ? "warm" : p.attitude <= -20 ? "cold" : "neutral";
-      return '<div class="bow-person">' +
-        '<div class="bow-person-head">' +
-          '<span class="bow-person-name">' + esc(p.name) + '</span>' +
-          '<span class="bow-tone bow-' + tone + '">' + (p.attitude > 0 ? "+" : "") + Math.round(p.attitude) + '</span>' +
-        '</div>' +
-        '<span class="bow-dim">' + esc(p.role) + ' · ' + esc(whereName) + (here ? ' (рядом)' : '') + '</span>' +
-        '<div class="bow-person-acts">' +
-          (here ? '<button class="bow-trade-btn" data-act="talk" data-person="' + esc(p.id) + '">Говорить</button>' : '') +
-          '<button class="bow-trade-btn" data-act="inspect" data-person="' + esc(p.id) + '">Осмотреть</button>' +
-        '</div>' +
-      '</div>';
-    }).join("");
+      var actsHtml = here
+        ? ('<div class="bow-person-acts">' +
+             '<button class="bow-trade-btn" data-act="talk" data-person="' + esc(p.id) + '">Говорить</button>' +
+             '<button class="bow-trade-btn" data-act="inspect" data-person="' + esc(p.id) + '">Осмотреть</button>' +
+           '</div>')
+        : (!inJail
+            ? ('<div class="bow-person-acts">' +
+                 '<span class="bow-dim bow-person-away-note">Не рядом — чтобы осмотреть или заговорить, перейдите: <b>' + esc(whereName) + '</b></span>' +
+               '</div>')
+            : '<span class="bow-dim bow-person-away-note">Не рядом (вы под засовом в клетке).</span>');
+
+      livingCards.push(
+        '<div class="bow-person' + (here ? ' bow-person-here' : ' bow-person-away') + '">' +
+          '<div class="bow-person-head">' +
+            '<span class="bow-person-name">' + esc(p.name) + (here ? ' <i class="bow-here-pill">рядом</i>' : '') + '</span>' +
+            '<span class="bow-tone bow-' + tone + '">' + (p.attitude > 0 ? "+" : "") + Math.round(p.attitude) + '</span>' +
+          '</div>' +
+          '<span class="bow-dim">' + esc(p.role) + ' · ' + esc(whereName) + '</span>' +
+          actsHtml +
+        '</div>'
+      );
+    });
+
+    var out = livingCards.concat(localBodyCards).join("");
+    if (!out) {
+      out = '<div class="bow-empty">Живых жителей в поселении не осталось.</div>';
+    }
+    if (fallenNames.length > 0) {
+      out += '<div class="bow-fallen-summary">Павшие: ' + fallenNames.join(", ") + '.</div>';
+    }
+    box.innerHTML = out;
   }
 
   /* ---------- Общины ----------
@@ -16405,16 +17486,39 @@ html.bow-motion-calm .bow-fog-band {
     return activeTab;
   }
 
+  var lastStagePopKey = null;
+
+  function applyStagePopHtml(pop, popKey, htmlStr) {
+    var isSameKey = (lastStagePopKey === popKey);
+    lastStagePopKey = popKey;
+    if (isSameKey) {
+      htmlStr = htmlStr.replace('class="bow-stage-card"', 'class="bow-stage-card bow-stage-card-steady"');
+    }
+    /* Не пересоздаём DOM карточки при тике минуты, если содержимое не изменилось — убирает мигание! */
+    if (pop._lastHtml !== htmlStr) {
+      pop._lastHtml = htmlStr;
+      pop.innerHTML = htmlStr;
+    }
+    pop.classList.add("bow-stage-pop-open");
+  }
+
+  function clearStagePop(pop) {
+    lastStagePopKey = null;
+    pop._lastHtml = "";
+    pop.innerHTML = "";
+    pop.classList.remove("bow-stage-pop-open", "bow-stage-pop-left");
+  }
+
   function renderStagePop(state) {
     var pop = $("bow-stage-pop");
     if (!pop) { return; }
     if (!stageSelection) {
-      pop.innerHTML = "";
-      pop.classList.remove("bow-stage-pop-open", "bow-stage-pop-left");
+      clearStagePop(pop);
       return;
     }
 
     var sel = stageSelection;
+    var popKey = sel.kind + ":" + (sel.personId || sel.corpseId || "");
     /* Если кликнули по фигуре/объекту справа — открываем карточку слева,
        чтобы не заслонять выбранного человека и соседей рядом. */
     var openLeft = (typeof sel.x === "number") ? (sel.x > 52) : (sel.kind === "person");
@@ -16426,8 +17530,7 @@ html.bow-motion-calm .bow-fog-band {
       var p = state.people[sel.personId];
       if (!p || !p.alive || p.location !== state.player.location) {
         stageSelection = null;
-        pop.innerHTML = "";
-        pop.classList.remove("bow-stage-pop-open", "bow-stage-pop-left");
+        clearStagePop(pop);
         return;
       }
       var tone = p.attitude >= 20 ? "warm" : p.attitude <= -20 ? "cold" : "neutral";
@@ -16448,7 +17551,7 @@ html.bow-motion-calm .bow-fog-band {
           '</div>' +
         '</div>';
       }
-      pop.innerHTML =
+      applyStagePopHtml(pop, popKey,
         '<div class="bow-stage-card">' +
           '<div class="bow-stage-card-head">' +
             '<div class="bow-stage-card-title">' +
@@ -16466,8 +17569,7 @@ html.bow-motion-calm .bow-fog-band {
               (p.attitude >= Bow.data.fightRules.sparMinAttitude ? 'Бой' : 'Напасть') + '</button>' +
           '</div>' +
           stealHtml +
-        '</div>';
-      pop.classList.add("bow-stage-pop-open");
+        '</div>');
       return;
     }
 
@@ -16490,10 +17592,9 @@ html.bow-motion-calm .bow-fog-band {
         '</div>';
       }).join("") || '<div class="bow-empty">Работы нет.</div>';
 
-      pop.innerHTML = '<div class="bow-stage-card">' +
+      applyStagePopHtml(pop, popKey, '<div class="bow-stage-card">' +
         '<div class="bow-stage-card-head"><div class="bow-stage-card-title"><b>Работа здесь</b></div>' + closeBtn + '</div>' +
-        '<div class="bow-stage-mini-list">' + jRows + '</div></div>';
-      pop.classList.add("bow-stage-pop-open");
+        '<div class="bow-stage-mini-list">' + jRows + '</div></div>');
       return;
     }
 
@@ -16512,10 +17613,9 @@ html.bow-motion-calm .bow-fog-band {
         '</div>';
       }).join("") || '<div class="bow-empty">Здесь не торгуют.</div>';
 
-      pop.innerHTML = '<div class="bow-stage-card">' +
+      applyStagePopHtml(pop, popKey, '<div class="bow-stage-card">' +
         '<div class="bow-stage-card-head"><div class="bow-stage-card-title"><b>Лавка</b><span class="bow-dim">· у вас ' + state.player.money + ' м.</span></div>' + closeBtn + '</div>' +
-        '<div class="bow-stage-mini-list">' + tRows + '</div></div>';
-      pop.classList.add("bow-stage-pop-open");
+        '<div class="bow-stage-mini-list">' + tRows + '</div></div>');
       return;
     }
 
@@ -16532,16 +17632,15 @@ html.bow-motion-calm .bow-fog-band {
       });
       var w = Bow.fight.weaponOf(state.player);
       var ar = Bow.fight.armorOf(state.player);
-      pop.innerHTML = '<div class="bow-stage-card">' +
+      applyStagePopHtml(pop, popKey, '<div class="bow-stage-card">' +
         '<div class="bow-stage-card-head"><div class="bow-stage-card-title"><b>' + esc(state.player.name) + '</b><span class="bow-dim">· при себе</span></div>' + closeBtn + '</div>' +
         '<div class="bow-stage-card-meta">В руке: ' + esc(w ? w.name : "пусто") + ' · На себе: ' + esc(ar ? ar.name : "пусто") + '</div>' +
         '<div class="bow-person-acts bow-self-acts">' +
-          '<button type="button" class="bow-trade-btn" data-act="rest">☾ Отдохнуть</button>' +
+          (state.jail ? '<button type="button" class="bow-trade-btn" data-act="jail-serve">☾ Отсидеть 4 ч.</button>' : '<button type="button" class="bow-trade-btn" data-act="rest">☾ Отдохнуть</button>') +
           (state.player.needs.health < 100 ? '<button type="button" class="bow-trade-btn" data-act="treat">✚ Перевязать</button>' : '') +
           cons.join("") +
         '</div>' +
-      '</div>';
-      pop.classList.add("bow-stage-pop-open");
+      '</div>');
       return;
     }
 
@@ -16556,8 +17655,7 @@ html.bow-motion-calm .bow-fog-band {
       }
       if (!corpse) {
         stageSelection = null;
-        pop.innerHTML = "";
-        pop.classList.remove("bow-stage-pop-open", "bow-stage-pop-left");
+        clearStagePop(pop);
         return;
       }
       var lootLines = [];
@@ -16576,7 +17674,7 @@ html.bow-motion-calm .bow-fog-band {
         ? "Состояние: " + cStg.label + " · через ~" + hoursLeft + " ч. растащит зверьё."
         : "Состояние: " + cStg.label + " · через ~" + hoursLeft + " ч. тело уберут за околицу.";
 
-      pop.innerHTML = '<div class="bow-stage-card">' +
+      applyStagePopHtml(pop, popKey, '<div class="bow-stage-card">' +
         '<div class="bow-stage-card-head">' +
           '<div class="bow-stage-card-title"><b>☠ ' + esc(corpse.name) + '</b><span class="bow-dim">· ' + esc(corpse.role || "труп") + '</span></div>' +
           closeBtn +
@@ -16588,22 +17686,20 @@ html.bow-motion-calm .bow-fog-band {
               '<button type="button" class="bow-trade-btn bow-fight-btn" data-act="loot-corpse" data-corpse="' + esc(corpse.id) + '">Обыскать и забрать всё</button>' +
             '</div>'
           : '<div class="bow-empty">Тело уже обыскано — карманы пусты.</div>') +
-      '</div>';
-      pop.classList.add("bow-stage-pop-open");
+      '</div>');
       return;
     }
 
     if (sel.kind === "guard") {
       if (!state.guard || !state.guard.arrived) {
         stageSelection = null;
-        pop.innerHTML = "";
-        pop.classList.remove("bow-stage-pop-open", "bow-stage-pop-left");
+        clearStagePop(pop);
         return;
       }
       var gCost = Bow.guard.bribeCost(state);
       var gCanPay = state.player.money >= gCost;
       var gFlee = Math.round(Bow.guard.fleeChance(state) * 100);
-      pop.innerHTML = '<div class="bow-stage-card">' +
+      applyStagePopHtml(pop, popKey, '<div class="bow-stage-card">' +
         '<div class="bow-stage-card-head"><div class="bow-stage-card-title"><b>⛨ Стража Брода</b><span class="bow-dim">· их ' + state.guard.squad.length + '</span></div>' + closeBtn + '</div>' +
         '<div class="bow-stage-card-meta">Десятник с топором преграждает дорогу. За вами числится розыск ' + Math.round(Bow.steal.heatOf(state, "org:guard")) + '.</div>' +
         '<div class="bow-person-acts bow-self-acts">' +
@@ -16612,30 +17708,27 @@ html.bow-motion-calm .bow-fog-band {
           '<button type="button" class="bow-trade-btn" data-act="guard-flee">Бежать · ' + gFlee + '%</button>' +
           '<button type="button" class="bow-trade-btn bow-fight-btn" data-act="guard-fight">Драться</button>' +
         '</div>' +
-      '</div>';
-      pop.classList.add("bow-stage-pop-open");
+      '</div>');
       return;
     }
 
     if (sel.kind === "robber") {
       if (!state.encounter || !state.encounter.robber) {
         stageSelection = null;
-        pop.innerHTML = "";
-        pop.classList.remove("bow-stage-pop-open", "bow-stage-pop-left");
+        clearStagePop(pop);
         return;
       }
       var r = state.encounter.robber;
-      pop.innerHTML = '<div class="bow-stage-card">' +
+      applyStagePopHtml(pop, popKey, '<div class="bow-stage-card">' +
         '<div class="bow-stage-card-head"><div class="bow-stage-card-title"><b>⚔ ' + esc(r.name) + '</b><span class="bow-dim">· требует ' + r.demand + ' м.</span></div>' + closeBtn + '</div>' +
         '<div class="bow-stage-card-meta">Нож у бедра. Ждёт вашего решения.</div>' +
         '<div class="bow-person-acts bow-self-acts">' +
           '<button type="button" class="bow-trade-btn" data-act="street-pay">Отдать ' + Math.min(state.player.money, r.demand) + ' м.</button>' +
-          '<button type="button" class="bow-trade-btn" data-act="street-scare">Припугнуть · ' + Math.round(Bow.street.scareChance(state) * 100) + '%</button>' +
+          '<button type="button" class="bow-trade-btn" data-act="street-scare">Припугнуть · ' + Math.round(Bow.street.scareChance(state) * 100) * 1 + '%</button>' +
           '<button type="button" class="bow-trade-btn" data-act="street-flee">Бежать · ' + Math.round(Bow.street.fleeChance(state) * 100) + '%</button>' +
           '<button type="button" class="bow-trade-btn bow-fight-btn" data-act="street-fight">Драться</button>' +
         '</div>' +
-      '</div>';
-      pop.classList.add("bow-stage-pop-open");
+      '</div>');
     }
   }
 
@@ -16673,7 +17766,11 @@ html.bow-motion-calm .bow-fog-band {
         : "";
     }
 
-    layer.innerHTML = Bow.stage.renderHotspotsAndActors(state, stageSelection);
+    var nextLayerHtml = Bow.stage.renderHotspotsAndActors(state, stageSelection);
+    if (layer._lastHtml !== nextLayerHtml) {
+      layer._lastHtml = nextLayerHtml;
+      layer.innerHTML = nextLayerHtml;
+    }
     renderStagePop(state);
   }
 
@@ -16975,15 +18072,20 @@ html.bow-motion-calm .bow-fog-band {
     };
   }
 
-  function tacticalGridSvg(A, units, targetKey) {
+  function tacticalGridSvg(A, units, targetKey, state) {
     var cols = A.cols || 7;
     var rows = A.rows || 5;
     var unitAt = {};
     (units || []).forEach(function (u) {
-      if (!u.dead) {
+      if (!u.dead && !u.down) {
         unitAt[(u.col || 0) + ":" + (u.row || 0)] = u;
       }
     });
+
+    var isExchange = !!(state && state.fight && state.fight.phase === "exchange");
+    var reachMap = (isExchange && Bow.fight && Bow.fight.reachableHexes)
+      ? Bow.fight.reachableHexes(state)
+      : {};
 
     var cells = [];
     for (var r = 0; r < rows; r++) {
@@ -16991,9 +18093,21 @@ html.bow-motion-calm .bow-fog-band {
         var ctr = hexCenterPx(c, r);
         var pts = hexPolygonPts(ctr.cx, ctr.cy, HEX_RX, HEX_RY);
         var occ = unitAt[c + ":" + r] || null;
+        var cellLbl = (Bow.fight && Bow.fight.hexName) ? Bow.fight.hexName(c, r) : ((c + 1) + ":" + (r + 1));
         if (!occ) {
+          var canReach = !!reachMap[c + ":" + r];
+          var emptyCls = isExchange
+            ? ('bow-hex-cell bow-hex-move-hit' + (canReach ? ' bow-hex-reach' : ''))
+            : 'bow-hex-cell';
+          var emptyFill = canReach ? "rgba(92,158,208,0.16)" : "rgba(14,22,30,0.18)";
+          var emptyStroke = canReach ? "rgba(154,212,252,0.52)" : "rgba(168,196,220,0.24)";
+          var moveAttrs = isExchange
+            ? (' data-act="fight-hex" data-col="' + c + '" data-row="' + r + '"')
+            : '';
           cells.push(
-            '<polygon class="bow-hex-cell" points="' + pts + '" fill="rgba(14,22,30,0.18)" stroke="rgba(168,196,220,0.24)" stroke-width="1.15"/>'
+            '<polygon class="' + emptyCls + '"' + moveAttrs + ' points="' + pts + '" fill="' + emptyFill + '" stroke="' + emptyStroke + '" stroke-width="' + (canReach ? "1.5" : "1.15") + '">' +
+              (isExchange ? '<title>' + (canReach ? 'Перейти на клетку ' : 'Идти в сторону клетки ') + cellLbl + '</title>' : '') +
+            '</polygon>'
           );
         } else {
           var isEnemy = occ.side === "enemy";
@@ -17209,7 +18323,7 @@ html.bow-motion-calm .bow-fog-band {
     var wHtml = (Bow.stage && Bow.stage.weatherOverlayHtml && state)
       ? Bow.stage.weatherOverlayHtml(state, state.player.location, true)
       : "";
-    var gridSvg = tacticalGridSvg(A, units, f.target);
+    var gridSvg = tacticalGridSvg(A, units, f.target, state);
 
     return {
       bgHtml: bg + wHtml,
@@ -17621,31 +18735,193 @@ html.bow-motion-calm .bow-fog-band {
     box.classList.add("bow-fight-open");
   }
 
-  /* ---------- Клетка ---------- */
+  /* ---------- Клетка и окно ручного взлома в духе Skyrim / Fallout (0.0.8.2) ---------- */
+  var lpModal = {
+    open: false,
+    pickAngle: 0,
+    cylinderAngle: 0,
+    jammed: false,
+    hint: "Найдите верный угол отмычки, пока сторож отвернулся, и поверните замок."
+  };
+
+  function openLockpickModal(state) {
+    if (!state || !state.jail) { return false; }
+    if (state.jail.picking) { state.jail.picking = false; }
+    lpModal.open = true;
+    lpModal.cylinderAngle = 0;
+    lpModal.jammed = false;
+    lpModal.hint = "Двигайте отмычку (мышью или ←/→) и крутите скважину, пока сторож не смотрит.";
+    renderLockpickModal(state);
+    return true;
+  }
+
+  function closeLockpickModal() {
+    lpModal.open = false;
+    lpModal.cylinderAngle = 0;
+    lpModal.jammed = false;
+    var box = $("bow-lockpick-modal");
+    if (box) {
+      box.classList.remove("bow-lp-open");
+      box.setAttribute("aria-hidden", "true");
+      box.innerHTML = "";
+    }
+  }
+
+  function setLockpickAngle(deg, state) {
+    var clamped = Math.max(-85, Math.min(85, Math.round(Number(deg) || 0)));
+    lpModal.pickAngle = clamped;
+    lpModal.cylinderAngle = 0;
+    lpModal.jammed = false;
+    /* Быстрое обновление угла прямо в SVG без полной пересборки модального окна */
+    var pickEl = document.getElementById("bow-lp-pick-group");
+    var cylEl = document.getElementById("bow-lp-cyl-group");
+    var angOut = document.getElementById("bow-lp-angle-val");
+    var rangeEl = document.getElementById("bow-lp-range");
+    if (pickEl) {
+      pickEl.setAttribute("transform", "translate(160,118) rotate(" + clamped + ")");
+      pickEl.classList.remove("bow-lp-shake");
+    }
+    if (cylEl) {
+      cylEl.setAttribute("transform", "translate(160,126) rotate(0)");
+    }
+    if (angOut) { angOut.textContent = (clamped > 0 ? "+" : "") + clamped + "°"; }
+    if (rangeEl && Number(rangeEl.value) !== clamped) { rangeEl.value = String(clamped); }
+    if (state && !pickEl) { renderLockpickModal(state); }
+  }
+
+  function renderLockpickModal(state) {
+    var box = $("bow-lockpick-modal");
+    if (!box) { return; }
+    if (!lpModal.open || !state || !state.jail) {
+      if (lpModal.open) { closeLockpickModal(); }
+      return;
+    }
+
+    var lockDef = (Bow.guard && Bow.guard.lockInfo) ? Bow.guard.lockInfo(state) : { tier: 1, name: "Ржавый засов", rank: "Новичок" };
+    var lpSkill = Math.round((state.player && state.player.skills && state.player.skills.lockpicking) || 5);
+    var pinHp = Math.max(0, Math.round(state.jail.pinHp || 100));
+    var gPhase = state.jail.guardPhase || "watching";
+
+    var gazeCls = gPhase === "away" ? "bow-lp-gaze-safe"
+      : (gPhase === "turning" ? "bow-lp-gaze-warn" : "bow-lp-gaze-danger");
+    var gazeText = gPhase === "away"
+      ? "👁 Сторож отвернулся — можно тихо крутить замок"
+      : gPhase === "turning"
+        ? "⚠ Сторож начинает поворачиваться — приготовьтесь замереть!"
+        : "❗ Сторож смотрит прямо на клетку — НЕ ПОВОРАЧИВАЙТЕ ЗАМОК!";
+
+    var pickRot = Math.round(lpModal.pickAngle || 0);
+    var cylRot = Math.round(lpModal.cylinderAngle || 0);
+
+    box.innerHTML =
+      '<div class="bow-modal-backdrop" data-act="jail-lp-close"></div>' +
+      '<div class="bow-lp-dialog" role="dialog" aria-modal="true" aria-label="Взлом замка">' +
+        '<div class="bow-lp-head">' +
+          '<div>' +
+            '<b>' + esc(lockDef.name) + '</b>' +
+            '<span class="bow-dim"> · ур. ' + lockDef.tier + ' (' + esc(lockDef.rank) + ') · навык Взлома ' + lpSkill + '</span>' +
+          '</div>' +
+          '<button type="button" class="bow-dialog-close" data-act="jail-lp-close" aria-label="Убрать отмычку">✕</button>' +
+        '</div>' +
+
+        '<div class="bow-lp-gaze ' + gazeCls + '">' + esc(gazeText) + '</div>' +
+
+        '<div class="bow-lp-stage" id="bow-lp-stage" title="Двигайте мышь влево-вправо для наклона отмычки">' +
+          '<svg class="bow-lp-svg" viewBox="0 0 320 236">' +
+            /* Кованая накладка двери острога (холодная воронёная сталь) */
+            '<rect x="54" y="18" width="212" height="198" rx="10" fill="#141b22" stroke="#3c4b59" stroke-width="2.5"/>' +
+            '<rect x="64" y="28" width="192" height="178" rx="6" fill="none" stroke="#26323d" stroke-width="1.5"/>' +
+            '<circle cx="72" cy="36" r="4" fill="#4f6070"/><circle cx="248" cy="36" r="4" fill="#4f6070"/>' +
+            '<circle cx="72" cy="198" r="4" fill="#4f6070"/><circle cx="248" cy="198" r="4" fill="#4f6070"/>' +
+            /* Наружное кованое кольцо замка */
+            '<circle cx="160" cy="126" r="68" fill="#1d2630" stroke="#63778a" stroke-width="4"/>' +
+            '<circle cx="160" cy="126" r="56" fill="#12181f" stroke="#3c4b5a" stroke-width="2"/>' +
+            /* Вращающийся цилиндр со скважиной и нижним ножом-рычагом */
+            '<g id="bow-lp-cyl-group" transform="translate(160,126) rotate(' + cylRot + ')">' +
+              '<circle cx="0" cy="0" r="42" fill="#273340" stroke="#8ea3b8" stroke-width="2.5"/>' +
+              '<circle cx="0" cy="-9" r="8.5" fill="#090d11"/>' +
+              '<path d="M-5 -5 L5 -5 L7 22 L-7 22 Z" fill="#090d11"/>' +
+              /* Нож-рычаг в нижней части скважины (как в Skyrim / Fallout) */
+              '<path d="M-2 12 L4 16 L112 72 L104 82 L0 20 Z" fill="#6f8294" stroke="#aec2d4" stroke-width="1.2"/>' +
+              '<rect x="82" y="54" width="44" height="14" rx="4" transform="rotate(30 82 54)" fill="#2b3642" stroke="#56687a" stroke-width="1.4"/>' +
+            '</g>' +
+            /* Отмычка сверху скважины (наклоняется от -85° до +85°) */
+            '<g id="bow-lp-pick-group" class="' + (lpModal.jammed ? 'bow-lp-shake' : '') + '" transform="translate(160,118) rotate(' + pickRot + ')">' +
+              '<path d="M0 0 L-2 -96 L2 -96 L1.4 -10 L5 -4 L0 2 Z" fill="#c9d6e2" stroke="#eef5fc" stroke-width="0.9"/>' +
+            '</g>' +
+          '</svg>' +
+        '</div>' +
+
+        '<div class="bow-lp-slider-row">' +
+          '<button type="button" class="bow-btn bow-btn-sm" data-act="jail-lp-nudge" data-step="-10">← Левее</button>' +
+          '<input id="bow-lp-range" class="bow-lp-range" type="range" min="-85" max="85" step="1" value="' + pickRot + '" aria-label="Угол отмычки"/>' +
+          '<span id="bow-lp-angle-val" class="bow-lp-angle">' + (pickRot > 0 ? "+" : "") + pickRot + '°</span>' +
+          '<button type="button" class="bow-btn bow-btn-sm" data-act="jail-lp-nudge" data-step="10">Правее →</button>' +
+        '</div>' +
+
+        '<div class="bow-lp-meta">' +
+          '<span>Прочность щепки: <b>' + pinHp + '%</b></span>' +
+          '<span>Поворот цилиндра: <b>' + cylRot + '° / 90°</b></span>' +
+        '</div>' +
+
+        '<div class="bow-lp-hint">' + esc(lpModal.hint) + '</div>' +
+
+        '<div class="bow-lp-actions">' +
+          '<button type="button" class="bow-btn bow-btn-sm bow-lp-turn-btn" data-act="jail-lp-turn">↻ Повернуть замок [Пробел]</button>' +
+          '<button type="button" class="bow-btn bow-btn-sm" data-act="jail-lp-release">Отпустить натяг</button>' +
+          '<button type="button" class="bow-btn bow-btn-sm" data-act="jail-lp-close">Спрятать отмычку</button>' +
+        '</div>' +
+      '</div>';
+
+    box.classList.add("bow-lp-open");
+    box.setAttribute("aria-hidden", "false");
+  }
+
   function renderJail(state) {
     var box = $("bow-jail");
     if (!box) { return; }
-    if (!state.jail) { box.classList.remove("bow-fight-open"); box.innerHTML = ""; return; }
+    if (!state.jail) {
+      box.classList.remove("bow-fight-open");
+      box.innerHTML = "";
+      if (lpModal.open) { closeLockpickModal(); }
+      return;
+    }
 
     var leftStr = (Bow.guard && Bow.guard.formatJailLeft)
       ? Bow.guard.formatJailLeft(state.jail)
       : (state.jail.hoursLeft + " ч.");
     var isRunning = state.time && state.time.scale !== "paused";
+    var lockDef = (Bow.guard && Bow.guard.lockInfo) ? Bow.guard.lockInfo(state) : { tier: 1, name: "Ржавый засов", rank: "Новичок" };
+    var lpProg = Math.round(state.jail.lockProgress || 0);
+    var isPicking = !!state.jail.picking;
+    var gPhase = state.jail.guardPhase || "watching";
+    var guardStateTxt = gPhase === "away"
+      ? "Сторож сейчас отвернулся — удобный миг для взлома."
+      : gPhase === "turning"
+        ? "Сторож шевелится и сейчас повернётся к клетке — лучше замереть!"
+        : gPhase === "alert"
+          ? "! Сторож заметил возню у решётки и повесил более крепкий замок!"
+          : "Сторож спокойно следит за клеткой.";
 
     box.innerHTML = '<div class="bow-fight-card bow-jail-card">' +
-      '<div class="bow-fight-head"><b>Клетка у частокола</b><span>осталось ' + esc(leftStr) + '</span></div>' +
-      '<div class="bow-fight-note">Бревенчатая клеть, кованая решётка и стылая солома. Кормят раз в день. ' +
+      '<div class="bow-fight-head"><b>Клетка у частокола · ' + esc(lockDef.name) + ' (' + esc(lockDef.rank) + ')</b><span>осталось ' + esc(leftStr) + '</span></div>' +
+      '<div class="bow-fight-note">' + esc(guardStateTxt) + ' ' +
         (isRunning
-          ? 'Живое время идёт — срок уменьшается сам с каждой минутой.'
-          : 'Часы сейчас на паузе — включите ход времени (▸ / ▸▸) в шапке или нажмите «Отсидеть 4 ч.».') +
+          ? 'Живое время идёт — срок тает сам поминутно.'
+          : 'Часы на паузе — включите ход времени (▸ / ▸▸) или отсидите 4 ч.') +
       '</div>' +
       '<div class="bow-fight-acts">' +
         '<button class="bow-btn bow-btn-sm" data-act="jail-serve">Отсидеть 4 ч.</button>' +
-        '<button class="bow-btn bow-btn-sm" data-act="jail-escape">Бежать</button>' +
+        '<button class="bow-btn bow-btn-sm' + (isPicking ? ' bow-btn-danger' : '') + '" data-act="jail-pick-toggle">' +
+          (isPicking ? ('✋ Замереть (' + lpProg + '%)') : ('🗝 Взлом (полоска' + (lpProg > 0 ? ' · ' + lpProg + '%' : '') + ')')) +
+        '</button>' +
+        '<button class="bow-btn bow-btn-sm" data-act="jail-pick-manual">⚙ Вручную (отмычка)</button>' +
         '<button class="bow-btn bow-btn-sm" data-act="jail-bribe">Подкупить сторожа</button>' +
+        '<button class="bow-btn bow-btn-sm" data-act="jail-escape">Рвануть напролом</button>' +
       '</div>' +
     '</div>';
     box.classList.add("bow-fight-open");
+    if (lpModal.open) { renderLockpickModal(state); }
   }
 
   /* ---------- Уличная встреча ---------- */
@@ -18046,6 +19322,12 @@ html.bow-motion-calm .bow-fog-band {
     applySettings: applySettings,
     renderSettings: renderSettings,
     renderPersonSheet: renderPersonSheet,
+    openLockpickModal: openLockpickModal,
+    closeLockpickModal: closeLockpickModal,
+    renderLockpickModal: renderLockpickModal,
+    setLockpickAngle: setLockpickAngle,
+    getLockpickModalState: function () { return lpModal; },
+    triggerVeil: runVeil,
     setMessage: setMessage,
     esc: esc
   };
@@ -18212,6 +19494,15 @@ html.bow-motion-calm .bow-fog-band {
     "fight-target": function (el) {
       return Bow.adapter.act.fightTarget(getState(), el.getAttribute("data-target"));
     },
+    "fight-hex": function (el) {
+      var state = getState();
+      if (Bow.fight.isActive(state) && state.fight.phase === "aftermath") {
+        return { ok: false, message: "Бой уже окончен — выберите решение." };
+      }
+      var c = parseInt(el.getAttribute("data-col"), 10);
+      var r = parseInt(el.getAttribute("data-row"), 10);
+      return Bow.adapter.act.fightHex(state, c, r);
+    },
     "fight-decide": function (el) {
       stopFightClock();
       return Bow.adapter.act.fightDecide(getState(), el.getAttribute("data-choice"));
@@ -18235,10 +19526,72 @@ html.bow-motion-calm .bow-fog-band {
       return res;
     },
 
-    /* ---------- Клетка ---------- */
+    /* ---------- Клетка и гибридный взлом замка (0.0.8.2) ---------- */
     "jail-serve": function () { return Bow.adapter.act.jailServe(getState()); },
-    "jail-escape": function () { return Bow.adapter.act.jailEscape(getState()); },
+    "jail-escape": function () {
+      var res = Bow.adapter.act.jailEscape(getState());
+      if (res && !res.escaped && Bow.ui.triggerVeil) { Bow.ui.triggerVeil(); }
+      return res;
+    },
     "jail-bribe": function () { return Bow.adapter.act.jailBribe(getState()); },
+    "jail-pick-toggle": function () {
+      var st = getState();
+      jailUserWakeUntil = Date.now() + 60000;
+      var res = Bow.adapter.act.jailPickToggle(st);
+      startJailClock();
+      if (res && res.fadeVeil && Bow.ui.triggerVeil) { Bow.ui.triggerVeil(); }
+      return res;
+    },
+    "jail-pick-manual": function () {
+      var st = getState();
+      if (!st.jail) { return { ok: false, message: "Вы не в клетке." }; }
+      jailUserWakeUntil = Date.now() + 60000;
+      Bow.ui.openLockpickModal(st);
+      startJailClock();
+      return { ok: true, message: "" };
+    },
+    "jail-lp-close": function () {
+      Bow.ui.closeLockpickModal();
+      return { ok: true, message: "" };
+    },
+    "jail-lp-nudge": function (el) {
+      var step = parseInt(el.getAttribute("data-step"), 10) || 0;
+      var lp = Bow.ui.getLockpickModalState ? Bow.ui.getLockpickModalState() : null;
+      if (lp) { Bow.ui.setLockpickAngle((lp.pickAngle || 0) + step, getState()); }
+      return { ok: true, message: "" };
+    },
+    "jail-lp-release": function () {
+      var lp = Bow.ui.getLockpickModalState ? Bow.ui.getLockpickModalState() : null;
+      if (lp) {
+        lp.cylinderAngle = 0;
+        lp.jammed = false;
+        lp.hint = "Натяг ослаблен — выберите другой угол отмычки.";
+        Bow.ui.renderLockpickModal(getState());
+      }
+      return { ok: true, message: "" };
+    },
+    "jail-lp-turn": function () {
+      var st = getState();
+      var lp = Bow.ui.getLockpickModalState ? Bow.ui.getLockpickModalState() : null;
+      if (!lp || !st.jail) { return { ok: false, message: "Вы не в клетке." }; }
+      var res = Bow.adapter.act.jailLpTurn(st, lp.pickAngle || 0, lp.cylinderAngle || 0);
+      if (res && res.caught) {
+        Bow.ui.closeLockpickModal();
+        if (Bow.ui.triggerVeil) { Bow.ui.triggerVeil(); }
+        return res;
+      }
+      if (res && res.unlocked) {
+        Bow.ui.closeLockpickModal();
+        if (Bow.ui.triggerVeil) { Bow.ui.triggerVeil(); }
+        return res;
+      }
+      if (res) {
+        lp.cylinderAngle = res.snapped ? 0 : (res.cylinderAngle || 0);
+        lp.jammed = !!res.jammed;
+        if (res.message) { lp.hint = res.message; }
+      }
+      return res;
+    },
 
     /* ---------- Улица ---------- */
     "street-pay": function () { return Bow.adapter.act.streetPay(getState()); },
@@ -18396,6 +19749,7 @@ html.bow-motion-calm .bow-fog-band {
     "fight-order": true,
     "fight-step": true,
     "fight-move": true,
+    "fight-hex": true,
     "fight-target": true,
     "fight-decide": true,
     "fight-close": true,
@@ -18421,6 +19775,7 @@ html.bow-motion-calm .bow-fog-band {
     "fight-order": true,
     "fight-step": true,
     "fight-move": true,
+    "fight-hex": true,
     "fight-target": true,
     "fight-decide": true,
     "fight-close": true,
@@ -18456,6 +19811,12 @@ html.bow-motion-calm .bow-fog-band {
     "jail-serve": true,
     "jail-escape": true,
     "jail-bribe": true,
+    "jail-pick-toggle": true,
+    "jail-pick-manual": true,
+    "jail-lp-close": true,
+    "jail-lp-nudge": true,
+    "jail-lp-release": true,
+    "jail-lp-turn": true,
     "stage-select": true,
     "eat": true,
     "drink": true,
@@ -18480,6 +19841,7 @@ html.bow-motion-calm .bow-fog-band {
     "fight-order": true,
     "fight-step": true,
     "fight-move": true,
+    "fight-hex": true,
     "fight-target": true,
     "fight-decide": true,
     "fight-close": true,
@@ -18614,6 +19976,49 @@ html.bow-motion-calm .bow-fog-band {
       refresh(true);
       if (!st.fight || st.fight.phase !== "exchange") { stopFightClock(); }
     }, intervalMs);
+  }
+
+  /* ---------- Живой цикл сторожа и полоски взлома Kenshi в клетке (0.0.8.2) ---------- */
+  var jailTimer = null;
+  var jailUserWakeUntil = 0;
+
+  function stopJailClock() {
+    if (jailTimer) {
+      global.clearInterval(jailTimer);
+      jailTimer = null;
+    }
+  }
+
+  function startJailClock() {
+    if (jailTimer) { return; }
+    var st0 = getState();
+    if (!st0 || !st0.jail || st0.dead) { return; }
+    jailTimer = global.setInterval(function () {
+      var st = getState();
+      if (!st || !st.jail || st.dead) {
+        stopJailClock();
+        return;
+      }
+      var lpOpen = !!(Bow.ui.getLockpickModalState && Bow.ui.getLockpickModalState().open);
+      var activeClock = st.time && st.time.scale !== "paused";
+      if (!st.jail.picking && !lpOpen && !activeClock && Date.now() > jailUserWakeUntil) {
+        stopJailClock();
+        return;
+      }
+      if (Bow.ui.isDrawerOpen() || openPersonId) { return; }
+      var tickRes = (Bow.guard && Bow.guard.tickJailScene) ? Bow.guard.tickJailScene(st, Bow.adapter.rng) : null;
+      if (tickRes && tickRes.changed) {
+        if (tickRes.caught) {
+          if (Bow.ui.closeLockpickModal) { Bow.ui.closeLockpickModal(); }
+          if (Bow.ui.triggerVeil) { Bow.ui.triggerVeil(); }
+        } else if (tickRes.unlocked) {
+          if (Bow.ui.closeLockpickModal) { Bow.ui.closeLockpickModal(); }
+          if (Bow.ui.triggerVeil) { Bow.ui.triggerVeil(); }
+        }
+        if (tickRes.message) { Bow.ui.setMessage(tickRes.message); }
+        refresh(true);
+      }
+    }, 950);
   }
 
   function stopClock() {
@@ -18783,6 +20188,8 @@ html.bow-motion-calm .bow-fog-band {
     stopClock: stopClock,
     startFightClock: startFightClock,
     stopFightClock: stopFightClock,
+    startJailClock: startJailClock,
+    stopJailClock: stopJailClock,
     exportSave: exportSave,
     importSave: importSave,
     restart: restart,
@@ -18801,10 +20208,29 @@ html.bow-motion-calm .bow-fog-band {
     if (!document.getElementById("bow-app")) { return; }
 
     document.getElementById("bow-app").addEventListener("click", onClick);
+    document.getElementById("bow-app").addEventListener("pointermove", function (event) {
+      var st = getState();
+      if (st && st.jail) {
+        jailUserWakeUntil = Date.now() + 45000;
+        if (!jailTimer) { startJailClock(); }
+      }
+      var lpStage = event.target && event.target.closest && event.target.closest("#bow-lp-stage");
+      if (lpStage && Bow.ui.getLockpickModalState && Bow.ui.getLockpickModalState().open) {
+        var rect = lpStage.getBoundingClientRect();
+        if (rect && rect.width > 20) {
+          var ratio = (event.clientX - rect.left) / rect.width;
+          var deg = Math.round((ratio - 0.5) * 170);
+          Bow.ui.setLockpickAngle(deg, st);
+        }
+      }
+    });
     document.getElementById("bow-app").addEventListener("input", function (event) {
       var target = event.target;
       if (target && target.getAttribute && target.getAttribute("data-act") === "audio-vol" && Bow.audio) {
         Bow.audio.setVolume(parseFloat(target.value) / 100);
+      }
+      if (target && target.id === "bow-lp-range" && Bow.ui.setLockpickAngle) {
+        Bow.ui.setLockpickAngle(parseFloat(target.value), getState());
       }
     });
 
@@ -18816,8 +20242,33 @@ html.bow-motion-calm .bow-fog-band {
       });
     }
 
-    /* Escape закрывает модальное окно или карточку сцены; Пробел в бою ставит/снимает паузу. */
+    /* Escape закрывает модальное окно или карточку сцены; Пробел и стрелки управляют взломом замка или паузой боя. */
     document.addEventListener("keydown", function (event) {
+      var lp = Bow.ui.getLockpickModalState ? Bow.ui.getLockpickModalState() : null;
+      if (lp && lp.open) {
+        if (event.key === "Escape") {
+          event.preventDefault();
+          Bow.ui.closeLockpickModal();
+          refresh(true);
+          return;
+        }
+        if (event.key === "ArrowLeft" || event.key === "a" || event.key === "A" || event.key === "ф" || event.key === "Ф") {
+          event.preventDefault();
+          Bow.ui.setLockpickAngle((lp.pickAngle || 0) - 6, getState());
+          return;
+        }
+        if (event.key === "ArrowRight" || event.key === "d" || event.key === "D" || event.key === "в" || event.key === "В") {
+          event.preventDefault();
+          Bow.ui.setLockpickAngle((lp.pickAngle || 0) + 6, getState());
+          return;
+        }
+        if (event.key === " " || event.code === "Space" || event.key === "e" || event.key === "E" || event.key === "у" || event.key === "У") {
+          event.preventDefault();
+          var turnRes = handlers["jail-lp-turn"]();
+          say(turnRes);
+          return;
+        }
+      }
       if (event.key === " " || event.code === "Space") {
         var st = getState();
         if (st && st.fight && st.fight.phase === "exchange" && !Bow.ui.isDrawerOpen()) {
@@ -19152,10 +20603,12 @@ html.bow-motion-calm .bow-fog-band {
     &lt;div id=&quot;bow-fight&quot;&gt;&lt;/div&gt;
   &lt;/section&gt;
 
+  &lt;div id=&quot;bow-lockpick-modal&quot; class=&quot;bow-lockpick-modal&quot; aria-hidden=&quot;true&quot;&gt;&lt;/div&gt;
+
   &lt;div id=&quot;bow-sheet&quot; class=&quot;bow-sheet&quot; aria-hidden=&quot;true&quot;&gt;&lt;/div&gt;
 
   &lt;footer class=&quot;bow-footer&quot;&gt;
-    &lt;span&gt;Blades Of War · прототип 0.0.8.1 · Хладные Ветра · Студёный Брод&lt;/span&gt;
+    &lt;span&gt;Blades Of War · прототип 0.0.8.2 · Хладные Ветра · Студёный Брод&lt;/span&gt;
     &lt;span class=&quot;bow-dim&quot;&gt;Север Эдемских земель · малое поселение у переправы&lt;/span&gt;
   &lt;/footer&gt;
 

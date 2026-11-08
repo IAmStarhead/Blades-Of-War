@@ -454,6 +454,22 @@
       }
       state.version = "0.0.8.1";
       return state;
+    },
+
+    "0.0.8.1": function (state) {
+      if (state.player && state.player.skills && typeof state.player.skills.lockpicking !== "number") {
+        state.player.skills.lockpicking = 5;
+      }
+      if (state.jail) {
+        if (typeof state.jail.lockTier !== "number") { state.jail.lockTier = 1; }
+        if (typeof state.jail.lockProgress !== "number") { state.jail.lockProgress = 0; }
+        if (typeof state.jail.picking !== "boolean") { state.jail.picking = false; }
+        if (!state.jail.guardPhase) { state.jail.guardPhase = "watching"; }
+        if (typeof state.jail.sweetSpot !== "number") { state.jail.sweetSpot = 28; }
+        if (typeof state.jail.pinHp !== "number") { state.jail.pinHp = 100; }
+      }
+      state.version = "0.0.8.2";
+      return state;
     }
   };
 

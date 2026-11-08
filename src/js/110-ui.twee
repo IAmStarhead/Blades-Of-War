@@ -581,24 +581,84 @@
       box.innerHTML = '<div class="bow-empty">Никого не видно.</div>';
       return;
     }
-    box.innerHTML = ids.map(function (id) {
+
+    var inJail = !!state.jail;
+    var corpses = state.corpses || [];
+    var livingCards = [];
+    var localBodyCards = [];
+    var fallenNames = [];
+
+    ids.forEach(function (id) {
       var p = state.people[id];
+      if (!p) { return; }
+      var deadWord = p.pron === "f" ? "погибла" : "погиб";
+
+      if (!p.alive) {
+        /* Мёртвых в других локациях и исчезнувшие тела НЕ показываем карточками для «Осмотра» (фикс image-27, 0.0.8.2). */
+        var corpseHere = null;
+        if (!inJail) {
+          for (var ci = 0; ci < corpses.length; ci++) {
+            if (corpses[ci] && corpses[ci].personId === p.id && corpses[ci].location === state.player.location) {
+              corpseHere = corpses[ci];
+              break;
+            }
+          }
+        }
+        if (corpseHere) {
+          var canLootBody = !corpseHere.looted && ((corpseHere.money || 0) > 0 || (corpseHere.items && corpseHere.items.length > 0));
+          localBodyCards.push(
+            '<div class="bow-person bow-person-dead">' +
+              '<div class="bow-person-head">' +
+                '<span class="bow-person-name">☠ ' + esc(p.name) + '</span>' +
+                '<span class="bow-dim">' + deadWord + '</span>' +
+              '</div>' +
+              '<span class="bow-dim">' + esc(p.role) + ' · тело лежит рядом</span>' +
+              (canLootBody
+                ? '<div class="bow-person-acts"><button class="bow-trade-btn bow-fight-btn" data-act="loot-corpse" data-corpse="' + esc(corpseHere.id) + '">Обыскать тело</button></div>'
+                : '<span class="bow-dim bow-person-away-note">Тело уже обыскано.</span>') +
+            '</div>'
+          );
+        } else {
+          fallenNames.push(esc(p.name) + " (" + deadWord + ")");
+        }
+        return;
+      }
+
       var loc = Bow.data.locations[p.location];
-      var whereName = !p.alive ? "мертва/мёртв" : (loc ? loc.name : p.location);
-      var here = p.alive && p.location === state.player.location;
+      var whereName = loc ? loc.name : p.location;
+      var here = !inJail && p.location === state.player.location;
       var tone = p.attitude >= 20 ? "warm" : p.attitude <= -20 ? "cold" : "neutral";
-      return '<div class="bow-person">' +
-        '<div class="bow-person-head">' +
-          '<span class="bow-person-name">' + esc(p.name) + '</span>' +
-          '<span class="bow-tone bow-' + tone + '">' + (p.attitude > 0 ? "+" : "") + Math.round(p.attitude) + '</span>' +
-        '</div>' +
-        '<span class="bow-dim">' + esc(p.role) + ' · ' + esc(whereName) + (here ? ' (рядом)' : '') + '</span>' +
-        '<div class="bow-person-acts">' +
-          (here ? '<button class="bow-trade-btn" data-act="talk" data-person="' + esc(p.id) + '">Говорить</button>' : '') +
-          '<button class="bow-trade-btn" data-act="inspect" data-person="' + esc(p.id) + '">Осмотреть</button>' +
-        '</div>' +
-      '</div>';
-    }).join("");
+      var actsHtml = here
+        ? ('<div class="bow-person-acts">' +
+             '<button class="bow-trade-btn" data-act="talk" data-person="' + esc(p.id) + '">Говорить</button>' +
+             '<button class="bow-trade-btn" data-act="inspect" data-person="' + esc(p.id) + '">Осмотреть</button>' +
+           '</div>')
+        : (!inJail
+            ? ('<div class="bow-person-acts">' +
+                 '<span class="bow-dim bow-person-away-note">Не рядом — чтобы осмотреть или заговорить, перейдите: <b>' + esc(whereName) + '</b></span>' +
+               '</div>')
+            : '<span class="bow-dim bow-person-away-note">Не рядом (вы под засовом в клетке).</span>');
+
+      livingCards.push(
+        '<div class="bow-person' + (here ? ' bow-person-here' : ' bow-person-away') + '">' +
+          '<div class="bow-person-head">' +
+            '<span class="bow-person-name">' + esc(p.name) + (here ? ' <i class="bow-here-pill">рядом</i>' : '') + '</span>' +
+            '<span class="bow-tone bow-' + tone + '">' + (p.attitude > 0 ? "+" : "") + Math.round(p.attitude) + '</span>' +
+          '</div>' +
+          '<span class="bow-dim">' + esc(p.role) + ' · ' + esc(whereName) + '</span>' +
+          actsHtml +
+        '</div>'
+      );
+    });
+
+    var out = livingCards.concat(localBodyCards).join("");
+    if (!out) {
+      out = '<div class="bow-empty">Живых жителей в поселении не осталось.</div>';
+    }
+    if (fallenNames.length > 0) {
+      out += '<div class="bow-fallen-summary">Павшие: ' + fallenNames.join(", ") + '.</div>';
+    }
+    box.innerHTML = out;
   }
 
   /* ---------- Общины ----------
@@ -727,16 +787,39 @@
     return activeTab;
   }
 
+  var lastStagePopKey = null;
+
+  function applyStagePopHtml(pop, popKey, htmlStr) {
+    var isSameKey = (lastStagePopKey === popKey);
+    lastStagePopKey = popKey;
+    if (isSameKey) {
+      htmlStr = htmlStr.replace('class="bow-stage-card"', 'class="bow-stage-card bow-stage-card-steady"');
+    }
+    /* Не пересоздаём DOM карточки при тике минуты, если содержимое не изменилось — убирает мигание! */
+    if (pop._lastHtml !== htmlStr) {
+      pop._lastHtml = htmlStr;
+      pop.innerHTML = htmlStr;
+    }
+    pop.classList.add("bow-stage-pop-open");
+  }
+
+  function clearStagePop(pop) {
+    lastStagePopKey = null;
+    pop._lastHtml = "";
+    pop.innerHTML = "";
+    pop.classList.remove("bow-stage-pop-open", "bow-stage-pop-left");
+  }
+
   function renderStagePop(state) {
     var pop = $("bow-stage-pop");
     if (!pop) { return; }
     if (!stageSelection) {
-      pop.innerHTML = "";
-      pop.classList.remove("bow-stage-pop-open", "bow-stage-pop-left");
+      clearStagePop(pop);
       return;
     }
 
     var sel = stageSelection;
+    var popKey = sel.kind + ":" + (sel.personId || sel.corpseId || "");
     /* Если кликнули по фигуре/объекту справа — открываем карточку слева,
        чтобы не заслонять выбранного человека и соседей рядом. */
     var openLeft = (typeof sel.x === "number") ? (sel.x > 52) : (sel.kind === "person");
@@ -748,8 +831,7 @@
       var p = state.people[sel.personId];
       if (!p || !p.alive || p.location !== state.player.location) {
         stageSelection = null;
-        pop.innerHTML = "";
-        pop.classList.remove("bow-stage-pop-open", "bow-stage-pop-left");
+        clearStagePop(pop);
         return;
       }
       var tone = p.attitude >= 20 ? "warm" : p.attitude <= -20 ? "cold" : "neutral";
@@ -770,7 +852,7 @@
           '</div>' +
         '</div>';
       }
-      pop.innerHTML =
+      applyStagePopHtml(pop, popKey,
         '<div class="bow-stage-card">' +
           '<div class="bow-stage-card-head">' +
             '<div class="bow-stage-card-title">' +
@@ -788,8 +870,7 @@
               (p.attitude >= Bow.data.fightRules.sparMinAttitude ? 'Бой' : 'Напасть') + '</button>' +
           '</div>' +
           stealHtml +
-        '</div>';
-      pop.classList.add("bow-stage-pop-open");
+        '</div>');
       return;
     }
 
@@ -812,10 +893,9 @@
         '</div>';
       }).join("") || '<div class="bow-empty">Работы нет.</div>';
 
-      pop.innerHTML = '<div class="bow-stage-card">' +
+      applyStagePopHtml(pop, popKey, '<div class="bow-stage-card">' +
         '<div class="bow-stage-card-head"><div class="bow-stage-card-title"><b>Работа здесь</b></div>' + closeBtn + '</div>' +
-        '<div class="bow-stage-mini-list">' + jRows + '</div></div>';
-      pop.classList.add("bow-stage-pop-open");
+        '<div class="bow-stage-mini-list">' + jRows + '</div></div>');
       return;
     }
 
@@ -834,10 +914,9 @@
         '</div>';
       }).join("") || '<div class="bow-empty">Здесь не торгуют.</div>';
 
-      pop.innerHTML = '<div class="bow-stage-card">' +
+      applyStagePopHtml(pop, popKey, '<div class="bow-stage-card">' +
         '<div class="bow-stage-card-head"><div class="bow-stage-card-title"><b>Лавка</b><span class="bow-dim">· у вас ' + state.player.money + ' м.</span></div>' + closeBtn + '</div>' +
-        '<div class="bow-stage-mini-list">' + tRows + '</div></div>';
-      pop.classList.add("bow-stage-pop-open");
+        '<div class="bow-stage-mini-list">' + tRows + '</div></div>');
       return;
     }
 
@@ -854,16 +933,15 @@
       });
       var w = Bow.fight.weaponOf(state.player);
       var ar = Bow.fight.armorOf(state.player);
-      pop.innerHTML = '<div class="bow-stage-card">' +
+      applyStagePopHtml(pop, popKey, '<div class="bow-stage-card">' +
         '<div class="bow-stage-card-head"><div class="bow-stage-card-title"><b>' + esc(state.player.name) + '</b><span class="bow-dim">· при себе</span></div>' + closeBtn + '</div>' +
         '<div class="bow-stage-card-meta">В руке: ' + esc(w ? w.name : "пусто") + ' · На себе: ' + esc(ar ? ar.name : "пусто") + '</div>' +
         '<div class="bow-person-acts bow-self-acts">' +
-          '<button type="button" class="bow-trade-btn" data-act="rest">☾ Отдохнуть</button>' +
+          (state.jail ? '<button type="button" class="bow-trade-btn" data-act="jail-serve">☾ Отсидеть 4 ч.</button>' : '<button type="button" class="bow-trade-btn" data-act="rest">☾ Отдохнуть</button>') +
           (state.player.needs.health < 100 ? '<button type="button" class="bow-trade-btn" data-act="treat">✚ Перевязать</button>' : '') +
           cons.join("") +
         '</div>' +
-      '</div>';
-      pop.classList.add("bow-stage-pop-open");
+      '</div>');
       return;
     }
 
@@ -878,8 +956,7 @@
       }
       if (!corpse) {
         stageSelection = null;
-        pop.innerHTML = "";
-        pop.classList.remove("bow-stage-pop-open", "bow-stage-pop-left");
+        clearStagePop(pop);
         return;
       }
       var lootLines = [];
@@ -898,7 +975,7 @@
         ? "Состояние: " + cStg.label + " · через ~" + hoursLeft + " ч. растащит зверьё."
         : "Состояние: " + cStg.label + " · через ~" + hoursLeft + " ч. тело уберут за околицу.";
 
-      pop.innerHTML = '<div class="bow-stage-card">' +
+      applyStagePopHtml(pop, popKey, '<div class="bow-stage-card">' +
         '<div class="bow-stage-card-head">' +
           '<div class="bow-stage-card-title"><b>☠ ' + esc(corpse.name) + '</b><span class="bow-dim">· ' + esc(corpse.role || "труп") + '</span></div>' +
           closeBtn +
@@ -910,22 +987,20 @@
               '<button type="button" class="bow-trade-btn bow-fight-btn" data-act="loot-corpse" data-corpse="' + esc(corpse.id) + '">Обыскать и забрать всё</button>' +
             '</div>'
           : '<div class="bow-empty">Тело уже обыскано — карманы пусты.</div>') +
-      '</div>';
-      pop.classList.add("bow-stage-pop-open");
+      '</div>');
       return;
     }
 
     if (sel.kind === "guard") {
       if (!state.guard || !state.guard.arrived) {
         stageSelection = null;
-        pop.innerHTML = "";
-        pop.classList.remove("bow-stage-pop-open", "bow-stage-pop-left");
+        clearStagePop(pop);
         return;
       }
       var gCost = Bow.guard.bribeCost(state);
       var gCanPay = state.player.money >= gCost;
       var gFlee = Math.round(Bow.guard.fleeChance(state) * 100);
-      pop.innerHTML = '<div class="bow-stage-card">' +
+      applyStagePopHtml(pop, popKey, '<div class="bow-stage-card">' +
         '<div class="bow-stage-card-head"><div class="bow-stage-card-title"><b>⛨ Стража Брода</b><span class="bow-dim">· их ' + state.guard.squad.length + '</span></div>' + closeBtn + '</div>' +
         '<div class="bow-stage-card-meta">Десятник с топором преграждает дорогу. За вами числится розыск ' + Math.round(Bow.steal.heatOf(state, "org:guard")) + '.</div>' +
         '<div class="bow-person-acts bow-self-acts">' +
@@ -934,30 +1009,27 @@
           '<button type="button" class="bow-trade-btn" data-act="guard-flee">Бежать · ' + gFlee + '%</button>' +
           '<button type="button" class="bow-trade-btn bow-fight-btn" data-act="guard-fight">Драться</button>' +
         '</div>' +
-      '</div>';
-      pop.classList.add("bow-stage-pop-open");
+      '</div>');
       return;
     }
 
     if (sel.kind === "robber") {
       if (!state.encounter || !state.encounter.robber) {
         stageSelection = null;
-        pop.innerHTML = "";
-        pop.classList.remove("bow-stage-pop-open", "bow-stage-pop-left");
+        clearStagePop(pop);
         return;
       }
       var r = state.encounter.robber;
-      pop.innerHTML = '<div class="bow-stage-card">' +
+      applyStagePopHtml(pop, popKey, '<div class="bow-stage-card">' +
         '<div class="bow-stage-card-head"><div class="bow-stage-card-title"><b>⚔ ' + esc(r.name) + '</b><span class="bow-dim">· требует ' + r.demand + ' м.</span></div>' + closeBtn + '</div>' +
         '<div class="bow-stage-card-meta">Нож у бедра. Ждёт вашего решения.</div>' +
         '<div class="bow-person-acts bow-self-acts">' +
           '<button type="button" class="bow-trade-btn" data-act="street-pay">Отдать ' + Math.min(state.player.money, r.demand) + ' м.</button>' +
-          '<button type="button" class="bow-trade-btn" data-act="street-scare">Припугнуть · ' + Math.round(Bow.street.scareChance(state) * 100) + '%</button>' +
+          '<button type="button" class="bow-trade-btn" data-act="street-scare">Припугнуть · ' + Math.round(Bow.street.scareChance(state) * 100) * 1 + '%</button>' +
           '<button type="button" class="bow-trade-btn" data-act="street-flee">Бежать · ' + Math.round(Bow.street.fleeChance(state) * 100) + '%</button>' +
           '<button type="button" class="bow-trade-btn bow-fight-btn" data-act="street-fight">Драться</button>' +
         '</div>' +
-      '</div>';
-      pop.classList.add("bow-stage-pop-open");
+      '</div>');
     }
   }
 
@@ -995,7 +1067,11 @@
         : "";
     }
 
-    layer.innerHTML = Bow.stage.renderHotspotsAndActors(state, stageSelection);
+    var nextLayerHtml = Bow.stage.renderHotspotsAndActors(state, stageSelection);
+    if (layer._lastHtml !== nextLayerHtml) {
+      layer._lastHtml = nextLayerHtml;
+      layer.innerHTML = nextLayerHtml;
+    }
     renderStagePop(state);
   }
 
@@ -1297,15 +1373,20 @@
     };
   }
 
-  function tacticalGridSvg(A, units, targetKey) {
+  function tacticalGridSvg(A, units, targetKey, state) {
     var cols = A.cols || 7;
     var rows = A.rows || 5;
     var unitAt = {};
     (units || []).forEach(function (u) {
-      if (!u.dead) {
+      if (!u.dead && !u.down) {
         unitAt[(u.col || 0) + ":" + (u.row || 0)] = u;
       }
     });
+
+    var isExchange = !!(state && state.fight && state.fight.phase === "exchange");
+    var reachMap = (isExchange && Bow.fight && Bow.fight.reachableHexes)
+      ? Bow.fight.reachableHexes(state)
+      : {};
 
     var cells = [];
     for (var r = 0; r < rows; r++) {
@@ -1313,9 +1394,21 @@
         var ctr = hexCenterPx(c, r);
         var pts = hexPolygonPts(ctr.cx, ctr.cy, HEX_RX, HEX_RY);
         var occ = unitAt[c + ":" + r] || null;
+        var cellLbl = (Bow.fight && Bow.fight.hexName) ? Bow.fight.hexName(c, r) : ((c + 1) + ":" + (r + 1));
         if (!occ) {
+          var canReach = !!reachMap[c + ":" + r];
+          var emptyCls = isExchange
+            ? ('bow-hex-cell bow-hex-move-hit' + (canReach ? ' bow-hex-reach' : ''))
+            : 'bow-hex-cell';
+          var emptyFill = canReach ? "rgba(92,158,208,0.16)" : "rgba(14,22,30,0.18)";
+          var emptyStroke = canReach ? "rgba(154,212,252,0.52)" : "rgba(168,196,220,0.24)";
+          var moveAttrs = isExchange
+            ? (' data-act="fight-hex" data-col="' + c + '" data-row="' + r + '"')
+            : '';
           cells.push(
-            '<polygon class="bow-hex-cell" points="' + pts + '" fill="rgba(14,22,30,0.18)" stroke="rgba(168,196,220,0.24)" stroke-width="1.15"/>'
+            '<polygon class="' + emptyCls + '"' + moveAttrs + ' points="' + pts + '" fill="' + emptyFill + '" stroke="' + emptyStroke + '" stroke-width="' + (canReach ? "1.5" : "1.15") + '">' +
+              (isExchange ? '<title>' + (canReach ? 'Перейти на клетку ' : 'Идти в сторону клетки ') + cellLbl + '</title>' : '') +
+            '</polygon>'
           );
         } else {
           var isEnemy = occ.side === "enemy";
@@ -1531,7 +1624,7 @@
     var wHtml = (Bow.stage && Bow.stage.weatherOverlayHtml && state)
       ? Bow.stage.weatherOverlayHtml(state, state.player.location, true)
       : "";
-    var gridSvg = tacticalGridSvg(A, units, f.target);
+    var gridSvg = tacticalGridSvg(A, units, f.target, state);
 
     return {
       bgHtml: bg + wHtml,
@@ -1943,31 +2036,193 @@
     box.classList.add("bow-fight-open");
   }
 
-  /* ---------- Клетка ---------- */
+  /* ---------- Клетка и окно ручного взлома в духе Skyrim / Fallout (0.0.8.2) ---------- */
+  var lpModal = {
+    open: false,
+    pickAngle: 0,
+    cylinderAngle: 0,
+    jammed: false,
+    hint: "Найдите верный угол отмычки, пока сторож отвернулся, и поверните замок."
+  };
+
+  function openLockpickModal(state) {
+    if (!state || !state.jail) { return false; }
+    if (state.jail.picking) { state.jail.picking = false; }
+    lpModal.open = true;
+    lpModal.cylinderAngle = 0;
+    lpModal.jammed = false;
+    lpModal.hint = "Двигайте отмычку (мышью или ←/→) и крутите скважину, пока сторож не смотрит.";
+    renderLockpickModal(state);
+    return true;
+  }
+
+  function closeLockpickModal() {
+    lpModal.open = false;
+    lpModal.cylinderAngle = 0;
+    lpModal.jammed = false;
+    var box = $("bow-lockpick-modal");
+    if (box) {
+      box.classList.remove("bow-lp-open");
+      box.setAttribute("aria-hidden", "true");
+      box.innerHTML = "";
+    }
+  }
+
+  function setLockpickAngle(deg, state) {
+    var clamped = Math.max(-85, Math.min(85, Math.round(Number(deg) || 0)));
+    lpModal.pickAngle = clamped;
+    lpModal.cylinderAngle = 0;
+    lpModal.jammed = false;
+    /* Быстрое обновление угла прямо в SVG без полной пересборки модального окна */
+    var pickEl = document.getElementById("bow-lp-pick-group");
+    var cylEl = document.getElementById("bow-lp-cyl-group");
+    var angOut = document.getElementById("bow-lp-angle-val");
+    var rangeEl = document.getElementById("bow-lp-range");
+    if (pickEl) {
+      pickEl.setAttribute("transform", "translate(160,118) rotate(" + clamped + ")");
+      pickEl.classList.remove("bow-lp-shake");
+    }
+    if (cylEl) {
+      cylEl.setAttribute("transform", "translate(160,126) rotate(0)");
+    }
+    if (angOut) { angOut.textContent = (clamped > 0 ? "+" : "") + clamped + "°"; }
+    if (rangeEl && Number(rangeEl.value) !== clamped) { rangeEl.value = String(clamped); }
+    if (state && !pickEl) { renderLockpickModal(state); }
+  }
+
+  function renderLockpickModal(state) {
+    var box = $("bow-lockpick-modal");
+    if (!box) { return; }
+    if (!lpModal.open || !state || !state.jail) {
+      if (lpModal.open) { closeLockpickModal(); }
+      return;
+    }
+
+    var lockDef = (Bow.guard && Bow.guard.lockInfo) ? Bow.guard.lockInfo(state) : { tier: 1, name: "Ржавый засов", rank: "Новичок" };
+    var lpSkill = Math.round((state.player && state.player.skills && state.player.skills.lockpicking) || 5);
+    var pinHp = Math.max(0, Math.round(state.jail.pinHp || 100));
+    var gPhase = state.jail.guardPhase || "watching";
+
+    var gazeCls = gPhase === "away" ? "bow-lp-gaze-safe"
+      : (gPhase === "turning" ? "bow-lp-gaze-warn" : "bow-lp-gaze-danger");
+    var gazeText = gPhase === "away"
+      ? "👁 Сторож отвернулся — можно тихо крутить замок"
+      : gPhase === "turning"
+        ? "⚠ Сторож начинает поворачиваться — приготовьтесь замереть!"
+        : "❗ Сторож смотрит прямо на клетку — НЕ ПОВОРАЧИВАЙТЕ ЗАМОК!";
+
+    var pickRot = Math.round(lpModal.pickAngle || 0);
+    var cylRot = Math.round(lpModal.cylinderAngle || 0);
+
+    box.innerHTML =
+      '<div class="bow-modal-backdrop" data-act="jail-lp-close"></div>' +
+      '<div class="bow-lp-dialog" role="dialog" aria-modal="true" aria-label="Взлом замка">' +
+        '<div class="bow-lp-head">' +
+          '<div>' +
+            '<b>' + esc(lockDef.name) + '</b>' +
+            '<span class="bow-dim"> · ур. ' + lockDef.tier + ' (' + esc(lockDef.rank) + ') · навык Взлома ' + lpSkill + '</span>' +
+          '</div>' +
+          '<button type="button" class="bow-dialog-close" data-act="jail-lp-close" aria-label="Убрать отмычку">✕</button>' +
+        '</div>' +
+
+        '<div class="bow-lp-gaze ' + gazeCls + '">' + esc(gazeText) + '</div>' +
+
+        '<div class="bow-lp-stage" id="bow-lp-stage" title="Двигайте мышь влево-вправо для наклона отмычки">' +
+          '<svg class="bow-lp-svg" viewBox="0 0 320 236">' +
+            /* Кованая накладка двери острога (холодная воронёная сталь) */
+            '<rect x="54" y="18" width="212" height="198" rx="10" fill="#141b22" stroke="#3c4b59" stroke-width="2.5"/>' +
+            '<rect x="64" y="28" width="192" height="178" rx="6" fill="none" stroke="#26323d" stroke-width="1.5"/>' +
+            '<circle cx="72" cy="36" r="4" fill="#4f6070"/><circle cx="248" cy="36" r="4" fill="#4f6070"/>' +
+            '<circle cx="72" cy="198" r="4" fill="#4f6070"/><circle cx="248" cy="198" r="4" fill="#4f6070"/>' +
+            /* Наружное кованое кольцо замка */
+            '<circle cx="160" cy="126" r="68" fill="#1d2630" stroke="#63778a" stroke-width="4"/>' +
+            '<circle cx="160" cy="126" r="56" fill="#12181f" stroke="#3c4b5a" stroke-width="2"/>' +
+            /* Вращающийся цилиндр со скважиной и нижним ножом-рычагом */
+            '<g id="bow-lp-cyl-group" transform="translate(160,126) rotate(' + cylRot + ')">' +
+              '<circle cx="0" cy="0" r="42" fill="#273340" stroke="#8ea3b8" stroke-width="2.5"/>' +
+              '<circle cx="0" cy="-9" r="8.5" fill="#090d11"/>' +
+              '<path d="M-5 -5 L5 -5 L7 22 L-7 22 Z" fill="#090d11"/>' +
+              /* Нож-рычаг в нижней части скважины (как в Skyrim / Fallout) */
+              '<path d="M-2 12 L4 16 L112 72 L104 82 L0 20 Z" fill="#6f8294" stroke="#aec2d4" stroke-width="1.2"/>' +
+              '<rect x="82" y="54" width="44" height="14" rx="4" transform="rotate(30 82 54)" fill="#2b3642" stroke="#56687a" stroke-width="1.4"/>' +
+            '</g>' +
+            /* Отмычка сверху скважины (наклоняется от -85° до +85°) */
+            '<g id="bow-lp-pick-group" class="' + (lpModal.jammed ? 'bow-lp-shake' : '') + '" transform="translate(160,118) rotate(' + pickRot + ')">' +
+              '<path d="M0 0 L-2 -96 L2 -96 L1.4 -10 L5 -4 L0 2 Z" fill="#c9d6e2" stroke="#eef5fc" stroke-width="0.9"/>' +
+            '</g>' +
+          '</svg>' +
+        '</div>' +
+
+        '<div class="bow-lp-slider-row">' +
+          '<button type="button" class="bow-btn bow-btn-sm" data-act="jail-lp-nudge" data-step="-10">← Левее</button>' +
+          '<input id="bow-lp-range" class="bow-lp-range" type="range" min="-85" max="85" step="1" value="' + pickRot + '" aria-label="Угол отмычки"/>' +
+          '<span id="bow-lp-angle-val" class="bow-lp-angle">' + (pickRot > 0 ? "+" : "") + pickRot + '°</span>' +
+          '<button type="button" class="bow-btn bow-btn-sm" data-act="jail-lp-nudge" data-step="10">Правее →</button>' +
+        '</div>' +
+
+        '<div class="bow-lp-meta">' +
+          '<span>Прочность щепки: <b>' + pinHp + '%</b></span>' +
+          '<span>Поворот цилиндра: <b>' + cylRot + '° / 90°</b></span>' +
+        '</div>' +
+
+        '<div class="bow-lp-hint">' + esc(lpModal.hint) + '</div>' +
+
+        '<div class="bow-lp-actions">' +
+          '<button type="button" class="bow-btn bow-btn-sm bow-lp-turn-btn" data-act="jail-lp-turn">↻ Повернуть замок [Пробел]</button>' +
+          '<button type="button" class="bow-btn bow-btn-sm" data-act="jail-lp-release">Отпустить натяг</button>' +
+          '<button type="button" class="bow-btn bow-btn-sm" data-act="jail-lp-close">Спрятать отмычку</button>' +
+        '</div>' +
+      '</div>';
+
+    box.classList.add("bow-lp-open");
+    box.setAttribute("aria-hidden", "false");
+  }
+
   function renderJail(state) {
     var box = $("bow-jail");
     if (!box) { return; }
-    if (!state.jail) { box.classList.remove("bow-fight-open"); box.innerHTML = ""; return; }
+    if (!state.jail) {
+      box.classList.remove("bow-fight-open");
+      box.innerHTML = "";
+      if (lpModal.open) { closeLockpickModal(); }
+      return;
+    }
 
     var leftStr = (Bow.guard && Bow.guard.formatJailLeft)
       ? Bow.guard.formatJailLeft(state.jail)
       : (state.jail.hoursLeft + " ч.");
     var isRunning = state.time && state.time.scale !== "paused";
+    var lockDef = (Bow.guard && Bow.guard.lockInfo) ? Bow.guard.lockInfo(state) : { tier: 1, name: "Ржавый засов", rank: "Новичок" };
+    var lpProg = Math.round(state.jail.lockProgress || 0);
+    var isPicking = !!state.jail.picking;
+    var gPhase = state.jail.guardPhase || "watching";
+    var guardStateTxt = gPhase === "away"
+      ? "Сторож сейчас отвернулся — удобный миг для взлома."
+      : gPhase === "turning"
+        ? "Сторож шевелится и сейчас повернётся к клетке — лучше замереть!"
+        : gPhase === "alert"
+          ? "! Сторож заметил возню у решётки и повесил более крепкий замок!"
+          : "Сторож спокойно следит за клеткой.";
 
     box.innerHTML = '<div class="bow-fight-card bow-jail-card">' +
-      '<div class="bow-fight-head"><b>Клетка у частокола</b><span>осталось ' + esc(leftStr) + '</span></div>' +
-      '<div class="bow-fight-note">Бревенчатая клеть, кованая решётка и стылая солома. Кормят раз в день. ' +
+      '<div class="bow-fight-head"><b>Клетка у частокола · ' + esc(lockDef.name) + ' (' + esc(lockDef.rank) + ')</b><span>осталось ' + esc(leftStr) + '</span></div>' +
+      '<div class="bow-fight-note">' + esc(guardStateTxt) + ' ' +
         (isRunning
-          ? 'Живое время идёт — срок уменьшается сам с каждой минутой.'
-          : 'Часы сейчас на паузе — включите ход времени (▸ / ▸▸) в шапке или нажмите «Отсидеть 4 ч.».') +
+          ? 'Живое время идёт — срок тает сам поминутно.'
+          : 'Часы на паузе — включите ход времени (▸ / ▸▸) или отсидите 4 ч.') +
       '</div>' +
       '<div class="bow-fight-acts">' +
         '<button class="bow-btn bow-btn-sm" data-act="jail-serve">Отсидеть 4 ч.</button>' +
-        '<button class="bow-btn bow-btn-sm" data-act="jail-escape">Бежать</button>' +
+        '<button class="bow-btn bow-btn-sm' + (isPicking ? ' bow-btn-danger' : '') + '" data-act="jail-pick-toggle">' +
+          (isPicking ? ('✋ Замереть (' + lpProg + '%)') : ('🗝 Взлом (полоска' + (lpProg > 0 ? ' · ' + lpProg + '%' : '') + ')')) +
+        '</button>' +
+        '<button class="bow-btn bow-btn-sm" data-act="jail-pick-manual">⚙ Вручную (отмычка)</button>' +
         '<button class="bow-btn bow-btn-sm" data-act="jail-bribe">Подкупить сторожа</button>' +
+        '<button class="bow-btn bow-btn-sm" data-act="jail-escape">Рвануть напролом</button>' +
       '</div>' +
     '</div>';
     box.classList.add("bow-fight-open");
+    if (lpModal.open) { renderLockpickModal(state); }
   }
 
   /* ---------- Уличная встреча ---------- */
@@ -2368,6 +2623,12 @@
     applySettings: applySettings,
     renderSettings: renderSettings,
     renderPersonSheet: renderPersonSheet,
+    openLockpickModal: openLockpickModal,
+    closeLockpickModal: closeLockpickModal,
+    renderLockpickModal: renderLockpickModal,
+    setLockpickAngle: setLockpickAngle,
+    getLockpickModalState: function () { return lpModal; },
+    triggerVeil: runVeil,
     setMessage: setMessage,
     esc: esc
   };

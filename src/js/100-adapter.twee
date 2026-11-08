@@ -193,6 +193,14 @@
     fightTarget: function (state, key) {
       return Bow.fight.setTarget(state, key);
     },
+    fightHex: function (state, col, row) {
+      var res = Bow.fight.moveTo(state, col, row, rng);
+      if (res.ok) {
+        Bow.needs.ensure(state.player);
+        if (!Bow.fight.isActive(state)) { Bow.events.afterAction(state, rng); }
+      }
+      return res;
+    },
     fightOrder: function (state, kind, value) {
       return Bow.fight.setOrder(state, kind, value);
     },
@@ -249,6 +257,16 @@
     },
     jailBribe: function (state) {
       return Bow.guard.bribeJail(state);
+    },
+    jailPickToggle: function (state) {
+      var res = Bow.guard.toggleKenshiPick(state);
+      if (res.ok) { Bow.needs.ensure(state.player); }
+      return res;
+    },
+    jailLpTurn: function (state, pickAngle, curTurn) {
+      var res = Bow.guard.turnManualLock(state, pickAngle, curTurn, rng);
+      if (res.ok) { Bow.needs.ensure(state.player); }
+      return res;
     },
 
     /* ---------- Улица ---------- */

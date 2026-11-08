@@ -261,10 +261,12 @@
     <div id="bow-fight"></div>
   </section>
 
+  <div id="bow-lockpick-modal" class="bow-lockpick-modal" aria-hidden="true"></div>
+
   <div id="bow-sheet" class="bow-sheet" aria-hidden="true"></div>
 
   <footer class="bow-footer">
-    <span>Blades Of War · прототип 0.0.8.1 · Хладные Ветра · Студёный Брод</span>
+    <span>Blades Of War · прототип 0.0.8.2 · Хладные Ветра · Студёный Брод</span>
     <span class="bow-dim">Север Эдемских земель · малое поселение у переправы</span>
   </footer>
 

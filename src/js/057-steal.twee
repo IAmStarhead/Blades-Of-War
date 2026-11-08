@@ -287,6 +287,10 @@
       var org = caughtBy.org || (Bow.data.locations[state.player.location] || {}).org;
       var heat = addHeat(state, org, 22);
       var rep = Bow.work ? Bow.work.addReputation(state, org, -10) : 0;
+      if (org !== "org:guard") {
+        addHeat(state, "org:guard", 10);
+        if (Bow.work) { Bow.work.addReputation(state, "org:guard", -6); }
+      }
 
       caughtBy.memory.push({
         kind: "witness",

@@ -489,15 +489,15 @@
       outRev.connect(outdoorBus);
       outdoorBus.connect(masterGain);
 
-      /* Шина 3: Поле боя (плотная оркестровая сцена Skyrim) */
+      /* Шина 3: Поле боя (единое тёплое акустическое пространство с остальным саундтреком, 0.0.8.2) */
       combatBus = ctx.createGain();
       combatBus.gain.value = 0.0001;
       combatDry = ctx.createGain();
-      combatDry.gain.value = 0.76;
+      combatDry.gain.value = 0.52;
       combatWet = ctx.createGain();
-      combatWet.gain.value = 0.44;
+      combatWet.gain.value = 0.64;
       var cbRev = ctx.createConvolver();
-      cbRev.buffer = buildImpulseResponse(ctx, 2.05, 0.78, 0.55, 553911);
+      cbRev.buffer = buildImpulseResponse(ctx, 3.45, 0.84, 0.42, 553911);
       combatDry.connect(combatBus);
       combatWet.connect(cbRev);
       cbRev.connect(combatBus);
@@ -991,7 +991,7 @@
 
   /* ---------- Инструмент 8: Оркестровые боевые партии Skyrim (спиккато струнных, героическая медь, хор Довакина и тайко) ---------- */
 
-  /* 8а. Спиккато / маркато виолончелей, альтов и контрабасов (живой упругий смычок без щипков, хорошо читаемый на любых колонках) */
+  /* 8а. Акустическое маркато / спиккато виолончелей и альтов (тёплая дека без синтезаторной «пилы», 0.0.8.2) */
   function playSpiccatoStrings(midi, when, durSec, accent, highSection) {
     if (!ctx || midi < 28) { return; }
     var voices = highSection ? [midi, midi - 12] : [midi, midi + 12];
@@ -1001,54 +1001,82 @@
       var osc1 = ctx.createOscillator();
       var osc2 = ctx.createOscillator();
       var osc3 = ctx.createOscillator();
+      var gSaw = ctx.createGain();
       var lp = ctx.createBiquadFilter();
       var bodyPeak = ctx.createBiquadFilter();
       var env = ctx.createGain();
 
-      osc1.type = "sawtooth";
+      /* Основа — тёплый деревянный треугольник + октавный синус, а смычковый обертон подан мягко (0.22) */
+      osc1.type = "triangle";
       osc2.type = "sawtooth";
-      osc3.type = "triangle";
-      osc1.frequency.setValueAtTime(freq * 0.9965, when);
-      osc2.frequency.setValueAtTime(freq * 1.0035, when);
-      osc3.frequency.setValueAtTime(freq, when);
+      osc3.type = "sine";
+      osc1.frequency.setValueAtTime(freq * 0.9982, when);
+      osc2.frequency.setValueAtTime(freq * 1.0020, when);
+      osc3.frequency.setValueAtTime(freq * 2, when);
+      gSaw.gain.value = highSection ? 0.18 : 0.24;
 
-      /* Деревянный резонанс деки виолончели / скрипки */
+      var gHarm = ctx.createGain();
+      gHarm.gain.value = 0.16;
+
+      /* Деревянный корпус деки виолончели / виолы */
       bodyPeak.type = "peaking";
-      bodyPeak.frequency.value = highSection ? 1350 : 520;
-      bodyPeak.Q.value = 1.4;
-      bodyPeak.gain.value = 4.5;
+      bodyPeak.frequency.value = highSection ? 780 : 410;
+      bodyPeak.Q.value = 1.1;
+      bodyPeak.gain.value = 2.4;
 
-      /* Яркий смычковый штрих в начале ноты с плавным уходом в тёплое дерево */
+      /* Тёплый акустический фильтр в том же диапазоне, что и камерные виолы игры */
       lp.type = "lowpass";
-      var openF = highSection ? (accent ? 3200 : 2400) : (accent ? 2150 : 1550);
-      var tailF = highSection ? 1400 : 720;
+      var openF = highSection ? (accent ? 1320 : 1060) : (accent ? 980 : 760);
+      var tailF = highSection ? 780 : 520;
       lp.frequency.setValueAtTime(openF, when);
-      lp.frequency.exponentialRampToValueAtTime(tailF, when + Math.max(0.08, durSec * 0.78));
-      lp.Q.value = 0.9;
+      lp.frequency.exponentialRampToValueAtTime(tailF, when + Math.max(0.10, durSec * 0.85));
+      lp.Q.value = 0.72;
 
-      var peak = (highSection ? 0.032 : (v === 0 ? 0.046 : 0.034)) * (accent ? 1.22 : 0.9);
+      var peak = (highSection ? 0.030 : (v === 0 ? 0.048 : 0.032)) * (accent ? 1.18 : 0.88);
+      var att = Math.min(0.038, durSec * 0.25);
       env.gain.setValueAtTime(0.0001, when);
-      env.gain.linearRampToValueAtTime(peak, when + 0.018);
-      env.gain.exponentialRampToValueAtTime(peak * 0.42, when + Math.max(0.05, durSec * 0.72));
-      env.gain.exponentialRampToValueAtTime(0.0002, when + durSec + 0.08);
+      env.gain.linearRampToValueAtTime(peak, when + att);
+      env.gain.exponentialRampToValueAtTime(peak * 0.52, when + Math.max(att + 0.04, durSec * 0.76));
+      env.gain.exponentialRampToValueAtTime(0.0002, when + durSec + 0.18);
 
       osc1.connect(bodyPeak);
-      osc2.connect(bodyPeak);
-      osc3.connect(bodyPeak);
+      osc2.connect(gSaw);
+      gSaw.connect(bodyPeak);
+      osc3.connect(gHarm);
+      gHarm.connect(bodyPeak);
       bodyPeak.connect(lp);
       lp.connect(env);
-      routeToRealm(env, "combat", highSection ? 0.28 : (v === 0 ? -0.22 : 0.16));
+      routeToRealm(env, "combat", highSection ? 0.24 : (v === 0 ? -0.20 : 0.14));
+
+      /* Лёгкий шорох канифоли смычка на сильной доле для живой акустики */
+      if (accent && v === 0) {
+        var bowAir = ctx.createBufferSource();
+        bowAir.buffer = getVelvetNoiseBuffer(ctx);
+        var bowBp = ctx.createBiquadFilter();
+        bowBp.type = "bandpass";
+        bowBp.frequency.value = highSection ? 920 : 580;
+        bowBp.Q.value = 2.2;
+        var bowEnv = ctx.createGain();
+        bowEnv.gain.setValueAtTime(0.0001, when);
+        bowEnv.gain.linearRampToValueAtTime(peak * 0.22, when + 0.022);
+        bowEnv.gain.exponentialRampToValueAtTime(0.0001, when + 0.11);
+        bowAir.connect(bowBp);
+        bowBp.connect(bowEnv);
+        routeToRealm(bowEnv, "combat", -0.14);
+        bowAir.start(when);
+        bowAir.stop(when + 0.13);
+      }
 
       osc1.start(when);
       osc2.start(when);
       osc3.start(when);
-      osc1.stop(when + durSec + 0.11);
-      osc2.stop(when + durSec + 0.11);
-      osc3.stop(when + durSec + 0.11);
+      osc1.stop(when + durSec + 0.22);
+      osc2.stop(when + durSec + 0.22);
+      osc3.stop(when + durSec + 0.22);
     }
   }
 
-  /* 8б. Героические валторны и тромбоны Skyrim (мелодическая медь с мощным раскрытием раструба) */
+  /* 8б. Северные боевые рога и валторны (глубокий тёплый конический тембр без резкой синтезаторной меди, 0.0.8.2) */
   function playHeroicBrass(midi, when, durSec, gainVal) {
     if (!ctx || midi < 34) { return; }
     var notes = [midi, midi - 12];
@@ -1058,47 +1086,65 @@
       var freq = midiToFreq(m);
       var osc1 = ctx.createOscillator();
       var osc2 = ctx.createOscillator();
-      var brassFormant = ctx.createBiquadFilter();
+      var oscSaw = ctx.createOscillator();
+      var gHarm = ctx.createGain();
+      var gSaw = ctx.createGain();
+      var vib = ctx.createOscillator();
+      var vibGain = ctx.createGain();
       var lp = ctx.createBiquadFilter();
       var env = ctx.createGain();
 
-      osc1.type = "sawtooth";
-      osc2.type = "sawtooth";
-      osc1.frequency.setValueAtTime(freq * 0.996, when);
-      osc1.frequency.linearRampToValueAtTime(freq * 0.999, when + 0.045);
-      osc2.frequency.setValueAtTime(freq * 1.004, when);
+      osc1.type = "triangle";
+      osc2.type = "sine";
+      oscSaw.type = "sawtooth";
+      osc1.frequency.setValueAtTime(freq * 0.991, when);
+      osc1.frequency.exponentialRampToValueAtTime(freq * 0.999, when + 0.065);
+      osc2.frequency.setValueAtTime(freq * 2, when);
+      oscSaw.frequency.setValueAtTime(freq * 1.002, when);
 
-      brassFormant.type = "peaking";
-      brassFormant.frequency.value = 940;
-      brassFormant.Q.value = 1.6;
-      brassFormant.gain.value = 5.0;
+      gHarm.gain.value = 0.28;
+      gSaw.gain.value = 0.16;
+
+      vib.type = "sine";
+      vib.frequency.setValueAtTime(4.3, when);
+      vibGain.gain.setValueAtTime(0.0, when);
+      vibGain.gain.linearRampToValueAtTime(freq * 0.0045, when + Math.min(0.35, durSec * 0.5));
+      vib.connect(vibGain);
+      vibGain.connect(osc1.frequency);
 
       lp.type = "lowpass";
-      lp.frequency.setValueAtTime(640, when);
-      lp.frequency.linearRampToValueAtTime(2480, when + Math.min(0.14, durSec * 0.35));
-      lp.frequency.exponentialRampToValueAtTime(1150, when + durSec + 0.12);
-      lp.Q.value = 1.25;
+      lp.frequency.setValueAtTime(Math.min(480, freq * 1.9), when);
+      lp.frequency.linearRampToValueAtTime(Math.min(1080, freq * 3.2), when + Math.min(0.18, durSec * 0.38));
+      lp.frequency.exponentialRampToValueAtTime(Math.min(640, freq * 2.1), when + durSec + 0.24);
+      lp.Q.value = 0.82;
 
-      var vPeak = (i === 0 ? 1.0 : 0.58) * (gainVal || 0.052);
+      var vPeak = (i === 0 ? 1.0 : 0.62) * (gainVal || 0.052);
+      var att = Math.min(0.065, durSec * 0.28);
       env.gain.setValueAtTime(0.0001, when);
-      env.gain.linearRampToValueAtTime(vPeak, when + 0.032);
-      env.gain.setValueAtTime(vPeak * 0.85, when + Math.max(0.06, durSec * 0.72));
-      env.gain.exponentialRampToValueAtTime(0.0002, when + durSec + 0.22);
+      env.gain.linearRampToValueAtTime(vPeak, when + att);
+      env.gain.setValueAtTime(vPeak * 0.86, when + Math.max(att + 0.03, durSec * 0.74));
+      env.gain.exponentialRampToValueAtTime(0.0002, when + durSec + 0.34);
 
-      osc1.connect(brassFormant);
-      osc2.connect(brassFormant);
-      brassFormant.connect(lp);
+      osc1.connect(lp);
+      osc2.connect(gHarm);
+      gHarm.connect(lp);
+      oscSaw.connect(gSaw);
+      gSaw.connect(lp);
       lp.connect(env);
-      routeToRealm(env, "combat", i === 0 ? -0.14 : 0.22);
+      routeToRealm(env, "combat", i === 0 ? -0.14 : 0.20);
 
       osc1.start(when);
       osc2.start(when);
-      osc1.stop(when + durSec + 0.26);
-      osc2.stop(when + durSec + 0.26);
+      oscSaw.start(when);
+      vib.start(when);
+      osc1.stop(when + durSec + 0.38);
+      osc2.stop(when + durSec + 0.38);
+      oscSaw.stop(when + durSec + 0.38);
+      vib.stop(when + durSec + 0.38);
     }
   }
 
-  /* 8в. Северный мужской ратный хор в духе Довакина (резкие выкрики «ХУ! / ХА! / ДО!» на гласных формантах) */
+  /* 8в. Северный мужской ратный хор (мягкий объёмный ансамбль в гулком зале без цифрового звона, 0.0.8.2) */
   function playNordicWarChoir(midi, when, durSec) {
     if (!ctx || midi <= 0) { return; }
     var chord = [midi - 12, midi - 5, midi];
@@ -1108,62 +1154,70 @@
       var freq = midiToFreq(m);
       var osc1 = ctx.createOscillator();
       var osc2 = ctx.createOscillator();
+      var g2 = ctx.createGain();
       var f1 = ctx.createBiquadFilter();
       var f2 = ctx.createBiquadFilter();
+      var warmLp = ctx.createBiquadFilter();
       var sum = ctx.createGain();
       var env = ctx.createGain();
 
-      osc1.type = "sawtooth";
+      osc1.type = "triangle";
       osc2.type = "sawtooth";
-      osc1.frequency.setValueAtTime(freq * 0.995, when);
-      osc2.frequency.setValueAtTime(freq * 1.005, when);
+      osc1.frequency.setValueAtTime(freq * 0.996, when);
+      osc2.frequency.setValueAtTime(freq * 1.004, when);
+      g2.gain.value = 0.36;
 
-      /* Открытая мужская гласная «А-О» (F1 = 660 Гц, F2 = 1120 Гц) */
+      /* Глубокая северная мужская гласная «О-У» */
       f1.type = "bandpass";
-      f1.frequency.value = 660;
-      f1.Q.value = 3.8;
+      f1.frequency.value = 510;
+      f1.Q.value = 2.9;
 
       f2.type = "bandpass";
-      f2.frequency.value = 1120;
-      f2.Q.value = 4.4;
+      f2.frequency.value = 910;
+      f2.Q.value = 3.4;
+
+      warmLp.type = "lowpass";
+      warmLp.frequency.value = 1280;
 
       osc1.connect(f1);
-      osc2.connect(f1);
+      osc2.connect(g2);
+      g2.connect(f1);
       osc1.connect(f2);
-      osc2.connect(f2);
+      g2.connect(f2);
       f1.connect(sum);
       f2.connect(sum);
+      sum.connect(warmLp);
 
-      /* Выдох согласной в начале скандирования */
+      /* Живое дыхание хора в начале слога */
       var breath = ctx.createBufferSource();
       breath.buffer = getVelvetNoiseBuffer(ctx);
       var bBp = ctx.createBiquadFilter();
       bBp.type = "bandpass";
-      bBp.frequency.value = 900;
-      bBp.Q.value = 1.8;
+      bBp.frequency.value = 740;
+      bBp.Q.value = 2.0;
       var bEnv = ctx.createGain();
       bEnv.gain.setValueAtTime(0.0001, when);
-      bEnv.gain.linearRampToValueAtTime(0.018, when + 0.015);
-      bEnv.gain.exponentialRampToValueAtTime(0.0001, when + 0.09);
+      bEnv.gain.linearRampToValueAtTime(0.014, when + 0.022);
+      bEnv.gain.exponentialRampToValueAtTime(0.0001, when + 0.11);
       breath.connect(bBp);
       bBp.connect(bEnv);
       routeToRealm(bEnv, "combat", 0);
 
-      var peak = i === 2 ? 0.068 : 0.052;
+      var peak = i === 2 ? 0.064 : 0.050;
       env.gain.setValueAtTime(0.0001, when);
-      env.gain.linearRampToValueAtTime(peak, when + 0.028);
-      env.gain.setValueAtTime(peak * 0.78, when + Math.max(0.06, durSec * 0.65));
-      env.gain.exponentialRampToValueAtTime(0.0002, when + durSec + 0.32);
+      env.gain.linearRampToValueAtTime(peak, when + 0.045);
+      env.gain.setValueAtTime(peak * 0.82, when + Math.max(0.08, durSec * 0.68));
+      env.gain.exponentialRampToValueAtTime(0.0002, when + durSec + 0.42);
 
-      sum.connect(env);
-      routeToRealm(env, "combat", (i - 1) * 0.26);
+      warmLp.connect(env);
+      routeToRealm(env, "combat", (i - 1) * 0.24);
 
       breath.start(when);
-      breath.stop(when + 0.11);
+      breath.stop(when + 0.13);
       osc1.start(when);
       osc2.start(when);
-      osc1.stop(when + durSec + 0.36);
-      osc2.stop(when + durSec + 0.36);
+      osc1.stop(when + durSec + 0.46);
+      osc2.stop(when + durSec + 0.46);
     }
   }
 
@@ -1267,6 +1321,83 @@
     return true;
   }
 
+  /* Фирменный тревожный удар «!» в духе Metal Gear Solid при поимке на взломе (0.0.8.2) */
+  function playMgsAlert() {
+    if (!ensureContext()) { return false; }
+    if (ctx.state === "suspended" && typeof ctx.resume === "function") {
+      ctx.resume();
+    }
+    var now = ctx.currentTime + 0.01;
+    /* Стремительный восходящий глиссандо-аккорд (5 голосов) с резким оркестровым акцентом и коротким эхом */
+    var startNotes = [587.3, 740.0, 880.0, 1174.7, 1480.0];
+    var hitNotes   = [784.0, 987.8, 1244.5, 1568.0, 2093.0];
+    for (var i = 0; i < hitNotes.length; i++) {
+      var osc = ctx.createOscillator();
+      var lp = ctx.createBiquadFilter();
+      var env = ctx.createGain();
+      osc.type = (i % 2 === 0) ? "sawtooth" : "triangle";
+      osc.frequency.setValueAtTime(startNotes[i], now);
+      osc.frequency.exponentialRampToValueAtTime(hitNotes[i], now + 0.055);
+      lp.type = "lowpass";
+      lp.frequency.setValueAtTime(3200, now);
+      lp.frequency.exponentialRampToValueAtTime(1400, now + 0.42);
+      var pk = 0.048 * (state.volume || 0.55);
+      env.gain.setValueAtTime(0.0001, now);
+      env.gain.linearRampToValueAtTime(pk, now + 0.018);
+      env.gain.setValueAtTime(pk * 0.92, now + 0.09);
+      env.gain.exponentialRampToValueAtTime(0.0002, now + 0.48);
+      osc.connect(lp);
+      lp.connect(env);
+      env.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.50);
+    }
+    return true;
+  }
+
+  /* Тактильные звуки железных штифтов, натяжения и открытия засова (0.0.8.2) */
+  function playLockSound(kind) {
+    if (!state.enabled || !ensureContext()) { return false; }
+    if (ctx.state === "suspended") { return false; }
+    var now = ctx.currentTime + 0.008;
+    var vol = Math.max(0.15, state.volume || 0.5);
+
+    if (kind === "open") {
+      var freqs = [310, 468, 720];
+      for (var i = 0; i < freqs.length; i++) {
+        var o = ctx.createOscillator();
+        var g = ctx.createGain();
+        o.type = "triangle";
+        o.frequency.setValueAtTime(freqs[i], now + i * 0.045);
+        g.gain.setValueAtTime(0.0001, now + i * 0.045);
+        g.gain.linearRampToValueAtTime(0.045 * vol, now + i * 0.045 + 0.012);
+        g.gain.exponentialRampToValueAtTime(0.0001, now + i * 0.045 + 0.22);
+        o.connect(g);
+        g.connect(ctx.destination);
+        o.start(now + i * 0.045);
+        o.stop(now + i * 0.045 + 0.24);
+      }
+      return true;
+    }
+
+    var o1 = ctx.createOscillator();
+    var g1 = ctx.createGain();
+    o1.type = kind === "snap" ? "sawtooth" : "triangle";
+    var fStart = kind === "snap" ? 890 : (kind === "scrape" ? 520 : 1180);
+    var fEnd   = kind === "snap" ? 240 : (kind === "scrape" ? 390 : 860);
+    var dSec   = kind === "snap" ? 0.16 : (kind === "scrape" ? 0.11 : 0.055);
+    o1.frequency.setValueAtTime(fStart, now);
+    o1.frequency.exponentialRampToValueAtTime(fEnd, now + dSec);
+    g1.gain.setValueAtTime(0.0001, now);
+    g1.gain.linearRampToValueAtTime((kind === "tick" ? 0.018 : 0.032) * vol, now + 0.008);
+    g1.gain.exponentialRampToValueAtTime(0.0001, now + dSec);
+    o1.connect(g1);
+    g1.connect(ctx.destination);
+    o1.start(now);
+    o1.stop(now + dSec + 0.02);
+    return true;
+  }
+
   /* ---------- Озвучивание одного подшага текущей композиции ---------- */
   function scheduleSubStep(track, bar, sub, totalSubs, subDur, when) {
     var realm = track.realm;
@@ -1306,8 +1437,13 @@
 
     /* === 2. БОЕВАЯ ОРКЕСТРОВАЯ СЮИТА В ДУХЕ SKYRIM (Клык и сталь / Сталь о сталь / Смерть или слава) === */
     if (realm === "combat") {
-      if (sub === 0 && bar.pad && bar.pad.length) {
-        playBowedChord(bar.pad, when, barDur * 0.94, 0.024, "combat");
+      if (sub === 0) {
+        var bedNotes = [];
+        if (bar.bass && bar.bass > 0) { bedNotes.push(bar.bass); }
+        (bar.pad || []).forEach(function (n) { bedNotes.push(n); });
+        if (bedNotes.length) {
+          playBowedChord(bedNotes, when, barDur * 0.98, 0.030, "combat");
+        }
       }
 
       /* 1. Упругий спиккато-пульс виолончелей и альтов на каждую восьмую */
@@ -1332,13 +1468,17 @@
           if (bar.brass[look] && bar.brass[look] > 0) { break; }
           holdSubs++;
         }
-        playHeroicBrass(brNote, when, subDur * holdSubs * 0.92, 0.054);
+        playHeroicBrass(brNote, when, subDur * holdSubs * 0.94, 0.046);
+        if (holdSubs >= 2) {
+          playHorn(brNote, when + 0.02, subDur * holdSubs * 0.90, 0.028, "combat");
+        }
       }
 
       /* 4. Ратные выкрики северного мужского хора («ХУ! / ХА! / ДО-РА!») */
       var chNote = bar.choir && bar.choir[sub];
       if (chNote && chNote > 0) {
-        playNordicWarChoir(chNote, when, subDur * 1.85);
+        playNordicWarChoir(chNote, when, subDur * 1.95);
+        playChoir(chNote, when + 0.03, subDur * 1.85, 0.024, "combat");
       }
 
       /* 5. Боевые литавры, кожаные тайко и удары о щит */
@@ -1674,6 +1814,8 @@
     syncMood: syncMood,
     wakeOnGesture: wakeOnGesture,
     playBattleIntro: playBattleIntro,
+    playMgsAlert: playMgsAlert,
+    playLockSound: playLockSound,
     selectTrack: function (id) { return switchToTrack(id, true); },
     setAutoMode: setAutoMode,
     nextTrack: nextTrack,

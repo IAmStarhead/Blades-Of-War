@@ -5323,8 +5323,379 @@ html.bow-motion-calm .bow-fog-band {
 .bow-arena-scene .bow-chip-enemy:not(.bow-chip-dead):hover .bow-chip-name,
 .bow-arena-scene .bow-chip-target .bow-chip-name {
   color: #ffeab5;
-  background: rgba(24, 18, 10, 0.92);
+  background: rgba(16, 22, 30, 0.94);
 }
+
+/* ============================================================
+   КРУГ 22 (0.0.8.2): ХОД ПО ГЕКСАМ, БЕЗ МИГАНИЯ КАРТОЧКИ СЦЕНЫ,
+   РОВНАЯ ВКЛАДКА «ЖИТЕЛИ», ПОВОРОТЫ СТОРОЖА + MGS «!» И
+   ГИБРИДНЫЙ ВЗЛОМ ЗАМКА (ПОЛОСКА KENSHI + РУЧНОЙ ЗАМОК SKYRIM)
+   ============================================================ */
+
+/* 1. Отмена повторной анимации всплытия карточки персонажа при тике живой минуты */
+.bow-stage-card.bow-stage-card-steady {
+  animation: none !important;
+  opacity: 1 !important;
+  transform: none !important;
+}
+
+/* 2. Исправление вёрстки и горизонтального скролла во вкладке «Жители поселения» (image-27) */
+.bow-modal-body.bow-drawer-scroll {
+  overflow-x: hidden !important;
+}
+
+.bow-drawer-inner,
+.bow-all-people,
+.bow-people,
+.bow-person {
+  box-sizing: border-box !important;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.bow-all-people {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+.bow-person-away {
+  border-left-color: #3b4c5e;
+  background: rgba(17, 23, 30, 0.78);
+}
+
+.bow-person-dead {
+  border-left-color: var(--bow-crit);
+  background: rgba(16, 21, 27, 0.86);
+}
+
+.bow-here-pill {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px;
+  font-style: normal;
+  font-family: var(--bow-mono);
+  font-size: 0.62rem;
+  color: #b8dcff;
+  background: rgba(54, 92, 128, 0.28);
+  border: 1px solid rgba(120, 174, 224, 0.42);
+  border-radius: 999px;
+}
+
+.bow-person-away-note {
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+
+.bow-fallen-summary {
+  margin-top: 4px;
+  padding: 8px 10px;
+  border-top: 1px solid var(--bow-line-soft);
+  font-family: var(--bow-mono);
+  font-size: 0.68rem;
+  color: var(--bow-dim);
+}
+
+/* 3. Интерактивные гексы перемещения на поле боя 7×5 (King's Bounty / Heroes III) */
+.bow-tactical-grid .bow-hex-move-hit {
+  pointer-events: auto;
+  cursor: pointer;
+  transition: fill 0.14s ease, stroke 0.14s ease, stroke-width 0.14s ease;
+}
+
+.bow-tactical-grid .bow-hex-move-hit:hover {
+  fill: rgba(110, 176, 228, 0.28);
+  stroke: #b8dcfa;
+  stroke-width: 2;
+}
+
+.bow-tactical-grid .bow-hex-reach:hover {
+  fill: rgba(132, 204, 252, 0.36);
+  stroke: #e2f3ff;
+  stroke-width: 2.3;
+}
+
+/* 4. Полоска взлома Kenshi над героем, повороты сторожа и MGS «!» Alert */
+.bow-kenshi-lockbar {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: 156px;
+  height: 19px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(9, 14, 20, 0.94);
+  border: 1px solid #6b859e;
+  border-radius: 3px;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.78);
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 8;
+}
+
+.bow-kenshi-lockbar.is-paused {
+  border-color: #536475;
+  opacity: 0.88;
+}
+
+.bow-kenshi-lockfill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, #2d5c7f 0%, #5ba4cf 100%);
+  transition: width 0.36s ease;
+}
+
+.bow-kenshi-lockbar.is-paused .bow-kenshi-lockfill {
+  background: linear-gradient(90deg, #3c4d5e 0%, #5b7186 100%);
+}
+
+.bow-kenshi-lockbar b {
+  position: relative;
+  z-index: 2;
+  font-family: var(--bow-mono);
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #eef6ff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95);
+  white-space: nowrap;
+}
+
+.bow-actor-picking svg {
+  transform: translateX(4px);
+  transition: transform 0.22s ease;
+}
+
+.bow-jail-guard-fig {
+  display: inline-block;
+  transition: transform 0.28s ease;
+}
+
+/* Сторож отвернулся от клетки (смотрит вправо, спиной к узнику) */
+.bow-jail-guard-away .bow-jail-guard-fig {
+  transform: scaleX(-1);
+  opacity: 0.88;
+}
+
+.bow-jail-guard-turning .bow-jail-guard-fig {
+  transform: scaleX(-0.78);
+}
+
+.bow-actor-tag-guard {
+  border-color: rgba(128, 152, 176, 0.45);
+}
+
+.bow-jail-guard-away .bow-actor-tag-guard {
+  border-color: rgba(108, 182, 152, 0.55);
+}
+
+.bow-jail-guard-alert .bow-actor-tag-guard {
+  border-color: var(--bow-crit);
+  box-shadow: 0 0 10px rgba(208, 82, 90, 0.48);
+}
+
+@keyframes bow-mgs-pop {
+  0%   { transform: translate(-50%, 10px) scale(0.4); opacity: 0; }
+  65%  { transform: translate(-50%, -4px) scale(1.22); opacity: 1; }
+  100% { transform: translate(-50%, 0) scale(1); opacity: 1; }
+}
+
+.bow-mgs-alert,
+.bow-mgs-warn {
+  position: absolute;
+  bottom: calc(100% + 2px);
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--bow-mono);
+  font-weight: 900;
+  line-height: 1;
+  pointer-events: none;
+  z-index: 9;
+}
+
+.bow-mgs-alert {
+  font-size: 1.65rem;
+  color: #ff4c58;
+  text-shadow: 0 0 12px rgba(255, 76, 88, 0.9), 0 2px 4px #000;
+  animation: bow-mgs-pop 0.24s ease-out both;
+}
+
+.bow-mgs-warn {
+  font-size: 1.18rem;
+  color: #e4c675;
+  text-shadow: 0 2px 4px #000;
+}
+
+.bow-cage-lock-btn {
+  position: absolute;
+  left: 53.5%;
+  bottom: 96px;
+  z-index: 6;
+  min-height: 34px;
+  padding: 4px 9px;
+  font-family: var(--bow-mono);
+  font-size: 0.65rem;
+  color: #dce9f5;
+  background: rgba(14, 21, 29, 0.92);
+  border: 1px solid #5c748c;
+  border-radius: 4px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.65);
+}
+
+.bow-cage-lock-btn:hover {
+  border-color: #9bc4ea;
+  color: #ffffff;
+}
+
+/* 5. Модальное окно ручного взлома замка крупным планом (Skyrim / Fallout) */
+.bow-lockpick-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 88;
+  align-items: center;
+  justify-content: center;
+  padding: 14px;
+}
+
+.bow-lockpick-modal.bow-lp-open {
+  display: flex;
+}
+
+.bow-lp-dialog {
+  position: relative;
+  z-index: 2;
+  width: min(468px, 95vw);
+  box-sizing: border-box;
+  padding: 14px 16px;
+  background: var(--bow-panel);
+  border: 1px solid #415366;
+  border-radius: 6px;
+  box-shadow: 0 22px 56px rgba(0, 0, 0, 0.82);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.bow-lp-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--bow-line-soft);
+  font-size: 0.86rem;
+}
+
+.bow-lp-gaze {
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-family: var(--bow-mono);
+  font-size: 0.72rem;
+  text-align: center;
+  border: 1px solid var(--bow-line);
+}
+
+.bow-lp-gaze-safe {
+  background: rgba(34, 72, 64, 0.34);
+  border-color: rgba(98, 178, 152, 0.55);
+  color: #b9ebd9;
+}
+
+.bow-lp-gaze-warn {
+  background: rgba(68, 62, 34, 0.34);
+  border-color: rgba(208, 182, 98, 0.55);
+  color: #f0df9e;
+}
+
+.bow-lp-gaze-danger {
+  background: rgba(84, 30, 38, 0.44);
+  border-color: rgba(224, 92, 104, 0.72);
+  color: #ffb8be;
+}
+
+.bow-lp-stage {
+  position: relative;
+  background: #0c1117;
+  border: 1px solid var(--bow-line-soft);
+  border-radius: 5px;
+  cursor: ew-resize;
+  user-select: none;
+}
+
+.bow-lp-svg {
+  display: block;
+  width: 100%;
+  height: 214px;
+}
+
+@keyframes bow-lp-tremor {
+  0%, 100% { transform: translate(160px, 118px) rotate(0deg); }
+  25% { transform: translate(158px, 118px); }
+  75% { transform: translate(162px, 118px); }
+}
+
+.bow-lp-shake path {
+  stroke: #ff7a84 !important;
+}
+
+.bow-lp-slider-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bow-lp-range {
+  flex: 1;
+  accent-color: #7ab4e0;
+}
+
+.bow-lp-angle {
+  min-width: 42px;
+  text-align: right;
+  font-family: var(--bow-mono);
+  font-size: 0.74rem;
+  color: var(--bow-silver);
+}
+
+.bow-lp-meta {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--bow-mono);
+  font-size: 0.72rem;
+  color: var(--bow-dim);
+}
+
+.bow-lp-hint {
+  font-size: 0.78rem;
+  color: var(--bow-silver);
+  min-height: 1.3em;
+}
+
+.bow-lp-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.bow-lp-turn-btn {
+  border-color: #5c8db8;
+  color: #e4f2ff;
+}
+
+html.bow-motion-calm .bow-mgs-alert { animation: none !important; }
+html.bow-motion-calm .bow-kenshi-lockfill,
+html.bow-motion-calm .bow-jail-guard-fig { transition: none !important; }
+
+
 
 
 

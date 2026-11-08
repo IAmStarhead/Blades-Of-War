@@ -808,7 +808,7 @@ function byAct(act, key) {
 
     const back = win.Bow.save.deserialize(win.Bow.save.serialize(g, 1));
     assert(back.ok, "старое сохранение не загрузилось: " + back.reason);
-    eq(back.state.version, "0.0.8.1", "версия после миграции");
+    eq(back.state.version, "0.0.8.2", "версия после миграции");
     assert(back.state.fight === null, "после миграции нет пустого слота боя");
     assert(back.state.people["person:tarn"].weapon, "кузнец остался без топора");
     return "0.0.5 → " + back.state.version + ", топор кузнеца на месте";
@@ -849,7 +849,9 @@ function byAct(act, key) {
     win.Bow.fight.open(g, "person:liva");
     win.Bow.fight.start(g, "crime", seq([0.5]));
 
-    /* 1-й такт: постепенное сближение на 1 клетку (0→1, 3→2); 2-й такт: обмен ударами вплотную. */
+    /* С краёв поля 7×5 (col 0 и col 6) бойцы сближаются по 1 клетке до центра (3 шага), на 4-м — обмен ударами. */
+    win.Bow.fight.move(g, "press", seq([0.05, 0.05]));
+    win.Bow.fight.move(g, "press", seq([0.05, 0.05]));
     win.Bow.fight.move(g, "press", seq([0.05, 0.05]));
     const logBefore = g.fight.log.length;
     win.Bow.fight.move(g, "press", seq([0.05, 0.05, 0.05]));
@@ -873,7 +875,7 @@ function byAct(act, key) {
 
     win.Bow.fight.open(g, "person:tarn");
     win.Bow.fight.start(g, "spar", seq([0.5]));
-    for (let i = 0; i < 3 && g.fight && g.fight.phase === "exchange"; i++) {
+    for (let i = 0; i < 6 && g.fight && g.fight.phase === "exchange"; i++) {
       win.Bow.fight.move(g, "press", seq([0.1, 0.2, 0.3]));
     }
     assert(g.player.needs.health < 100, "игрок не получил ни одного удара");
@@ -1007,7 +1009,7 @@ function byAct(act, key) {
     delete g.flags.huntedHeat;
 
     const back = win.Bow.save.deserialize(win.Bow.save.serialize(g, 1));
-    eq(back.state.version, "0.0.8.1", "версия после миграции");
+    eq(back.state.version, "0.0.8.2", "версия после миграции");
     assert(back.state.guard && back.state.guard.arrived === true,
       "стража из старого сохранения осталась «непришедшей» — из неё не выбраться");
     eq(back.state.flags.huntedUntil, null, "поле срока розыска");
@@ -1103,7 +1105,9 @@ function byAct(act, key) {
 
     win.Bow.fight.open(g, "person:liva");
     win.Bow.fight.start(g, "crime", seq([0.5]));
-    /* Сближение по 1 клетке на первом шаге, удар вплотную на втором. */
+    /* Сближение с краёв поля 7×5 (col 0 и col 6) по 1 клетке, затем удар вплотную в центре. */
+    win.Bow.fight.move(g, "press", seq([0.1, 0.2]));
+    win.Bow.fight.move(g, "press", seq([0.1, 0.2]));
     win.Bow.fight.move(g, "press", seq([0.1, 0.2]));
     win.Bow.fight.move(g, "press", seq([0.1, 0.2, 0.3, 0.4]));
     win.BowGame.refresh(true);
@@ -1173,9 +1177,10 @@ function byAct(act, key) {
     assert(allies.length === 2, "спутник не встал на поле: " + allies.length);
 
     let before = g.people["person:liva"].needs.health;
-    /* 1-й такт: постепенный подход на 1 клетку; 2-й такт: удар вместе со спутником. */
-    win.Bow.fight.move(g, "press", seq([0.1, 0.1, 0.1, 0.1]));
-    win.Bow.fight.move(g, "press", seq([0.1, 0.1, 0.1, 0.1]));
+    /* Сближение с краёв поля 7×5 и совместный удар вместе со спутником. */
+    for (let s = 0; s < 5 && g.fight && g.fight.phase === "exchange"; s++) {
+      win.Bow.fight.move(g, "press", seq([0.1, 0.1, 0.1, 0.1]));
+    }
     const after = g.people["person:liva"].needs.health;
     assert(after < before, "врагу не досталось ни от вас, ни от спутника");
 
@@ -1234,11 +1239,11 @@ function byAct(act, key) {
       assert(doc().querySelector("#bow-fight-page .bow-chip-target"), "цель не подсвечена");
 
       const before = last.hp;
-      /* Постепенное сближение по 1 клетке до выбранного стражника (промахи на подходе), затем прицельный удар. */
-      for (let s = 0; s < 4 && g.fight && !win.Bow.fight.inMelee(g.fight.units[0], last); s++) {
-        win.Bow.fight.move(g, "press", () => 0.99, last.key);
-        g.player.needs.health = 100;
-      }
+    /* Постепенное сближение по 1 клетке с краёв поля 7×5 до выбранного стражника, затем прицельный удар. */
+    for (let s = 0; s < 6 && g.fight && !win.Bow.fight.inMelee(g.fight.units[0], last); s++) {
+      win.Bow.fight.move(g, "press", () => 0.99, last.key);
+      g.player.needs.health = 100;
+    }
       win.Bow.fight.move(g, "press", () => 0.05, last.key);
       assert(last.hp < before, "удар не попал в выбранного: " + before + " → " + last.hp);
       const others = foes.slice(0, 2).map((u) => u.hp);
@@ -1309,7 +1314,7 @@ function byAct(act, key) {
 
     /* Игрока не должны добить в этом же ходу: сначала шаг сближения, затем удар по ногам. */
     g.player.needs.health = 100;
-    for (let s = 0; s < 3 && g.fight && !win.Bow.fight.inMelee(g.fight.units[0], one); s++) {
+    for (let s = 0; s < 6 && g.fight && !win.Bow.fight.inMelee(g.fight.units[0], one); s++) {
       win.Bow.fight.move(g, "press", () => 0.99, one.key, "legs");
       g.player.needs.health = 100;
     }
@@ -1678,9 +1683,10 @@ function byAct(act, key) {
       const headBtn = doc().querySelector('#bow-fight-page .bow-aim-btn[data-aim="head"]');
       assert(headBtn, "нет кнопки удара в голову");
       click(headBtn);
-      /* В 0.0.7.5 первый круг идёт на сближение по 1 клетке, второй — на удар в выбранную область. */
-      win.Bow.fight.step(g, seq([0.05, 0.05, 0.05]));
-      win.Bow.fight.step(g, seq([0.05, 0.05, 0.05]));
+      /* С краёв поля 7×5 сближаемся по 1 клетке до центра и бьём в выбранную область. */
+      for (let s = 0; s < 4 && g.fight && g.fight.phase === "exchange"; s++) {
+        win.Bow.fight.step(g, seq([0.05, 0.05, 0.05]));
+      }
       const logObj = g.fight || g.flags.lastFight;
       const logText = (logObj.log || []).map((l) => l.text).join(" ");
       assert(/в голову/.test(logText), "в хронике нет удара в голову: " + logText);
@@ -1771,7 +1777,7 @@ function byAct(act, key) {
 
     const back = win.Bow.save.deserialize(win.Bow.save.serialize(g, 1));
     assert(back.ok, "сохранение 0.0.6.2 не загрузилось: " + back.reason);
-    eq(back.state.version, "0.0.8.1", "версия после миграции");
+    eq(back.state.version, "0.0.8.2", "версия после миграции");
     assert(back.state.steal && typeof back.state.steal === "object", "нет слота подготовки кражи");
     eq(back.state.player.lastTreat, null, "lastTreat после миграции");
     assert(typeof back.state.player.skills.medicine === "number", "навык лечения не восстановлен");
@@ -1921,12 +1927,14 @@ function byAct(act, key) {
     foes[2].needs.health = 90; foes[2].hp = 90;
     g.fight.target = foes[2].key;
 
-    /* 1. Вольный бой (free): после сближения по 1 клетке Брор сам выбирает самого слабого (foes[1]). */
+    /* 1. Вольный бой (free): после сближения с правого края Брор сам выбирает самого слабого (foes[1]). */
     win.Bow.fight.setOrder(g, "aim", "head");
     win.Bow.fight.setOrder(g, "squad", "free");
-    win.Bow.fight.step(g, () => 0.99);
-    g.player.needs.health = 100;
-    bror.needs.health = 100;
+    for (let ap = 0; ap < 5 && !win.Bow.fight.inMelee(g.fight.units.find((u) => u.key === "ally:person:bror"), foes[1]); ap++) {
+      win.Bow.fight.step(g, () => 0.99);
+      g.player.needs.health = 100;
+      bror.needs.health = 100;
+    }
     foes[0].needs.health = 90; foes[0].hp = 90;
     foes[1].needs.health = 42; foes[1].hp = 42;
     foes[2].needs.health = 90; foes[2].hp = 90;
@@ -1971,9 +1979,9 @@ function byAct(act, key) {
     };
     const back = win.Bow.save.deserialize(win.Bow.save.serialize(g, 1));
     assert(back.ok, "сохранение 0.0.6.3 не загрузилось: " + back.reason);
-    eq(back.state.version, "0.0.8.1", "версия после миграции");
+    eq(back.state.version, "0.0.8.2", "версия после миграции");
     assert(back.state.fight.orders && back.state.fight.orders.aim === "body", "приказы боя созданы при миграции");
-    return "0.0.6.3 → 0.0.8.1, приказы боя созданы";
+    return "0.0.6.3 → 0.0.8.2, приказы боя созданы";
   });
 
   /* 8н. Круг 13 (0.0.7.1): фикс зависания в клетке, честная дистанция боя, логотип и Меню игры */
@@ -1997,7 +2005,7 @@ function byAct(act, key) {
       win.Bow.guard.fight(g);
       /* Сближаемся со стражниками, промахиваемся (0.99), а все трое бьют в ответ (0.01). */
       let steps = 0;
-      while (g.fight && steps++ < 8) {
+      while (g.fight && steps++ < 12) {
         win.Bow.fight.move(g, "press", seq([0.99, 0.01, 0.5, 0.01, 0.01, 0.5, 0.01, 0.01, 0.5, 0.01]));
       }
       win.BowGame.refresh(true);
@@ -2080,9 +2088,11 @@ function byAct(act, key) {
     assert(foe.col < startFoeCol, "враг не сделал шаг сближения: " + foe.col);
 
     /* Теперь даём спутнику «Вольно · сближаться» (free), а сами держим позицию сзади:
-       Брор делает 1 шаг вперёд вплотную, затем бьёт Ливу и принимает ответный удар на себя! */
+       Брор выходит вперёд навстречу Ливе до контакта, бьёт её и принимает ответный удар на себя! */
     win.Bow.fight.setOrder(g, "squad", "free");
-    win.Bow.fight.move(g, "guard", seq([0.05, 0.5, 0.05, 0.5]));
+    for (let s = 0; s < 4 && !win.Bow.fight.inMelee(ally, foe); s++) {
+      win.Bow.fight.move(g, "guard", seq([0.95, 0.95]));
+    }
     assert(ally.col > 0 && win.Bow.fight.inMelee(ally, foe), "спутник в вольном режиме не подошёл вплотную");
     win.Bow.fight.move(g, "guard", seq([0.05, 0.5, 0.05, 0.5]));
     assert(liva.needs.health < 100, "подошедший спутник не нанёс удар");
@@ -2101,12 +2111,14 @@ function byAct(act, key) {
 
     win.Bow.fight.open(g, "person:liva");
     win.Bow.fight.start(g, "crime", seq([0.5]));
-    /* Сначала сближаемся по 1 клетке за шаг (герой col 0 → 1, враг col 3 → 2 — уже вплотную). */
-    win.Bow.fight.move(g, "press", seq([0.95, 0.95]));
     const you = g.fight.units.filter((u) => u.key === "player")[0];
     const foeU = g.fight.units.filter((u) => u.side === "enemy")[0];
+    /* Сближаемся с краёв поля 7×5 до рукопашной в центре (col 3 vs col 4). */
+    for (let s = 0; s < 4 && !win.Bow.fight.inMelee(you, foeU); s++) {
+      win.Bow.fight.move(g, "press", seq([0.95, 0.95]));
+    }
     const closeCol = you.col;
-    assert(closeCol === 1 && win.Bow.fight.inMelee(you, foeU), "герой не сблизился на 1 клетку: col=" + closeCol);
+    assert(closeCol >= 2 && win.Bow.fight.inMelee(you, foeU), "герой не сблизился вплотную: col=" + closeCol);
 
     /* Делаем шаг назад. */
     win.Bow.fight.move(g, "back", seq([0.95, 0.95]));
@@ -2692,7 +2704,7 @@ function byAct(act, key) {
       g.people["person:liva"].needs.health = 28;
       win.Bow.fight.open(g, "person:liva");
       win.Bow.fight.start(g, "crime", seq([0.2]));
-      for (let r = 0; r < 5 && g.fight && g.fight.phase === "exchange"; r++) {
+      for (let r = 0; r < 8 && g.fight && g.fight.phase === "exchange"; r++) {
         win.Bow.fight.move(g, "press", seq([0.05, 0.2]));
       }
       if (g.fight && g.fight.phase === "aftermath") {
@@ -3736,23 +3748,25 @@ function byAct(act, key) {
       win.Bow.fight.start(g, "spar", seq([0.5]));
       const you = g.fight.units.filter((u) => u.key === "player")[0];
       const foe = g.fight.units.filter((u) => u.side === "enemy")[0];
-      eq(you.col, 0, "старт героя");
-      eq(foe.col, 3, "старт противника");
+      eq(you.col, 0, "старт героя с левого края");
+      eq(foe.col, 6, "старт противника с правого края");
 
-      /* Круг 1: каждый делает РОВНО 1 шаг навстречу (0→1 и 3→2), без прыжка на 2 клетки и без удара с края! */
+      /* Круг 1: каждый делает РОВНО 1 шаг навстречу с краёв поля (0→1 и 6→5), без прыжка через полкарты! */
       win.Bow.fight.step(g, seq([0.05, 0.05]));
       eq(you.col, 1, "герой прыгнул больше чем на 1 клетку за такт");
-      eq(foe.col, 2, "противник не шагнул на 1 клетку навстречу");
+      eq(foe.col, 5, "противник не шагнул на 1 клетку навстречу");
       eq(g.people["person:sigi"].needs.health, 100, "удар прошёл в такт сближения с края карты");
 
-      /* Круг 2: теперь бойцы стоят вплотную (col 1 и col 2) — идёт удар с 1-кадровой анимацией взмаха и рассечения! */
+      /* Доходим до центра поля (2→3 и 5→4) и проверяем удар с 1-кадровой анимацией взмаха и рассечения! */
+      win.Bow.fight.step(g, seq([0.05, 0.05]));
+      win.Bow.fight.step(g, seq([0.05, 0.05]));
       win.Bow.fight.step(g, seq([0.05, 0.5, 0.05, 0.5]));
       win.BowGame.refresh(true);
       assert(g.fight.lastStrikes && g.fight.lastStrikes.length >= 1, "удары раунда не записаны для анимации");
       const page = doc().getElementById("bow-fight-page");
       assert(page.querySelector(".bow-swing-a, .bow-swing-b"), "нет класса анимации замаха у бьющей фигурки");
       assert(page.querySelector(".bow-strike-fx-hit .bow-slash-svg"), "нет 1-кадровой SVG-дуги рассечения при попадании");
-      return "арена 1088×368px, шаг 0→1 / 3→2, SVG-взмах и дуга удара работают";
+      return "арена 1088×368px, края 0 vs 6 → встреча в центре, SVG-взмах и дуга удара работают";
     } finally {
       win.BowGame.stopFightClock();
       Object.keys(snap).forEach((k) => { g[k] = snap[k]; });
@@ -3886,10 +3900,10 @@ function byAct(act, key) {
     }
   });
 
-  check("0.0.8.1: миграция состояний доводит версию игры до 0.0.8.1", () => {
-    assert(win.Bow.data.meta.version === "0.0.8.1", "версия в Bow.data.meta не 0.0.8.1");
-    assert(game().version === "0.0.8.1", "версия активного состояния не 0.0.8.1");
-    return "версия 0.0.8.1 подтверждена";
+  check("0.0.8.2: миграция состояний доводит версию игры до 0.0.8.2", () => {
+    assert(win.Bow.data.meta.version === "0.0.8.2", "версия в Bow.data.meta не 0.0.8.2");
+    assert(game().version === "0.0.8.2", "версия активного состояния не 0.0.8.2");
+    return "версия 0.0.8.2 подтверждена";
   });
 
   check("0.0.7.7: щипковые удары по струнам полностью вырезаны из саундтрека", () => {
@@ -4111,9 +4125,11 @@ function byAct(act, key) {
       assert(doc().querySelector("#bow-stage svg.bow-stage-cage-bars"), "нет передней кованой решётки клетки поверх узника");
       const prisoner = doc().querySelector("#bow-stage .bow-actor-player");
       assert(prisoner && !prisoner.querySelector(".bow-fig-weapon"), "у заключённого в клетке осталось оружие в руке");
-      assert(doc().querySelector('#bow-stage [data-act="jail-escape"]'), "на сцене клетки нет интерактивного засова");
-      return "сцена «Клетка у частокола» + кованая решётка + караульный";
+      assert(doc().querySelector('#bow-stage [data-act="jail-pick-toggle"]'), "на сцене клетки нет интерактивного засова для взлома");
+      assert(doc().querySelector('#bow-stage [data-act="jail-pick-manual"]'), "на решётке нет кнопки ручного взлома отмычкой");
+      return "сцена «Клетка у частокола» + кованая решётка + сторож";
     } finally {
+      if (win.BowGame.stopJailClock) { win.BowGame.stopJailClock(); }
       Object.keys(snap).forEach((k) => { g[k] = snap[k]; });
       win.BowGame.refresh(true);
     }
@@ -4167,6 +4183,251 @@ function byAct(act, key) {
       Object.keys(snap).forEach((k) => { g[k] = snap[k]; });
       win.BowGame.refresh(true);
     }
+  });
+
+  /* ---------- Круг 22 (0.0.8.2): ход по гексам, фикс мигания карточки, вкладка Жители, репутация стражи, акустический бой и гибридный взлом ---------- */
+
+  check("0.0.8.2: противник спавнится с правого края (col 6), а клик по свободному гексу двигает героя в выбранную клетку (King's Bounty / HoMM3)", () => {
+    const g = game();
+    const snap = clone(g);
+    try {
+      g.fight = null;
+      g.jail = null;
+      g.guard = null;
+      g.player.location = "square";
+      g.player.needs.health = 100;
+      g.player.needs.fatigue = 100;
+      g.people["person:liva"].alive = true;
+      g.people["person:liva"].attitude = 25;
+      g.people["person:liva"].location = "square";
+      g.people["person:liva"].needs.health = 100;
+
+      win.Bow.fight.open(g, "person:liva");
+      win.Bow.fight.start(g, "spar", seq([0.5]));
+      win.BowGame.refresh(true);
+
+      const you = g.fight.units.find((u) => u.key === "player");
+      const foe = g.fight.units.find((u) => u.side === "enemy");
+      eq(you.col, 0, "герой должен спавниться у левого края (col 0)");
+      eq(foe.col, 6, "противник должен спавниться у правого края (col 6), а не в центре!");
+
+      const reachHexes = doc().querySelectorAll("#bow-fight-page svg.bow-tactical-grid polygon.bow-hex-reach[data-act='fight-hex']");
+      assert(reachHexes.length >= 4, "доступные для перехода гексы не подсвечены на сетке: " + reachHexes.length);
+
+      const targetHex = doc().querySelector('#bow-fight-page svg.bow-tactical-grid polygon.bow-hex-move-hit[data-col="2"][data-row="1"]');
+      assert(targetHex, "нет кликабельного свободного гекса (2,1)");
+      targetHex.dispatchEvent(new win.MouseEvent("click", { bubbles: true, cancelable: true }));
+
+      eq(you.col, 2, "клик по свободному гексу не переместил героя на col 2");
+      eq(you.row, 1, "клик по свободному гексу не переместил героя на row 1");
+      assert(foe.col === 5, "противник не сделал ответный шаг навстречу после манёвра героя");
+      const logTxt = g.fight.log.map((l) => l.text).join(" ");
+      assert(/переходите на клетку В2/.test(logTxt), "переход по гексу не записан в хронику: " + logTxt);
+
+      return "спавн по краям (0 vs 6) + подсветка радиуса + клик на гекс В2 работает";
+    } finally {
+      win.BowGame.stopFightClock();
+      Object.keys(snap).forEach((k) => { g[k] = snap[k]; });
+      win.BowGame.refresh(true);
+    }
+  });
+
+  check("0.0.8.2: всплывающее окошко персонажа на сцене не мигает и не пересоздаётся при смене минуты живого времени", () => {
+    const g = game();
+    const snap = clone(g);
+    try {
+      g.fight = null;
+      g.jail = null;
+      g.player.location = "square";
+      g.people["person:liva"].alive = true;
+      g.people["person:liva"].location = "square";
+      win.BowGame.refresh(true);
+      win.Bow.ui.setStageSelection({ kind: "person", personId: "person:liva", x: 60 });
+      win.BowGame.refresh(true);
+
+      const cardBefore = doc().querySelector("#bow-stage-pop .bow-stage-card");
+      assert(cardBefore, "карточка персонажа не открылась на сцене");
+
+      /* Имитируем переход живого времени на следующую минуту */
+      win.Bow.time.tickMinute(g);
+      win.BowGame.refresh(true);
+
+      const cardAfter = doc().querySelector("#bow-stage-pop .bow-stage-card");
+      assert(cardAfter === cardBefore || cardAfter.classList.contains("bow-stage-card-steady"),
+        "карточка персонажа пересоздалась с анимацией мигания при тике минуты!");
+
+      /* Даже если характеристики обновились — у повторного рендера включён .bow-stage-card-steady без вспышки */
+      g.people["person:liva"].needs.fatigue = Math.max(10, g.people["person:liva"].needs.fatigue - 5);
+      win.BowGame.refresh(true);
+      const cardUpdated = doc().querySelector("#bow-stage-pop .bow-stage-card");
+      assert(cardUpdated.classList.contains("bow-stage-card-steady"),
+        "при обновлении текста карточки не подавлена анимация мигания (.bow-stage-card-steady)");
+
+      win.Bow.ui.setStageSelection(null);
+      return "DOM-узел сохраняется при тике минуты + .bow-stage-card-steady убирает вспышку";
+    } finally {
+      win.Bow.ui.setStageSelection(null);
+      Object.keys(snap).forEach((k) => { g[k] = snap[k]; });
+      win.BowGame.refresh(true);
+    }
+  });
+
+  check("0.0.8.2: вкладка «Жители поселения» ровная (border-box), без «мертва/мёртв», без чужих/исчезнувших трупов и осмотра сквозь стены (фикс image-27)", () => {
+    const g = game();
+    const snap = clone(g);
+    try {
+      const styles = [...doc().querySelectorAll("style")].map((s) => s.textContent).join("\n");
+      assert(/\.bow-person[\s\S]*?box-sizing:\s*border-box\s*!important/.test(styles),
+        "у .bow-person не задан box-sizing: border-box — будет горизонтальный скролл");
+
+      g.jail = null;
+      g.player.location = "outskirts"; /* здесь только живой Брор */
+      g.people["person:sigi"].alive = false; /* погибла в трактире, труп исчез */
+      g.people["person:liva"].alive = false; /* погибла на площади, труп не рядом */
+      g.corpses = [{ id: "corpse:liva", personId: "person:liva", name: "Лива", location: "square", createdHour: 0, money: 0, items: [] }];
+      win.BowGame.refresh(true);
+
+      const allBox = doc().getElementById("bow-all-people");
+      const txt = allBox.textContent;
+      assert(!/мертва\/мёртв/.test(txt), "осталась сырая строка «мертва/мёртв»");
+      assert(/Сигрид \(погибла\)/.test(txt) && /Лива \(погибла\)/.test(txt),
+        "погибшие женщины не отмечены грамотно как «погибла» в сводке: " + txt);
+
+      const inspectBtns = allBox.querySelectorAll("[data-act='inspect']");
+      eq(inspectBtns.length, 1, "кнопка «Осмотреть» должна быть ТОЛЬКО у живого Брора рядом, а не у людей в других локациях или мёртвых!");
+      eq(inspectBtns[0].getAttribute("data-person"), "person:bror", "кнопка «Осмотреть» ведёт не на Брора");
+
+      return "ровный border-box + только живой сосед доступен для осмотра + грамотная сводка павших";
+    } finally {
+      Object.keys(snap).forEach((k) => { g[k] = snap[k]; });
+      win.BowGame.refresh(true);
+    }
+  });
+
+  check("0.0.8.2: у сторожа убрано слово «караул», сторож поворачивается, а при запале звучит MGS «!» Alert с затуханием и усилением замка", () => {
+    const g = game();
+    const snap = clone(g);
+    try {
+      g.fight = null;
+      win.Bow.guard.toJail(g, "кража");
+      win.BowGame.refresh(true);
+
+      const guardTag = doc().querySelector("#bow-stage .bow-actor-guard");
+      assert(guardTag && !/караул/i.test(guardTag.textContent),
+        "у сторожа в клетке всё ещё написано двусмысленное «караул»: " + (guardTag ? guardTag.textContent : ""));
+      assert(/отвернулся|следит|поворачивается/.test(guardTag.textContent),
+        "нет понятного статуса наблюдения у сторожа");
+
+      /* Пока сторож отвернулся (away), начинаем взлом Ржавого засова (ур. 1) */
+      g.jail.guardPhase = "away";
+      g.jail.guardTick = 2;
+      const startRes = win.Bow.guard.toggleKenshiPick(g);
+      assert(startRes.ok && g.jail.picking === true, "взлом полоской Kenshi не запустился, пока сторож отвернулся");
+      win.BowGame.refresh(true);
+      const lockBar = doc().querySelector("#bow-stage .bow-kenshi-lockbar");
+      assert(lockBar && /Взлом · ур\./.test(lockBar.textContent), "над узником не отрисовалась полоска взлома Kenshi");
+
+      /* Продвигаем цикл, не замерев вовремя: сторож поворачивается (watching) и ПАЛИТ игрока! */
+      g.jail.guardTick = 7; /* следующий такт = 8 -> watching */
+      const caught = win.Bow.guard.tickJailScene(g, () => 0.5);
+      assert(caught && caught.caught === true, "сторож повернулся лицом, но не запалил взломщика!");
+      eq(g.jail.lockTier, 2, "после поимки замок должен стать целым и более прокачанным (ур. 1 → ур. 2)");
+      eq(g.jail.lockProgress, 0, "прогресс нового замка должен быть сброшен в 0%");
+      win.BowGame.refresh(true);
+
+      const mgsBang = doc().querySelector("#bow-stage .bow-mgs-alert");
+      assert(mgsBang && mgsBang.textContent === "!", "над головой сторожа не появился восклицательный знак MGS «!»");
+      assert(typeof win.Bow.audio.playMgsAlert === "function", "нет звукового эффекта MGS Alert в аудиодвижке");
+
+      return "без «караул» + полоска Kenshi + MGS «!» Alert + замок усилен (Ржавый засов → Кованый замок)";
+    } finally {
+      if (win.BowGame.stopJailClock) { win.BowGame.stopJailClock(); }
+      Object.keys(snap).forEach((k) => { g[k] = snap[k]; });
+      win.BowGame.refresh(true);
+    }
+  });
+
+  check("0.0.8.2: гибридный взлом (полоска Kenshi и ручная замочная скважина Skyrim/Fallout) открывает клетку и качает навык Взлома", () => {
+    const g = game();
+    const snap = clone(g);
+    try {
+      /* 1. Успешный взлом полоской Kenshi, пока сторож отвернулся */
+      win.Bow.guard.toJail(g, "драка");
+      const sk0 = g.player.skills.lockpicking;
+      g.jail.guardPhase = "away";
+      g.jail.guardTick = 0;
+      g.jail.lockProgress = 92;
+      g.jail.picking = true;
+      const kRes = win.Bow.guard.tickJailScene(g, () => 0.05);
+      assert(kRes && kRes.unlocked && !g.jail, "полоска Kenshi на 100% не открыла замок");
+      assert(g.player.skills.lockpicking > sk0, "взлом полоской Kenshi не прокачал навык Взлома");
+
+      /* 2. Ручной взлом в духе Skyrim / Fallout через окно #bow-lockpick-modal */
+      win.Bow.guard.toJail(g, "повторно");
+      g.jail.guardPhase = "away";
+      g.jail.sweetSpot = 35;
+      win.Bow.ui.openLockpickModal(g);
+
+      const modal = doc().getElementById("bow-lockpick-modal");
+      assert(modal && modal.classList.contains("bow-lp-open"), "окно ручного взлома Skyrim/Fallout не открылось");
+      assert(modal.querySelector("#bow-lp-pick-group") && modal.querySelector("#bow-lp-cyl-group"),
+        "в окне взлома нет SVG отмычки и цилиндра скважины");
+
+      /* Неверный угол (-60° при sweetSpot +35°) — цилиндр клинит, замок не открывается */
+      const jamRes = win.Bow.guard.turnManualLock(g, -60, 0, () => 0.5);
+      assert(jamRes.jammed && g.jail, "неверный угол отмычки не должен открывать замок");
+
+      /* Попадаем в сладкую точку (+34°) и поворачиваем замок до упора (90°) — клетка открыта! */
+      win.Bow.guard.turnManualLock(g, 34, 0, () => 0.5);
+      win.Bow.guard.turnManualLock(g, 34, 34, () => 0.5);
+      const openRes = win.Bow.guard.turnManualLock(g, 34, 68, () => 0.5);
+      assert(openRes.unlocked && !g.jail, "ручной поворот в сладкой точке не открыл замок клетки");
+      win.Bow.ui.closeLockpickModal();
+
+      return "полоска Kenshi + интерактивная скважина Skyrim/Fallout + рост навыка Взлома работают";
+    } finally {
+      win.Bow.ui.closeLockpickModal();
+      if (win.BowGame.stopJailClock) { win.BowGame.stopJailClock(); }
+      Object.keys(snap).forEach((k) => { g[k] = snap[k]; });
+      win.BowGame.refresh(true);
+    }
+  });
+
+  check("0.0.8.2: преступления, отсидки и побеги снижают репутацию со стражей (без бага положительной дружбы), а боевая музыка сведена акустически", () => {
+    const g = clone(game());
+    g.fight = null;
+    g.jail = null;
+    g.guard = null;
+    g.dead = null;
+    g.reputation["org:guard"] = 0;
+    g.people["person:liva"].alive = true;
+    g.people["person:liva"].needs.health = 100;
+    g.people["person:liva"].location = "square";
+    g.player.location = "square";
+    g.player.needs.health = 100;
+
+    /* Нападение и убийство роняют репутацию не только у общины, но и у Стражи Брода */
+    win.Bow.fight.open(g, "person:liva");
+    win.Bow.fight.start(g, "crime", seq([0.2]));
+    assert(g.reputation["org:guard"] < 0, "преступное нападение не снизило отношение стражи");
+    g.fight.phase = "aftermath";
+    win.Bow.fight.decide(g, "kill", seq([0.2]));
+    const repAfterKill = g.reputation["org:guard"];
+    assert(repAfterKill <= -25, "убийство жителя слишком слабо уронило репутацию у стражи: " + repAfterKill);
+
+    /* Серия отсидок и побегов НЕ делает убийцу другом стражи (> 0)! */
+    for (let c = 0; c < 4; c++) {
+      win.Bow.guard.toJail(g, "убийство");
+      win.Bow.guard.release(g);
+    }
+    assert(g.reputation["org:guard"] < 0, "после отсидок репутация убийцы у стражи стала положительной: " + g.reputation["org:guard"]);
+
+    /* Проверка тёплого акустического сведения боевой шины в 108-audio.twee */
+    const audioSrc = fs.readFileSync(path.join(__dirname, "..", "src", "js", "108-audio.twee"), "utf8");
+    assert(/combatWet\.gain\.value\s*=\s*0\.64/.test(audioSrc) && /buildImpulseResponse\(ctx,\s*3\.45/.test(audioSrc),
+      "боевая шина не переведена в длинный тёплый акустический зал");
+
+    return "убийство → реп. стражи " + repAfterKill + " (после 4 отсидок " + g.reputation["org:guard"] + ", не >0) + тёплый зал 3.45с";
   });
 
   /* ---------- Итоги ---------- */

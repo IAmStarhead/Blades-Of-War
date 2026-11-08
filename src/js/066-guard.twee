@@ -137,9 +137,9 @@
     state.guard = null;
     state.flags.guardAt = null;
     Bow.steal.addHeat(state, GUARD, -Math.round(heat(state) * 0.7));
-    Bow.work.addReputation(state, GUARD, 5);
+    if (Bow.work) { Bow.work.addReputation(state, GUARD, -2); }
     Bow.journal.add(state, "Стражу подкупили за " + cost + " м. Дело закрыли тихо.", "guard");
-    return { ok: true, message: "Отдали " + cost + " м. Десятник отводит глаза и уходит." };
+    return { ok: true, message: "Отдали " + cost + " м. Десятник кривится, прячет монеты и уходит." };
   }
 
   /* Побег: шанс от выживания и увечий. Провал — избиение, возможно,
@@ -162,6 +162,7 @@
 
     Bow.time.advance(state, 1);
     Bow.needs.applyChange(state.player, "fatigue", -8);
+    if (Bow.work) { Bow.work.addReputation(state, GUARD, -6); }
 
     if (rnd(rng) < fleeChance(state)) {
       /* Ушли — но не исчезли: розыск остаётся, и каждый переход
@@ -268,8 +269,281 @@
     return Bow.fight.start(state, "guard");
   }
 
-  /* ---------- Клетка (с живым поминутным отсчётом срока, 0.0.8.1) ---------- */
+  /* ---------- Клетка, повороты сторожа и гибридный взлом Kenshi + Skyrim (0.0.8.2) ---------- */
   var jailPauseTick = false;
+
+  var LOCK_TIERS = {
+    1: { tier: 1, name: "Ржавый засов",        rank: "Новичок", reqSkill: 0,  speed: 22, sweetTol: 22 },
+    2: { tier: 2, name: "Кованый замок",       rank: "Ученик",  reqSkill: 15, speed: 16, sweetTol: 16 },
+    3: { tier: 3, name: "Двухштифтовый засов", rank: "Адепт",   reqSkill: 30, speed: 12, sweetTol: 12 },
+    4: { tier: 4, name: "Пудовый замок",       rank: "Эксперт", reqSkill: 50, speed: 9,  sweetTol: 8.5 },
+    5: { tier: 5, name: "Королевский засов",   rank: "Мастер",  reqSkill: 72, speed: 6.5, sweetTol: 5.5 }
+  };
+
+  function rollSweetSpot(seedHint) {
+    var r = (typeof seedHint === "number") ? seedHint : Math.random();
+    return Math.round((r * 148) - 74); /* -74° .. +74° */
+  }
+
+  function ensureJailLock(jail) {
+    if (!jail) { return null; }
+    if (typeof jail.lockTier !== "number" || jail.lockTier < 1) { jail.lockTier = 1; }
+    if (jail.lockTier > 5) { jail.lockTier = 5; }
+    if (typeof jail.lockProgress !== "number" || isNaN(jail.lockProgress)) { jail.lockProgress = 0; }
+    if (typeof jail.picking !== "boolean") { jail.picking = false; }
+    if (!jail.guardPhase) { jail.guardPhase = "away"; }
+    if (typeof jail.guardTick !== "number") { jail.guardTick = 1; }
+    if (typeof jail.sweetSpot !== "number" || isNaN(jail.sweetSpot)) { jail.sweetSpot = rollSweetSpot(); }
+    if (typeof jail.pinHp !== "number" || isNaN(jail.pinHp)) { jail.pinHp = 100; }
+    if (typeof jail.alertCount !== "number") { jail.alertCount = 0; }
+    return LOCK_TIERS[jail.lockTier] || LOCK_TIERS[1];
+  }
+
+  function lockInfo(state) {
+    if (!state || !state.jail) { return LOCK_TIERS[1]; }
+    return ensureJailLock(state.jail);
+  }
+
+  function lockpickSkillOf(state) {
+    var sk = (state && state.player && state.player.skills) || {};
+    return Math.max(0, Number(sk.lockpicking) || 0);
+  }
+
+  function growLockpickSkill(state, amount) {
+    if (!state || !state.player || !state.player.skills) { return; }
+    var cur = lockpickSkillOf(state);
+    state.player.skills.lockpicking = clamp(Math.round((cur + amount) * 100) / 100, 0, 100);
+  }
+
+  function kenshiOpenChance(state) {
+    if (!state || !state.jail) { return 0.5; }
+    var def = ensureJailLock(state.jail);
+    var sk = lockpickSkillOf(state);
+    var dex = (state.player.attrs && state.player.attrs.dexterity) || 12;
+    var raw = 0.48 + ((sk - def.reqSkill) * 0.012) + ((dex - 10) * 0.01);
+    return clamp(raw, 0.16, 0.96);
+  }
+
+  function unlockEscape(state, howLabel) {
+    var def = ensureJailLock(state.jail);
+    state.jail = null;
+    state.flags.guardAt = null;
+    state.flags.hunted = true;
+    state.flags.huntedUntil = state.time.totalHours + 48;
+    state.flags.huntedHeat = Math.max(heat(state) + 12, R().threshold);
+    Bow.steal.addHeat(state, GUARD, 12);
+    if (Bow.work) { Bow.work.addReputation(state, GUARD, -8); }
+    growLockpickSkill(state, howLabel === "manual" ? 2.4 : 1.6);
+    if (Bow.audio && Bow.audio.playLockSound) { Bow.audio.playLockSound("open"); }
+    var msg = "Щелчок ригеля! Вы тихо вскрыли " + def.name.toLowerCase() + " и ускользнули из клетки, пока сторож не смотрел.";
+    Bow.journal.add(state, "Взломан " + def.name.toLowerCase() + " — побег из клетки удался.", "guard");
+    return { ok: true, escaped: true, unlocked: true, message: msg };
+  }
+
+  /* Сторож запалил взлом! Звук MGS «!», восклицательный знак, затухание и более мощный целый замок. */
+  function catchLockpick(state) {
+    if (!state || !state.jail) { return { ok: false, caught: false, message: "" }; }
+    ensureJailLock(state.jail);
+    var prevTier = state.jail.lockTier;
+    var nextTier = Math.min(5, prevTier + 1);
+
+    state.jail.picking = false;
+    state.jail.lockProgress = 0;
+    state.jail.lockTier = nextTier;
+    state.jail.sweetSpot = rollSweetSpot();
+    state.jail.pinHp = 100;
+    state.jail.guardPhase = "alert";
+    state.jail.guardTick = 8;
+    state.jail.alertCount = (state.jail.alertCount || 0) + 1;
+    state.jail.alertFlash = true;
+
+    /* За попытку вскрытия накидывают полчаса срока, падает отношение стражи и растёт розыск. */
+    var curMin = syncJailMinutes(state.jail);
+    state.jail.minutesLeft = curMin + 30;
+    state.jail.hoursLeft = Math.ceil(state.jail.minutesLeft / 60);
+    state.jail._syncedHours = state.jail.hoursLeft;
+
+    Bow.steal.addHeat(state, GUARD, 6);
+    if (Bow.work) { Bow.work.addReputation(state, GUARD, -5); }
+
+    if (Bow.audio && Bow.audio.playMgsAlert) { Bow.audio.playMgsAlert(); }
+
+    var newDef = LOCK_TIERS[nextTier] || LOCK_TIERS[5];
+    var msg = nextTier > prevTier
+      ? ("! Сторож заметил отмычку! Вас оттащили от решётки и повесили целый замок покрепче: «" + newDef.name + "» (" + newDef.rank + ").")
+      : ("! Сторож заметил взлом! Отмычку отобрали, а «" + newDef.name + "» заперли заново на все обороты.");
+    Bow.journal.add(state, msg, "guard");
+    return {
+      ok: true,
+      caught: true,
+      escaped: false,
+      lockTier: nextTier,
+      lockName: newDef.name,
+      fadeVeil: true,
+      message: msg
+    };
+  }
+
+  /* Тоггл взлома полоской Kenshi прямо над героем в клетке. */
+  function toggleKenshiPick(state) {
+    if (!state || !state.jail) { return { ok: false, message: "Вы не в клетке." }; }
+    var def = ensureJailLock(state.jail);
+    if (state.jail.picking) {
+      state.jail.picking = false;
+      return {
+        ok: true,
+        picking: false,
+        message: "Вы замираете и прячете руки за спину (прогресс замка сохранён: " + Math.round(state.jail.lockProgress) + "%)."
+      };
+    }
+    if (state.jail.guardPhase === "watching" || state.jail.guardPhase === "alert") {
+      /* Если начать греметь засовом прямо под взглядом сторожа — сразу палит! */
+      return catchLockpick(state);
+    }
+    state.jail.picking = true;
+    state.jail.alertFlash = false;
+    return {
+      ok: true,
+      picking: true,
+      message: "Вы тихо просовываете щепку в «" + def.name.toLowerCase() + "» (следите за сторожем!)."
+    };
+  }
+
+  /* Живой такт сцены клетки (~0.95 сек): сторож поворачивается, а полоска Kenshi ползёт вперёд. */
+  function tickJailScene(state, rng) {
+    if (!state || !state.jail || state.dead) { return null; }
+    var def = ensureJailLock(state.jail);
+
+    /* Если только что была вспышка «!» — держим её один такт, затем переводим в обычный надзор. */
+    if (state.jail.guardPhase === "alert") {
+      if (state.jail.alertFlash) {
+        state.jail.alertFlash = false;
+        return { changed: true, phase: "alert" };
+      }
+      state.jail.guardPhase = "watching";
+      state.jail.guardTick = 9;
+      return { changed: true, phase: "watching" };
+    }
+
+    /* 12-шаговый цикл поста: 0..5 отвернулся (away), 6..7 поворачивается (turning), 8..11 смотрит (watching). */
+    var t = ((state.jail.guardTick || 0) + 1) % 12;
+    state.jail.guardTick = t;
+    var nextPhase = t <= 5 ? "away" : (t <= 7 ? "turning" : "watching");
+    var phaseChanged = (nextPhase !== state.jail.guardPhase);
+    state.jail.guardPhase = nextPhase;
+
+    if (!state.jail.picking) {
+      return phaseChanged ? { changed: true, phase: nextPhase } : null;
+    }
+
+    /* Если продолжали ковырять засов, когда сторож уже повернулся лицом — ТРЕВОГА «!» */
+    if (nextPhase === "watching") {
+      var caughtRes = catchLockpick(state);
+      caughtRes.changed = true;
+      return caughtRes;
+    }
+
+    /* Полоска Kenshi движется вперёд и растит навык Взлома! */
+    var sk = lockpickSkillOf(state);
+    var dex = (state.player.attrs && state.player.attrs.dexterity) || 12;
+    var step = def.speed * (0.72 + (sk / 110) + ((dex - 10) * 0.025));
+    state.jail.lockProgress = clamp(Math.round((state.jail.lockProgress + step) * 10) / 10, 0, 100);
+    growLockpickSkill(state, 0.22);
+    if (Bow.audio && Bow.audio.playLockSound) { Bow.audio.playLockSound("tick"); }
+
+    if (state.jail.lockProgress >= 100) {
+      if (rnd(rng) < kenshiOpenChance(state)) {
+        var winRes = unlockEscape(state, "kenshi");
+        winRes.changed = true;
+        return winRes;
+      }
+      /* Срыв штифта: полоска откатывается со скрежетом. */
+      state.jail.lockProgress = 38;
+      if (Bow.audio && Bow.audio.playLockSound) { Bow.audio.playLockSound("snap"); }
+      if (nextPhase === "turning") {
+        state.jail.guardTick = 7; /* со следующего такта сторож обернётся! */
+      }
+      return {
+        changed: true,
+        slipped: true,
+        message: "Штифт сорвался со щелчком! Откат до 38% — берегитесь взгляда сторожа."
+      };
+    }
+
+    return { changed: true, progress: state.jail.lockProgress, phase: nextPhase };
+  }
+
+  /* Попытка повернуть цилиндр замка в ручном окне в духе Skyrim / Fallout. */
+  function turnManualLock(state, pickAngle, curTurn, rng) {
+    if (!state || !state.jail) { return { ok: false, message: "Вы не в клетке." }; }
+    var def = ensureJailLock(state.jail);
+
+    if (state.jail.guardPhase === "watching" || state.jail.guardPhase === "alert") {
+      return catchLockpick(state);
+    }
+
+    var ang = clamp(Number(pickAngle) || 0, -85, 85);
+    var sk = lockpickSkillOf(state);
+    var tol = def.sweetTol + (sk * 0.09);
+    var diff = Math.abs(ang - state.jail.sweetSpot);
+
+    growLockpickSkill(state, 0.16);
+
+    if (diff <= tol) {
+      var nextTurn = Math.min(90, (Number(curTurn) || 0) + 34);
+      if (nextTurn >= 88) {
+        var res = unlockEscape(state, "manual");
+        res.cylinderAngle = 90;
+        return res;
+      }
+      if (Bow.audio && Bow.audio.playLockSound) { Bow.audio.playLockSound("tick"); }
+      return {
+        ok: true,
+        jammed: false,
+        cylinderAngle: nextTurn,
+        pinHp: state.jail.pinHp,
+        message: "Замок поддаётся… ещё чуть-чуть до щелчка!"
+      };
+    }
+
+    /* Угол не тот: цилиндр упирается пропорционально промаху (как в Skyrim и Fallout 4)! */
+    var maxAngle = Math.round(clamp(76 * (1 - ((diff - tol) / 115)), 5, 74));
+    var tried = Math.min(maxAngle, (Number(curTurn) || 0) + 26);
+    var wear = Math.round(16 + (def.tier * 5) - Math.min(10, sk * 0.1));
+    state.jail.pinHp = Math.max(0, (state.jail.pinHp || 100) - Math.max(8, wear));
+
+    if (state.jail.pinHp <= 0) {
+      state.jail.pinHp = 100;
+      if (Bow.audio && Bow.audio.playLockSound) { Bow.audio.playLockSound("snap"); }
+      /* Звон лопнувшей отмычки привлекает внимание сторожа! */
+      if (state.jail.guardPhase === "away" && state.jail.guardTick < 5) {
+        state.jail.guardTick = 5;
+      }
+      return {
+        ok: true,
+        jammed: true,
+        snapped: true,
+        cylinderAngle: 0,
+        maxAngle: maxAngle,
+        pinHp: 100,
+        message: "Хруст! Отмычка обломилась (сторож насторожился!). Найдена новая проволока."
+      };
+    }
+
+    if (Bow.audio && Bow.audio.playLockSound) { Bow.audio.playLockSound("scrape"); }
+    var hint = maxAngle >= 52 ? "Совсем близко — замок почти провернулся!"
+      : maxAngle >= 28 ? "Замок упёрся на полпути — сдвиньте отмычку."
+      : "Штифт намертво клинит с самого начала — ищите другой угол.";
+    return {
+      ok: true,
+      jammed: true,
+      snapped: false,
+      cylinderAngle: tried,
+      maxAngle: maxAngle,
+      pinHp: state.jail.pinHp,
+      message: hint
+    };
+  }
 
   function syncJailMinutes(jail) {
     if (!jail) { return 0; }
@@ -328,7 +602,15 @@
       minutesLeft: g.cellsHours * 60,
       _syncedHours: g.cellsHours,
       reason: reason || "вина",
-      since: state.time.totalHours
+      since: state.time.totalHours,
+      lockTier: 1,
+      lockProgress: 0,
+      picking: false,
+      guardPhase: "away",
+      guardTick: 1,
+      sweetSpot: rollSweetSpot(),
+      pinHp: 100,
+      alertCount: 0
     };
     if (state.task) { state.task = null; }
     state.guard = null;
@@ -361,18 +643,28 @@
   function release(state) {
     state.jail = null;
     Bow.steal.addHeat(state, GUARD, -Math.round(heat(state) * 0.6));
-    Bow.work.addReputation(state, GUARD, 8);
+    /* Отсидка НЕ делает преступника уважаемым другом стражи (+8 было багом):
+       если отношение было глубоко в минусе, честная отсидка лишь слегка сглаживает вражду (строго не выше 0). */
+    if (Bow.work) {
+      var curRep = Bow.work.reputation(state, GUARD);
+      if (curRep < 0) {
+        Bow.work.addReputation(state, GUARD, Math.min(2, -curRep));
+      }
+    }
     Bow.journal.add(state, "Вас выпустили из клетки.", "guard");
   }
 
   /* Побег из клетки: труднее, чем с улицы, но возможен. */
   function escapeJail(state, rng) {
     if (!state.jail) { return { ok: false, message: "Вы не в клетке." }; }
+    var def = ensureJailLock(state.jail);
     var base = 0.18 + ((state.player.skills.stealth || 0) / 300)
+      + (lockpickSkillOf(state) / 220)
       + ((state.player.skills.survival || 0) / 500)
+      - ((def.tier - 1) * 0.06)
       + Bow.fight.injuryPenalty(state.player, "flee");
     if (state.time.hour >= 22 || state.time.hour < 5) { base += 0.12; }
-    base = clamp(base, 0.05, 0.7);
+    base = clamp(base, 0.05, 0.75);
 
     jailPauseTick = true;
     try {
@@ -385,14 +677,21 @@
       state.jail = null;
       state.flags.guardAt = null;
       Bow.steal.addHeat(state, GUARD, 15);
+      if (Bow.work) { Bow.work.addReputation(state, GUARD, -8); }
+      growLockpickSkill(state, 1.2);
       Bow.journal.add(state, "Вы выбрались из клетки и ушли в темноту.", "guard");
       return { ok: true, escaped: true, message: "Засов поддался. Вас ищут злее прежнего." };
     }
 
     Bow.steal.addHeat(state, GUARD, 5);
+    if (Bow.work) { Bow.work.addReputation(state, GUARD, -4); }
+    state.jail.lockProgress = 0;
+    state.jail.picking = false;
+    state.jail.lockTier = Math.min(5, (state.jail.lockTier || 1) + 1);
+    state.jail.sweetSpot = rollSweetSpot();
     state.player.needs.health = Math.max(5, Bow.util.round1(state.player.needs.health - 6));
-    Bow.journal.add(state, "Побег из клетки не удался.", "guard");
-    return { ok: true, escaped: false, message: "Вас вернули на место. Теперь следят внимательнее." };
+    Bow.journal.add(state, "Побег из клетки не удался. На дверь повесили замок покрепче.", "guard");
+    return { ok: true, escaped: false, message: "Вас вернули на место и усилили замок. Теперь следят внимательнее." };
   }
 
   /* Подкуп в клетке: дешевле, чем на улице, но и денег уже меньше. */
@@ -476,6 +775,13 @@
     bribeJail: bribeJail,
     formatJailLeft: formatJailLeft,
     syncJailMinutes: syncJailMinutes,
+    lockInfo: lockInfo,
+    ensureJailLock: ensureJailLock,
+    toggleKenshiPick: toggleKenshiPick,
+    tickJailScene: tickJailScene,
+    turnManualLock: turnManualLock,
+    catchLockpick: catchLockpick,
+    kenshiOpenChance: kenshiOpenChance,
     onMove: onMove,
     THRESHOLD: function () { return R().threshold; }
   };
