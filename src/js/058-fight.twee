@@ -35,6 +35,119 @@
   function He(p) { return p && p.pron === "f" ? "Она" : "Он"; }
   function his(p) { return p && p.pron === "f" ? "её" : "его"; }
 
+  var fightIntroSeq = 0;
+
+  /* Естественное склонение имён персонажей для заголовка боя:
+     «Бой с Брором», «Бой с отрядом Брора», «Бой с Ливой» и т. д. */
+  function instrumentalName(name, pron) {
+    var s = String(name || "противником").trim();
+    if (!s) { return "противником"; }
+    if (/ой$/i.test(s) && pron !== "f") { return s.replace(/ой$/i, "ым"); }
+    if (/ий$/i.test(s) && pron !== "f") { return s.replace(/ий$/i, "им"); }
+    if (/а$/i.test(s)) { return s.slice(0, -1) + (/[жшчщц]$/i.test(s.slice(0, -1)) ? "ей" : "ой"); }
+    if (/я$/i.test(s)) { return s.slice(0, -1) + "ей"; }
+    if (/ь$/i.test(s)) { return pron === "f" ? (s + "ю") : (s.slice(0, -1) + "ем"); }
+    if (/й$/i.test(s)) { return s.slice(0, -1) + "ем"; }
+    if (/[бвгджзклмнпрстфхцчшщ]$/i.test(s)) {
+      return s + (/[жшчщц]$/i.test(s) ? "ем" : "ом");
+    }
+    return s;
+  }
+
+  function genitiveName(name, pron) {
+    var s = String(name || "противника").trim();
+    if (!s) { return "противника"; }
+    if (/ой$/i.test(s) && pron !== "f") { return s.replace(/ой$/i, "ого"); }
+    if (/ий$/i.test(s) && pron !== "f") { return s.replace(/ий$/i, "его"); }
+    if (/а$/i.test(s)) { return s.slice(0, -1) + (/[гкхжшчщ]$/i.test(s.slice(0, -1)) ? "и" : "ы"); }
+    if (/я$/i.test(s)) { return s.slice(0, -1) + "и"; }
+    if (/ь$/i.test(s)) { return s.slice(0, -1) + "и"; }
+    if (/й$/i.test(s)) { return s.slice(0, -1) + "я"; }
+    if (/[бвгджзклмнпрстфхцчшщ]$/i.test(s)) { return s + "а"; }
+    return s;
+  }
+
+  /* Численный множитель отряда-стека (в духе King's Bounty: 1 фигурка = N бойцов). */
+  function stackPowerMult(unitOrPerson) {
+    var cnt = (unitOrPerson && typeof unitOrPerson.count === "number") ? unitOrPerson.count : 1;
+    if (cnt <= 1) { return 1; }
+    return 1 + Math.min(2.6, Math.log(cnt) / Math.LN2 * 0.30);
+  }
+
+  /* Создание отряда-стека («Рыцари ×100», «Стражники ×12», «Разбойники ×8»):
+     на поле стоит одна фигурка со значком численности, а урон списывает бойцов из стека. */
+  function createStack(opts) {
+    opts = opts || {};
+    var count = Math.max(1, Math.round(opts.count || 1));
+    var unitHp = Math.max(10, Math.round(opts.unitHp || 80));
+    var topHp = Math.max(1, Math.min(unitHp, Math.round(opts.topHp || unitHp)));
+    var pct = Math.max(1, Math.round((topHp / unitHp) * 100));
+    return {
+      key: opts.key || ("stack:" + Math.random().toString(36).slice(2, 8)),
+      refId: null,
+      side: opts.side || "enemy",
+      name: opts.name || "Отряд ратников",
+      role: opts.role || "отряд",
+      roleKey: opts.roleKey || "guard",
+      npc: true,
+      isStack: count > 1 || !!opts.isStack,
+      count: count,
+      maxCount: Math.max(count, Math.round(opts.maxCount || count)),
+      unitHp: unitHp,
+      topHp: topHp,
+      hp: pct,
+      needs: { health: pct, fatigue: 90, hunger: 80, mood: 65 },
+      skills: {
+        combat: typeof opts.combat === "number" ? opts.combat : 38,
+        melee_defense: typeof opts.defense === "number" ? opts.defense : 30
+      },
+      attrs: opts.attrs || { strength: 18, toughness: 16, agility: 15, perception: 15 },
+      weapon: opts.weapon !== undefined ? opts.weapon : "item:axe",
+      armor: opts.armor !== undefined ? opts.armor : "item:coat",
+      injuries: []
+    };
+  }
+
+  /* Осмысленный заголовок схватки вместо одинокого имени персонажа («Бой с Брором» / «Бой с отрядом Брора»). */
+  function titleOf(f, state) {
+    if (!f) { return "Схватка"; }
+    var npc = (state && state.people && f.personId) ? state.people[f.personId] : null;
+    var foeList = (Array.isArray(f.units) && f.units.length)
+      ? f.units.filter(function (u) { return u.side === "enemy"; })
+      : (f.enemies || []);
+    var totalFoes = foeList.reduce(function (sum, u) {
+      return sum + (typeof u.count === "number" && u.count > 0 ? u.count : 1);
+    }, 0);
+
+    if (f.mode === "guard") {
+      return "Бой со стражей Брода";
+    }
+    if (f.mode === "spar") {
+      if (npc) {
+        return totalFoes > 1
+          ? ("Кулачный бой с людьми " + genitiveName(npc.name, npc.pron))
+          : ("Кулачный бой с " + instrumentalName(npc.name, npc.pron));
+      }
+      return "Кулачный поединок";
+    }
+    if (f.mode === "robbery") {
+      var rob = foeList[0];
+      if (totalFoes > 1) { return "Бой с шайкой разбойников"; }
+      return rob ? ("Схватка с грабителем (" + rob.name + ")") : "Схватка с грабителем";
+    }
+    if (npc) {
+      return totalFoes > 1
+        ? ("Бой с отрядом " + genitiveName(npc.name, npc.pron))
+        : ("Бой с " + instrumentalName(npc.name, npc.pron));
+    }
+    if (foeList.length) {
+      return (totalFoes > 1 || foeList.length > 1)
+        ? ("Бой с отрядом: " + foeList[0].name)
+        : ("Бой с " + instrumentalName(foeList[0].name, foeList[0].pron));
+    }
+    return "Схватка";
+  }
+
   /* ---------- Снаряжение ----------
      Лучшее оружие и лучшая броня берутся сами: игрок не должен
      помнить про «слоты». Купил топор — он и в руке. */
@@ -194,9 +307,12 @@
     chance *= aim.hit;
 
     var n = attacker.needs;
-    if (n.fatigue < 30) { chance -= 0.10; }
-    if (n.fatigue < 12) { chance -= 0.08; }
-    if (n.health < 35) { chance -= 0.08; }
+    if (n && n.fatigue < 30) { chance -= 0.10; }
+    if (n && n.fatigue < 12) { chance -= 0.08; }
+    if (n && n.health < 35 && !(attacker.count > 1)) { chance -= 0.08; }
+    if (attacker.count > 1) {
+      chance += Math.min(0.15, Math.log(attacker.count) / Math.LN10 * 0.075);
+    }
     if (stance === "guard") { chance *= 0.65; }
     if (stance === "press") { chance += 0.03; }
     return clamp(chance, 0.10, 0.92);
@@ -204,7 +320,8 @@
 
   function damageRoll(attacker, defender, mode, defenderStance, rng, aimKey) {
     var aim = aimDef(aimKey);
-    var raw = attackPower(attacker, mode) - defenseOf(defender, mode) * 0.7 + (rollOf(rng) * 4 - 1.5);
+    var atkPwr = attackPower(attacker, mode) * stackPowerMult(attacker);
+    var raw = atkPwr - defenseOf(defender, mode) * 0.7 + (rollOf(rng) * 4 - 1.5);
     raw *= aim.hurt;
     var damage = Math.max(2, Math.round(raw));
     if (defenderStance === "guard") { damage = Math.max(1, Math.round(damage * 0.5)); }
@@ -334,6 +451,15 @@
       unit.col = cell[0];
       unit.row = cell[1];
       unit.maxHp = 100;
+      if (typeof unit.count !== "number" || unit.count < 1) { unit.count = 1; }
+      if (typeof unit.maxCount !== "number" || unit.maxCount < unit.count) { unit.maxCount = unit.count; }
+      if (unit.count > 1) {
+        unit.isStack = true;
+        unit.unitHp = unit.unitHp || 80;
+        unit.topHp = unit.topHp || unit.unitHp;
+        unit.hp = Math.max(1, Math.round((unit.topHp / unit.unitHp) * 100));
+        if (!unit.needs) { unit.needs = { health: unit.hp, fatigue: 90, hunger: 80, mood: 65 }; }
+      }
       unit.stance = "press";
       unit.down = false;
       unit.dead = false;
@@ -346,7 +472,8 @@
       name: state.player.name, npc: false, hp: state.player.needs.health
     }, 0);
 
-    (state.fight.allies || []).forEach(function (id, i) {
+    var allySlot = 1;
+    (state.fight.allies || []).forEach(function (id) {
       var p = state.people[id];
       if (!p || !p.alive) { return; }
       /* Тяжело раненный в прошлом бою встаёт не сразу: это видно
@@ -354,7 +481,13 @@
       put("ally", {
         key: "ally:" + id, refId: id, side: "ally",
         name: p.name, npc: true, hp: p.needs.health
-      }, i + 1);
+      }, allySlot++);
+    });
+
+    (state.fight.allyUnits || []).forEach(function (au) {
+      if (!au) { return; }
+      au.side = "ally";
+      put("ally", au, allySlot++);
     });
 
     (state.fight.enemies || []).forEach(function (enemy, i) {
@@ -475,6 +608,7 @@
     if (mode === "robbery") {
       f.mode = mode;
       f.phase = "exchange";
+      f.introId = ++fightIntroSeq;
       f.round = 0;
       f.heatTotal = 0;
       f.repTotal = 0;
@@ -497,6 +631,7 @@
 
     f.mode = mode;
     f.phase = "exchange";
+    f.introId = ++fightIntroSeq;
     f.round = 0;
     f.heatTotal = 0;
     f.repTotal = 0;
@@ -504,6 +639,8 @@
     /* Кто против нас. */
     if (mode === "guard") {
       f.enemies = (f.guardSquad || []).slice();
+    } else if (Array.isArray(f.customEnemies) && f.customEnemies.length) {
+      f.enemies = f.customEnemies.slice();
     } else {
       var unit = enemyUnit(state, f.personId);
       if (!unit) { return { ok: false, message: "Противник исчез." }; }
@@ -691,6 +828,15 @@
   function syncUnit(state, unit) {
     var p = personOf(state, unit);
     if (!p || !p.needs) { return; }
+    if (unit.isStack && typeof unit.count === "number") {
+      if (unit.count <= 0) {
+        unit.hp = 0;
+        unit.down = true;
+        return;
+      }
+      unit.hp = Math.max(1, Math.round(((unit.topHp || unit.unitHp || 80) / (unit.unitHp || 80)) * 100));
+      return;
+    }
     unit.hp = p.needs.health;
 
     /* У игрока поля alive может не быть вовсе — тогда он жив.
@@ -1010,7 +1156,7 @@
     var foes = f.units.filter(function (u) { return u.side === "enemy" && !u.dead; });
     if (!foes.length) { return true; }
     return foes.every(function (u) {
-      var p = personOf({ people: {} }, u);
+      if (u.isStack && u.count > 1) { return false; }
       return u.hp <= R.yieldAt.npc;
     });
   }
@@ -1030,6 +1176,7 @@
 
   function chooseStance(foe) {
     var R = rules();
+    if (foe.isStack && foe.count > 1) { return "press"; }
     if (foe.hp <= R.yieldAt.npc) { return "yield"; }
     if (foe.hp < 40) { return "guard"; }
     return "press";
@@ -1070,7 +1217,65 @@
       return;
     }
 
+    var defGuarding = (defender.stance === "guard");
     var damage = damageRoll(aP, dP, mode, stance === "guard" ? "guard" : defender.stance || "press", rng, aimKey);
+
+    /* === МЕХАНИКА СТЕКОВ ОТРЯДОВ В ДУХЕ KING'S BOUNTY (0.0.8.0) ===
+       Если цель — отряд из N бойцов (например, «Рыцари ×100»), урон вычитается
+       из общего пула здоровья отряда, уменьшая численность стека. */
+    if (defender.isStack && typeof defender.count === "number" && defender.count >= 1) {
+      var uHp = Math.max(10, defender.unitHp || 80);
+      var curTop = typeof defender.topHp === "number" ? defender.topHp : uHp;
+      var totalPool = (defender.count - 1) * uHp + curTop;
+      var nextPool = Math.max(0, totalPool - damage);
+      var prevCnt = defender.count;
+      var slain = 0;
+
+      if (nextPool <= 0) {
+        slain = prevCnt;
+        defender.count = 0;
+        defender.topHp = 0;
+        defender.hp = 0;
+        dP.needs.health = 0;
+        defender.down = true;
+        if (mode !== "spar") { defender.dead = true; }
+      } else {
+        var nextCnt = Math.ceil(nextPool / uHp);
+        var nextTop = nextPool - (nextCnt - 1) * uHp;
+        slain = Math.max(0, prevCnt - nextCnt);
+        defender.count = nextCnt;
+        defender.topHp = nextTop;
+        var pctLeft = Math.max(1, Math.round((nextTop / uHp) * 100));
+        /* Пока в отряде больше 1 бойца, стек держит строй и не сдаётся от раны передового */
+        if (nextCnt > 1) {
+          dP.needs.health = Math.max(R.yieldAt.npc + 4, pctLeft);
+          defender.hp = pctLeft;
+        } else {
+          dP.needs.health = pctLeft;
+          defender.hp = pctLeft;
+          if (pctLeft <= R.yieldAt.npc) { defender.down = true; }
+        }
+      }
+
+      f.lastStrikes.push({
+        from: attacker.key,
+        to: defender.key,
+        hit: true,
+        blocked: defGuarding,
+        damage: damage,
+        slain: slain,
+        stackLeft: defender.count,
+        aim: aimKey || "body",
+        part: "chest",
+        round: f.round || 1
+      });
+
+      var stackNote = slain > 0
+        ? (" · пало: " + slain + (defender.count > 0 ? ", в строю ×" + defender.count : " · отряд разбит!"))
+        : (" · в строю ×" + defender.count);
+      log(f, who, sideName(attacker) + " → " + defender.name + ": −" + damage + " ур." + stackNote, { amount: damage, slain: slain });
+      return;
+    }
 
     /* Урон НЕ ограничивается порогом сдачи. В 0.0.6 ограничение
        было, и получалась нелепость: противника нельзя было довести
@@ -1107,7 +1312,9 @@
       from: attacker.key,
       to: defender.key,
       hit: true,
+      blocked: defGuarding,
       damage: damage,
+      slain: 0,
       aim: aimKey || "body",
       part: hitPartKey,
       round: f.round || 1
@@ -1668,15 +1875,20 @@
         return {
           key: u.key,
           refId: u.refId || null,
+          roleKey: u.roleKey || null,
           name: u.name,
           side: u.side,
           col: u.col,
           row: u.row,
           hp: Math.round(u.hp),
+          count: typeof u.count === "number" ? u.count : 1,
+          maxCount: typeof u.maxCount === "number" ? u.maxCount : 1,
+          isStack: !!u.isStack,
           down: !!u.down,
           dead: !!u.dead,
           disarmed: !!u.disarmed,
           weapon: u.weapon || null,
+          armor: u.armor || null,
           stance: u.stance || null
         };
       }),
@@ -1705,10 +1917,44 @@
     });
   });
 
+  /* Запуск полевого боя против любого списка одиночных врагов или стеков отрядов (0.0.8.0). */
+  function startSquadBattle(state, enemyUnits, opts) {
+    opts = opts || {};
+    var allies = (opts.allies || []).slice();
+    state.fight = {
+      personId: opts.personId || null,
+      mode: opts.mode || "battle",
+      phase: "exchange",
+      introId: ++fightIntroSeq,
+      round: 0,
+      heatTotal: 0,
+      repTotal: 0,
+      witnesses: [],
+      allies: allies,
+      allyUnits: (opts.allyUnits || []).slice(),
+      enemies: (enemyUnits || []).slice(),
+      units: [],
+      aim: [],
+      lastStrikes: [],
+      target: null,
+      log: []
+    };
+    ensureOrders(state.fight);
+    state.fight.units = spawnUnits(state);
+    if (opts.note) {
+      log(state.fight, "narr", opts.note);
+    }
+    return state.fight;
+  }
+
   Bow.fight = {
     open: open,
     close: close,
     start: start,
+    startSquadBattle: startSquadBattle,
+    createStack: createStack,
+    stackPowerMult: stackPowerMult,
+    titleOf: titleOf,
     move: move,
     step: step,
     stepBack: stepBack,

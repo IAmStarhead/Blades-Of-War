@@ -438,6 +438,12 @@
     "0.0.7.6": function (state) {
       state.version = "0.0.7.7";
       return state;
+    },
+
+    /* 0.0.7.7 → 0.0.8.0: уличный грув Enigma, боевая музыка Skyrim, сетка 7×4, стеки отрядов и заставка боя. */
+    "0.0.7.7": function (state) {
+      state.version = "0.0.8.0";
+      return state;
     }
   };
 

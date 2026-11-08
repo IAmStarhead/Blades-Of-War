@@ -4917,5 +4917,270 @@ html.bow-motion-calm .bow-fog-band {
   font-size: 0.74rem;
 }
 
+/* ============================================================
+   КРУГ 20 (0.0.8.0) — ТАКТИЧЕСКАЯ СЕТКА 7×4, СТЕКИ ОТРЯДОВ
+   KING'S BOUNTY, РАСШИРЕННАЯ АНИМАЦИЯ БОЯ И ЗАСТАВКА FINAL FANTASY
+   ============================================================ */
+
+/* 1. Убираем старые пустые квадраты списка бойцов под ареной (фикс image-18) */
+#bow-fight-page .bow-roster {
+  display: none !important;
+}
+
+#bow-fight-page .bow-arena-wrap {
+  display: block;
+  margin-bottom: 8px;
+}
+
+/* 2. Перспективная тактическая сетка 7×4 прямо на снегу / досках арены */
+.bow-arena-tracks {
+  display: none;
+}
+
+.bow-tactical-grid {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.bow-arena-scene .bow-chip {
+  transition: left 0.46s cubic-bezier(0.22, 1, 0.36, 1), top 0.46s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.bow-arena-scene .bow-chip:not(.bow-chip-down):not(.bow-chip-dead) .bow-chip-body {
+  transform: scale(var(--chip-scale, 1));
+  transform-origin: 50% 85%;
+}
+
+/* 3. Значок численности отряда в духе King's Bounty («×100») */
+.bow-chip-stack {
+  position: absolute;
+  right: -8px;
+  bottom: 4px;
+  min-width: 28px;
+  padding: 1px 6px;
+  border-radius: 9px;
+  background: linear-gradient(180deg, #2b2214 0%, #17120b 100%);
+  border: 1.5px solid #d7b46a;
+  color: #f6e2b3;
+  font-family: var(--bow-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.25;
+  text-align: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.75);
+  z-index: 18;
+  pointer-events: none;
+}
+
+.bow-fx-slain {
+  margin-top: 2px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: rgba(58, 14, 18, 0.94);
+  border: 1px solid rgba(236, 118, 118, 0.65);
+  color: #ffdede;
+  font-family: var(--bow-mono);
+  font-size: 0.64rem;
+  white-space: nowrap;
+}
+
+.bow-fx-block {
+  margin-top: 2px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: rgba(44, 35, 16, 0.94);
+  border: 1px solid rgba(229, 195, 114, 0.72);
+  color: #f7df9c;
+  font-family: var(--bow-mono);
+  font-size: 0.64rem;
+  white-space: nowrap;
+}
+
+/* 4. Живая анимация шага ногами, замаха рукой, блока щитом и уклонения */
+.bow-fig-leg-l,
+.bow-fig-leg-r {
+  transform-origin: 32px 62px;
+}
+
+.bow-fig-torso {
+  transform-origin: 32px 58px;
+}
+
+@keyframes bow-leg-stride-a {
+  0%   { transform: rotate(0deg); }
+  25%  { transform: rotate(19deg); }
+  75%  { transform: rotate(-19deg); }
+  100% { transform: rotate(0deg); }
+}
+
+@keyframes bow-leg-stride-b {
+  0%   { transform: rotate(0deg); }
+  25%  { transform: rotate(-19deg); }
+  75%  { transform: rotate(19deg); }
+  100% { transform: rotate(0deg); }
+}
+
+.bow-chip-walk.bow-step-a .bow-fig-leg-l,
+.bow-chip-walk.bow-step-b .bow-fig-leg-r {
+  animation: bow-leg-stride-a 460ms ease-in-out;
+}
+
+.bow-chip-walk.bow-step-a .bow-fig-leg-r,
+.bow-chip-walk.bow-step-b .bow-fig-leg-l {
+  animation: bow-leg-stride-b 460ms ease-in-out;
+}
+
+@keyframes bow-torso-cleave-a {
+  0%   { transform: rotate(0deg) translateX(0); }
+  24%  { transform: rotate(-10deg) translateX(-4px); }
+  52%  { transform: rotate(12deg) translateX(7px); }
+  100% { transform: rotate(0deg) translateX(0); }
+}
+
+@keyframes bow-torso-cleave-b {
+  0%   { transform: rotate(0deg) translateX(0); }
+  24%  { transform: rotate(-11deg) translateX(-4px); }
+  52%  { transform: rotate(13deg) translateX(7px); }
+  100% { transform: rotate(0deg) translateX(0); }
+}
+
+.bow-chip-strike.bow-swing-a .bow-fig-torso {
+  animation: bow-torso-cleave-a 560ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.bow-chip-strike.bow-swing-b .bow-fig-torso {
+  animation: bow-torso-cleave-b 560ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes bow-block-brace-a {
+  0%   { transform: translate(-50%, 0); filter: brightness(1); }
+  28%  { transform: translate(calc(-50% - 5px), 0); filter: brightness(1.45) drop-shadow(0 0 8px rgba(229, 195, 114, 0.8)); }
+  100% { transform: translate(-50%, 0); filter: brightness(1); }
+}
+
+@keyframes bow-block-brace-b {
+  0%   { transform: translate(-50%, 0); filter: brightness(1); }
+  28%  { transform: translate(calc(-50% - 6px), 0); filter: brightness(1.45) drop-shadow(0 0 8px rgba(229, 195, 114, 0.8)); }
+  100% { transform: translate(-50%, 0); filter: brightness(1); }
+}
+
+.bow-arena-scene .bow-chip.bow-chip-blocked.bow-flinch-a {
+  animation: bow-block-brace-a 520ms ease-out;
+}
+
+.bow-arena-scene .bow-chip.bow-chip-blocked.bow-flinch-b {
+  animation: bow-block-brace-b 520ms ease-out;
+}
+
+@keyframes bow-dodge-lean-a {
+  0%   { transform: translate(-50%, 0); }
+  35%  { transform: translate(calc(-50% + 11px), -3px); }
+  100% { transform: translate(-50%, 0); }
+}
+
+@keyframes bow-dodge-lean-b {
+  0%   { transform: translate(-50%, 0); }
+  35%  { transform: translate(calc(-50% + 12px), -3px); }
+  100% { transform: translate(-50%, 0); }
+}
+
+.bow-arena-scene .bow-chip-enemy.bow-chip-dodge.bow-flinch-a {
+  animation: bow-dodge-lean-a 480ms ease-out;
+}
+.bow-arena-scene .bow-chip-enemy.bow-chip-dodge.bow-flinch-b {
+  animation: bow-dodge-lean-b 480ms ease-out;
+}
+.bow-arena-scene .bow-chip-ally.bow-chip-dodge.bow-flinch-a,
+.bow-arena-scene .bow-chip-ally.bow-chip-dodge.bow-flinch-b {
+  animation: bow-block-brace-a 480ms ease-out;
+}
+
+/* 5. Кинематографичный переход в бой в духе Final Fantasy (затухание + скрещённые клинки) */
+.bow-battle-intro {
+  position: fixed;
+  inset: 0;
+  z-index: 96;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  opacity: 0;
+  visibility: hidden;
+  background: radial-gradient(circle at center, rgba(16, 22, 30, 0.94) 0%, rgba(4, 6, 9, 0.99) 70%);
+}
+
+.bow-battle-intro-flash {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, transparent 42%, rgba(235, 244, 255, 0.55) 50%, transparent 58%);
+  opacity: 0;
+}
+
+.bow-battle-intro-blades {
+  width: 156px;
+  height: 104px;
+  filter: drop-shadow(0 0 14px rgba(201, 169, 97, 0.65));
+}
+
+.bow-battle-intro-title {
+  font-family: var(--bow-serif);
+  font-size: 1.28rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #f0dfc0;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.95);
+}
+
+@keyframes bow-ff-intro-veil {
+  0%   { opacity: 0; visibility: visible; }
+  16%  { opacity: 1; visibility: visible; }
+  56%  { opacity: 0.96; visibility: visible; }
+  100% { opacity: 0; visibility: hidden; }
+}
+
+@keyframes bow-ff-slash-flash {
+  0%   { opacity: 0; transform: scale(0.92); }
+  18%  { opacity: 0.95; transform: scale(1.04); }
+  45%  { opacity: 0; transform: scale(1.1); }
+  100% { opacity: 0; }
+}
+
+@keyframes bow-ff-sword-l {
+  0%   { transform: translate(-38px, 24px) rotate(-18deg); opacity: 0; }
+  22%  { transform: translate(0, 0) rotate(0deg); opacity: 1; }
+  72%  { transform: translate(0, 0) rotate(0deg); opacity: 1; }
+  100% { transform: translate(6px, -4px); opacity: 0; }
+}
+
+@keyframes bow-ff-sword-r {
+  0%   { transform: translate(38px, 24px) rotate(18deg); opacity: 0; }
+  22%  { transform: translate(0, 0) rotate(0deg); opacity: 1; }
+  72%  { transform: translate(0, 0) rotate(0deg); opacity: 1; }
+  100% { transform: translate(-6px, -4px); opacity: 0; }
+}
+
+.bow-battle-intro.bow-battle-intro-play {
+  animation: bow-ff-intro-veil 1050ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.bow-battle-intro.bow-battle-intro-play .bow-battle-intro-flash {
+  animation: bow-ff-slash-flash 1050ms ease-out forwards;
+}
+
+.bow-battle-intro.bow-battle-intro-play .bow-intro-sword-l {
+  animation: bow-ff-sword-l 1050ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.bow-battle-intro.bow-battle-intro-play .bow-intro-sword-r {
+  animation: bow-ff-sword-r 1050ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+
 
 

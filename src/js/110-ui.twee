@@ -1227,8 +1227,86 @@
     spare: "вы отпустили"
   };
 
-  /* Плавная память координат фигурок на снегу между тактами боя. */
+  /* Плавная память координат фигурок на снегу между тактами боя + память вступления боя. */
   var lastFightPos = {};
+  var lastSeenBattleIntroId = 0;
+
+  function triggerBattleIntro(titleText) {
+    var el = $("bow-battle-intro");
+    if (el) {
+      var tEl = $("bow-battle-intro-title");
+      if (tEl) { tEl.textContent = titleText || "К бою!"; }
+      el.classList.remove("bow-battle-intro-play");
+      void el.offsetWidth;
+      el.classList.add("bow-battle-intro-play");
+    }
+    if (Bow.audio && Bow.audio.playBattleIntro) {
+      Bow.audio.playBattleIntro();
+    }
+  }
+
+  /* Перспективные координаты тактической сетки 7×4 на плоскости земли (0.0.8.0) */
+  function arenaPoint(col, row, cols, rows) {
+    var tRow = rows > 1 ? (row / (rows - 1)) : 0.5;
+    var margin = 9.0 - tRow * 4.2; // сужение к горизонту (9% вдали → 4.8% вблизи)
+    var span = 100 - margin * 2;
+    var xPct = margin + ((col + 0.5) / cols) * span;
+    var footPct = 62.5 + tRow * 26.5; // линия земли от 62.5% до 89%
+    var topPct = footPct - 21.5;
+    var scale = 0.90 + tRow * 0.16;
+    return {
+      left: Math.round(xPct * 10) / 10,
+      top: Math.round(topPct * 10) / 10,
+      footY: Math.round(footPct * 10) / 10,
+      scale: Math.round(scale * 100) / 100
+    };
+  }
+
+  function tacticalGridSvg(A, units, targetKey) {
+    var cols = A.cols || 7;
+    var rows = A.rows || 4;
+    var W = 1000;
+    var H = 368;
+    function edgePt(cEdge, rEdge) {
+      var t = rEdge / rows;
+      var m = (9.5 - t * 4.6) * 10;
+      var sp = W - m * 2;
+      var x = m + (cEdge / cols) * sp;
+      var y = (58.5 + t * 34.0) * (H / 100);
+      return [Math.round(x * 10) / 10, Math.round(y * 10) / 10];
+    }
+
+    var lines = [];
+    for (var r = 0; r <= rows; r++) {
+      var pL = edgePt(0, r);
+      var pR = edgePt(cols, r);
+      lines.push('<line x1="' + pL[0] + '" y1="' + pL[1] + '" x2="' + pR[0] + '" y2="' + pR[1] + '" stroke="rgba(168,192,214,0.16)" stroke-width="1"/>');
+    }
+    for (var c = 0; c <= cols; c++) {
+      var pT = edgePt(c, 0);
+      var pB = edgePt(c, rows);
+      lines.push('<line x1="' + pT[0] + '" y1="' + pT[1] + '" x2="' + pB[0] + '" y2="' + pB[1] + '" stroke="rgba(168,192,214,0.13)" stroke-width="1"/>');
+    }
+
+    var highlights = [];
+    (units || []).forEach(function (u) {
+      if (u.dead) { return; }
+      var tl = edgePt(u.col, u.row);
+      var tr = edgePt(u.col + 1, u.row);
+      var br = edgePt(u.col + 1, u.row + 1);
+      var bl = edgePt(u.col, u.row + 1);
+      var pts = tl[0] + "," + tl[1] + " " + tr[0] + "," + tr[1] + " " + br[0] + "," + br[1] + " " + bl[0] + "," + bl[1];
+      var isTgt = (u.side === "enemy" && u.key === targetKey);
+      var fill = isTgt ? "rgba(214,173,92,0.22)"
+        : (u.side === "ally" ? "rgba(126,166,204,0.14)" : "rgba(196,92,98,0.15)");
+      var strk = isTgt ? "rgba(232,194,112,0.78)"
+        : (u.side === "ally" ? "rgba(143,182,217,0.42)" : "rgba(214,108,114,0.44)");
+      highlights.push('<polygon points="' + pts + '" fill="' + fill + '" stroke="' + strk + '" stroke-width="' + (isTgt ? "1.8" : "1.1") + '"/>');
+    });
+
+    return '<svg class="bow-tactical-grid" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" aria-hidden="true">' +
+      lines.join("") + highlights.join("") + '</svg>';
+  }
 
   function animateArenaMoves(page) {
     if (!page) { return; }
@@ -1264,8 +1342,14 @@
     if (!u.dead && !u.down && (strikeOut || (strikingKeys && strikingKeys.indexOf(u.key) !== -1))) {
       cls += " bow-chip-strike bow-swing-" + animParity;
     }
-    if (!u.dead && strikeIn && strikeIn.hit) {
-      cls += " bow-chip-hit bow-flinch-" + animParity;
+    if (!u.dead && strikeIn) {
+      if (strikeIn.hit && strikeIn.blocked) {
+        cls += " bow-chip-blocked bow-flinch-" + animParity;
+      } else if (strikeIn.hit) {
+        cls += " bow-chip-hit bow-flinch-" + animParity;
+      } else {
+        cls += " bow-chip-dodge bow-flinch-" + animParity;
+      }
     }
     var isTarget = u.side === "enemy" && !u.dead && u.key === targetKey;
     if (isTarget) { cls += " bow-chip-target"; }
@@ -1277,7 +1361,7 @@
     var personRef = u.key === "player" ? state.player : (u.refId ? state.people[u.refId] : u);
     var roleKey = u.key === "player" ? "player"
       : (u.refId && state.people[u.refId]) ? state.people[u.refId].key
-      : (/guard/.test(u.key) ? "guard" : "robber");
+      : (u.roleKey ? u.roleKey : (/guard/.test(u.key) ? "guard" : "robber"));
     var figSide = u.key === "player" ? "player" : (u.side === "ally" ? "ally" : "enemy");
     var wKind = u.disarmed ? "none" : (Bow.stage ? Bow.stage.weaponKindOf(state, personRef) : "none");
     var fig = Bow.stage
@@ -1291,36 +1375,53 @@
         })
       : "";
 
-    /* 1-кадровая вспышка рассечения / промаха при обмене ударами (0.0.7.5) */
+    /* Расширенная боевая анимация рассечения, блока со стальными искрами, уклона и потерь отряда (0.0.8.0) */
     var fxHtml = "";
     if (strikeIn) {
       if (strikeIn.hit) {
-        var slashPath = strikeIn.aim === "head" ? "M10 22 Q32 8 54 20"
-          : strikeIn.aim === "legs" ? "M10 52 Q32 42 54 50"
-          : "M10 48 Q30 24 54 12";
+        var slashPath = strikeIn.aim === "head" ? "M8 22 Q32 5 56 20"
+          : strikeIn.aim === "legs" ? "M8 54 Q32 42 56 52"
+          : "M8 50 Q30 24 56 10";
+        var slainTag = strikeIn.slain > 0
+          ? '<small class="bow-fx-slain">−' + strikeIn.slain + ' в строю</small>'
+          : (strikeIn.blocked ? '<small class="bow-fx-block">⛨ в блок</small>' : '');
+        var strokeMain = strikeIn.blocked ? "#e5c372" : "#ef6464";
         fxHtml = '<span class="bow-strike-fx bow-strike-fx-hit bow-fx-' + animParity + '" aria-hidden="true">' +
           '<svg class="bow-slash-svg" viewBox="0 0 64 64">' +
-            '<path d="' + slashPath + '" fill="none" stroke="#e86a6a" stroke-width="4.2" stroke-linecap="round"/>' +
-            '<path d="' + slashPath + '" fill="none" stroke="#fff3e6" stroke-width="1.8" stroke-linecap="round"/>' +
+            '<path d="' + slashPath + '" fill="none" stroke="' + strokeMain + '" stroke-width="4.6" stroke-linecap="round"/>' +
+            '<path d="' + slashPath + '" fill="none" stroke="#fff7eb" stroke-width="1.9" stroke-linecap="round"/>' +
+            '<line x1="32" y1="28" x2="18" y2="14" stroke="#ffe4b5" stroke-width="1.6" stroke-linecap="round"/>' +
+            '<line x1="34" y1="28" x2="49" y2="18" stroke="#ffe4b5" stroke-width="1.6" stroke-linecap="round"/>' +
+            '<line x1="32" y1="30" x2="46" y2="42" stroke="' + strokeMain + '" stroke-width="1.5" stroke-linecap="round"/>' +
           '</svg>' +
           '<b class="bow-fx-dmg">−' + Math.round(strikeIn.damage) + '</b>' +
+          slainTag +
         '</span>';
       } else {
         fxHtml = '<span class="bow-strike-fx bow-strike-fx-miss bow-fx-' + animParity + '" aria-hidden="true">' +
-          '<i class="bow-fx-miss">✧ мимо</i>' +
+          '<i class="bow-fx-miss">✧ уклон</i>' +
         '</span>';
       }
     }
 
-    var leftPct = Math.round(((u.col + 0.5) / A.cols) * 1000) / 10;
-    var topPct = Math.round((15 + u.row * 26) * 10) / 10;
-    var zIdx = 12 + u.row * 3 + (u.key === "player" ? 1 : 0);
+    var pt = arenaPoint(u.col || 0, u.row || 0, A.cols || 7, A.rows || 4);
+    var leftPct = pt.left;
+    var topPct = pt.top;
+    var zIdx = 12 + (u.row || 0) * 4 + (u.key === "player" ? 1 : 0);
 
     var prev = lastFightPos[u.key];
     var startLeft = prev ? prev.left : leftPct;
     var startTop = prev ? prev.top : topPct;
     var moved = prev && (prev.left !== leftPct || prev.top !== topPct);
+    if (moved && !u.dead && !u.down) {
+      cls += " bow-chip-walk bow-step-" + animParity;
+    }
     lastFightPos[u.key] = { left: leftPct, top: topPct };
+
+    var hasStack = (u.isStack || (typeof u.maxCount === "number" && u.maxCount > 1) || (typeof u.count === "number" && u.count > 1));
+    var stackHtml = hasStack
+      ? '<span class="bow-chip-stack" title="Численность отряда (система стеков)">×' + Math.max(0, u.count || 0) + '</span>'
+      : '';
 
     var attrs = u.side === "enemy" && !u.dead
       ? ' data-act="fight-target" data-target="' + esc(u.key) + '" role="button" tabindex="0" title="Назначить целью"'
@@ -1330,13 +1431,13 @@
       : "";
 
     return '<div class="' + cls + '" data-unit="' + esc(u.key) + '"' + attrs + animAttrs +
-      ' style="left:' + startLeft + '%;top:' + startTop + '%;z-index:' + zIdx + '">' +
+      ' style="left:' + startLeft + '%;top:' + startTop + '%;z-index:' + zIdx + ';--chip-scale:' + pt.scale + '">' +
       '<span class="bow-chip-overhead">' +
         '<b class="bow-chip-num">' + num + '</b>' +
         '<span class="bow-chip-hpbar"><i class="bow-fill bow-' + lvl + '" style="width:' + Math.min(100, hp) + '%"></i></span>' +
         '<span class="bow-chip-hp bow-' + lvl + '">' + hp + '</span>' +
       '</span>' +
-      '<span class="bow-chip-body">' + fig + fxHtml + '<b>' + num + '</b></span>' +
+      '<span class="bow-chip-body">' + fig + fxHtml + stackHtml + '<b>' + num + '</b></span>' +
       '<span class="bow-chip-name">' + esc(u.name) + '</span>' +
       (mark ? '<span class="bow-chip-mark">' + mark + '</span>' : "") +
     '</div>';
@@ -1390,11 +1491,13 @@
     var wHtml = (Bow.stage && Bow.stage.weatherOverlayHtml && state)
       ? Bow.stage.weatherOverlayHtml(state, state.player.location, true)
       : "";
+    var gridSvg = tacticalGridSvg(A, units, f.target);
 
     return {
       bgHtml: bg + wHtml,
       arenaHtml:
         '<div class="bow-arena" style="--cols:' + A.cols + ';--rows:' + A.rows + '">' +
+          gridSvg +
           '<div class="bow-arena-tracks">' + steps.join("") + '</div>' +
           units.map(function (u) {
             return fightChip(u, aimedAt, strikingKeys, f.target, state, outMap[u.key] || null, inMap[u.key] || null, f.round || 0);
@@ -1427,7 +1530,10 @@
       if (!last) { page.innerHTML = ""; page.classList.remove("bow-page-open"); return; }
 
       var hasArena = Array.isArray(last.units) && last.units.length > 0;
-      var lastHead = '<div class="bow-fight-head"><b>' + esc(last.name) + '</b>' +
+      var lastTitle = (last.mode === "guard")
+        ? ("Бой со стражей Брода")
+        : (last.name && !/^Бой|^Схватка|^Кулачный/.test(last.name) ? ("Итог схватки · " + last.name) : last.name);
+      var lastHead = '<div class="bow-fight-head"><b>' + esc(lastTitle) + '</b>' +
         '<span>' + esc(FIGHT_LABEL[last.outcome] || last.outcome) + '</span></div>';
 
       var lootBtns = [];
@@ -1513,7 +1619,7 @@
         html += '<div class="bow-fight-warn">Трое против одного — это не драка. Но выбора уже нет.</div>';
       } else {
         var odds = Bow.fight.odds(state, f.personId, "crime");
-        html += '<div class="bow-fight-head"><b>' + esc(npc.name) + '</b><span>' + esc(npc.role) + '</span></div>';
+        html += '<div class="bow-fight-head"><b>Назревает схватка: ' + esc(npc.name) + '</b><span>' + esc(npc.role) + '</span></div>';
         html += '<div class="bow-fight-odds">' +
           '<span>ваш удар <b>' + Math.round(odds.yourHit * 100) + '%</b></span>' +
           '<span>его удар <b>' + Math.round(odds.theirHit * 100) + '%</b></span>' +
@@ -1593,9 +1699,24 @@
         rangeNote = inReach ? " · вплотную" : (" · до цели " + stepDist + " шаг.");
       }
 
+      var allyTotalCount = f.units.filter(function (u) { return u.side === "ally" && !u.dead && !u.down; })
+        .reduce(function (s, u) { return s + (u.count > 0 ? u.count : 1); }, 0);
+      var foeTotalCount = liveFoesTop.reduce(function (s, u) { return s + (u.count > 0 ? u.count : 1); }, 0);
+      var forcesNote = "силы " + allyTotalCount + " : " + foeTotalCount + " · ";
+
+      var battleTitle = (Bow.fight && Bow.fight.titleOf)
+        ? Bow.fight.titleOf(f, state)
+        : (f.mode === "guard" ? "Бой со стражей Брода" : (npc ? ("Бой с " + npc.name) : "Схватка"));
+
+      /* Переход в бой в духе Final Fantasy: затухание + скрещённые клинки + лязг стали */
+      if (f.phase === "exchange" && f.introId && f.introId !== lastSeenBattleIntroId) {
+        lastSeenBattleIntroId = f.introId;
+        triggerBattleIntro(battleTitle);
+      }
+
       var headHtml = '<div class="bow-fight-head">' +
-        '<b>' + (f.mode === "guard" ? "Стража Брода" : (npc ? esc(npc.name) : (f.mode === "robbery" ? "Грабитель" : "Противник"))) + '</b>' +
-        '<span>круг ' + f.round + rangeNote + '</span></div>';
+        '<b>⚔ ' + esc(battleTitle) + '</b>' +
+        '<span>' + forcesNote + 'круг ' + f.round + rangeNote + '</span></div>';
 
       var fld = fightField(f, state);
 
@@ -2067,19 +2188,22 @@
       '</div>' +
       '<div class="bow-setting-row bow-setting-soundtrack">' +
         '<div class="bow-setting-label">' +
-          '<b>Северный саундтрек (8 композиций)</b>' +
+          '<b>Северный саундтрек (10 композиций)</b>' +
           '<span class="bow-dim">' +
             (Bow.audio && Bow.audio.currentTrack
               ? ('Сейчас: «' + esc(Bow.audio.currentTrack().title) + '» — ' + esc(Bow.audio.currentTrack().subtitle))
-              : 'Деревянная флейта и камерные виолы у очага · рога, хор и смычковые для улиц') +
+              : 'Очаг для помещений · меланхоличный грув Enigma для улицы · боевые темы Skyrim для сражений') +
           '</span>' +
         '</div>' +
         '<div class="bow-setting-opts">' +
           '<button type="button" class="bow-btn bow-btn-sm' + ((Bow.audio && Bow.audio.isEnabled()) ? " bow-order-on" : "") + '" data-act="audio-toggle">' +
             ((Bow.audio && Bow.audio.isEnabled()) ? "♪ Музыка: вкл" : "♪ Музыка: выкл") +
           '</button>' +
-          '<button type="button" class="bow-btn bow-btn-sm' + ((Bow.audio && Bow.audio.getMode && Bow.audio.getMode() === "auto") ? " bow-order-on" : "") + '" data-act="audio-auto" title="Автоматически менять музыку между помещениями (трактир, кузница) и улицей">' +
+          '<button type="button" class="bow-btn bow-btn-sm' + ((Bow.audio && Bow.audio.getMode && Bow.audio.getMode() === "auto") ? " bow-order-on" : "") + '" data-act="audio-auto" title="Автоматически менять музыку между помещениями, улицей и боем">' +
             'Авто по месту' +
+          '</button>' +
+          '<button type="button" class="bow-btn bow-btn-sm' + ((Bow.audio && Bow.audio.isStreetBeat && Bow.audio.isStreetBeat()) ? " bow-order-on" : "") + '" data-act="audio-beat" title="Мягкий меланхоличный даунтемпо-бит в стиле Enigma «Sadeness» в уличных темах">' +
+            ((Bow.audio && Bow.audio.isStreetBeat && Bow.audio.isStreetBeat()) ? "Бит улицы (Enigma): вкл" : "Бит улицы (Enigma): выкл") +
           '</button>' +
           '<button type="button" class="bow-btn bow-btn-sm" data-act="audio-next" title="Следующая композиция">⏭ След.</button>' +
           '<input type="range" class="bow-vol-range" data-act="audio-vol" min="0" max="100" step="5" value="' +
@@ -2096,9 +2220,14 @@
             return '<button type="button" class="bow-btn bow-btn-sm bow-track-pill' + (t.id === curId ? " bow-order-on" : "") + '" ' +
               'data-act="audio-track" data-track="' + esc(t.id) + '" title="' + esc(t.subtitle) + '">❄ ' + esc(t.title) + '</button>';
           }).join("");
+          var cbHtml = allT.filter(function (t) { return t.realm === "combat"; }).map(function (t) {
+            return '<button type="button" class="bow-btn bow-btn-sm bow-track-pill' + (t.id === curId ? " bow-order-on" : "") + '" ' +
+              'data-act="audio-track" data-track="' + esc(t.id) + '" title="' + esc(t.subtitle) + '">⚔ ' + esc(t.title) + '</button>';
+          }).join("");
           return '<div class="bow-soundtrack-lists">' +
             '<div class="bow-st-group"><span class="bow-dim">Помещения (трактир, кузница):</span><div class="bow-st-pills">' + inHtml + '</div></div>' +
-            '<div class="bow-st-group"><span class="bow-dim">Улица, околица и тайга:</span><div class="bow-st-pills">' + outHtml + '</div></div>' +
+            '<div class="bow-st-group"><span class="bow-dim">Улица и тайга (в стиле Enigma «Sadeness»):</span><div class="bow-st-pills">' + outHtml + '</div></div>' +
+            '<div class="bow-st-group"><span class="bow-dim">Сражения (в духе битв Skyrim):</span><div class="bow-st-pills">' + cbHtml + '</div></div>' +
           '</div>';
         })() : '') +
       '</div>';

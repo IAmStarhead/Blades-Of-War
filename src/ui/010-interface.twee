@@ -237,8 +237,26 @@
   </div>
 
   <!-- ============================================================
-       БОЙ — ОТДЕЛЬНЫЙ ЭКРАН С МИНИМАЛИСТИЧНОЙ ДИОРАМОЙ И ТАКТИКОЙ KENSHI
+       БОЙ — ОТДЕЛЬНЫЙ ЭКРАН С ТАКТИЧЕСКОЙ СЕТКОЙ 7×4 И СТЕКАМИ ОТРЯДОВ
        ============================================================ -->
+  <div id="bow-battle-intro" class="bow-battle-intro" aria-hidden="true">
+    <div class="bow-battle-intro-flash"></div>
+    <svg class="bow-battle-intro-blades" viewBox="0 0 180 120" aria-hidden="true">
+      <g class="bow-intro-sword bow-intro-sword-l">
+        <line x1="26" y1="100" x2="146" y2="18" stroke="#e4edf6" stroke-width="4.5" stroke-linecap="round"/>
+        <line x1="26" y1="100" x2="146" y2="18" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round"/>
+        <line x1="42" y1="74" x2="58" y2="96" stroke="#c9a961" stroke-width="4" stroke-linecap="round"/>
+      </g>
+      <g class="bow-intro-sword bow-intro-sword-r">
+        <line x1="154" y1="100" x2="34" y2="18" stroke="#e4edf6" stroke-width="4.5" stroke-linecap="round"/>
+        <line x1="154" y1="100" x2="34" y2="18" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round"/>
+        <line x1="138" y1="74" x2="122" y2="96" stroke="#c9a961" stroke-width="4" stroke-linecap="round"/>
+      </g>
+      <circle class="bow-intro-spark" cx="90" cy="56" r="14" fill="none" stroke="#fff3d1" stroke-width="2.2"/>
+    </svg>
+    <span id="bow-battle-intro-title" class="bow-battle-intro-title">К бою!</span>
+  </div>
+
   <section id="bow-fight-page" class="bow-fight-page" aria-hidden="true">
     <div id="bow-fight"></div>
   </section>
@@ -246,7 +264,7 @@
   <div id="bow-sheet" class="bow-sheet" aria-hidden="true"></div>
 
   <footer class="bow-footer">
-    <span>Blades Of War · прототип 0.0.7.7 · Хладные Ветра · Студёный Брод</span>
+    <span>Blades Of War · прототип 0.0.8.0 · Хладные Ветра · Студёный Брод</span>
     <span class="bow-dim">Север Эдемских земель · малое поселение у переправы</span>
   </footer>
 

@@ -808,7 +808,7 @@ function byAct(act, key) {
 
     const back = win.Bow.save.deserialize(win.Bow.save.serialize(g, 1));
     assert(back.ok, "старое сохранение не загрузилось: " + back.reason);
-    eq(back.state.version, "0.0.7.7", "версия после миграции");
+    eq(back.state.version, "0.0.8.0", "версия после миграции");
     assert(back.state.fight === null, "после миграции нет пустого слота боя");
     assert(back.state.people["person:tarn"].weapon, "кузнец остался без топора");
     return "0.0.5 → " + back.state.version + ", топор кузнеца на месте";
@@ -1007,7 +1007,7 @@ function byAct(act, key) {
     delete g.flags.huntedHeat;
 
     const back = win.Bow.save.deserialize(win.Bow.save.serialize(g, 1));
-    eq(back.state.version, "0.0.7.7", "версия после миграции");
+    eq(back.state.version, "0.0.8.0", "версия после миграции");
     assert(back.state.guard && back.state.guard.arrived === true,
       "стража из старого сохранения осталась «непришедшей» — из неё не выбраться");
     eq(back.state.flags.huntedUntil, null, "поле срока розыска");
@@ -1771,7 +1771,7 @@ function byAct(act, key) {
 
     const back = win.Bow.save.deserialize(win.Bow.save.serialize(g, 1));
     assert(back.ok, "сохранение 0.0.6.2 не загрузилось: " + back.reason);
-    eq(back.state.version, "0.0.7.7", "версия после миграции");
+    eq(back.state.version, "0.0.8.0", "версия после миграции");
     assert(back.state.steal && typeof back.state.steal === "object", "нет слота подготовки кражи");
     eq(back.state.player.lastTreat, null, "lastTreat после миграции");
     assert(typeof back.state.player.skills.medicine === "number", "навык лечения не восстановлен");
@@ -1971,9 +1971,9 @@ function byAct(act, key) {
     };
     const back = win.Bow.save.deserialize(win.Bow.save.serialize(g, 1));
     assert(back.ok, "сохранение 0.0.6.3 не загрузилось: " + back.reason);
-    eq(back.state.version, "0.0.7.7", "версия после миграции");
+    eq(back.state.version, "0.0.8.0", "версия после миграции");
     assert(back.state.fight.orders && back.state.fight.orders.aim === "body", "приказы боя созданы при миграции");
-    return "0.0.6.3 → 0.0.7.7, приказы боя созданы";
+    return "0.0.6.3 → 0.0.8.0, приказы боя созданы";
   });
 
   /* 8н. Круг 13 (0.0.7.1): фикс зависания в клетке, честная дистанция боя, логотип и Меню игры */
@@ -3776,18 +3776,21 @@ function byAct(act, key) {
 
   /* ---------- Круг 18 (0.0.7.6): Северный саундтрек — 8 композиций (помещения и улица) ---------- */
 
-  check("0.0.7.6: саундтрек содержит 8 авторских композиций (4 для помещений и 4 для улицы)", () => {
+  check("0.0.8.0: саундтрек содержит 10 композиций (4 помещения, 4 улица Enigma и 2 боевые Skyrim)", () => {
     assert(win.Bow.audio && typeof win.Bow.audio.listTracks === "function", "нет Bow.audio.listTracks");
     const tracks = win.Bow.audio.listTracks();
-    assert(tracks.length === 8, "ожидалось 8 композиций, найдено: " + tracks.length);
+    assert(tracks.length === 10, "ожидалось 10 композиций, найдено: " + tracks.length);
     const indoor = tracks.filter((t) => t.realm === "indoor");
     const outdoor = tracks.filter((t) => t.realm === "outdoor");
+    const combat = tracks.filter((t) => t.realm === "combat");
     assert(indoor.length === 4, "ожидалось 4 камерные композиции для помещений, найдено: " + indoor.length);
     assert(outdoor.length === 4, "ожидалось 4 уличные композиции, найдено: " + outdoor.length);
+    assert(combat.length === 2, "ожидалось 2 боевые композиции Skyrim, найдено: " + combat.length);
     const titles = tracks.map((t) => t.title);
     assert(titles.includes("Угли у очага") && titles.includes("Мёд и наковальня"), "нет названий камерных тем");
     assert(titles.includes("Чертоги Студёного Брода") && titles.includes("Непреклонный тракт"), "нет названий уличных тем");
-    return indoor.map((t) => t.title).join(", ") + " | " + outdoor.map((t) => t.title).join(", ");
+    assert(titles.includes("Кровь на насте") && titles.includes("Сталь у переправы"), "нет названий боевых тем");
+    return "4 indoor | 4 outdoor | 2 combat (" + combat.map((t) => t.title).join(", ") + ")";
   });
 
   check("0.0.7.6: авто-режим саундтрека переключает помещения (трактир/кузница) и улицу (площадь/околица/тайга)", () => {
@@ -3834,13 +3837,19 @@ function byAct(act, key) {
     }
   });
 
-  check("0.0.7.6: ручной выбор любой из 8 композиций и кнопка «След.» работают в Настройках", () => {
+  check("0.0.8.0: ручной выбор любой из 10 композиций, тумблер бита Enigma и кнопка «След.» работают в Настройках", () => {
     const g = game();
     try {
       win.Bow.ui.openModal("save");
       const settings = doc().getElementById("bow-settings");
       const pills = settings.querySelectorAll('[data-act="audio-track"]');
-      assert(pills.length === 8, "в Настройках должно быть 8 кнопок композиций, найдено: " + pills.length);
+      assert(pills.length === 10, "в Настройках должно быть 10 кнопок композиций, найдено: " + pills.length);
+
+      assert(win.Bow.audio.isStreetBeat() === true, "уличный бит Enigma должен быть включён по умолчанию");
+      click(settings.querySelector('[data-act="audio-beat"]'));
+      assert(win.Bow.audio.isStreetBeat() === false, "тумблер бита Enigma не выключился");
+      click(settings.querySelector('[data-act="audio-beat"]'));
+      assert(win.Bow.audio.isStreetBeat() === true, "тумблер бита Enigma не включился обратно");
 
       click(settings.querySelector('[data-track="rime_and_stars"]'));
       assert(win.Bow.audio.getMode() === "manual", "клик по мелодии должен переводить плеер в ручной режим");
@@ -3852,19 +3861,20 @@ function byAct(act, key) {
       click(settings.querySelector('[data-act="audio-auto"]'));
       assert(win.Bow.audio.getMode() === "auto", "кнопка «Авто по месту» не вернула авторежим");
       win.Bow.audio.stop();
-      return "8 кнопок в UI + переключение треков и возврат в авторежим";
+      return "10 кнопок в UI + бит Enigma + переключение треков и авторежим";
     } finally {
       win.Bow.audio.stop();
+      win.Bow.audio.setStreetBeat(true);
       win.Bow.audio.setAutoMode(g);
       win.Bow.ui.setDrawer(false);
       win.BowGame.refresh(true);
     }
   });
 
-  check("0.0.7.7: миграция состояний доводит версию игры до 0.0.7.7", () => {
-    assert(win.Bow.data.meta.version === "0.0.7.7", "версия в Bow.data.meta не 0.0.7.7");
-    assert(game().version === "0.0.7.7", "версия активного состояния не 0.0.7.7");
-    return "версия 0.0.7.7 подтверждена";
+  check("0.0.8.0: миграция состояний доводит версию игры до 0.0.8.0", () => {
+    assert(win.Bow.data.meta.version === "0.0.8.0", "версия в Bow.data.meta не 0.0.8.0");
+    assert(game().version === "0.0.8.0", "версия активного состояния не 0.0.8.0");
+    return "версия 0.0.8.0 подтверждена";
   });
 
   check("0.0.7.7: щипковые удары по струнам полностью вырезаны из саундтрека", () => {
@@ -3884,6 +3894,180 @@ function byAct(act, key) {
     const timeText = doc().getElementById("bow-time").textContent;
     assert(/\d{2}:\d{2}$/.test(timeText), "в #bow-time нет полных часов и минут ЧЧ:ММ: " + timeText);
     return "полное время в шапке: " + timeText;
+  });
+
+  /* ---------- Круг 20 (0.0.8.0): боевая музыка Skyrim, заставка Final Fantasy, сетка 7×4 и стеки King's Bounty ---------- */
+
+  check("0.0.8.0: при входе в бой включается боевая музыка Skyrim и заставка клинков Final Fantasy, а после боя возвращается улица", () => {
+    const g = game();
+    const snap = clone(g);
+    try {
+      g.fight = null;
+      g.flags.lastFight = null;
+      g.player.location = "outskirts";
+      g.people["person:bror"].location = "outskirts";
+      g.people["person:bror"].alive = true;
+      g.people["person:bror"].needs.health = 100;
+      g.player.needs.health = 100;
+      g.player.needs.fatigue = 90;
+
+      win.Bow.audio.setAutoMode(g);
+      assert(win.Bow.audio.getRealm() === "outdoor", "до боя на околице должен быть уличный режим");
+
+      win.Bow.fight.open(g, "person:bror");
+      win.Bow.fight.start(g, "spar");
+      win.Bow.audio.syncMood(g);
+      win.BowGame.refresh(true);
+
+      assert(win.Bow.audio.getRealm() === "combat", "во время боя должна включаться боевая шина combat");
+      assert(win.Bow.audio.currentTrack().realm === "combat", "во время боя должен играть трек сражения Skyrim");
+
+      const introEl = doc().getElementById("bow-battle-intro");
+      assert(introEl && introEl.classList.contains("bow-battle-intro-play"),
+        "при старте боя не запустилась заставка скрещённых клинков Final Fantasy");
+
+      const headTxt = doc().querySelector("#bow-fight-page .bow-fight-head b").textContent;
+      assert(/Кулачный бой с Брором/.test(headTxt), "неверный заголовок боя с Брором: " + headTxt);
+
+      g.fight = null;
+      g.flags.lastFight = null;
+      win.Bow.audio.syncMood(g);
+      assert(win.Bow.audio.getRealm() === "outdoor", "после окончания боя музыка не вернулась к уличной теме");
+      return "combat («" + win.Bow.audio.listTracks().filter((t) => t.realm === "combat")[0].title + "») + FF-заставка + заголовок «" + headTxt + "»";
+    } finally {
+      Object.keys(snap).forEach((k) => { g[k] = snap[k]; });
+      win.Bow.audio.setAutoMode(g);
+      win.BowGame.refresh(true);
+    }
+  });
+
+  check("0.0.8.0: пустые квадраты .bow-roster скрыты (фикс image-18), а арена рисует перспективную сетку 7×4", () => {
+    const g = game();
+    const snap = clone(g);
+    try {
+      const styles = [...doc().querySelectorAll("style")].map((s) => s.textContent).join("\n");
+      assert(/#bow-fight-page\s+\.bow-roster\s*\{[^}]*display:\s*none\s*!important/.test(styles),
+        "пустые прямоугольники .bow-roster под полем боя всё ещё видны");
+      eq(win.Bow.data.fightRules.arena.cols, 7, "ширина тактической сетки");
+      eq(win.Bow.data.fightRules.arena.rows, 4, "глубина тактической сетки (4 ряда)");
+
+      g.fight = null;
+      g.flags.lastFight = null;
+      g.player.location = "outskirts";
+      g.player.needs.health = 100;
+      g.player.needs.fatigue = 90;
+      g.people["person:bror"].location = "outskirts";
+      g.people["person:bror"].alive = true;
+      g.people["person:bror"].needs.health = 100;
+      win.Bow.fight.open(g, "person:bror");
+      const started = win.Bow.fight.start(g, "crime");
+      assert(started && started.ok, "бой с Брором не запустился: " + (started && started.message));
+      win.BowGame.refresh(true);
+
+      const page = doc().getElementById("bow-fight-page");
+      assert(page.querySelector("svg.bow-tactical-grid"), "на поле боя нет перспективной тактической сетки svg.bow-tactical-grid");
+      const headB = page.querySelector(".bow-fight-head b").textContent;
+      assert(/Бой с Брором/.test(headB), "ожидался заголовок «Бой с Брором», получено: " + headB);
+      return "сетка 7×4 (28 клеток) + скрыт .bow-roster + заголовок «" + headB + "»";
+    } finally {
+      Object.keys(snap).forEach((k) => { g[k] = snap[k]; });
+      win.BowGame.refresh(true);
+    }
+  });
+
+  check("0.0.8.0: заголовки группового боя («Бой с отрядом Брора») корректно склоняют имена", () => {
+    const g = game();
+    const fakeSquadFight = {
+      personId: "person:bror",
+      mode: "crime",
+      units: [
+        { key: "player", side: "ally", count: 1 },
+        { key: "enemy:person:bror", side: "enemy", count: 1 },
+        { key: "stack:hunters", side: "enemy", count: 6 }
+      ]
+    };
+    const titleBror = win.Bow.fight.titleOf(fakeSquadFight, g);
+    assert(titleBror === "Бой с отрядом Брора", "ожидалось «Бой с отрядом Брора», получено: " + titleBror);
+
+    const fakeLivaSolo = {
+      personId: "person:liva",
+      mode: "crime",
+      units: [
+        { key: "player", side: "ally", count: 1 },
+        { key: "enemy:person:liva", side: "enemy", count: 1 }
+      ]
+    };
+    const titleLiva = win.Bow.fight.titleOf(fakeLivaSolo, g);
+    assert(titleLiva === "Бой с Ливой", "ожидалось «Бой с Ливой», получено: " + titleLiva);
+    return titleBror + " / " + titleLiva;
+  });
+
+  check("0.0.8.0: система стеков в духе King's Bounty («Рыцари ×100» — 1 фигурка = 100 бойцов, убыль численности и рост мощи)", () => {
+    const g = game();
+    const snap = clone(g);
+    try {
+      g.player.needs.health = 100;
+      g.player.needs.fatigue = 100;
+      g.player.skills.combat = 85;
+      g.player.attrs.strength = 45;
+
+      const spearmen = win.Bow.fight.createStack({
+        key: "stack:spearmen",
+        name: "Дружинники",
+        side: "ally",
+        count: 80,
+        unitHp: 22,
+        combat: 42,
+        weapon: "item:axe",
+        armor: "item:leather"
+      });
+      const knights = win.Bow.fight.createStack({
+        key: "stack:knights",
+        name: "Северные рыцари",
+        side: "enemy",
+        count: 100,
+        unitHp: 20,
+        combat: 40,
+        weapon: "item:axe",
+        armor: "item:leather"
+      });
+      assert(win.Bow.fight.stackPowerMult(knights) > 2.5, "множитель мощи стека ×100 не вырос");
+
+      win.Bow.fight.startSquadBattle(g, [knights], {
+        allyUnits: [spearmen],
+        note: "Сотня северных рыцарей преграждает тракт."
+      });
+      win.BowGame.refresh(true);
+
+      const page = doc().getElementById("bow-fight-page");
+      const badgeBefore = page.querySelector(".bow-chip-enemy .bow-chip-stack");
+      assert(badgeBefore && badgeBefore.textContent === "×100",
+        "на одной фигурке отряда врага нет значка «×100»: " + (badgeBefore ? badgeBefore.textContent : "null"));
+      const allyBadge = page.querySelector(".bow-chip-ally .bow-chip-stack");
+      assert(allyBadge && allyBadge.textContent === "×80",
+        "на одной фигурке союзного отряда нет значка «×80»: " + (allyBadge ? allyBadge.textContent : "null"));
+
+      /* Ставим вплотную и наносим мощный удар по стеку рыцарей (ответный удар врага уходит мимо) */
+      const you = g.fight.units.find((u) => u.key === "player");
+      const foeStack = g.fight.units.find((u) => u.key === "stack:knights");
+      you.col = 2;
+      foeStack.col = 3;
+      let ri = 0;
+      const rolls = [0.05, 0.5, 0.99, 0.99, 0.99];
+      win.Bow.fight.move(g, "press", () => rolls[Math.min(ri++, rolls.length - 1)], "stack:knights", "head");
+      win.BowGame.refresh(true);
+
+      assert(foeStack.count < 100 && foeStack.count > 0,
+        "урон по стеку должен списывать бойцов из 100, осталось: " + foeStack.count);
+      const badgeAfter = page.querySelector(".bow-chip-enemy .bow-chip-stack");
+      assert(badgeAfter && badgeAfter.textContent === "×" + foeStack.count,
+        "значок стека на арене не обновил численность: " + (badgeAfter ? badgeAfter.textContent : "null"));
+
+      return "1 фигурка = ×100 (союзники ×80) → удар списал бойцов до ×" + foeStack.count;
+    } finally {
+      Object.keys(snap).forEach((k) => { g[k] = snap[k]; });
+      win.BowGame.refresh(true);
+    }
   });
 
   /* ---------- Итоги ---------- */

@@ -261,6 +261,12 @@
       if (Bow.ui.renderSettings) { Bow.ui.renderSettings(); }
       return { ok: true, message: "Автовыбор музыки по месту: «" + (cur ? cur.title : "") + "»." };
     },
+    "audio-beat": function () {
+      if (!Bow.audio || !Bow.audio.toggleStreetBeat) { return { ok: true, message: "" }; }
+      var bOn = Bow.audio.toggleStreetBeat();
+      if (Bow.ui.renderSettings) { Bow.ui.renderSettings(); }
+      return { ok: true, message: bOn ? "Включён мягкий уличный бит в стиле Enigma." : "Уличный бит выключен (чистый эмбиент)." };
+    },
     buy: function (el) { return Bow.adapter.act.buy(getState(), el.getAttribute("data-key"), 1); },
     sell: function (el) { return Bow.adapter.act.sell(getState(), el.getAttribute("data-key"), 1); },
     inspect: function (el) {

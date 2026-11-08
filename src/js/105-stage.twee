@@ -193,22 +193,24 @@
 
     var shieldSvg = "";
     if (guarding || roleKey === "guard") {
-      shieldSvg = '<ellipse cx="20" cy="48" rx="6" ry="12" fill="' + cloakFill + '" stroke="' + stroke + '" stroke-width="1.8"/>';
+      shieldSvg = '<g class="bow-fig-shield"><ellipse cx="20" cy="48" rx="6.5" ry="12.5" fill="' + cloakFill + '" stroke="' + stroke + '" stroke-width="1.9"/>' +
+        '<circle cx="20" cy="48" r="2.1" fill="' + stroke + '"/></g>';
     }
 
     return '<svg class="bow-fig-svg' + (flip ? " bow-fig-flip" : "") + '" viewBox="0 0 64 88" aria-hidden="true">' +
       '<ellipse cx="32" cy="82" rx="17" ry="4" fill="rgba(0,0,0,0.45)"/>' +
-      /* Ноги */
-      '<line x1="28" y1="62" x2="26" y2="80" stroke="' + stroke + '" stroke-width="2.4" stroke-linecap="round"/>' +
-      '<line x1="36" y1="62" x2="38" y2="80" stroke="' + stroke + '" stroke-width="2.4" stroke-linecap="round"/>' +
-      /* Плащ и корпус */
-      '<path d="M21 34 L43 34 L47 65 L17 65 Z" fill="' + cloakFill + '" stroke="' + stroke + '" stroke-width="1.5" stroke-linejoin="round"/>' +
-      '<path d="M25 34 L39 34 L37 60 L27 60 Z" fill="' + bodyFill + '"/>' +
-      /* Голова */
-      '<circle cx="32" cy="23" r="7" fill="' + bodyFill + '" stroke="' + stroke + '" stroke-width="1.6"/>' +
-      headExtra +
-      shieldSvg +
-      weaponSvg +
+      /* Ноги в отдельных группах для живой анимации шага */
+      '<g class="bow-fig-leg bow-fig-leg-l"><line x1="28" y1="62" x2="26" y2="80" stroke="' + stroke + '" stroke-width="2.5" stroke-linecap="round"/></g>' +
+      '<g class="bow-fig-leg bow-fig-leg-r"><line x1="36" y1="62" x2="38" y2="80" stroke="' + stroke + '" stroke-width="2.5" stroke-linecap="round"/></g>' +
+      /* Плащ, корпус и голова в единой группе торса для выпада/уклона */
+      '<g class="bow-fig-torso">' +
+        '<path class="bow-fig-cloak" d="M21 34 L43 34 L47 65 L17 65 Z" fill="' + cloakFill + '" stroke="' + stroke + '" stroke-width="1.5" stroke-linejoin="round"/>' +
+        '<path d="M25 34 L39 34 L37 60 L27 60 Z" fill="' + bodyFill + '"/>' +
+        '<circle cx="32" cy="23" r="7" fill="' + bodyFill + '" stroke="' + stroke + '" stroke-width="1.6"/>' +
+        headExtra +
+        shieldSvg +
+        weaponSvg +
+      '</g>' +
     '</svg>';
   }
 
