@@ -1,9 +1,8 @@
 :: StoryInterface
-<div id="bow-app" class="bow-app">
+<div id="bow-app" class="bow-app bow-fullscreen-app">
 
   <!-- ============================================================
-       ВЕРХНЯЯ ШАПКА (0.0.7 — в одну линию по макету владельца)
-       Щит, дата/монеты/погода, кнопки окон разделов и часы справа.
+       ВЕРХНЯЯ ТОНКАЯ ПОЛОСА ХРОНИКИ МИРА (0.0.9.1 — полный экран)
        ============================================================ -->
   <header class="bow-topbar">
     <button class="bow-logo-btn" id="bow-logo-btn" aria-label="Меню игры" aria-expanded="false" title="Меню игры — продолжить, настройки, сохранения">
@@ -16,6 +15,7 @@
 
     <div class="bow-topbar-info">
       <div class="bow-topbar-line1">
+        <span id="bow-where-visible" class="bow-tb-loc-pill"><b id="bow-loc-name">—</b> <i id="bow-loc-sub" class="bow-dim">—</i></span>
         <span id="bow-time" class="bow-tb-time">—</span>
         <span id="bow-where" class="bow-tb-place bow-sr-only">—</span>
       </div>
@@ -26,29 +26,29 @@
       </div>
     </div>
 
-    <nav class="bow-rail bow-top-nav" id="bow-rail" aria-label="Окна разделов">
+    <nav class="bow-rail bow-top-nav" id="bow-rail" aria-label="Окна героя и мира">
       <button class="bow-rail-btn" data-act="panel" data-panel="state" title="Состояние, конечности и органы">
-        <span class="bow-rail-i">♥</span><span class="bow-rail-l">Сост.</span>
+        <span class="bow-rail-i">♥</span><span class="bow-rail-l">Тело</span>
       </button>
       <button class="bow-rail-btn" data-act="panel" data-panel="skills" title="Характеристики и навыки">
         <span class="bow-rail-i">✦</span><span class="bow-rail-l">Навыки</span>
       </button>
       <button class="bow-rail-btn" data-act="panel" data-panel="inv" title="При себе">
-        <span class="bow-rail-i">▤</span><span class="bow-rail-l">Вещи</span>
+        <span class="bow-rail-i">▤</span><span class="bow-rail-l">Сумка</span>
       </button>
       <button class="bow-rail-btn" data-act="panel" data-panel="people" title="Жители">
         <span class="bow-rail-i">◉</span><span class="bow-rail-l">Люди</span>
       </button>
       <button class="bow-rail-btn" data-act="panel" data-panel="orgs" title="Общины">
-        <span class="bow-rail-i">◇</span><span class="bow-rail-l">Общ.</span>
+        <span class="bow-rail-i">◇</span><span class="bow-rail-l">Общины</span>
       </button>
       <button class="bow-rail-btn" data-act="panel" data-panel="journal" title="Хроника">
-        <span class="bow-rail-i">≡</span><span class="bow-rail-l">Хрон.</span>
+        <span class="bow-rail-i">≡</span><span class="bow-rail-l">Хроника</span>
       </button>
     </nav>
 
     <div class="bow-topbar-right">
-      <button type="button" class="bow-audio-btn" id="bow-audio-btn" data-act="audio-toggle" aria-pressed="false" title="Средневековый северный эмбиент (вкл/выкл)">♪</button>
+      <button type="button" class="bow-audio-btn" id="bow-audio-btn" data-act="audio-toggle" aria-pressed="false" title="Северный саундтрек с хором и ритмом (вкл/выкл)">♪</button>
       <div class="bow-clock-controls" role="group" aria-label="Ход времени">
         <button class="bow-clock-btn" data-act="clock" data-scale="paused" title="Пауза">❙❙</button>
         <button class="bow-clock-btn" data-act="clock" data-scale="1x" title="Обычный ход (1 мин. = 2 сек.)">▶</button>
@@ -57,10 +57,8 @@
     </div>
   </header>
 
-  <!-- ============================================================
-       ПЕРЕХОД МЕЖДУ ЛОКАЦИЯМИ (с подписями точного времени пути)
-       ============================================================ -->
-  <section class="bow-places-bar" aria-label="Переход">
+  <!-- Скрытый технический блок переходов (визуально убран с экрана: переходы идут ногами через двери и карту!) -->
+  <section class="bow-places-bar bow-sr-only" aria-hidden="true" aria-label="Переход">
     <div class="bow-places-head">
       <span class="bow-places-meta">Переход <span class="bow-tb-sep">·</span> <span id="bow-season" class="bow-season-tag">Зима · Студёный Брод</span></span>
       <button type="button" class="bow-map-open-btn" data-act="open-map" title="Открыть карту поселения и Хладных Ветров">◈ Карта</button>
@@ -75,84 +73,112 @@
   </section>
 
   <!-- ============================================================
-       ОСНОВНОЕ ПОЛЕ ИГРЫ
+       ПОЛНОЭКРАННОЕ ОКНО МИРА (100vw × 100dvh, без веб-скролла)
        ============================================================ -->
   <div class="bow-body" id="bow-body">
 
     <main class="bow-main">
 
-      <!-- ГЛАВНОЕ ОКНО — минималистичная диорама локации с людьми и объектами -->
       <section class="bow-stage" id="bow-stage" aria-label="Окно локации">
-        <div class="bow-stage-top">
-          <div class="bow-stage-title">
-            <h2 id="bow-loc-name">—</h2>
-            <span id="bow-loc-sub" class="bow-dim">—</span>
-          </div>
-          <span class="bow-stage-hint">клик по полу — идти · клик по человеку или предмету — подойти и взаимодействовать</span>
-        </div>
+        <!-- Всплывающий гербовый клилич при начале живой схватки в локации -->
+        <div id="bow-clash-banner" class="bow-clash-banner" aria-live="assertive"></div>
 
+        <!-- Живой изометрический мир от края до края -->
         <div id="bow-stage-canvas" class="bow-stage-canvas"></div>
+
+        <!-- Карточка взаимодействия с выбранным человеком / объектом -->
         <div id="bow-stage-pop" class="bow-stage-pop" aria-live="polite"></div>
 
+        <!-- Живая панель управления боем Kenshi прямо в локации (пауза, прицел, стойка, тревога стражи, исход) -->
+        <div id="bow-skirmish-hud" class="bow-skirmish-hud" aria-live="polite"></div>
+
+        <!-- Тонкая строка живого отклика мира внизу слева над консолью -->
         <div class="bow-stage-bottom">
-          <div id="bow-ambience" class="bow-ambience"></div>
+          <div id="bow-ambience" class="bow-ambience bow-sr-only"></div>
           <div class="bow-result" id="bow-last" aria-live="polite"></div>
         </div>
       </section>
 
-      <!-- ПРИБОРНАЯ ПОЛОСА ПОД ГЛАВНЫМ ОКНОМ: показатели, розыск и быстрый уход за собой -->
-      <section class="bow-hud-strip" aria-label="Показатели героя">
+      <!-- НИЖНЯЯ ПРИБОРНАЯ КОНСОЛЬ CRPG (переключатель Мирный/Боевой, показатели, кнопки шторок) -->
+      <section class="bow-hud-strip" aria-label="Нижняя консоль управления">
+        <div class="bow-hud-mode-wrap">
+          <button type="button" id="bow-aggro-btn" class="bow-mode-btn" data-act="toggle-aggro" aria-pressed="false" title="Переключить мирный и агрессивный режим действий [Tab]. В боевом режиме клик по цели сразу начинает схватку.">
+            <span class="bow-mode-i">✋</span>
+            <span class="bow-mode-txt"><b>Мирный</b><i>Tab — к бою</i></span>
+          </button>
+        </div>
+
         <div class="bow-topbar-status" id="bow-topbar-status"></div>
         <div class="bow-heat" id="bow-heat"></div>
+
         <div class="bow-hud-acts">
-          <button class="bow-btn bow-btn-sm" data-act="rest"><span class="bow-btn-i">☾</span>Отдохнуть</button>
-          <button class="bow-btn bow-btn-sm" id="bow-autoeat-btn" data-act="toggle-autoeat" title="Автоматически съедать припасы из сумки, когда герой проголодается">Авто-еда: вкл</button>
+          <button class="bow-btn bow-btn-sm" data-act="rest" title="Отдохнуть и перевести дух"><span class="bow-btn-i">☾</span>Отдых</button>
+          <button class="bow-btn bow-btn-sm" id="bow-autoeat-btn" data-act="toggle-autoeat" title="Автоматически съедать припасы при голоде">Авто-еда</button>
           <span id="bow-hud-quick" class="bow-hud-quick"></span>
+        </div>
+
+        <div class="bow-dock-drawers" role="group" aria-label="Дела и карта места">
+          <button type="button" class="bow-dock-btn" data-act="open-world-panel" data-tab="jobs" title="Подряды и работа в этой локации">
+            <span>⚒ Подряды</span>
+          </button>
+          <button type="button" class="bow-dock-btn" data-act="open-world-panel" data-tab="trade" title="Торговля и снедь">
+            <span>⚖ Торг</span>
+          </button>
+          <button type="button" class="bow-dock-btn" data-act="open-world-panel" data-tab="map" title="Карта Студёного Брода и земель">
+            <span>◈ Карта</span>
+          </button>
+          <button type="button" class="bow-dock-btn" data-act="open-world-panel" data-tab="desc" title="Сведения об этом месте">
+            <span>📜 Место</span>
+          </button>
         </div>
       </section>
 
-      <!-- Неотложные состояния, встречи и разговор -->
-      <section id="bow-coma" class="bow-fight" aria-live="polite"></section>
-      <section id="bow-guard" class="bow-fight" aria-live="polite"></section>
-      <section id="bow-encounter" class="bow-fight" aria-live="polite"></section>
-      <section id="bow-jail" class="bow-fight" aria-live="polite"></section>
-      <section id="bow-dialog" class="bow-dialog" aria-live="polite"></section>
+      <!-- Всплывающие сюжетные оверлеи поверх сцены (кома, стража, встреча, диалог) -->
+      <section id="bow-coma" class="bow-fight bow-floating-overlay" aria-live="polite"></section>
+      <section id="bow-guard" class="bow-fight bow-floating-overlay" aria-live="polite"></section>
+      <section id="bow-encounter" class="bow-fight bow-floating-overlay" aria-live="polite"></section>
+      <section id="bow-jail" class="bow-fight bow-floating-overlay" aria-live="polite"></section>
+      <section id="bow-dialog" class="bow-dialog bow-floating-dialog" aria-live="polite"></section>
 
-      <!-- НИЖНИЙ БЛОК ДЕЙСТВИЙ ПО ВКЛАДКАМ (4 вкладки: Заработок, Карта, Товар и снедь, О месте) -->
-      <section class="bow-panel">
-        <h2 class="bow-h2">Действия</h2>
-        <div class="bow-tabs" role="tablist" aria-label="Разделы места">
-          <button class="bow-tab bow-tab-on" data-act="tab" data-tab="jobs" role="tab" aria-selected="true">
-            <span>Заработок</span><b class="bow-fold-count" data-count-for="jobs">0</b>
-          </button>
-          <button class="bow-tab" data-act="tab" data-tab="map" role="tab" aria-selected="false">
-            <span>Карта</span><b class="bow-fold-count" data-count-for="map">5</b>
-          </button>
-          <button class="bow-tab" data-act="tab" data-tab="trade" role="tab" aria-selected="false">
-            <span>Товар и снедь</span><b class="bow-fold-count" data-count-for="trade">0</b>
-          </button>
-          <button class="bow-tab" data-act="tab" data-tab="desc" role="tab" aria-selected="false">
-            <span>О месте</span>
-          </button>
+      <!-- ВСПЛЫВАЮЩАЯ ШТОРКА ДЕЛ МЕСТА (скрыта по умолчанию — открывается по кнопкам Подряды / Торг / Карта / Место) -->
+      <section class="bow-panel bow-world-drawer" id="bow-world-panel" aria-hidden="true">
+        <div class="bow-world-drawer-head">
+          <div class="bow-tabs" role="tablist" aria-label="Разделы места">
+            <button class="bow-tab bow-tab-on" data-act="tab" data-tab="jobs" role="tab" aria-selected="true">
+              <span>Подряды</span><b class="bow-fold-count" data-count-for="jobs">0</b>
+            </button>
+            <button class="bow-tab" data-act="tab" data-tab="trade" role="tab" aria-selected="false">
+              <span>Торг и снедь</span><b class="bow-fold-count" data-count-for="trade">0</b>
+            </button>
+            <button class="bow-tab" data-act="tab" data-tab="map" role="tab" aria-selected="false">
+              <span>Карта</span><b class="bow-fold-count" data-count-for="map">5</b>
+            </button>
+            <button class="bow-tab" data-act="tab" data-tab="desc" role="tab" aria-selected="false">
+              <span>О месте</span>
+            </button>
+          </div>
+          <button type="button" class="bow-dialog-close" data-act="close-world-panel" aria-label="Закрыть шторку" title="Закрыть [Esc]">✕</button>
         </div>
 
-        <div class="bow-tab-pane bow-tab-pane-on" data-tab-pane="jobs">
-          <div id="bow-jobs" class="bow-jobs"></div>
-        </div>
+        <div class="bow-world-drawer-body">
+          <div class="bow-tab-pane bow-tab-pane-on" data-tab-pane="jobs">
+            <div id="bow-jobs" class="bow-jobs"></div>
+          </div>
 
-        <div class="bow-tab-pane" data-tab-pane="map">
-          <div id="bow-map" class="bow-map"></div>
-        </div>
+          <div class="bow-tab-pane" data-tab-pane="map">
+            <div id="bow-map" class="bow-map"></div>
+          </div>
 
-        <div class="bow-tab-pane" data-tab-pane="trade">
-          <!-- #passages обязателен для SugarCube -->
-          <div id="passages"></div>
-        </div>
+          <div class="bow-tab-pane" data-tab-pane="trade">
+            <!-- #passages обязателен для SugarCube -->
+            <div id="passages"></div>
+          </div>
 
-        <div class="bow-tab-pane" data-tab-pane="desc">
-          <section class="bow-scene" id="bow-scene">
-            <div id="bow-loc-text" class="bow-scene-text"></div>
-          </section>
+          <div class="bow-tab-pane" data-tab-pane="desc">
+            <section class="bow-scene" id="bow-scene">
+              <div id="bow-loc-text" class="bow-scene-text"></div>
+            </section>
+          </div>
         </div>
 
         <!-- Скрытый технический контейнер карточек локации для совместимости прямых вызовов -->
@@ -161,7 +187,7 @@
 
     </main>
 
-    <!-- ОТДЕЛЬНОЕ ВСПЛЫВАЮЩЕЕ ОКНО ВКЛАДКИ ПОВЕРХ ИГРЫ -->
+    <!-- ОТДЕЛЬНОЕ ВСПЛЫВАЮЩЕЕ ОКНО ГЕРОЯ И МЕНЮ ПОВЕРХ ИГРЫ -->
     <aside class="bow-drawer bow-modal" id="bow-drawer" aria-hidden="true">
       <div class="bow-modal-backdrop" data-act="close-panel"></div>
       <div class="bow-modal-box" role="dialog" aria-modal="true" aria-labelledby="bow-modal-title">
@@ -237,7 +263,7 @@
   </div>
 
   <!-- ============================================================
-       БОЙ — ОТДЕЛЬНЫЙ ЭКРАН С ТАКТИЧЕСКОЙ СЕТКОЙ 7×4 И СТЕКАМИ ОТРЯДОВ
+       ПОЛКОВОДЧЕСКОЕ «ПОЛЕ БРАНИ» — ДЛЯ БОЛЬШИХ ОТРЯДОВ (ДЕСЯТКИ И СОТНИ БОЙЦОВ)
        ============================================================ -->
   <div id="bow-battle-intro" class="bow-battle-intro" aria-hidden="true">
     <div class="bow-battle-intro-flash"></div>
@@ -254,7 +280,7 @@
       </g>
       <circle class="bow-intro-spark" cx="90" cy="56" r="14" fill="none" stroke="#fff3d1" stroke-width="2.2"/>
     </svg>
-    <span id="bow-battle-intro-title" class="bow-battle-intro-title">К бою!</span>
+    <span id="bow-battle-intro-title" class="bow-battle-intro-title">Поле брани!</span>
   </div>
 
   <section id="bow-fight-page" class="bow-fight-page" aria-hidden="true">
@@ -265,9 +291,8 @@
 
   <div id="bow-sheet" class="bow-sheet" aria-hidden="true"></div>
 
-  <footer class="bow-footer">
-    <span>Blades Of War · прототип 0.0.9.0 · Хладные Ветра · Студёный Брод</span>
-    <span class="bow-dim">Север Эдемских земель · малое поселение у переправы</span>
+  <footer class="bow-footer bow-sr-only" aria-hidden="true">
+    <span>Blades Of War · прототип 0.0.9.1 · Хладные Ветра · Студёный Брод</span>
   </footer>
 
 </div>

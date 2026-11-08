@@ -1,188 +1,201 @@
 :: bow-iso [script]
 /* ============================================================
-   BOW ISO 0.0.9.0 — Изометрический движок стиля «Сумрачный Брод».
-   Канон стиля (docs/STYLE_GUIDE.md):
-     • Холодная изометрия 2:1 в разрезе (Cutaway Isometric) без стен
-       и решёток, перекрывающих камеру, героя или текст.
-     • «Мутные живописные человечки» (кэшируемые растровые мини-спрайты
-       с мягкой светотенью, 4 направлениями взгляда SE/SW/NW/NE, одеждой
-       и оружием — без кружков, треугольников и резких обводок).
-     • Point-and-Click перемещение с поиском пути A* и подходом к цели.
-     • Бесшовное единство локации и пошагового боя (Вариант 1 — схватка
-       прямо в интерьере/на площади локации; Вариант 2 — открытое снежное
-       поле для крупных отрядов-стеков ×N).
-   Безопасно работает в средах без Canvas 2D (например, JSDOM-тесты).
+   BOW ISO (0.0.9.1) — Полноэкранный бесклеточный изометрический мир
+   в разрезе («Сумрачный Брод»), двери с подходом и открытием,
+   фактурные спрайты 96×112 в духе Heroes II / King's Bounty /
+   Fallout Tactics и живая отрисовка схваток Kenshi.
    ============================================================ */
 (function (global) {
   "use strict";
 
   var Bow = global.Bow = global.Bow || {};
 
-  var VIEW_W = 1088;
-  var VIEW_H = 368;
+  /* Полноэкранный внутренний буфер локации (16:9 без чёрных пустот вокруг!) */
+  var VIEW_W = 1280;
+  var VIEW_H = 680;
 
-  /* Размер изометрической сетки мирной локации */
   var COLS = 12;
   var ROWS = 8;
-  var TILE_W = 68;
-  var TILE_H = 34;
-  var ORIGIN_X = 496;
-  var ORIGIN_Y = 58;
+  var TILE_W = 86;
+  var TILE_H = 43;
+  var ORIGIN_X = 590;
+  var ORIGIN_Y = 122;
 
-  /* Размер тактической сетки боя (совпадает с Bow.fight 7×5 = 35 клеток) */
+  /* Полководческое «Поле брани» 1088×368 для крупных отрядов-стеков (×30, ×100):
+     строго отцентрировано без вылета за края (фикс image-30!) */
+  var BATTLE_W = 1088;
+  var BATTLE_H = 368;
   var FIGHT_COLS = 7;
   var FIGHT_ROWS = 5;
-  var FIGHT_TW = 96;
-  var FIGHT_TH = 46;
-  var FIGHT_OX = 456;
-  var FIGHT_OY = 88;
+  var FIGHT_TW = 90;
+  var FIGHT_TH = 42;
+  var FIGHT_OX = 480;
+  var FIGHT_OY = 64;
 
   /* ---------- Описание 6 изометрических локаций в разрезе ---------- */
   var MAPS = {
     square: {
       id: "square",
+      outdoor: true,
       floorKind: "cobble_snow",
-      backWall: "eaves",
-      spawn: { col: 1, row: 6, facing: "NE" },
+      spawn: { col: 2.0, row: 6.2, facing: "NE" },
+      entryFrom: {
+        tavern: { col: 1.4, row: 3.2, facing: "SE" },
+        smithy: { col: 9.6, row: 2.2, facing: "SW" },
+        outskirts: { col: 9.8, row: 6.0, facing: "NW" }
+      },
       npcSlots: [
-        { col: 4, row: 3, facing: "SW" },
-        { col: 7, row: 4, facing: "SW" },
-        { col: 2, row: 5, facing: "NE" },
-        { col: 8, row: 3, facing: "NW" },
-        { col: 4, row: 5, facing: "NE" }
+        { col: 2.4, row: 4.0, facing: "SE" },
+        { col: 5.4, row: 4.2, facing: "SW" },
+        { col: 7.8, row: 4.0, facing: "SW" },
+        { col: 9.8, row: 3.0, facing: "NW" },
+        { col: 10.6, row: 1.2, facing: "SW" }
       ],
       obstacles: [
         { col: 5, row: 3, kind: "well", label: "Колодец" },
-        { col: 3, row: 1, kind: "brazier", light: 1.0 },
+        { col: 3, row: 1, kind: "brazier", light: 1.15 },
         { col: 2, row: 0, kind: "crates" },
         { col: 8, row: 0, kind: "stall" }
       ],
       spots: [
-        { key: "well", col: 5, row: 3, title: "Каменный колодец", sub: "ледяная вода под срубом", desc: "Ворот обмёрз льдом, но бадья ходит исправно. Вокруг колодца пересекаются все следы Брода." },
-        { key: "stall", col: 8, row: 0, title: "Торговый навес", sub: "ряды и прилавки", desc: "Под рогожей пахнет ржаной мукой, вяленой рыбой и дёгтем. Торгуются здесь тихо и жёстко.", tab: "trade", tabLabel: "Открыть торг" },
-        { key: "brazier", col: 3, row: 1, title: "Угольная жаровня", sub: "живой жар на ветру", desc: "Кованая корзина с углями — единственное место на площади, где пальцы отходят от стужи." }
+        { key: "well", col: 5, row: 3, title: "Каменный колодец", sub: "ледяная вода под срубом", desc: "Ворот обмёрз льдом, но бадья ходит исправно. Вокруг колодца сходятся все тропы Брода.", tab: "jobs", tabLabel: "Подряды у площади" },
+        { key: "stall", col: 8, row: 0, title: "Торговый навес", sub: "ряды и прилавки", desc: "Под плотной рогожей пахнет ржаной мукой, солониной и дёгтем.", tab: "trade", tabLabel: "Открыть торг" },
+        { key: "brazier", col: 3, row: 1, title: "Угольная жаровня", sub: "живой жар на ветру", desc: "Кованая корзина с раскалёнными углями — здесь греют ладони путники и караульные." }
       ],
       exits: [
-        { col: 0, row: 3, to: "tavern", label: "Трактир" },
-        { col: 11, row: 2, to: "smithy", label: "Кузница" },
-        { col: 11, row: 6, to: "outskirts", label: "Околица" }
+        { col: 0, row: 3, to: "tavern", label: "Трактир", doorKind: "porch_door", wallSide: "NW" },
+        { col: 11, row: 2, to: "smithy", label: "Кузница", doorKind: "forge_arch", wallSide: "NE" },
+        { col: 11, row: 6, to: "outskirts", label: "Околица", doorKind: "road_gate", wallSide: "SE" }
       ]
     },
 
     tavern: {
       id: "tavern",
+      outdoor: false,
       floorKind: "planks",
-      backWall: "timber",
-      spawn: { col: 9, row: 5, facing: "NW" },
+      wallKind: "timber",
+      spawn: { col: 8.8, row: 5.0, facing: "NW" },
+      entryFrom: {
+        square: { col: 9.6, row: 5.0, facing: "NW" }
+      },
       npcSlots: [
-        { col: 7, row: 2, facing: "SW" },
-        { col: 4, row: 3, facing: "SE" },
-        { col: 6, row: 5, facing: "NW" },
-        { col: 2, row: 4, facing: "NE" }
+        { col: 7.2, row: 2.2, facing: "SW" },
+        { col: 4.2, row: 3.0, facing: "SE" },
+        { col: 6.0, row: 5.2, facing: "NW" },
+        { col: 2.2, row: 4.2, facing: "NE" }
       ],
       obstacles: [
-        { col: 4, row: 0, kind: "hearth", light: 1.25 },
+        { col: 4, row: 0, kind: "hearth", light: 1.45 },
         { col: 3, row: 4, kind: "table" },
         { col: 7, row: 4, kind: "table" },
         { col: 8, row: 1, kind: "bar" },
         { col: 1, row: 1, kind: "bunk" }
       ],
       spots: [
-        { key: "hearth", col: 4, row: 0, title: "Каменный очаг", sub: "тёплый угол и котёл", desc: "Берёзовые поленья трещат ровно; над углями в закопчённом котле томится густая похлёбка." },
-        { key: "bar", col: 8, row: 1, title: "Стойка Сигрид", sub: "хлеб, похлёбка и эль", desc: "Дубовая доска вытерта локтями до тусклого блеска. За стойкой держат припасы и кружки.", tab: "trade", tabLabel: "Снедь и питьё" },
-        { key: "bunk", col: 1, row: 1, title: "Лавка с тулупом", sub: "сон в тепле", desc: "В затишке у тёплой стены можно вытянуть ноги и проспать до утра без риска обморозиться.", act: "rest", actLabel: "Отдохнуть в тепле" }
+        { key: "hearth", col: 4, row: 0, title: "Каменный очаг", sub: "тёплый сруб и котёл", desc: "Берёзовые поленья трещат ровно; в закопчённом котле густеет горячая похлёбка." },
+        { key: "bar", col: 8, row: 1, title: "Стойка Сигрид", sub: "снедь, похлёбка и эль", desc: "Дубовая доска отполирована локтями. За стойкой всегда найдётся тёплый хлеб и кружка.", tab: "trade", tabLabel: "Снедь и питьё" },
+        { key: "bunk", col: 1, row: 1, title: "Лавка с тулупом", sub: "сон в тепле", desc: "Широкая скамья у тёплой бревенчатой стены — лучшее место переждать стужу.", act: "rest", actLabel: "Отдохнуть в тепле" }
       ],
       exits: [
-        { col: 11, row: 5, to: "square", label: "Площадь" }
+        { col: 11, row: 5, to: "square", label: "На площадь", doorKind: "inner_door", wallSide: "SE" }
       ]
     },
 
     smithy: {
       id: "smithy",
+      outdoor: false,
       floorKind: "flagstone",
-      backWall: "stone",
-      spawn: { col: 9, row: 5, facing: "NW" },
+      wallKind: "stone",
+      spawn: { col: 8.8, row: 5.0, facing: "NW" },
+      entryFrom: {
+        square: { col: 9.6, row: 5.0, facing: "NW" }
+      },
       npcSlots: [
-        { col: 4, row: 2, facing: "SE" },
-        { col: 7, row: 4, facing: "NW" },
-        { col: 2, row: 5, facing: "NE" }
+        { col: 4.2, row: 2.4, facing: "SE" },
+        { col: 7.2, row: 4.2, facing: "NW" },
+        { col: 2.2, row: 5.2, facing: "NE" }
       ],
       obstacles: [
-        { col: 3, row: 0, kind: "forge", light: 1.35 },
+        { col: 3, row: 0, kind: "forge", light: 1.55 },
         { col: 5, row: 2, kind: "anvil" },
         { col: 6, row: 1, kind: "trough" },
         { col: 1, row: 2, kind: "crates" }
       ],
       spots: [
-        { key: "forge", col: 3, row: 0, title: "Кузнечный горн", sub: "меха и багровый уголь", desc: "Жар бьёт в лицо с трёх шагов. В горне докрасна греются полосы северного железа." },
-        { key: "anvil", col: 5, row: 2, title: "Наковальня Тарна", sub: "поковка и правка стали", desc: "Тяжёлый рог наковальни отполирован тысячами ударов. Рядом клещи и зубила.", tab: "jobs", tabLabel: "Подряды кузни" },
-        { key: "rack", col: 8, row: 0, title: "Стойка с поковками", sub: "топоры, ножи и железо", desc: "Готовые клинки и топоры смазаны салом от ржавчины и ждут покупателя.", tab: "trade", tabLabel: "Товар кузни" }
+        { key: "forge", col: 3, row: 0, title: "Кузнечный горн", sub: "меха и багровый уголь", desc: "Жар бьёт в лицо с трёх шагов. В горне добела раскаляются полосы северного железа." },
+        { key: "anvil", col: 5, row: 2, title: "Наковальня Тарна", sub: "поковка и подряды", desc: "Тяжёлый стальной рог гудит от ударов ручника. Здесь всегда нужны крепкие руки.", tab: "jobs", tabLabel: "Подряды кузни" },
+        { key: "rack", col: 8, row: 0, title: "Стойка с поковками", sub: "топоры, ножи и броня", desc: "Свежие клинки и топоры смазаны жиром от ржавчины.", tab: "trade", tabLabel: "Товар кузни" }
       ],
       exits: [
-        { col: 11, row: 5, to: "square", label: "Площадь" }
+        { col: 11, row: 5, to: "square", label: "На площадь", doorKind: "inner_door", wallSide: "SE" }
       ]
     },
 
     outskirts: {
       id: "outskirts",
+      outdoor: true,
       floorKind: "snow_road",
-      backWall: "palisade",
-      spawn: { col: 2, row: 4, facing: "NE" },
+      spawn: { col: 2.2, row: 4.2, facing: "SE" },
+      entryFrom: {
+        square: { col: 1.4, row: 4.2, facing: "SE" },
+        forest: { col: 9.6, row: 4.2, facing: "NW" }
+      },
       npcSlots: [
-        { col: 6, row: 3, facing: "SW" },
-        { col: 5, row: 5, facing: "NE" },
-        { col: 8, row: 2, facing: "SW" }
+        { col: 6.2, row: 3.0, facing: "SW" },
+        { col: 5.0, row: 5.2, facing: "NE" },
+        { col: 8.2, row: 2.4, facing: "SW" }
       ],
       obstacles: [
-        { col: 6, row: 0, kind: "torch_post", light: 0.9 },
+        { col: 6, row: 0, kind: "torch_post", light: 1.05 },
         { col: 3, row: 2, kind: "woodpile" },
         { col: 8, row: 5, kind: "rock" }
       ],
       spots: [
-        { key: "gate", col: 6, row: 0, title: "Ворота частокола", sub: "край Студёного Брода", desc: "Заострённые лиственничные брёвна вкопаны в мерзлоту. Дальше начинается вольная тропа к тайге." },
-        { key: "wood", col: 3, row: 2, title: "Поленница у дворов", sub: "заготовка дров", desc: "Сырые берёзовые кряжи ждут колуна — община платит всякому, у кого крепкая спина.", tab: "jobs", tabLabel: "Взяться за работу" }
+        { key: "gate", col: 6, row: 0, title: "Ворота частокола", sub: "рубеж Студёного Брода", desc: "Заострённые брёвна лиственницы вкопаны в мерзлоту. За ними тянется зимник к тайге." },
+        { key: "wood", col: 3, row: 2, title: "Дровяные козлы", sub: "колка и заготовка дров", desc: "Мёрзлые берёзовые кряжи ждут колуна — община честно платит за каждую сажень.", tab: "jobs", tabLabel: "Взяться за работу" }
       ],
       exits: [
-        { col: 0, row: 4, to: "square", label: "Площадь" },
-        { col: 11, row: 4, to: "forest", label: "Опушка тайги" }
+        { col: 0, row: 4, to: "square", label: "Площадь", doorKind: "road_gate", wallSide: "NW" },
+        { col: 11, row: 4, to: "forest", label: "Опушка тайги", doorKind: "forest_trail", wallSide: "SE" }
       ]
     },
 
     forest: {
       id: "forest",
+      outdoor: true,
       floorKind: "taiga_snow",
-      backWall: "pines",
-      spawn: { col: 2, row: 4, facing: "NE" },
+      spawn: { col: 2.2, row: 4.2, facing: "SE" },
+      entryFrom: {
+        outskirts: { col: 1.5, row: 4.2, facing: "SE" }
+      },
       npcSlots: [
-        { col: 6, row: 4, facing: "SW" },
-        { col: 4, row: 2, facing: "SE" },
-        { col: 8, row: 5, facing: "NW" }
+        { col: 6.4, row: 4.2, facing: "SW" },
+        { col: 4.2, row: 2.2, facing: "SE" },
+        { col: 8.2, row: 5.2, facing: "NW" }
       ],
       obstacles: [
         { col: 2, row: 1, kind: "pine" },
         { col: 7, row: 1, kind: "pine" },
         { col: 9, row: 3, kind: "pine" },
         { col: 3, row: 6, kind: "pine" },
-        { col: 5, row: 3, kind: "campfire", light: 1.05 }
+        { col: 5, row: 3, kind: "campfire", light: 1.25 }
       ],
       spots: [
-        { key: "fire", col: 5, row: 3, title: "Охотничий костерок", sub: "дым и еловый лапник", desc: "У старого вывороченного корня сложен малый костёр — здесь отогревают руки перед уходом в чащу.", act: "rest", actLabel: "Привал у огня" },
-        { key: "trail", col: 8, row: 1, title: "Звериный лаз", sub: "следы на глубоком насте", desc: "Цепочка лисьих и заячьих лунок уходит под тёмные лапы ельника.", tab: "jobs", tabLabel: "Промысел в тайге" }
+        { key: "fire", col: 5, row: 3, title: "Охотничий костерок", sub: "дым и еловый лапник", desc: "У старого корня тлеют смолистые сучья — здесь отогревают пальцы перед охотой.", act: "rest", actLabel: "Привал у огня" },
+        { key: "trail", col: 8, row: 1, title: "Звериный лаз", sub: "следы на глубоком насте", desc: "Цепочка лисьих и куньих следов уходит под заснеженные лапы вековых елей.", tab: "jobs", tabLabel: "Промысел в тайге" }
       ],
       exits: [
-        { col: 0, row: 4, to: "outskirts", label: "Околица" }
+        { col: 0, row: 4, to: "outskirts", label: "Околица", doorKind: "forest_trail", wallSide: "NW" }
       ]
     },
 
-    /* Клетка в разрезе (фикс image-28!):
-       слева (cols 0..4) — чистый закуток камеры без передних прутьев перед камерой;
-       посередине (col 5) — диагональная кованая перегородка с дверью и замком на (5,3);
-       справа (cols 6..11) — коридор острога, где ходит и отворачивается сторож с факелом! */
     jail: {
       id: "jail",
+      outdoor: false,
       floorKind: "cell_stone",
-      backWall: "prison_cutaway",
-      spawn: { col: 2, row: 4, facing: "NE" },
+      wallKind: "stone",
+      spawn: { col: 2.2, row: 4.0, facing: "NE" },
+      entryFrom: {},
       npcSlots: [],
       obstacles: [
         { col: 1, row: 2, kind: "straw" },
@@ -195,40 +208,40 @@
         { col: 5, row: 5, kind: "bars_seg" },
         { col: 5, row: 6, kind: "bars_seg" },
         { col: 5, row: 7, kind: "bars_seg" },
-        { col: 9, row: 1, kind: "brazier", light: 1.15 }
+        { col: 9, row: 1, kind: "brazier", light: 1.3 }
       ],
       spots: [],
       exits: []
     }
   };
 
-  /* ---------- Состояние живого движения Point-and-Click ---------- */
-  var runtime = {
-    locKey: "",
-    px: 2,
-    py: 4,
-    facing: "SE",
-    path: [],
-    stepPhase: 0,
-    destTile: null,
-    destPulse: 0,
-    pendingAction: null,
-    rafId: null,
-    lastTs: 0,
-    hoverTile: null,
-    particles: []
-  };
+  /* ---------- Проекция 2:1 (непрерывные координаты и обратимая сетка для A*) ---------- */
+  function tileToScreen(col, row) {
+    return {
+      x: ORIGIN_X + (col - row) * (TILE_W * 0.5),
+      y: ORIGIN_Y + (col + row) * (TILE_H * 0.5)
+    };
+  }
 
-  function initParticles() {
-    if (runtime.particles.length) { return; }
-    var seed = 7319;
-    for (var i = 0; i < 42; i++) {
-      seed = (seed * 16807) % 2147483647;
-      var rx = (seed % 1088);
-      seed = (seed * 16807) % 2147483647;
-      var ry = (seed % 368);
-      runtime.particles.push({ x: rx, y: ry, sp: 0.7 + (i % 5) * 0.22, sz: 1.2 + (i % 3) * 0.5 });
-    }
+  function screenToWorld(sx, sy) {
+    var dx = (sx - ORIGIN_X) / (TILE_W * 0.5);
+    var dy = (sy - ORIGIN_Y) / (TILE_H * 0.5);
+    return {
+      wx: (dy + dx) * 0.5,
+      wy: (dy - dx) * 0.5
+    };
+  }
+
+  function screenToTile(sx, sy) {
+    var w = screenToWorld(sx, sy);
+    return { col: Math.round(w.wx), row: Math.round(w.wy) };
+  }
+
+  function fightTileToScreen(col, row) {
+    return {
+      x: FIGHT_OX + (col - row) * (FIGHT_TW * 0.5),
+      y: FIGHT_OY + (col + row) * (FIGHT_TH * 0.5) + 46
+    };
   }
 
   function mapOf(state) {
@@ -237,70 +250,76 @@
     return MAPS[loc] || MAPS.square;
   }
 
-  /* Проекция мирной сетки 12×8 -> экран (1088×368) */
-  function tileToScreen(col, row) {
-    return {
-      x: ORIGIN_X + (col - row) * (TILE_W * 0.5),
-      y: ORIGIN_Y + (col + row) * (TILE_H * 0.5)
-    };
-  }
+  /* ---------- Живое состояние движения героя и анимации дверей ---------- */
+  var runtime = {
+    locKey: "",
+    px: 3.0,
+    py: 5.5,
+    facing: "NE",
+    path: [],
+    destWorld: null,
+    hoverWorld: null,
+    pendingAction: null,
+    stepPhase: 0,
+    doorAnim: null,     // { exitTo, progress: 0..1 }
+    rafId: null,
+    lastTs: 0,
+    particles: []
+  };
 
-  function screenToTile(sx, sy) {
-    var dx = sx - ORIGIN_X;
-    var dy = sy - ORIGIN_Y;
-    var hw = TILE_W * 0.5;
-    var hh = TILE_H * 0.5;
-    var c = (dx / hw + dy / hh) * 0.5;
-    var r = (dy / hh - dx / hw) * 0.5;
-    return { col: Math.floor(c + 0.5), row: Math.floor(r + 0.5), rawCol: c, rawRow: r };
-  }
-
-  /* Проекция тактической сетки боя 7×5 -> изометрическая сцена (1088×368) */
-  function fightTileToScreen(col, row) {
-    /* Лёгкий шахматный сдвиг нечётных рядов сохраняет точную гекс-соседность Bow.fight,
-       а наклон камеры раскладывает поле боя красивым изометрическим ромбом на полу локации! */
-    var stagger = (row % 2 === 1) ? 0.42 : 0;
-    var isoX = FIGHT_OX + ((col + stagger) - row * 0.72) * (FIGHT_TW * 0.88) - 110;
-    var isoY = FIGHT_OY + (row * 0.86 + (col + stagger) * 0.14) * FIGHT_TH + 22;
-    return {
-      x: Math.round(isoX),
-      y: Math.round(isoY),
-      xPct: +(isoX / VIEW_W * 100).toFixed(2),
-      yPct: +(isoY / VIEW_H * 100).toFixed(2)
-    };
+  function initParticles() {
+    if (runtime.particles.length) { return; }
+    var s = 9187;
+    for (var i = 0; i < 48; i++) {
+      s = (s * 16807) % 2147483647;
+      var rx = (s % 1000) / 1000;
+      s = (s * 16807) % 2147483647;
+      var ry = (s % 1000) / 1000;
+      runtime.particles.push({
+        x: rx * VIEW_W,
+        y: ry * VIEW_H,
+        r: 1.0 + (i % 3) * 0.65,
+        sp: 0.35 + (i % 5) * 0.16
+      });
+    }
   }
 
   function ensurePlayerPos(state) {
-    var m = mapOf(state);
-    var key = m.id;
+    var map = mapOf(state);
+    var key = map.id;
     if (runtime.locKey !== key) {
+      var prev = runtime.locKey;
       runtime.locKey = key;
-      runtime.px = m.spawn.col;
-      runtime.py = m.spawn.row;
-      runtime.facing = m.spawn.facing || "SE";
       runtime.path = [];
-      runtime.destTile = null;
+      runtime.destWorld = null;
       runtime.pendingAction = null;
-      if (key === "jail" && state && state.jail && state.jail.picking) {
-        runtime.px = 4;
-        runtime.py = 3;
-        runtime.facing = "NE";
-      }
-    } else if (key === "jail" && state && state.jail && state.jail.picking && !runtime.path.length) {
-      runtime.px = 4;
-      runtime.py = 3;
+      runtime.doorAnim = null;
+      var entry = (prev && map.entryFrom && map.entryFrom[prev]) ? map.entryFrom[prev] : map.spawn;
+      runtime.px = entry.col;
+      runtime.py = entry.row;
+      runtime.facing = entry.facing || "SE";
+    }
+    if (map.id === "jail" && runtime.px >= 4.5) {
+      runtime.px = 2.4;
+      runtime.py = 3.8;
       runtime.facing = "NE";
     }
   }
 
+  function setPlayerPos(state, wx, wy, facing) {
+    ensurePlayerPos(state);
+    runtime.px = wx;
+    runtime.wy = wy;
+    runtime.py = wy;
+    if (facing) { runtime.facing = facing; }
+  }
+
   function isBlocked(map, col, row, state) {
     if (col < 0 || col >= COLS || row < 0 || row >= ROWS) { return true; }
-    /* В клетке узник не может ходить сквозь решётку в коридор сторожа */
     if (map.id === "jail" && col >= 5) { return true; }
     for (var i = 0; i < map.obstacles.length; i++) {
       var ob = map.obstacles[i];
       if (ob.col === col && ob.row === row) {
-        /* Охапка соломы в камере проходима, чтобы лечь на неё */
         if (ob.kind === "straw" || ob.kind === "bunk") { return false; }
         return true;
       }
@@ -315,14 +334,13 @@
     return dr >= 0 ? "SW" : "NE";
   }
 
-  /* Честный поиск маршрута A* по изометрической сетке с запретом срезания углов сквозь препятствия */
+  /* Честный поиск обходного пути A* вокруг столов, колодца, горна и стен */
   function findPath(map, sc, sr, tc, tr, state) {
     sc = Math.max(0, Math.min(COLS - 1, Math.round(sc)));
     sr = Math.max(0, Math.min(ROWS - 1, Math.round(sr)));
     tc = Math.max(0, Math.min(COLS - 1, Math.round(tc)));
     tr = Math.max(0, Math.min(ROWS - 1, Math.round(tr)));
 
-    /* Если кликнули по непроходимому объекту или за решётку — ищем ближайшую соседнюю свободную клетку */
     if (isBlocked(map, tc, tr, state)) {
       var bestAlt = null;
       var bestD = 9999;
@@ -355,7 +373,7 @@
     ];
 
     var guard = 0;
-    while (open.length && guard++ < 240) {
+    while (open.length && guard++ < 260) {
       open.sort(function (a, b) { return a.f - b.f; });
       var cur = open.shift();
       var ck = cur.c + "," + cur.r;
@@ -377,7 +395,6 @@
         var nc = cur.c + dc, nr = cur.r + dr;
         var nk = nc + "," + nr;
         if (closed[nk] || isBlocked(map, nc, nr, state)) { continue; }
-        /* Запрет протискивания по диагонали между двумя препятствиями */
         if (dc !== 0 && dr !== 0) {
           if (isBlocked(map, cur.c + dc, cur.r, state) || isBlocked(map, cur.c, cur.r + dr, state)) {
             continue;
@@ -393,38 +410,186 @@
     return [];
   }
 
-  /* ---------- Генератор кэшируемых «мутных живописных человечков» ---------- */
+  /* ============================================================
+     СПРАЙТЫ ПЕРСОНАЖЕЙ 96×112 В ДУХЕ HEROES II / KING'S BOUNTY / FALLOUT TACTICS
+     (угольный контур 1px, 4 ступени светотени, черты лица/бороды/шлемы,
+     слои одежды/доспехов, раздельные сапоги и стальное оружие с бликом)
+     ============================================================ */
   var spriteCache = {};
 
   function outfitPalette(roleKey, side, armorId, female) {
     if (roleKey === "prisoner") {
-      return { coat: "#3b4754", shadow: "#1e2630", trim: "#586878", legs: "#232b34", skin: "#9e9086", hair: "#2b2826", helm: null };
+      return {
+        coat: "#4a5664", coatHi: "#657587", coatSh: "#262e38",
+        trim: "#738394", legs: "#2b3440", boots: "#231f1d",
+        skin: "#c6a892", skinSh: "#8e715e", hair: "#2c2520",
+        belt: "#38302a", buckle: "#8e99a4"
+      };
     }
-    if (roleKey === "guard" || side === "enemy" && roleKey === "guard") {
-      return { coat: "#4e333a", shadow: "#27181d", trim: "#7c8d9e", legs: "#242c35", skin: "#9c8d83", hair: "#2a2624", helm: "#6a7b8c" };
+    if (roleKey === "guard") {
+      return {
+        coat: "#6e2c35", coatHi: "#8f3f4a", coatSh: "#3d161c",
+        trim: "#9eb0c2", legs: "#35414f", boots: "#22262c",
+        skin: "#c5a690", skinSh: "#8c6e5b", hair: "#2b241f",
+        helm: "#7d90a3", helmHi: "#b8cadb", mail: true,
+        belt: "#2c2522", buckle: "#c8b070", plume: "#9e3540"
+      };
     }
     if (roleKey === "robber") {
-      return { coat: "#39353c", shadow: "#1c1a20", trim: "#594c47", legs: "#20242b", skin: "#95867c", hair: "#23201e", hood: "#2d2a31" };
+      return {
+        coat: "#3e424c", coatHi: "#565c69", coatSh: "#1f2229",
+        trim: "#685a50", legs: "#282d35", boots: "#1d1b1a",
+        skin: "#ba9b85", skinSh: "#826654", hair: "#221e1c",
+        hood: "#2f333c", belt: "#332a24", buckle: "#7d858d"
+      };
     }
     if (roleKey === "smith") {
-      return { coat: "#3a4550", shadow: "#1d242c", trim: "#473b36", apron: "#362d29", legs: "#222931", skin: "#a18f82", hair: "#292320", beard: "#26201d" };
+      return {
+        coat: "#475666", coatHi: "#627588", coatSh: "#252e38",
+        apron: "#4d382c", apronHi: "#694e3f",
+        trim: "#7b8a98", legs: "#2b343e", boots: "#211d1b",
+        skin: "#c8a58d", skinSh: "#8f6d58", hair: "#261f1b", beard: "#231c18",
+        belt: "#33261f", buckle: "#b89f65"
+      };
     }
     if (roleKey === "hunter") {
-      return { coat: "#364844", shadow: "#1b2624", trim: "#556159", fur: "#4c524e", legs: "#232b2d", skin: "#9b8d82", hair: "#383029", beard: "#352d26" };
+      return {
+        coat: "#39524a", coatHi: "#517066", coatSh: "#1d2c27",
+        fur: "#5e5850", furHi: "#7d766c",
+        trim: "#728279", legs: "#2a3534", boots: "#25201c",
+        skin: "#c4a48d", skinSh: "#8b6d59", hair: "#3d2f24", beard: "#382b20",
+        belt: "#362b22", buckle: "#9da69e"
+      };
     }
     if (roleKey === "innkeeper" || female) {
-      return { coat: "#3f4c5c", shadow: "#202833", trim: "#6c7f91", shawl: "#4d5a68", legs: "#232b35", skin: "#a7978d", hair: "#3d312a", dress: true };
+      return {
+        coat: "#43586e", coatHi: "#5e7894", coatSh: "#23303e",
+        shawl: "#6b4752", shawlHi: "#8a5f6c",
+        trim: "#9fb3c7", legs: "#2b3542", boots: "#241f1e",
+        skin: "#d2b49e", skinSh: "#9b7c68", hair: "#4a3525",
+        dress: true, belt: "#3c2e2a", buckle: "#c5ad72"
+      };
     }
-    /* Герой / житель: отражает надетое снаряжение */
     var hasMail = /mail|chain|iron/.test(String(armorId || ""));
-    var hasCoat = /coat|padded|fur|leather/.test(String(armorId || ""));
+    var hasLeather = /leather/.test(String(armorId || ""));
+    var hasCoat = /coat|padded|fur/.test(String(armorId || ""));
     if (hasMail) {
-      return { coat: "#4c5e70", shadow: "#26313d", trim: "#8599ad", legs: "#242d37", skin: "#a29388", hair: "#2f2925", helm: "#697b8d" };
+      return {
+        coat: "#51657a", coatHi: "#738ba3", coatSh: "#2a3642",
+        trim: "#a7bacd", legs: "#313d4a", boots: "#22272e",
+        skin: "#c8a992", skinSh: "#8e705c", hair: "#302720",
+        helm: "#788b9e", helmHi: "#b4c6d8", mail: true,
+        belt: "#302822", buckle: "#c9b274"
+      };
     }
-    if (hasCoat) {
-      return { coat: "#3b4e5e", shadow: "#1d2833", trim: "#667c90", fur: "#4a5560", legs: "#232c36", skin: "#a29388", hair: "#2f2925" };
+    if (hasLeather || hasCoat) {
+      return {
+        coat: "#445a6d", coatHi: "#617c94", coatSh: "#23303c",
+        fur: hasCoat ? "#586068" : null, furHi: "#76808a",
+        trim: "#869bb0", legs: "#2b3540", boots: "#231e1b",
+        skin: "#c8a992", skinSh: "#8e705c", hair: "#302720",
+        pauldron: hasLeather ? "#544337" : null,
+        belt: "#362a22", buckle: "#b8a26a"
+      };
     }
-    return { coat: "#354656", shadow: "#1a242e", trim: "#5c7287", legs: "#212933", skin: "#a29388", hair: "#2f2925" };
+    return {
+      coat: "#3e5368", coatHi: "#59738c", coatSh: "#202c38",
+      trim: "#7e94aa", legs: "#29333e", boots: "#221e1b",
+      skin: "#c8a992", skinSh: "#8e705c", hair: "#302720",
+      belt: "#352a22", buckle: "#a69872"
+    };
+  }
+
+  function outlinedPath(g, fill, stroke, lw, drawFn) {
+    g.save();
+    g.beginPath();
+    drawFn(g);
+    if (fill) {
+      g.fillStyle = fill;
+      g.fill();
+    }
+    if (stroke) {
+      g.strokeStyle = stroke;
+      g.lineWidth = lw || 1.25;
+      g.lineJoin = "round";
+      g.lineCap = "round";
+      g.stroke();
+    }
+    g.restore();
+  }
+
+  function drawHeroicWeapon(g, weapon, pose, ready) {
+    if (!weapon || weapon === "none") { return; }
+    var INK = "#0b0f14";
+    g.save();
+    if (pose === "attack") {
+      g.translate(60, 56);
+      g.rotate(0.58);
+    } else if (ready) {
+      g.translate(58, 64);
+      g.rotate(-0.22);
+    } else {
+      g.translate(57, 68);
+      g.rotate(0.12);
+    }
+
+    if (weapon === "knife") {
+      /* Широкий северный скрамасакс / охотничий нож с долом и гардой */
+      outlinedPath(g, "#4c382a", INK, 1.2, function (c) { c.rect(-2, -2, 4, 8); });
+      outlinedPath(g, "#94a6b8", INK, 1.2, function (c) { c.rect(-4.5, -4, 9, 2.5); });
+      outlinedPath(g, "#afc2d4", INK, 1.2, function (c) {
+        c.moveTo(-2.2, -4);
+        c.lineTo(-1.5, -21);
+        c.lineTo(2.4, -17);
+        c.lineTo(2.2, -4);
+        c.closePath();
+      });
+      g.strokeStyle = "#e8f2fa";
+      g.lineWidth = 1.0;
+      g.beginPath();
+      g.moveTo(-1.2, -5);
+      g.lineTo(-1.0, -19.5);
+      g.stroke();
+    } else if (weapon === "axe" || weapon === "sword") {
+      /* Бородовидный боевой топор на ясеневом топорище */
+      outlinedPath(g, "#5d4432", INK, 1.25, function (c) { c.rect(-2, -30, 4, 38); });
+      outlinedPath(g, "#8fa3b7", INK, 1.3, function (c) {
+        c.moveTo(1, -28);
+        c.quadraticCurveTo(13, -31, 15, -21);
+        c.quadraticCurveTo(14, -12, 7, -11);
+        c.quadraticCurveTo(5, -16, 1, -18);
+        c.closePath();
+      });
+      g.strokeStyle = "#eaf4fc";
+      g.lineWidth = 1.35;
+      g.beginPath();
+      g.moveTo(12.5, -27);
+      g.quadraticCurveTo(15.2, -20, 10.5, -12.2);
+      g.stroke();
+    } else if (weapon === "spear") {
+      /* Длинное копьё стражи с листовидным стальным пером (как в Heroes II!) */
+      outlinedPath(g, "#5e4633", INK, 1.25, function (c) {
+        c.moveTo(-14, 18);
+        c.lineTo(10, -38);
+        c.lineTo(13, -37);
+        c.lineTo(-11, 19);
+        c.closePath();
+      });
+      outlinedPath(g, "#b6cade", INK, 1.25, function (c) {
+        c.moveTo(9, -36);
+        c.lineTo(16, -50);
+        c.lineTo(15, -33);
+        c.lineTo(11, -33);
+        c.closePath();
+      });
+      g.strokeStyle = "#eef6fd";
+      g.lineWidth = 1.1;
+      g.beginPath();
+      g.moveTo(11, -36);
+      g.lineTo(15.5, -48.5);
+      g.stroke();
+    }
+    g.restore();
   }
 
   function getSprite(opts) {
@@ -438,537 +603,768 @@
     var female = !!opts.female;
     var pose = opts.dead ? "dead" : (opts.down ? "down" : (opts.pose || "idle"));
     var shield = !!opts.shield || roleKey === "guard";
+    var ready = !!opts.ready;
+    var walkStep = (pose === "walk" && typeof opts.walkFrame === "number") ? (opts.walkFrame % 4) : 0;
 
-    var key = [roleKey, side, facing, weapon, armor, female ? "f" : "m", pose, shield ? "sh" : "0"].join("|");
+    var key = [roleKey, side, facing, weapon, armor, female ? "f" : "m", pose, shield ? "sh" : "0", ready ? "r1" : "r0", walkStep].join("|");
     if (spriteCache[key]) { return spriteCache[key]; }
 
     var cv = document.createElement("canvas");
-    cv.width = 64;
-    cv.height = 80;
+    cv.width = 96;
+    cv.height = 112;
     var g = cv.getContext && cv.getContext("2d");
     if (!g) {
       spriteCache[key] = cv;
       return cv;
     }
 
+    var INK = "#0b0f14";
     var pal = outfitPalette(roleKey, side, armor, female);
     var isBack = (facing === "NW" || facing === "NE");
     var flipX = (facing === "SW" || facing === "NW");
 
     g.save();
     if (pose === "down" || pose === "dead") {
-      /* Сбитый с ног или павший человек лежит на земле в мягкой тени */
-      g.fillStyle = "rgba(5, 8, 12, 0.58)";
+      /* Сбитый с ног или погибший человек лежит на земле в реалистичном ракурсе */
+      g.fillStyle = "rgba(5, 8, 13, 0.56)";
       g.beginPath();
-      g.ellipse(32, 62, 22, 8, 0, 0, Math.PI * 2);
+      g.ellipse(48, 90, 31, 11, 0, 0, Math.PI * 2);
       g.fill();
 
-      g.translate(32, 60);
-      g.rotate(-0.24);
-      /* Ноги */
-      g.fillStyle = pal.legs;
-      g.fillRect(-20, -3, 14, 5);
-      g.fillRect(-19, 2, 13, 4);
-      /* Торс */
-      var lg = g.createLinearGradient(-8, -8, 12, 8);
-      lg.addColorStop(0, pal.coat);
-      lg.addColorStop(1, pal.shadow);
-      g.fillStyle = lg;
-      g.beginPath();
-      g.roundRect ? g.roundRect(-8, -7, 20, 13, 4) : g.rect(-8, -7, 20, 13);
-      g.fill();
-      /* Голова */
-      g.fillStyle = pose === "dead" ? "#6d7680" : pal.skin;
-      g.beginPath();
-      g.arc(16, -1, 5.2, 0, Math.PI * 2);
-      g.fill();
+      if (pose === "dead") {
+        g.fillStyle = "rgba(138, 32, 38, 0.42)";
+        g.beginPath();
+        g.ellipse(54, 92, 18, 7, 0.15, 0, Math.PI * 2);
+        g.fill();
+      }
+
+      g.translate(48, 86);
+      g.rotate(-0.20);
+      outlinedPath(g, pal.boots, INK, 1.3, function (c) { c.roundRect(-29, -4, 15, 8, 3); });
+      outlinedPath(g, pal.legs, INK, 1.3, function (c) { c.roundRect(-18, -6, 16, 10, 3); });
+      outlinedPath(g, pal.coat, INK, 1.35, function (c) { c.roundRect(-5, -10, 26, 16, 5); });
+      outlinedPath(g, pal.helm || pal.skin, INK, 1.3, function (c) { c.arc(25, -3, 7.5, 0, Math.PI * 2); });
       g.restore();
       spriteCache[key] = cv;
       return cv;
     }
 
     /* Тень под сапогами */
-    g.fillStyle = "rgba(4, 7, 12, 0.54)";
+    g.fillStyle = "rgba(5, 8, 13, 0.52)";
     g.beginPath();
-    g.ellipse(32, 68, 13, 5.8, 0, 0, Math.PI * 2);
+    g.ellipse(48, 98, 20, 8.5, 0, 0, Math.PI * 2);
     g.fill();
 
     if (flipX) {
-      g.translate(64, 0);
+      g.translate(96, 0);
       g.scale(-1, 1);
     }
 
-    var stride = pose === "walkA" ? 3.2 : (pose === "walkB" ? -3.2 : 0);
-    var lunge = pose === "attack" ? 3.5 : 0;
-    var bob = (pose === "walkA" || pose === "walkB") ? -1.2 : 0;
+    var stride = walkStep === 1 ? 4.5 : (walkStep === 3 ? -4.5 : 0);
+    var bob = (walkStep === 1 || walkStep === 3) ? -1.8 : 0;
+    if (pose === "attack") { bob = -2.0; stride = 5.0; }
 
-    g.translate(lunge, bob);
+    /* 1. Плащ со спины (если есть мех/плащ) */
+    if (!isBack && (pal.fur || roleKey === "guard")) {
+      outlinedPath(g, roleKey === "guard" ? "#471b22" : "#27302d", INK, 1.25, function (c) {
+        c.moveTo(35, 42 + bob);
+        c.lineTo(29, 84);
+        c.lineTo(58, 85);
+        c.lineTo(56, 44 + bob);
+        c.closePath();
+      });
+    }
 
-    /* 1. Задняя рука (в полутени) */
-    g.strokeStyle = pal.shadow;
-    g.lineWidth = 4.4;
-    g.lineCap = "round";
+    /* 2. Раздельные штанины и сапоги с отворотами (как в Heroes II / Fallout Tactics) */
+    var lLegX = 39 - stride * 0.65;
+    var rLegX = 50 + stride * 0.65;
+    var lFootY = 86 + (stride > 0 ? -1.5 : 1);
+    var rFootY = 88 + (stride < 0 ? -1.5 : 1);
+
+    /* Левая и правая нога в штанах/поножах */
+    outlinedPath(g, pal.legs, INK, 1.25, function (c) { c.roundRect(lLegX, 71 + bob, 7.5, 16, 2.5); });
+    outlinedPath(g, pal.legs, INK, 1.25, function (c) { c.roundRect(rLegX, 72 + bob, 7.5, 16, 2.5); });
+
+    /* Кожаные сапоги с раструбами и каблуком */
+    [ [lLegX - 0.5, lFootY], [rLegX - 0.5, rFootY] ].forEach(function (bt, bi) {
+      outlinedPath(g, pal.boots, INK, 1.3, function (c) {
+        c.moveTo(bt[0], bt[1]);
+        c.lineTo(bt[0] + 8.5, bt[1]);
+        c.lineTo(bt[0] + 10.5, bt[1] + 9.5);
+        c.lineTo(bt[0] - 0.5, bt[1] + 9.5);
+        c.closePath();
+      });
+      /* Отворот голенища и блик на носке */
+      g.fillStyle = "#3b322c";
+      g.fillRect(bt[0] + 0.6, bt[1] + 0.8, 7.3, 2.4);
+      if (pal.mail) {
+        g.fillStyle = "#8a9cb0";
+        g.fillRect(bt[0] + 1.5, bt[1] - 5, 5.2, 5.5);
+      }
+      if (bi === 1) {
+        g.fillStyle = "rgba(210, 224, 238, 0.22)";
+        g.fillRect(bt[0] + 5.5, bt[1] + 6, 3.5, 2);
+      }
+    });
+
+    /* 3. Полы кафтана / платья / кольчужной рубахи */
+    var skirtBottom = pal.dress ? (88 + bob) : (78 + bob);
+    var coatGrad = g.createLinearGradient(32, 40 + bob, 64, skirtBottom);
+    coatGrad.addColorStop(0, pal.coatHi);
+    coatGrad.addColorStop(0.52, pal.coat);
+    coatGrad.addColorStop(1, pal.coatSh);
+
+    outlinedPath(g, coatGrad, INK, 1.35, function (c) {
+      c.moveTo(35, 42 + bob);
+      c.lineTo(60, 42 + bob);
+      c.lineTo(63, skirtBottom);
+      if (!pal.dress) {
+        c.lineTo(50, skirtBottom);
+        c.lineTo(48, 69 + bob);
+        c.lineTo(46, skirtBottom);
+      }
+      c.lineTo(32, skirtBottom);
+      c.closePath();
+    });
+
+    /* Светлая кайма по подолу и стёжка/кольчужное зерно */
+    g.strokeStyle = pal.trim;
+    g.lineWidth = 1.3;
     g.beginPath();
-    g.moveTo(26, 36);
-    g.lineTo(22 - stride * 0.4, 46);
-    g.lineTo(24 - stride * 0.5, 52);
+    g.moveTo(33.5, skirtBottom - 1.5);
+    g.lineTo(61.5, skirtBottom - 1.5);
     g.stroke();
 
-    /* 2. Две ноги и сапоги (естественный человеческий шаг, без тонких палочек) */
-    g.lineCap = "round";
-    /* Левая/дальняя нога */
-    g.strokeStyle = "#181f27";
-    g.lineWidth = 5.0;
-    g.beginPath();
-    g.moveTo(29, 50);
-    g.lineTo(28 - stride, 65);
-    g.stroke();
-    /* Правая/ближняя нога */
-    g.strokeStyle = pal.legs;
-    g.lineWidth = 5.2;
-    g.beginPath();
-    g.moveTo(35, 50);
-    g.lineTo(36 + stride, 66);
-    g.stroke();
-    /* Ступни сапог */
-    g.fillStyle = "#141a21";
-    g.beginPath();
-    g.ellipse(29 - stride, 66.5, 3.6, 2.0, 0, 0, Math.PI * 2);
-    g.ellipse(37 + stride, 67.5, 3.8, 2.1, 0, 0, Math.PI * 2);
-    g.fill();
-
-    /* 3. Торс, плечи и полы одежды (мягкий градиент света сверху-слева) */
-    var bodyGrad = g.createLinearGradient(22, 28, 42, 56);
-    bodyGrad.addColorStop(0, pal.coat);
-    bodyGrad.addColorStop(0.62, pal.coat);
-    bodyGrad.addColorStop(1, pal.shadow);
-    g.fillStyle = bodyGrad;
-
-    var shW = roleKey === "smith" ? 10.5 : (female ? 7.6 : 9.0);
-    var hemW = pal.dress ? 10.2 : 8.4;
-    var hemY = pal.dress ? 58 : 53;
-
-    g.beginPath();
-    g.moveTo(32 - shW, 33);
-    g.quadraticCurveTo(32, 29.5, 32 + shW, 33.5);
-    g.lineTo(32 + hemW, hemY);
-    g.quadraticCurveTo(32, hemY + 2.5, 32 - hemW, hemY);
-    g.closePath();
-    g.fill();
-
-    /* Фартук кузнеца или меховое оплечье или шаль (разборчивость роли с первого взгляда!) */
-    if (pal.apron && !isBack) {
-      g.fillStyle = pal.apron;
-      g.fillRect(27, 35, 10, 18);
-    }
-    if (pal.fur) {
-      g.fillStyle = pal.fur;
-      g.beginPath();
-      g.ellipse(32, 33, shW + 1.2, 3.8, 0, 0, Math.PI * 2);
-      g.fill();
-    }
-    if (pal.shawl) {
-      g.fillStyle = pal.shawl;
-      g.beginPath();
-      g.moveTo(24, 33);
-      g.quadraticCurveTo(32, 41, 40, 33.5);
-      g.lineTo(38, 31);
-      g.lineTo(26, 31);
-      g.closePath();
-      g.fill();
-    }
-
-    /* Пояс */
-    g.fillStyle = "rgba(15, 20, 26, 0.65)";
-    g.fillRect(32 - hemW + 1, 45, (hemW - 1) * 2, 2.4);
-
-    /* Плащ со спины, когда человек отвернулся (сразу видно, что смотрит от нас!) */
-    if (isBack) {
-      var backGrad = g.createLinearGradient(24, 31, 40, 56);
-      backGrad.addColorStop(0, pal.shadow);
-      backGrad.addColorStop(1, "#121820");
-      g.fillStyle = backGrad;
-      g.beginPath();
-      g.moveTo(24, 32);
-      g.lineTo(40, 32.5);
-      g.lineTo(41, hemY + 1);
-      g.lineTo(23, hemY + 1);
-      g.closePath();
-      g.fill();
-    }
-
-    /* 4. Шея и голова (овальная, с мягким полутоном лица спереди и тёмным затылком со спины) */
-    g.fillStyle = isBack ? pal.hair : pal.skin;
-    g.fillRect(30, 27, 4, 4);
-
-    g.beginPath();
-    g.ellipse(32, 22.5, 5.4, 6.2, 0, 0, Math.PI * 2);
-    if (isBack) {
-      g.fillStyle = pal.helm || pal.hood || pal.hair;
-      g.fill();
-    } else {
-      var faceG = g.createRadialGradient(30, 20.5, 1, 32.5, 23, 7);
-      faceG.addColorStop(0, pal.skin);
-      faceG.addColorStop(1, "#5c534e");
-      g.fillStyle = faceG;
-      g.fill();
-
-      /* Мягкая тень надбровья (без мультяшных точек-глазок) */
-      g.fillStyle = "rgba(20, 24, 30, 0.52)";
-      g.fillRect(30.5, 21.3, 5.2, 1.4);
-
-      /* Борода у Тарна / Брора */
-      if (pal.beard) {
-        g.fillStyle = pal.beard;
-        g.beginPath();
-        g.arc(32.6, 25.2, 4.3, 0, Math.PI);
-        g.fill();
+    if (pal.mail) {
+      g.fillStyle = "rgba(214, 228, 242, 0.22)";
+      for (var my = 46; my < 72; my += 4) {
+        for (var mx = 37; mx < 58; mx += 4) {
+          g.fillRect(mx + ((my % 8) ? 1 : 0), my + bob, 1.5, 1.5);
+        }
       }
     }
 
-    /* Волосы / платок / капюшон / шлем */
-    if (pal.helm) {
-      var helmG = g.createLinearGradient(26, 15, 38, 24);
-      helmG.addColorStop(0, "#8fa2b4");
-      helmG.addColorStop(1, "#384654");
-      g.fillStyle = helmG;
+    /* Кожаный фартук кузнеца Тарна */
+    if (pal.apron && !isBack) {
+      var apG = g.createLinearGradient(38, 45 + bob, 58, 82 + bob);
+      apG.addColorStop(0, pal.apronHi);
+      apG.addColorStop(1, pal.apron);
+      outlinedPath(g, apG, INK, 1.2, function (c) {
+        c.roundRect(38, 46 + bob, 19, 34, 2);
+      });
+    }
+
+    /* Меховое оплечье / шаль / наплечники */
+    if (pal.fur) {
+      outlinedPath(g, pal.furHi, INK, 1.3, function (c) {
+        c.ellipse(48, 43 + bob, 15.5, 5.5, 0, 0, Math.PI * 2);
+      });
+    } else if (pal.shawl) {
+      outlinedPath(g, pal.shawlHi, INK, 1.25, function (c) {
+        c.moveTo(34, 42 + bob);
+        c.quadraticCurveTo(48, 53 + bob, 61, 42 + bob);
+        c.lineTo(58, 49 + bob);
+        c.quadraticCurveTo(48, 59 + bob, 36, 49 + bob);
+        c.closePath();
+      });
+    } else if (pal.pauldron || roleKey === "guard") {
+      var pCol = roleKey === "guard" ? "#8ca0b4" : pal.pauldron;
+      outlinedPath(g, pCol, INK, 1.25, function (c) { c.ellipse(36, 45 + bob, 6, 4.2, -0.3, 0, Math.PI * 2); });
+      outlinedPath(g, pCol, INK, 1.25, function (c) { c.ellipse(59, 45 + bob, 6, 4.2, 0.3, 0, Math.PI * 2); });
+    }
+
+    /* 4. Ремень с металлической пряжкой и поясным кошелем */
+    outlinedPath(g, pal.belt, INK, 1.15, function (c) {
+      c.rect(35, 61 + bob, 25, 4.2);
+    });
+    if (!isBack) {
+      g.fillStyle = pal.buckle;
+      g.fillRect(46.5, 60.5 + bob, 4.5, 5.0);
+      outlinedPath(g, "#4c392b", INK, 1.0, function (c) {
+        c.roundRect(36.5, 64 + bob, 5.5, 6.2, 2);
+      });
+    }
+
+    /* 5. Дальняя рука / щит */
+    if (shield) {
+      /* Окованный северный щит с умбоном и гербовой полосой */
+      var shG = g.createLinearGradient(25, 46 + bob, 44, 72 + bob);
+      shG.addColorStop(0, "#7c323b");
+      shG.addColorStop(1, "#3f181e");
+      outlinedPath(g, shG, "#aebfd0", 1.8, function (c) {
+        c.moveTo(27, 47 + bob);
+        c.lineTo(43, 47 + bob);
+        c.quadraticCurveTo(44, 64 + bob, 35, 73 + bob);
+        c.quadraticCurveTo(26, 64 + bob, 27, 47 + bob);
+        c.closePath();
+      });
+      outlinedPath(g, "#b8cadb", INK, 1.1, function (c) {
+        c.arc(35, 58 + bob, 3.4, 0, Math.PI * 2);
+      });
+    } else {
+      outlinedPath(g, pal.coatSh, INK, 1.2, function (c) {
+        c.roundRect(30.5, 45 + bob, 6.5, 19, 3);
+      });
+      outlinedPath(g, "#382c24", INK, 1.1, function (c) {
+        c.arc(33.8, 65 + bob, 3.0, 0, Math.PI * 2);
+      });
+    }
+
+    /* 6. Голова в развороте 3/4 (лицо, глаза, борода / коса / стальной шлем с наносником) */
+    var hx = 48;
+    var hy = 30 + bob;
+
+    /* Шея */
+    g.fillStyle = pal.skinSh;
+    g.fillRect(hx - 3.5, hy + 7, 7, 5);
+
+    /* Голова */
+    var headGrad = g.createLinearGradient(hx - 8, hy - 9, hx + 8, hy + 9);
+    headGrad.addColorStop(0, pal.skin);
+    headGrad.addColorStop(1, pal.skinSh);
+    outlinedPath(g, isBack ? pal.hair : headGrad, INK, 1.3, function (c) {
+      c.ellipse(hx, hy, 8.2, 9.5, 0, 0, Math.PI * 2);
+    });
+
+    if (!isBack) {
+      /* Бровь, живой взгляд и линия носа в 3/4 */
+      g.fillStyle = "#1c1613";
+      g.fillRect(hx - 1.5, hy - 2.2, 3.2, 1.2);
+      g.fillRect(hx + 3.0, hy - 2.2, 2.8, 1.2);
+      g.fillStyle = "#0e1318";
+      g.fillRect(hx - 0.5, hy - 0.8, 1.8, 1.8);
+      g.fillRect(hx + 3.6, hy - 0.8, 1.7, 1.8);
+      g.strokeStyle = pal.skinSh;
+      g.lineWidth = 1.1;
       g.beginPath();
-      g.arc(32, 20.5, 6.1, Math.PI, 0);
-      g.closePath();
-      g.fill();
+      g.moveTo(hx + 2.1, hy - 1.2);
+      g.lineTo(hx + 3.1, hy + 2.6);
+      g.stroke();
+
+      if (pal.beard) {
+        outlinedPath(g, pal.beard, INK, 1.15, function (c) {
+          c.moveTo(hx - 6.5, hy + 2);
+          c.quadraticCurveTo(hx + 1, hy + 13.5, hx + 7.5, hy + 2.5);
+          c.quadraticCurveTo(hx + 2, hy + 5, hx - 6.5, hy + 2);
+          c.closePath();
+        });
+      }
+    }
+
+    if (pal.helm) {
+      /* Стальной северный шлем с наносником, ободом и султаном (в духе Heroes II!) */
+      if (pal.plume) {
+        outlinedPath(g, pal.plume, INK, 1.15, function (c) {
+          c.moveTo(hx - 2, hy - 10);
+          c.quadraticCurveTo(hx - 12, hy - 18, hx - 14, hy - 6);
+          c.quadraticCurveTo(hx - 7, hy - 8, hx - 2, hy - 10);
+          c.closePath();
+        });
+      }
+      var hmG = g.createLinearGradient(hx - 9, hy - 11, hx + 9, hy + 2);
+      hmG.addColorStop(0, pal.helmHi);
+      hmG.addColorStop(0.6, pal.helm);
+      hmG.addColorStop(1, "#3b4754");
+      outlinedPath(g, hmG, INK, 1.35, function (c) {
+        c.arc(hx, hy - 1.5, 9.2, Math.PI * 0.96, Math.PI * 0.04, false);
+        c.closePath();
+      });
+      /* Обод и стальной наносник */
+      g.strokeStyle = "#dce8f4";
+      g.lineWidth = 1.2;
+      g.beginPath();
+      g.moveTo(hx - 8.5, hy - 1.5);
+      g.lineTo(hx + 8.5, hy - 1.5);
+      g.stroke();
       if (!isBack) {
-        /* Наносник северного шлема */
-        g.fillStyle = "#7b8fa3";
-        g.fillRect(32.5, 20, 1.6, 4.2);
+        outlinedPath(g, pal.helmHi, INK, 1.0, function (c) {
+          c.rect(hx + 1.2, hy - 2, 2.4, 6.2);
+        });
       }
     } else if (pal.hood) {
-      g.fillStyle = pal.hood;
-      g.beginPath();
-      g.arc(32, 21.5, 6.3, Math.PI * 0.85, Math.PI * 0.15);
-      g.fill();
+      outlinedPath(g, pal.hood, INK, 1.3, function (c) {
+        c.arc(hx - 0.5, hy - 1, 9.6, Math.PI * 0.8, Math.PI * 0.15, false);
+        c.lineTo(hx + 5, hy + 7);
+        c.lineTo(hx - 8.5, hy + 7);
+        c.closePath();
+      });
     } else {
-      g.fillStyle = pal.hair;
-      g.beginPath();
-      g.arc(32, 20.2, 5.7, Math.PI * 0.92, Math.PI * 0.08);
-      g.fill();
+      /* Причёска / шапка / платок */
+      outlinedPath(g, pal.hair, INK, 1.2, function (c) {
+        c.arc(hx - 0.6, hy - 2.2, 8.6, Math.PI * 0.88, Math.PI * 0.02, false);
+        c.lineTo(hx - 7.5, hy + (female ? 7 : 2));
+        c.closePath();
+      });
     }
 
-    /* 5. Щит у левого бока (для стражи или в глухой защите) */
-    if (shield) {
-      var shG = g.createRadialGradient(23, 41, 1, 25, 43, 9);
-      shG.addColorStop(0, side === "enemy" ? "#6e3840" : "#445a6e");
-      shG.addColorStop(1, "#1c242d");
-      g.fillStyle = shG;
-      g.beginPath();
-      g.ellipse(24.5, 43, 6.8, 8.2, -0.15, 0, Math.PI * 2);
-      g.fill();
-      g.strokeStyle = "#7a8d9f";
-      g.lineWidth = 1.2;
-      g.stroke();
-      g.fillStyle = "#9eb0c2";
-      g.beginPath();
-      g.arc(24.5, 43, 1.9, 0, Math.PI * 2);
-      g.fill();
-    }
+    /* 7. Ближняя (правая) рука с наручем и оружием */
+    var armEndX = pose === "attack" ? 62 : (ready ? 60 : 58);
+    var armEndY = pose === "attack" ? 54 : (ready ? 60 : 65);
+    outlinedPath(g, pal.coatHi, INK, 1.25, function (c) {
+      c.moveTo(55, 45 + bob);
+      c.lineTo(62, 54 + bob);
+      c.lineTo(armEndX, armEndY + bob);
+      c.lineTo(53, 56 + bob);
+      c.closePath();
+    });
+    outlinedPath(g, "#3d2f25", INK, 1.15, function (c) {
+      c.arc(armEndX - 1, armEndY + bob, 3.3, 0, Math.PI * 2);
+    });
 
-    /* 6. Передняя рука и оружие (с естественным хватом) */
-    var handX = pose === "attack" ? 45 : (pose === "pick" ? 42 : 39 + stride * 0.35);
-    var handY = pose === "attack" ? 39 : (pose === "pick" ? 41 : 46);
-    g.strokeStyle = pal.coat;
-    g.lineWidth = 4.6;
-    g.beginPath();
-    g.moveTo(37, 35);
-    g.lineTo(39, 41);
-    g.lineTo(handX, handY);
-    g.stroke();
-
-    g.fillStyle = pal.skin;
-    g.beginPath();
-    g.arc(handX, handY, 2.1, 0, Math.PI * 2);
-    g.fill();
-
-    if (weapon && weapon !== "none") {
-      g.save();
-      g.translate(handX, handY);
-      if (pose === "attack") { g.rotate(0.45); }
-      if (weapon === "axe") {
-        g.strokeStyle = "#5c4d42";
-        g.lineWidth = 2.2;
-        g.beginPath(); g.moveTo(-2, 4); g.lineTo(10, -13); g.stroke();
-        g.fillStyle = "#b8cadb";
-        g.beginPath();
-        g.moveTo(8, -12); g.lineTo(15, -8); g.lineTo(11, -3); g.closePath();
-        g.fill();
-      } else if (weapon === "spear" || roleKey === "guard") {
-        g.strokeStyle = "#5a4d43";
-        g.lineWidth = 2.1;
-        g.beginPath(); g.moveTo(-4, 12); g.lineTo(9, -24); g.stroke();
-        g.fillStyle = "#cad8e6";
-        g.beginPath();
-        g.moveTo(9, -24); g.lineTo(12, -17); g.lineTo(7, -18); g.closePath();
-        g.fill();
-      } else if (weapon === "sword") {
-        g.strokeStyle = "#cad8e6";
-        g.lineWidth = 2.3;
-        g.beginPath(); g.moveTo(1, -1); g.lineTo(13, -17); g.stroke();
-        g.strokeStyle = "#988760";
-        g.lineWidth = 2.0;
-        g.beginPath(); g.moveTo(-2, 0); g.lineTo(4, -3); g.stroke();
-      } else if (weapon === "knife") {
-        g.strokeStyle = "#c2d1e0";
-        g.lineWidth = 1.9;
-        g.beginPath(); g.moveTo(1, -1); g.lineTo(8, -9); g.stroke();
-      } else if (weapon === "club") {
-        g.strokeStyle = "#5b4c40";
-        g.lineWidth = 3.4;
-        g.beginPath(); g.moveTo(-1, 2); g.lineTo(9, -12); g.stroke();
-      }
-      g.restore();
-    }
-
-    /* 7. Финальная «дымка Сумрачного Брода» — мягкое приглушение контраста у ног */
-    var mist = g.createLinearGradient(0, 14, 0, 72);
-    mist.addColorStop(0, "rgba(14, 20, 28, 0)");
-    mist.addColorStop(1, "rgba(10, 15, 22, 0.22)");
-    g.globalCompositeOperation = "source-atop";
-    g.fillStyle = mist;
-    g.fillRect(0, 0, 64, 80);
+    drawHeroicWeapon(g, weapon, pose, ready);
 
     g.restore();
     spriteCache[key] = cv;
     return cv;
   }
 
-  /* ---------- Отрисовка изометрических ромбов и объектов в разрезе ---------- */
-  function drawDiamond(ctx, cx, cy, tw, th, fill, stroke, lineW) {
+  /* ============================================================
+     ПОЛНОЭКРАННЫЙ РЕНДЕР ЛОКАЦИИ БЕЗ КЛЕТОК И БЕЗ ЧЁРНОГО ВАКУУМА
+     ============================================================ */
+  function drawDiamondPoly(ctx, cx, cy, tw, th, fill, stroke, lineW) {
     ctx.beginPath();
     ctx.moveTo(cx, cy - th * 0.5);
     ctx.lineTo(cx + tw * 0.5, cy);
     ctx.lineTo(cx, cy + th * 0.5);
     ctx.lineTo(cx - tw * 0.5, cy);
     ctx.closePath();
-    if (fill) {
-      ctx.fillStyle = fill;
+    if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+    if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = lineW || 1; ctx.stroke(); }
+  }
+
+  function paintFullBleedEnvironment(ctx, map, state, pal) {
+    var isNight = !!(pal && pal.moon);
+
+    /* 1. Базовый ландшафт НА ВЕСЬ ЭКРАН (никакой чёрной пустоты вокруг доски!) */
+    var bgGrad = ctx.createLinearGradient(0, 0, 0, VIEW_H);
+    if (map.outdoor) {
+      if (map.id === "forest") {
+        bgGrad.addColorStop(0, isNight ? "#121c27" : "#243544");
+        bgGrad.addColorStop(0.45, isNight ? "#182532" : "#314556");
+        bgGrad.addColorStop(1, isNight ? "#101922" : "#22323f");
+      } else {
+        bgGrad.addColorStop(0, isNight ? "#15202d" : "#2a3b4c");
+        bgGrad.addColorStop(0.5, isNight ? "#1c2938" : "#364a5e");
+        bgGrad.addColorStop(1, isNight ? "#131d28" : "#263646");
+      }
+    } else {
+      /* Снаружи сруба трактира/кузницы/клетки лежит морозный двор Брода, а не чёрный космос */
+      bgGrad.addColorStop(0, isNight ? "#101822" : "#1c2836");
+      bgGrad.addColorStop(1, isNight ? "#0c121a" : "#151f2b");
+    }
+    ctx.fillStyle = bgGrad;
+    ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+
+    /* Органика снежных наносов, камней и колеи по всему кадру (БЕЗ клеточной сетки!) */
+    var seed = map.id.charCodeAt(0) * 977 + map.id.length * 131;
+    for (var p = 0; p < 85; p++) {
+      seed = (seed * 16807) % 2147483647;
+      var px = (seed % VIEW_W);
+      seed = (seed * 16807) % 2147483647;
+      var py = (seed % VIEW_H);
+      var radX = 24 + (p % 7) * 14;
+      var radY = radX * 0.46;
+      ctx.fillStyle = (p % 3 === 0)
+        ? (isNight ? "rgba(185, 208, 230, 0.045)" : "rgba(220, 236, 248, 0.075)")
+        : "rgba(9, 14, 20, 0.09)";
+      ctx.beginPath();
+      ctx.ellipse(px, py, radX, radY, 0, 0, Math.PI * 2);
       ctx.fill();
     }
-    if (stroke) {
-      ctx.strokeStyle = stroke;
-      ctx.lineWidth = lineW || 1;
-      ctx.stroke();
-    }
-  }
 
-  function floorColors(kind, sky, c, r) {
-    var checker = ((c + r) % 2 === 0);
-    var nightDim = sky && sky.phase === "night" ? -8 : (sky && sky.phase === "dusk" ? -4 : 0);
-    function shade(hex, d) {
-      var v = parseInt(hex.slice(1), 16);
-      var rr = Math.max(8, Math.min(245, ((v >> 16) & 255) + d));
-      var gg = Math.max(8, Math.min(245, ((v >> 8) & 255) + d));
-      var bb = Math.max(10, Math.min(250, (v & 255) + d));
-      return "rgb(" + rr + "," + gg + "," + bb + ")";
-    }
-    if (kind === "planks") {
-      return {
-        fill: shade("#1d2631", (checker ? 2 : -2)),
-        stroke: "rgba(58, 74, 92, 0.34)"
-      };
-    }
-    if (kind === "flagstone") {
-      return {
-        fill: shade("#1a222c", (checker ? 3 : -2)),
-        stroke: "rgba(66, 82, 98, 0.36)"
-      };
-    }
-    if (kind === "cell_stone") {
-      var inCorr = c >= 6;
-      return {
-        fill: shade(inCorr ? "#19222c" : "#151d26", (checker ? 2 : -2)),
-        stroke: "rgba(62, 78, 94, 0.34)"
-      };
-    }
-    if (kind === "taiga_snow") {
-      return {
-        fill: shade("#23303e", nightDim + (checker ? 3 : -2)),
-        stroke: "rgba(88, 112, 134, 0.24)"
-      };
-    }
-    if (kind === "snow_road") {
-      var onRoad = (r >= 3 && r <= 5);
-      return {
-        fill: shade(onRoad ? "#202b37" : "#273544", nightDim + (checker ? 2 : -2)),
-        stroke: "rgba(84, 106, 128, 0.25)"
-      };
-    }
-    /* cobble_snow */
-    return {
-      fill: shade("#24313f", nightDim + (checker ? 3 : -2)),
-      stroke: "rgba(86, 108, 130, 0.28)"
-    };
-  }
+    var pTop = tileToScreen(-0.5, -0.5);
+    var pRight = tileToScreen(COLS - 0.5, -0.5);
+    var pBottom = tileToScreen(COLS - 0.5, ROWS - 0.5);
+    var pLeft = tileToScreen(-0.5, ROWS - 0.5);
 
-  function drawBackCutawayWalls(ctx, map, sky) {
-    /* Невысокие дальние стены NW (row=0) и NE (col=11) в разрезе — никогда не перекрывают людей! */
-    var wallH = (map.backWall === "pines") ? 14 : 34;
-    var pLeft = tileToScreen(0, 7);
-    var pTop = tileToScreen(0, 0);
-    var pRight = tileToScreen(11, 0);
+    if (map.outdoor) {
+      /* 2А. Открытая уличная локация: вымощенная дорога/тропа плавно переходит в сугробы, заборы и ельник */
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(pTop.x, pTop.y);
+      ctx.lineTo(pRight.x, pRight.y);
+      ctx.lineTo(pBottom.x, pBottom.y);
+      ctx.lineTo(pLeft.x, pLeft.y);
+      ctx.closePath();
+      ctx.fillStyle = map.id === "square"
+        ? (isNight ? "rgba(33, 45, 58, 0.72)" : "rgba(56, 72, 88, 0.72)")
+        : (map.id === "outskirts"
+          ? (isNight ? "rgba(36, 48, 60, 0.58)" : "rgba(62, 78, 94, 0.58)")
+          : (isNight ? "rgba(28, 42, 50, 0.52)" : "rgba(48, 68, 78, 0.52)"));
+      ctx.fill();
 
-    /* Цокольная кромка изометрической плиты спереди (объём платформы) */
-    var pBottom = tileToScreen(11, 7);
-    ctx.fillStyle = "#0b1017";
-    ctx.beginPath();
-    ctx.moveTo(pLeft.x - TILE_W * 0.5, pLeft.y);
-    ctx.lineTo(pBottom.x, pBottom.y + TILE_H * 0.5);
-    ctx.lineTo(pBottom.x, pBottom.y + TILE_H * 0.5 + 10);
-    ctx.lineTo(pLeft.x - TILE_W * 0.5, pLeft.y + 10);
-    ctx.closePath();
-    ctx.fill();
-
-    ctx.fillStyle = "#080c12";
-    ctx.beginPath();
-    ctx.moveTo(pBottom.x, pBottom.y + TILE_H * 0.5);
-    ctx.lineTo(pRight.x + TILE_W * 0.5, pRight.y);
-    ctx.lineTo(pRight.x + TILE_W * 0.5, pRight.y + 10);
-    ctx.lineTo(pBottom.x, pBottom.y + TILE_H * 0.5 + 10);
-    ctx.closePath();
-    ctx.fill();
-
-    if (map.backWall === "pines") { return; }
-
-    /* Дальняя левая стена в разрезе (вдоль col=0, rows 0..7) */
-    ctx.fillStyle = map.backWall === "timber" ? "#18212b" : "#151e28";
-    ctx.strokeStyle = "rgba(88, 110, 132, 0.35)";
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(pLeft.x - TILE_W * 0.5, pLeft.y);
-    ctx.lineTo(pTop.x, pTop.y - TILE_H * 0.5);
-    ctx.lineTo(pTop.x, pTop.y - TILE_H * 0.5 - wallH);
-    ctx.lineTo(pLeft.x - TILE_W * 0.5, pLeft.y - wallH);
-    ctx.closePath();
-    ctx.fill();
-    ctx.stroke();
-
-    /* Дальняя правая стена в разрезе (вдоль row=0, cols 0..11) */
-    ctx.fillStyle = map.backWall === "timber" ? "#141c25" : "#121a23";
-    ctx.beginPath();
-    ctx.moveTo(pTop.x, pTop.y - TILE_H * 0.5);
-    ctx.lineTo(pRight.x + TILE_W * 0.5, pRight.y);
-    ctx.lineTo(pRight.x + TILE_W * 0.5, pRight.y - wallH);
-    ctx.lineTo(pTop.x, pTop.y - TILE_H * 0.5 - wallH);
-    ctx.closePath();
-    ctx.fill();
-    ctx.stroke();
-
-    /* В камере рисуем узкую зарешёченную продушину на дальней стене (не мешает обзору) */
-    if (map.id === "jail") {
-      var wPos = tileToScreen(2, 0);
-      ctx.fillStyle = sky ? sky.skyTop : "#090e15";
-      ctx.strokeStyle = "#4d6175";
-      ctx.fillRect(wPos.x - 16, wPos.y - 36, 32, 14);
-      ctx.strokeRect(wPos.x - 16, wPos.y - 36, 32, 14);
-      for (var b = -8; b <= 8; b += 8) {
+      /* Булыжная вымостка и санная колея без единой искусственной линии сетки! */
+      if (map.id === "square" || map.id === "outskirts") {
+        ctx.strokeStyle = isNight ? "rgba(14, 20, 28, 0.35)" : "rgba(26, 36, 48, 0.32)";
+        ctx.lineWidth = 6;
+        var r1 = tileToScreen(0, 3.4), r2 = tileToScreen(11.2, 5.8);
         ctx.beginPath();
-        ctx.moveTo(wPos.x + b, wPos.y - 36);
-        ctx.lineTo(wPos.x + b, wPos.y - 22);
+        ctx.moveTo(r1.x - 90, r1.y - 30);
+        ctx.quadraticCurveTo(ORIGIN_X + 30, ORIGIN_Y + 215, r2.x + 120, r2.y + 45);
         ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(r1.x - 90, r1.y - 14);
+        ctx.quadraticCurveTo(ORIGIN_X + 30, ORIGIN_Y + 231, r2.x + 120, r2.y + 61);
+        ctx.stroke();
+
+        /* Живые отдельные булыжники у площади */
+        for (var st = 0; st < 64; st++) {
+          var sc = (st * 1.73) % 11.2;
+          var sr = ((st * 2.41) + 0.7) % 7.2;
+          var sp = tileToScreen(sc, sr);
+          ctx.fillStyle = (st % 2 === 0) ? "rgba(148, 168, 188, 0.11)" : "rgba(16, 22, 30, 0.18)";
+          ctx.beginPath();
+          ctx.ellipse(sp.x, sp.y, 7 + (st % 4) * 2, 3.2 + (st % 3), 0.15, 0, Math.PI * 2);
+          ctx.fill();
+        }
       }
+      ctx.restore();
+
+      /* Деревянные прясла изгороди / срубы по краям кадра и заснеженные ели в углах */
+      var perimeterTrees = map.id === "forest"
+        ? [[-2, 1], [-1, 5], [1, -2], [5, -2], [10, -2], [13, 1], [13, 5], [-2, 8], [3, 9], [9, 9], [12, 8]]
+        : [[-2.2, 0.5], [-2.0, 6.8], [13.2, 0.5], [12.8, 7.6], [2.5, -2.0]];
+      perimeterTrees.forEach(function (tc) {
+        var tp = tileToScreen(tc[0], tc[1]);
+        drawPineBackdrop(ctx, tp.x, tp.y, isNight);
+      });
+    } else {
+      /* 2Б. Помещение в разрезе (Трактир, Кузница, Клетка):
+         объёмные бревенчатые/каменные стены толщиной 14px и настоящие половицы/плиты без шахматки! */
+      var wallH = 66;
+      var wallThick = 12;
+
+      /* Пол комнаты */
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(pTop.x, pTop.y);
+      ctx.lineTo(pRight.x, pRight.y);
+      ctx.lineTo(pBottom.x, pBottom.y);
+      ctx.lineTo(pLeft.x, pLeft.y);
+      ctx.closePath();
+      ctx.clip();
+
+      var flGrad = ctx.createLinearGradient(pTop.x, pTop.y, pBottom.x, pBottom.y);
+      if (map.floorKind === "planks") {
+        flGrad.addColorStop(0, "#2b3540");
+        flGrad.addColorStop(1, "#1d252e");
+      } else {
+        flGrad.addColorStop(0, "#25303c");
+        flGrad.addColorStop(1, "#18202a");
+      }
+      ctx.fillStyle = flGrad;
+      ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+
+      if (map.floorKind === "planks") {
+        /* Продольные тёсаные половицы сруба */
+        ctx.strokeStyle = "rgba(10, 14, 19, 0.46)";
+        ctx.lineWidth = 1.2;
+        for (var rPl = -0.5; rPl <= ROWS; rPl += 0.55) {
+          var a1 = tileToScreen(-1, rPl);
+          var a2 = tileToScreen(COLS + 1, rPl);
+          ctx.beginPath();
+          ctx.moveTo(a1.x, a1.y);
+          ctx.lineTo(a2.x, a2.y);
+          ctx.stroke();
+        }
+      } else {
+        /* Крупные тёсаные каменные плиты со швами вразбежку */
+        ctx.strokeStyle = "rgba(10, 14, 20, 0.42)";
+        ctx.lineWidth = 1.2;
+        for (var rr = 0; rr < ROWS; rr++) {
+          for (var cc = 0; cc < COLS; cc++) {
+            var fp = tileToScreen(cc + ((rr % 2) * 0.25), rr);
+            drawDiamondPoly(ctx, fp.x, fp.y, TILE_W * 0.96, TILE_H * 0.96,
+              ((cc + rr) % 3 === 0) ? "rgba(155, 178, 200, 0.035)" : null,
+              "rgba(10, 15, 22, 0.35)", 1.0);
+          }
+        }
+      }
+      ctx.restore();
+
+      /* Дальние стены сруба/кузни в честном объёмном разрезе (NW и NE) */
+      ctx.save();
+      var wColL = map.wallKind === "timber" ? "#26313d" : "#222d39";
+      var wColR = map.wallKind === "timber" ? "#1e2732" : "#1b242f";
+      var wTopCol = map.wallKind === "timber" ? "#46586b" : "#3f5062";
+
+      /* Левая дальняя стена (NW) */
+      ctx.fillStyle = wColL;
+      ctx.beginPath();
+      ctx.moveTo(pLeft.x, pLeft.y);
+      ctx.lineTo(pTop.x, pTop.y);
+      ctx.lineTo(pTop.x, pTop.y - wallH);
+      ctx.lineTo(pLeft.x, pLeft.y - wallH);
+      ctx.closePath();
+      ctx.fill();
+
+      /* Правая дальняя стена (NE) */
+      ctx.fillStyle = wColR;
+      ctx.beginPath();
+      ctx.moveTo(pTop.x, pTop.y);
+      ctx.lineTo(pRight.x, pRight.y);
+      ctx.lineTo(pRight.x, pRight.y - wallH);
+      ctx.lineTo(pTop.x, pTop.y - wallH);
+      ctx.closePath();
+      ctx.fill();
+
+      /* Горизонтальные венцы брёвен в трактире */
+      if (map.wallKind === "timber") {
+        ctx.strokeStyle = "rgba(10, 14, 20, 0.48)";
+        ctx.lineWidth = 1.3;
+        for (var lh = 13; lh < wallH; lh += 13) {
+          ctx.beginPath();
+          ctx.moveTo(pLeft.x, pLeft.y - lh);
+          ctx.lineTo(pTop.x, pTop.y - lh);
+          ctx.lineTo(pRight.x, pRight.y - lh);
+          ctx.stroke();
+        }
+      }
+
+      /* Верхний срез толстых стен в разрезе (Cutaway Bevel!) */
+      ctx.fillStyle = wTopCol;
+      ctx.strokeStyle = "#0d131a";
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.moveTo(pLeft.x, pLeft.y - wallH);
+      ctx.lineTo(pTop.x, pTop.y - wallH);
+      ctx.lineTo(pRight.x, pRight.y - wallH);
+      ctx.lineTo(pRight.x + wallThick, pRight.y - wallH - wallThick * 0.5);
+      ctx.lineTo(pTop.x, pTop.y - wallH - wallThick);
+      ctx.lineTo(pLeft.x - wallThick, pLeft.y - wallH - wallThick * 0.5);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      /* Низкий цоколь переднего среза (по щиколотку, ничего не заслоняет) */
+      ctx.strokeStyle = "#3a4b5d";
+      ctx.lineWidth = 3.2;
+      ctx.beginPath();
+      ctx.moveTo(pLeft.x, pLeft.y);
+      ctx.lineTo(pBottom.x, pBottom.y);
+      ctx.lineTo(pRight.x, pRight.y);
+      ctx.stroke();
+      ctx.restore();
     }
   }
 
-  function drawProp(ctx, ob, state) {
-    var pt = tileToScreen(ob.col, ob.row);
-    var x = pt.x, y = pt.y;
+  function drawPineBackdrop(ctx, x, y, isNight) {
+    ctx.save();
+    ctx.fillStyle = "rgba(6, 10, 15, 0.45)";
+    ctx.beginPath();
+    ctx.ellipse(x, y + 6, 26, 11, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#1c232b";
+    ctx.fillRect(x - 4, y - 18, 8, 22);
+    for (var t = 0; t < 3; t++) {
+      var ty = y - 14 - t * 18;
+      var tw = 30 - t * 5;
+      ctx.fillStyle = isNight ? "#162430" : "#213645";
+      ctx.strokeStyle = "#0b1117";
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(x, ty - 26);
+      ctx.lineTo(x + tw, ty);
+      ctx.lineTo(x - tw, ty);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      /* Шапка инея на лапах ели */
+      ctx.fillStyle = isNight ? "rgba(170, 196, 220, 0.18)" : "rgba(215, 232, 246, 0.28)";
+      ctx.beginPath();
+      ctx.moveTo(x, ty - 26);
+      ctx.lineTo(x + tw * 0.65, ty - 9);
+      ctx.lineTo(x - tw * 0.65, ty - 9);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  /* Настоящие изометрические двери, крыльцо и ворота с анимацией открытия створки и конусом тёплого света! */
+  function drawExitStructure(ctx, ex, isHovered, openProg) {
+    var pt = tileToScreen(ex.col, ex.row);
+    var x = pt.x;
+    var y = pt.y;
+    var INK = "#0b1016";
     ctx.save();
 
-    if (ob.kind === "well") {
-      drawDiamond(ctx, x, y + 2, 42, 21, "#1a232d", "#4b5f73", 1.2);
-      ctx.fillStyle = "#253240";
-      ctx.fillRect(x - 17, y - 14, 34, 15);
-      ctx.fillStyle = "#0a1017";
-      ctx.beginPath();
-      ctx.ellipse(x, y - 14, 17, 7.5, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.strokeStyle = "#5c7288";
-      ctx.stroke();
-    } else if (ob.kind === "brazier" || ob.kind === "campfire" || ob.kind === "hearth" || ob.kind === "forge" || ob.kind === "torch_post") {
-      /* Мягкое пятно тёплого огня на холодном полу */
-      var rad = (ob.light || 1) * 86;
-      var glow = ctx.createRadialGradient(x, y - 6, 4, x, y, rad);
-      glow.addColorStop(0, "rgba(232, 156, 72, 0.34)");
-      glow.addColorStop(0.45, "rgba(214, 126, 54, 0.12)");
-      glow.addColorStop(1, "rgba(214, 126, 54, 0)");
+    /* Мягкая дорожная подсветка порога при наведении */
+    if (isHovered || openProg > 0) {
+      var glow = ctx.createRadialGradient(x, y, 4, x, y, 54);
+      glow.addColorStop(0, openProg > 0 ? "rgba(242, 182, 92, 0.52)" : "rgba(132, 192, 240, 0.34)");
+      glow.addColorStop(1, "rgba(132, 192, 240, 0)");
       ctx.fillStyle = glow;
       ctx.beginPath();
-      ctx.ellipse(x, y, rad, rad * 0.55, 0, 0, Math.PI * 2);
+      ctx.ellipse(x, y + 4, 52, 25, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    if (ex.doorKind === "porch_door" || ex.doorKind === "forge_arch" || ex.doorKind === "inner_door") {
+      var isForge = ex.doorKind === "forge_arch";
+      /* Каменный/бревенчатый косяк и порог */
+      outlinedPath(ctx, isForge ? "#364656" : "#3a4958", INK, 1.4, function (c) {
+        c.moveTo(x - 22, y + 8);
+        c.lineTo(x + 22, y - 10);
+        c.lineTo(x + 22, y - 58);
+        c.lineTo(x - 22, y - 40);
+        c.closePath();
+      });
+
+      /* Тёплый свет внутри дверного проёма, когда дверь приоткрывается! */
+      ctx.fillStyle = openProg > 0.05
+        ? (isForge ? "rgba(240, 128, 56, 0.92)" : "rgba(238, 178, 88, 0.92)")
+        : "#121820";
+      ctx.beginPath();
+      ctx.moveTo(x - 14, y + 4);
+      ctx.lineTo(x + 14, y - 7);
+      ctx.lineTo(x + 14, y - 48);
+      ctx.lineTo(x - 14, y - 37);
+      ctx.closePath();
       ctx.fill();
 
-      ctx.fillStyle = "#222c36";
-      ctx.beginPath();
-      ctx.ellipse(x, y - 2, 13, 7, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = "#e69a45";
-      ctx.beginPath();
-      ctx.moveTo(x - 6, y - 4);
-      ctx.quadraticCurveTo(x, y - 22, x + 6, y - 4);
-      ctx.closePath();
-      ctx.fill();
-    } else if (ob.kind === "table" || ob.kind === "bar" || ob.kind === "stall") {
-      drawDiamond(ctx, x, y - 10, 48, 22, "#2a3542", "#516478", 1);
-      ctx.fillStyle = "#182029";
-      ctx.fillRect(x - 18, y - 8, 4, 12);
-      ctx.fillRect(x + 14, y - 8, 4, 12);
-    } else if (ob.kind === "anvil") {
-      ctx.fillStyle = "#1c242d";
-      ctx.fillRect(x - 11, y - 8, 22, 10);
-      ctx.fillStyle = "#6c8094";
-      ctx.beginPath();
-      ctx.moveTo(x - 16, y - 14);
-      ctx.lineTo(x + 16, y - 14);
-      ctx.lineTo(x + 10, y - 7);
-      ctx.lineTo(x - 10, y - 7);
-      ctx.closePath();
-      ctx.fill();
-    } else if (ob.kind === "straw" || ob.kind === "bunk") {
-      drawDiamond(ctx, x, y + 1, 44, 20, "rgba(124, 112, 74, 0.36)", "rgba(168, 152, 98, 0.45)", 1);
-    } else if (ob.kind === "bucket" || ob.kind === "trough" || ob.kind === "crates" || ob.kind === "woodpile" || ob.kind === "rock") {
-      drawDiamond(ctx, x, y - 5, 30, 15, "#24303c", "#47596b", 1);
-      ctx.fillStyle = "#19222b";
-      ctx.fillRect(x - 12, y - 6, 24, 9);
-    } else if (ob.kind === "pine") {
-      ctx.fillStyle = "rgba(6, 10, 15, 0.48)";
-      ctx.beginPath();
-      ctx.ellipse(x, y + 3, 18, 9, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = "#1a232c";
-      ctx.fillRect(x - 3, y - 14, 6, 17);
-      for (var tier = 0; tier < 3; tier++) {
-        var ty = y - 12 - tier * 13;
-        var tw = 22 - tier * 4;
-        ctx.fillStyle = tier === 2 ? "#2b3e4c" : "#1d2d3a";
+      if (openProg > 0.05) {
+        /* Конус тёплого света из открытой двери на снег/пол */
+        var cone = ctx.createRadialGradient(x, y, 2, x + 20, y + 18, 85 * openProg);
+        cone.addColorStop(0, "rgba(244, 186, 96, 0.48)");
+        cone.addColorStop(1, "rgba(244, 186, 96, 0)");
+        ctx.fillStyle = cone;
         ctx.beginPath();
-        ctx.moveTo(x, ty - 18);
-        ctx.lineTo(x + tw, ty);
-        ctx.lineTo(x - tw, ty);
-        ctx.closePath();
+        ctx.ellipse(x + 12, y + 12, 74 * openProg, 34 * openProg, 0.25, 0, Math.PI * 2);
         ctx.fill();
       }
+
+      /* Деревянная створка двери с коваными петлями — поворачивается на петлях при openProg (0..1)! */
+      var swingX = (1 - openProg * 0.72) * 26;
+      var swingY = -(1 - openProg * 0.35) * 10 + openProg * 11;
+      outlinedPath(ctx, "#4b382a", INK, 1.35, function (c) {
+        c.moveTo(x - 13, y + 4);
+        c.lineTo(x - 13 + swingX, y + 4 + swingY);
+        c.lineTo(x - 13 + swingX, y - 37 + swingY);
+        c.lineTo(x - 13, y - 37);
+        c.closePath();
+      });
+      /* Кованая ручка-кольцо и фонарь у входа */
+      ctx.fillStyle = "#b8cadb";
+      ctx.beginPath();
+      ctx.arc(x - 13 + swingX * 0.78, y - 16 + swingY * 0.78, 2.2, 0, Math.PI * 2);
+      ctx.fill();
+
+      /* Фонарь над дверью */
+      ctx.fillStyle = isForge ? "#f09048" : "#f0be68";
+      ctx.beginPath();
+      ctx.arc(x + 20, y - 46, 3.8, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      /* Дорожные столбы ворот / тропа в тайгу с факелом */
+      outlinedPath(ctx, "#3b4856", INK, 1.3, function (c) { c.rect(x - 24, y - 40, 7, 42); });
+      outlinedPath(ctx, "#3b4856", INK, 1.3, function (c) { c.rect(x + 17, y - 34, 7, 40); });
+      ctx.fillStyle = "#f0aa54";
+      ctx.beginPath();
+      ctx.arc(x - 20.5, y - 43, 3.8, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    ctx.restore();
+  }
+
+  function drawObstacle(ctx, ob, state) {
+    var pt = tileToScreen(ob.col, ob.row);
+    var x = pt.x;
+    var y = pt.y;
+    var INK = "#0b1016";
+    ctx.save();
+
+    if (ob.light) {
+      var rad = 115 * ob.light;
+      var g = ctx.createRadialGradient(x, y - 10, 4, x, y, rad);
+      g.addColorStop(0, "rgba(238, 166, 78, 0.34)");
+      g.addColorStop(0.5, "rgba(218, 128, 54, 0.13)");
+      g.addColorStop(1, "rgba(218, 128, 54, 0)");
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.ellipse(x, y + 6, rad, rad * 0.52, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    if (ob.kind === "well") {
+      outlinedPath(ctx, "#364656", INK, 1.4, function (c) {
+        c.ellipse(x, y + 2, 25, 13, 0, 0, Math.PI * 2);
+      });
+      outlinedPath(ctx, "#4b5f73", INK, 1.3, function (c) {
+        c.ellipse(x, y - 12, 25, 12, 0, 0, Math.PI * 2);
+      });
+      ctx.fillStyle = "#0b131c";
+      ctx.beginPath();
+      ctx.ellipse(x, y - 12, 18, 8, 0, 0, Math.PI * 2);
+      ctx.fill();
+      /* Стойки и двускатный навес колодца */
+      ctx.fillStyle = "#3b2e25";
+      ctx.fillRect(x - 20, y - 42, 4, 30);
+      ctx.fillRect(x + 16, y - 42, 4, 30);
+      outlinedPath(ctx, "#46586a", INK, 1.3, function (c) {
+        c.moveTo(x - 25, y - 40);
+        c.lineTo(x, y - 52);
+        c.lineTo(x + 25, y - 40);
+        c.closePath();
+      });
+    } else if (ob.kind === "brazier" || ob.kind === "campfire" || ob.kind === "torch_post") {
+      outlinedPath(ctx, "#2c3844", INK, 1.3, function (c) {
+        c.ellipse(x, y, 14, 7.5, 0, 0, Math.PI * 2);
+      });
+      ctx.fillStyle = "rgba(242, 162, 68, 0.92)";
+      ctx.beginPath();
+      ctx.moveTo(x - 7, y - 3);
+      ctx.quadraticCurveTo(x, y - 24, x + 7, y - 3);
+      ctx.closePath();
+      ctx.fill();
+    } else if (ob.kind === "table" || ob.kind === "bar") {
+      var w = ob.kind === "bar" ? 64 : 50;
+      var h = ob.kind === "bar" ? 30 : 24;
+      ctx.fillStyle = "#161d24";
+      ctx.fillRect(x - w * 0.36, y - 2, 4, 15);
+      ctx.fillRect(x + w * 0.32, y - 2, 4, 15);
+      drawDiamondPoly(ctx, x, y - 12, w, h, "#4d3b2e", INK, 1.35);
+      /* Кружка и миска на столе трактира */
+      ctx.fillStyle = "#9eb2c5";
+      ctx.beginPath();
+      ctx.arc(x - 6, y - 14, 3.2, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (ob.kind === "hearth" || ob.kind === "forge") {
+      outlinedPath(ctx, "#32404e", INK, 1.4, function (c) {
+        c.roundRect(x - 24, y - 46, 48, 46, 4);
+      });
+      ctx.fillStyle = "#121820";
+      ctx.beginPath();
+      ctx.arc(x, y - 8, 14, Math.PI, 0);
+      ctx.fill();
+      ctx.fillStyle = "rgba(244, 142, 56, 0.94)";
+      ctx.beginPath();
+      ctx.arc(x, y - 8, 9.5, Math.PI, 0);
+      ctx.fill();
+    } else if (ob.kind === "anvil") {
+      outlinedPath(ctx, "#463528", INK, 1.3, function (c) { c.rect(x - 10, y - 8, 20, 12); });
+      outlinedPath(ctx, "#6e8296", INK, 1.35, function (c) {
+        c.moveTo(x - 18, y - 17);
+        c.lineTo(x + 17, y - 17);
+        c.lineTo(x + 10, y - 8);
+        c.lineTo(x - 11, y - 8);
+        c.closePath();
+      });
+    } else if (ob.kind === "pine") {
+      drawPineBackdrop(ctx, x, y, false);
     } else if (ob.kind === "bars_seg" || ob.kind === "bars_door") {
-      /* Кованая решётчатая перегородка ВДОЛЬ разделителя камеры и коридора (col 5):
-         разделяет узника слева и сторожа справа, вообще НЕ закрывая обзор на героя! */
-      var barH = 44;
-      var p1 = { x: x - TILE_W * 0.22, y: y - TILE_H * 0.22 };
-      var p2 = { x: x + TILE_W * 0.22, y: y + TILE_H * 0.22 };
-      ctx.strokeStyle = ob.kind === "bars_door" ? "#7e96ae" : "#4b5f73";
-      ctx.lineWidth = ob.kind === "bars_door" ? 2.2 : 1.8;
-      /* Верхняя и нижняя перекладина секции */
+      var barH = 54;
+      var p1 = { x: x - TILE_W * 0.24, y: y - TILE_H * 0.24 };
+      var p2 = { x: x + TILE_W * 0.24, y: y + TILE_H * 0.24 };
+      ctx.strokeStyle = ob.kind === "bars_door" ? "#90a8c0" : "#556b82";
+      ctx.lineWidth = ob.kind === "bars_door" ? 2.5 : 2.0;
       ctx.beginPath();
       ctx.moveTo(p1.x, p1.y - barH);
       ctx.lineTo(p2.x, p2.y - barH);
       ctx.moveTo(p1.x, p1.y);
       ctx.lineTo(p2.x, p2.y);
       ctx.stroke();
-      /* Вертикальные прутья */
       for (var k = 0; k <= 3; k++) {
         var t = k / 3;
         var bx = p1.x + (p2.x - p1.x) * t;
@@ -978,75 +1374,102 @@
         ctx.lineTo(bx, by - barH);
         ctx.stroke();
       }
-      /* На двери (5,3) висит чёткий висячий замок */
       if (ob.kind === "bars_door") {
-        ctx.fillStyle = (state && state.jail && state.jail.picking) ? "#78b4e2" : "#9cb2c7";
-        ctx.fillRect(x - 5, y - 24, 10, 9);
-        ctx.strokeStyle = "#cbdbe9";
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.arc(x, y - 24, 3.5, Math.PI, 0);
-        ctx.stroke();
+        outlinedPath(ctx, (state && state.jail && state.jail.picking) ? "#78b4e2" : "#a6bcd2", INK, 1.2, function (c) {
+          c.roundRect(x - 6, y - 28, 12, 10, 2);
+        });
       }
+    } else {
+      drawDiamondPoly(ctx, x, y - 8, 34, 18, "#3e4d5c", INK, 1.25);
     }
 
     ctx.restore();
   }
 
-  /* Кольцо принадлежности на земле под сапогами (как в Fallout / Baldur's Gate / Kenshi) */
-  function drawFootRing(ctx, x, y, kind, selected) {
-    var stroke = "rgba(142, 163, 183, 0.55)";
-    var fill = "rgba(142, 163, 183, 0.10)";
+  function drawFootRing(ctx, x, y, kind, selected, aggro) {
+    var stroke = "rgba(142, 163, 183, 0.42)";
+    var fill = "rgba(142, 163, 183, 0.08)";
     if (kind === "player" || kind === "ally") {
-      stroke = selected ? "#9ee4cf" : "rgba(98, 168, 148, 0.82)";
-      fill = "rgba(98, 168, 148, 0.16)";
+      stroke = aggro ? "rgba(218, 92, 100, 0.88)" : (selected ? "#9ee4cf" : "rgba(98, 168, 148, 0.78)");
+      fill = aggro ? "rgba(201, 84, 93, 0.18)" : "rgba(98, 168, 148, 0.14)";
     } else if (kind === "enemy" || kind === "guard_alert") {
-      stroke = selected ? "#ff8a93" : "rgba(201, 84, 93, 0.82)";
-      fill = "rgba(201, 84, 93, 0.18)";
+      stroke = selected ? "#ff8a93" : "rgba(208, 84, 94, 0.86)";
+      fill = "rgba(208, 84, 94, 0.18)";
     } else if (selected) {
       stroke = "#8ec8f6";
-      fill = "rgba(120, 180, 226, 0.20)";
+      fill = "rgba(120, 180, 226, 0.18)";
     }
     ctx.save();
     ctx.fillStyle = fill;
     ctx.strokeStyle = stroke;
-    ctx.lineWidth = selected ? 2.0 : 1.4;
+    ctx.lineWidth = selected || aggro ? 2.0 : 1.35;
     ctx.beginPath();
-    ctx.ellipse(x, y + 2, 16, 7.5, 0, 0, Math.PI * 2);
+    ctx.ellipse(x, y + 3, 20, 8.5, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
     ctx.restore();
   }
 
-  /* Позиция и направление взгляда сторожа в коридоре клетки */
   function jailGuardIsoState(jail) {
     var phase = (jail && jail.guardPhase) || "watching";
-    if (jail && jail.mgsAlert) {
-      return { col: 6.6, row: 3.0, facing: "SW", phase: "alert" };
-    }
+    var tick = (jail && typeof jail.guardTick === "number") ? jail.guardTick : 0;
     if (phase === "away") {
-      /* Сторож отошёл к жаровне в глубине коридора и стоит СПИНОЙ к клетке (facing NE) */
-      return { col: 8.6, row: 2.0, facing: "NE", phase: "away" };
+      return { col: 8.6 + (tick % 2) * 0.4, row: 2.2, facing: "NE", phase: "away" };
     }
     if (phase === "turning") {
-      return { col: 7.6, row: 2.6, facing: "NW", phase: "turning" };
+      return { col: 7.6, row: 2.8, facing: "NW", phase: "turning" };
     }
-    /* Следит за решёткой лицом к узнику (facing SW) */
-    return { col: 6.8, row: 3.2, facing: "SW", phase: "watching" };
+    if (phase === "alert") {
+      return { col: 6.4, row: 3.0, facing: "SW", phase: "alert" };
+    }
+    return { col: 7.0, row: 3.0, facing: "SW", phase: "watching" };
   }
 
-  /* Собирает все интерактивные сущности сцены с их точными изометрическими координатами */
+  /* Сбор всех людей на сцене (при активной живой схватке Bow.skirmish берёт живые координаты бойцов!) */
   function collectSceneEntities(state, stageSel) {
     ensurePlayerPos(state);
     var map = mapOf(state);
     var entities = [];
+    var isAggro = !!(Bow.skirmish && Bow.skirmish.isAggressive && Bow.skirmish.isAggressive());
 
-    /* 1. Игрок */
+    /* Если идёт живая схватка Kenshi на этой локации — отрисовываем бойцов в их свободных координатах (wx, wy)! */
+    if (state.skirmish && (state.skirmish.active || state.skirmish.phase === "aftermath") && state.skirmish.location === state.player.location) {
+      var sk = state.skirmish;
+      sk.units.forEach(function (u) {
+        var scr = tileToScreen(u.wx, u.wy);
+        entities.push({
+          type: u.key === "player" ? "player" : (u.side === "ally" ? "ally" : "skirmish_foe"),
+          id: u.key,
+          unitKey: u.key,
+          personId: u.refId || null,
+          col: u.wx,
+          row: u.wy,
+          x: scr.x,
+          y: scr.y,
+          depth: u.wx + u.wy,
+          roleKey: u.roleKey,
+          side: u.key === "player" ? "player" : u.side,
+          facing: u.facing || "SE",
+          pose: u.pose || "idle",
+          ready: sk.active && !u.down && !u.dead,
+          female: !!u.female,
+          weapon: u.disarmed ? "none" : u.weapon,
+          armor: u.armor || "",
+          shield: !!u.shield,
+          hp: u.hp,
+          maxHp: u.maxHp || 100,
+          down: !!u.down,
+          dead: !!u.dead,
+          selected: sk.targetKey === u.key,
+          name: u.name
+        });
+      });
+      return entities;
+    }
+
+    var isComa = !!(Bow.state && Bow.state.isComatose && Bow.state.isComatose(state.player));
     var pScr = tileToScreen(runtime.px, runtime.py);
-    var pPose = runtime.path.length
-      ? ((Math.floor(runtime.stepPhase * 6) % 2 === 0) ? "walkA" : "walkB")
-      : ((state.jail && state.jail.picking) ? "pick" : "idle");
-    var pWep = state.jail ? "none" : (Bow.stage && Bow.stage.weaponKindOf ? Bow.stage.weaponKindOf(state, state.player) : "none");
+    var pWep = (state.jail || !Bow.stage || !Bow.stage.weaponKindOf) ? "none" : Bow.stage.weaponKindOf(state, state.player);
     var pArmObj = (!state.jail && Bow.fight && Bow.fight.armorOf) ? Bow.fight.armorOf(state.player) : null;
 
     entities.push({
@@ -1060,13 +1483,16 @@
       roleKey: state.jail ? "prisoner" : "player",
       side: "player",
       facing: runtime.facing,
-      pose: pPose,
+      pose: runtime.path.length > 0 ? "walk" : "idle",
+      ready: isAggro && !state.jail && !isComa,
       weapon: pWep,
       armor: pArmObj ? pArmObj.id : "",
+      down: isComa,
+      dead: !!state.dead,
+      selected: !!(stageSel && stageSel.kind === "self"),
       name: state.player.name || "Вы"
     });
 
-    /* 2. Режим Клетки: сторож в правом коридоре, охапка соломы и замок на двери */
     if (state.jail) {
       var gs = jailGuardIsoState(state.jail);
       var gScr = tileToScreen(gs.col, gs.row);
@@ -1090,13 +1516,12 @@
       return entities;
     }
 
-    /* 3. Живые жители локации */
     var loc = state.player.location;
     var npcs = Object.keys(state.people || {}).map(function (id) { return state.people[id]; })
       .filter(function (p) { return p && p.alive && p.location === loc; });
 
     npcs.forEach(function (p, idx) {
-      var slot = map.npcSlots[idx % map.npcSlots.length] || { col: 6, row: 4, facing: "SW" };
+      var slot = map.npcSlots[idx % map.npcSlots.length] || { col: 6.2, row: 4.0, facing: "SW" };
       var scr = tileToScreen(slot.col, slot.row);
       var rKey = p.id === "person:tarn" ? "smith" : (p.id === "person:bror" ? "hunter" : (p.id === "person:sigi" ? "innkeeper" : "villager"));
       entities.push({
@@ -1120,9 +1545,8 @@
       });
     });
 
-    /* 4. Пришедшая стража на улице */
     if (state.guard && state.guard.arrived && Array.isArray(state.guard.squad)) {
-      var gSlots = [{ col: 6, row: 2 }, { col: 7, row: 4 }, { col: 5, row: 5 }];
+      var gSlots = [{ col: 6.2, row: 2.2 }, { col: 7.4, row: 4.2 }, { col: 5.4, row: 5.2 }];
       state.guard.squad.slice(0, 3).forEach(function (gu, idx) {
         var sl = gSlots[idx] || { col: 7, row: 3 };
         var scr = tileToScreen(sl.col, sl.row);
@@ -1138,6 +1562,7 @@
           side: "enemy",
           facing: "SW",
           pose: "idle",
+          ready: true,
           weapon: "spear",
           shield: true,
           selected: !!(stageSel && stageSel.kind === "guard"),
@@ -1146,32 +1571,31 @@
       });
     }
 
-    /* 5. Уличный грабитель */
     if (state.encounter && state.encounter.robber) {
-      var rScr = tileToScreen(6, 3);
+      var rScr = tileToScreen(6.2, 3.2);
       entities.push({
         type: "robber",
         id: "robber",
-        col: 6,
-        row: 3,
+        col: 6.2,
+        row: 3.2,
         x: rScr.x,
         y: rScr.y,
-        depth: 9,
+        depth: 9.4,
         roleKey: "robber",
         side: "enemy",
         facing: "SW",
         pose: "idle",
+        ready: true,
         weapon: "knife",
         selected: !!(stageSel && stageSel.kind === "robber"),
         name: state.encounter.robber.name || "Грабитель"
       });
     }
 
-    /* 6. Оставшиеся тела на локации */
-    var corpses = (state.corpses || []).filter(function (c) { return c && c.location === loc; });
-    corpses.forEach(function (c, idx) {
-      var cc = Math.min(10, 4 + idx * 2);
-      var cr = Math.min(6, 5 + (idx % 2));
+    var corpses = Bow.actions && Bow.actions.corpsesAt ? Bow.actions.corpsesAt(state, loc) : [];
+    corpses.slice(0, 4).forEach(function (c, idx) {
+      var cc = typeof c.isoCol === "number" ? c.isoCol : (3.4 + idx * 1.9);
+      var cr = typeof c.isoRow === "number" ? c.isoRow : 6.0;
       var scr = tileToScreen(cc, cr);
       entities.push({
         type: "corpse",
@@ -1181,9 +1605,10 @@
         row: cr,
         x: scr.x,
         y: scr.y,
-        depth: cc + cr - 0.3,
-        roleKey: "villager",
+        depth: cc + cr - 0.8,
+        roleKey: c.roleKey || "villager",
         side: "neutral",
+        female: c.pron === "f",
         dead: true,
         selected: !!(stageSel && stageSel.kind === "corpse" && stageSel.corpseId === c.id),
         name: c.name || "Тело"
@@ -1193,214 +1618,255 @@
     return entities;
   }
 
-  /* ---------- Отрисовка главного изометрического Canvas (#bow-stage) ---------- */
   function paintStageCanvas(canvas, state, stageSel) {
     if (!canvas || !canvas.getContext) { return; }
     var ctx = canvas.getContext("2d");
     if (!ctx) { return; }
-    initParticles();
 
-    var sky = Bow.stage && Bow.stage.skyOf ? Bow.stage.skyOf(state) : { skyTop: "#0c121a", skyBot: "#18222e", phase: "day", weatherKind: "clear" };
+    initParticles();
+    ensurePlayerPos(state);
     var map = mapOf(state);
-    var entities = collectSceneEntities(state, stageSel);
+    var pal = Bow.stage && Bow.stage.skyOf ? Bow.stage.skyOf(state) : { moon: false };
+    var isAggro = !!(Bow.skirmish && Bow.skirmish.isAggressive && Bow.skirmish.isAggressive());
 
     ctx.clearRect(0, 0, VIEW_W, VIEW_H);
 
-    /* 1. Глубокий атмосферный фон вокруг изометрического среза */
-    var bgGrad = ctx.createLinearGradient(0, 0, 0, VIEW_H);
-    bgGrad.addColorStop(0, sky.skyTop || "#090e15");
-    bgGrad.addColorStop(1, "#090d13");
-    ctx.fillStyle = bgGrad;
-    ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+    /* 1. Полноэкранная среда без клеточной сетки и без чёрного вакуума */
+    paintFullBleedEnvironment(ctx, map, state, pal);
 
-    /* 2. Плитки изометрического пола 12×8 */
-    for (var r = 0; r < ROWS; r++) {
-      for (var c = 0; c < COLS; c++) {
-        var pt = tileToScreen(c, r);
-        var fc = floorColors(map.floorKind, sky, c, r);
-        drawDiamond(ctx, pt.x, pt.y, TILE_W, TILE_H, fc.fill, fc.stroke, 0.8);
-      }
+    /* 2. Плавный ориентир точки назначения и наведения (без квадратных клеток!) */
+    if (runtime.hoverWorld && !state.fight) {
+      var hScr = tileToScreen(runtime.hoverWorld.wx, runtime.hoverWorld.wy);
+      ctx.save();
+      ctx.strokeStyle = isAggro ? "rgba(214, 92, 100, 0.52)" : "rgba(138, 194, 240, 0.36)";
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.ellipse(hScr.x, hScr.y + 2, 16, 7.5, 0, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
     }
 
-    /* 3. Подсветка зоны взгляда сторожа в Клетке (сразу понятно, когда опасно пилить замок!) */
+    var moveMark = (state.skirmish && state.skirmish.active && state.skirmish.moveGoal)
+      ? state.skirmish.moveGoal
+      : (runtime.destWorld && runtime.path.length > 0 ? runtime.destWorld : null);
+    if (moveMark) {
+      var dScr = tileToScreen(moveMark.wx, moveMark.wy);
+      ctx.save();
+      ctx.strokeStyle = "#8cc6f2";
+      ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      ctx.ellipse(dScr.x, dScr.y + 2, 14, 6.5, 0, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    /* 3. Двери, крыльцо и дорожные ворота с анимацией открывающейся створки */
+    if (!state.jail && Array.isArray(map.exits)) {
+      map.exits.forEach(function (ex) {
+        var openP = (runtime.doorAnim && runtime.doorAnim.exitTo === ex.to) ? runtime.doorAnim.progress : 0;
+        var isHov = runtime.hoverWorld && Math.hypot(runtime.hoverWorld.wx - ex.col, runtime.hoverWorld.wy - ex.row) < 1.05;
+        drawExitStructure(ctx, ex, isHov, openP);
+      });
+    }
+
+    /* 4. Сектор взгляда сторожа в клетке */
+    var entities = collectSceneEntities(state, stageSel);
     if (state.jail) {
-      var gs = jailGuardIsoState(state.jail);
-      if (gs.phase === "watching" || gs.phase === "alert") {
-        var watchTiles = [[6, 3], [5, 3], [4, 3], [4, 2], [4, 4], [3, 3]];
-        for (var wt = 0; wt < watchTiles.length; wt++) {
-          var wpt = tileToScreen(watchTiles[wt][0], watchTiles[wt][1]);
-          drawDiamond(ctx, wpt.x, wpt.y, TILE_W - 2, TILE_H - 2,
-            gs.phase === "alert" ? "rgba(216, 72, 82, 0.30)" : "rgba(201, 84, 93, 0.15)",
-            "rgba(201, 84, 93, 0.32)", 1);
-        }
-      } else if (gs.phase === "turning") {
-        var tpt = tileToScreen(5, 3);
-        drawDiamond(ctx, tpt.x, tpt.y, TILE_W - 2, TILE_H - 2, "rgba(214, 182, 103, 0.14)", "rgba(214, 182, 103, 0.32)", 1);
+      var jg = entities.filter(function (e) { return e.type === "jail_guard"; })[0];
+      if (jg && jg.guardPhase !== "away") {
+        ctx.save();
+        var coneGrad = ctx.createRadialGradient(jg.x, jg.y - 12, 8, jg.x - 130, jg.y + 44, 240);
+        coneGrad.addColorStop(0, jg.guardPhase === "alert" ? "rgba(225, 76, 86, 0.36)" : "rgba(226, 178, 92, 0.20)");
+        coneGrad.addColorStop(1, "rgba(226, 178, 92, 0)");
+        ctx.fillStyle = coneGrad;
+        ctx.beginPath();
+        ctx.moveTo(jg.x, jg.y - 6);
+        ctx.lineTo(jg.x - 240, jg.y - 24);
+        ctx.lineTo(jg.x - 180, jg.y + 98);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
       }
     }
 
-    /* 4. Дорожные ориентиры выхода по краям (как Exit Grid в Fallout) */
-    for (var ex = 0; ex < map.exits.length; ex++) {
-      var exitObj = map.exits[ex];
-      var ept = tileToScreen(exitObj.col, exitObj.row);
-      drawDiamond(ctx, ept.x, ept.y, TILE_W - 4, TILE_H - 2, "rgba(120, 180, 226, 0.14)", "rgba(120, 180, 226, 0.48)", 1.2);
-    }
-
-    /* 5. Подсветка наведённой клетки и маршрута шага Point-and-Click */
-    if (runtime.hoverTile && !isBlocked(map, runtime.hoverTile.col, runtime.hoverTile.row, state)) {
-      var hpt = tileToScreen(runtime.hoverTile.col, runtime.hoverTile.row);
-      drawDiamond(ctx, hpt.x, hpt.y, TILE_W - 4, TILE_H - 2, "rgba(140, 196, 242, 0.11)", "rgba(156, 208, 250, 0.42)", 1);
-    }
-    if (runtime.path && runtime.path.length) {
-      for (var pi = 0; pi < runtime.path.length; pi++) {
-        var stepPt = tileToScreen(runtime.path[pi].col, runtime.path[pi].row);
-        var isLast = (pi === runtime.path.length - 1);
-        if (isLast) {
-          drawDiamond(ctx, stepPt.x, stepPt.y, TILE_W * 0.56, TILE_H * 0.56, "rgba(120, 180, 226, 0.20)", "#88c4f4", 1.5);
-        } else {
-          ctx.fillStyle = "rgba(136, 196, 244, 0.45)";
-          ctx.beginPath();
-          ctx.arc(stepPt.x, stepPt.y, 2.4, 0, Math.PI * 2);
-          ctx.fill();
-        }
-      }
-    }
-
-    /* 6. Дальние стены локации в разрезе */
-    drawBackCutawayWalls(ctx, map, sky);
-
-    /* 7. Единая сортировка по глубине (Painter's Algorithm: c + r) для объектов и людей */
+    /* 5. Честная сортировка глубины (Painter's Algorithm): препятствия + детальные люди 96×112 */
     var drawList = [];
     map.obstacles.forEach(function (ob) {
-      drawList.push({ kind: "prop", depth: ob.col + ob.row, ob: ob });
+      drawList.push({ kind: "ob", depth: ob.col + ob.row, ob: ob });
     });
     entities.forEach(function (ent) {
-      drawList.push({ kind: "entity", depth: ent.depth + 0.12, ent: ent });
+      drawList.push({ kind: "ent", depth: ent.depth + (ent.dead ? -0.45 : 0.08), ent: ent });
     });
     drawList.sort(function (a, b) { return a.depth - b.depth; });
 
-    for (var di = 0; di < drawList.length; di++) {
-      var item = drawList[di];
-      if (item.kind === "prop") {
-        drawProp(ctx, item.ob, state);
+    var walkFrame = Math.floor(runtime.stepPhase * 8) % 4;
+    var inSkirmish = !!(state.skirmish && state.skirmish.active);
+
+    drawList.forEach(function (item) {
+      if (item.kind === "ob") {
+        drawObstacle(ctx, item.ob, state);
       } else {
         var e = item.ent;
         if (!e.dead) {
           var ringKind = e.type === "player" ? "player" : (e.side === "enemy" ? "enemy" : (e.side === "ally" ? "ally" : "neutral"));
-          drawFootRing(ctx, e.x, e.y, ringKind, e.selected);
+          if (e.type === "jail_guard" && e.guardPhase === "alert") { ringKind = "guard_alert"; }
+          drawFootRing(ctx, e.x, e.y, ringKind, e.selected, e.type === "player" && isAggro);
         }
-        var sp = getSprite(e);
+
+        var sp = getSprite({
+          roleKey: e.roleKey,
+          side: e.side,
+          facing: e.facing,
+          pose: e.pose,
+          ready: e.ready,
+          walkFrame: e.pose === "walk" ? walkFrame : 0,
+          weapon: e.weapon,
+          armor: e.armor,
+          female: e.female,
+          shield: e.shield,
+          down: e.down,
+          dead: e.dead
+        });
         if (sp) {
-          ctx.drawImage(sp, Math.round(e.x - 32), Math.round(e.y - 66));
+          ctx.drawImage(sp, Math.round(e.x - 48), Math.round(e.y - 98));
+        }
+
+        /* Компактная полоска здоровья над бойцами в живой схватке Kenshi */
+        if (inSkirmish && !e.dead && typeof e.hp === "number") {
+          var bw = 42;
+          var bx = Math.round(e.x - bw * 0.5);
+          var by = Math.round(e.y - 102);
+          ctx.fillStyle = "rgba(8, 12, 18, 0.85)";
+          ctx.fillRect(bx - 1, by - 1, bw + 2, 6);
+          var ratio = Math.max(0, Math.min(1, e.hp / (e.maxHp || 100)));
+          ctx.fillStyle = e.side === "enemy" ? "#d0545e" : "#5fb399";
+          ctx.fillRect(bx, by, Math.round(bw * ratio), 4);
+        }
+
+        if (e.type === "jail_guard" && (e.guardPhase === "turning" || e.guardPhase === "alert")) {
+          ctx.save();
+          ctx.font = "bold 17px monospace";
+          ctx.textAlign = "center";
+          ctx.fillStyle = e.guardPhase === "alert" ? "#ff5a67" : "#e5c372";
+          ctx.fillText(e.guardPhase === "alert" ? "!" : "?", e.x, e.y - 96);
+          ctx.restore();
         }
       }
-    }
+    });
 
-    /* 8. Погодная дымка / снег / дождь для уличных локаций */
-    var isIndoor = (map.id === "tavern" || map.id === "smithy" || map.id === "jail");
-    if (!isIndoor && (sky.snowy || sky.rainy)) {
-      ctx.save();
-      ctx.fillStyle = sky.snowy ? "rgba(216, 230, 244, 0.55)" : "rgba(148, 182, 212, 0.38)";
-      ctx.strokeStyle = "rgba(148, 182, 212, 0.36)";
-      ctx.lineWidth = 1.1;
-      for (var p = 0; p < runtime.particles.length; p++) {
-        var pr = runtime.particles[p];
-        if (sky.snowy) {
+    /* 6. Стальные росчерки ударов и всплывающий урон в живой схватке Kenshi */
+    if (state.skirmish && Array.isArray(state.skirmish.fx)) {
+      state.skirmish.fx.forEach(function (fx) {
+        var fScr = tileToScreen(fx.wx, fx.wy);
+        var rise = (0.9 - Math.max(0, fx.ttl)) * 28;
+        ctx.save();
+        if (fx.kind === "hit" || fx.kind === "block") {
+          ctx.strokeStyle = fx.kind === "block" ? "rgba(232, 196, 110, 0.88)" : "rgba(238, 96, 104, 0.90)";
+          ctx.lineWidth = 2.6;
           ctx.beginPath();
-          ctx.arc(pr.x, pr.y, pr.sz, 0, Math.PI * 2);
-          ctx.fill();
-        } else {
-          ctx.beginPath();
-          ctx.moveTo(pr.x, pr.y);
-          ctx.lineTo(pr.x - 3, pr.y + 11);
+          ctx.arc(fScr.x, fScr.y - 46, 22, -0.85, 0.75);
           ctx.stroke();
         }
+        ctx.font = "bold 14px monospace";
+        ctx.textAlign = "center";
+        ctx.fillStyle = fx.kind === "hit" ? "#ff828b" : (fx.kind === "block" ? "#f0cf7a" : "#c4d8ea");
+        ctx.strokeStyle = "#080c12";
+        ctx.lineWidth = 3;
+        ctx.strokeText(fx.text, fScr.x, fScr.y - 74 - rise);
+        ctx.fillText(fx.text, fScr.x, fScr.y - 74 - rise);
+        ctx.restore();
+      });
+    }
+
+    /* 7. Лёгкий северный снег на улице и вечерняя виньетка */
+    var weather = String((state.flags && state.flags.weather) || "");
+    if (map.outdoor && /снег|метель|мороз|стыло/i.test(weather)) {
+      ctx.save();
+      ctx.fillStyle = "rgba(218, 232, 246, 0.44)";
+      for (var p = 0; p < runtime.particles.length; p++) {
+        var pt = runtime.particles[p];
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, pt.r, 0, Math.PI * 2);
+        ctx.fill();
       }
       ctx.restore();
     }
+
+    var vig = ctx.createRadialGradient(VIEW_W * 0.5, VIEW_H * 0.48, VIEW_W * 0.28, VIEW_W * 0.5, VIEW_H * 0.5, VIEW_W * 0.68);
+    vig.addColorStop(0, "rgba(0,0,0,0)");
+    vig.addColorStop(1, pal.moon ? "rgba(4, 7, 12, 0.44)" : "rgba(6, 10, 15, 0.26)");
+    ctx.fillStyle = vig;
+    ctx.fillRect(0, 0, VIEW_W, VIEW_H);
   }
 
-  /* ---------- Отрисовка изометрического боя (Вариант 1 — прямо на локации; Вариант 2 — поле стеков) ---------- */
+  /* ---------- Полководческое «Поле брани» (1088×368) для больших отрядов-стеков (фикс image-30!) ---------- */
   function paintBattleCanvas(canvas, state) {
     if (!canvas || !canvas.getContext || !state || !state.fight) { return; }
     var ctx = canvas.getContext("2d");
     if (!ctx) { return; }
 
     var f = state.fight;
-    var sky = Bow.stage && Bow.stage.skyOf ? Bow.stage.skyOf(state) : { skyTop: "#0c121a", phase: "day" };
-    var hasMassStacks = (f.units || []).some(function (u) { return u && u.isStack && u.count > 5; });
-    var map = hasMassStacks ? MAPS.outskirts : mapOf(state);
+    var locId = (state.player && state.player.location) || "square";
+    var pal = Bow.stage && Bow.stage.skyOf ? Bow.stage.skyOf(state) : { moon: false };
 
-    ctx.clearRect(0, 0, VIEW_W, VIEW_H);
+    ctx.clearRect(0, 0, BATTLE_W, BATTLE_H);
 
-    /* 1. Фон и разрезанные стены ТЕКУЩЕЙ локации (бесшовный Вариант 1!) */
-    var bgGrad = ctx.createLinearGradient(0, 0, 0, VIEW_H);
-    bgGrad.addColorStop(0, sky.skyTop || "#090e15");
-    bgGrad.addColorStop(1, "#090d13");
-    ctx.fillStyle = bgGrad;
-    ctx.fillRect(0, 0, VIEW_W, VIEW_H);
-
-    for (var r = 0; r < ROWS; r++) {
-      for (var c = 0; c < COLS; c++) {
-        var pt = tileToScreen(c, r);
-        var fc = floorColors(map.floorKind, sky, c, r);
-        drawDiamond(ctx, pt.x, pt.y, TILE_W, TILE_H, fc.fill, "rgba(62, 80, 98, 0.16)", 0.6);
-      }
+    /* Полноформатная земля поля брани на все 1088×368 — БЕЗ перекошенной маленькой доски под сеткой! */
+    var bg = ctx.createLinearGradient(0, 0, 0, BATTLE_H);
+    if (locId === "tavern" || locId === "smithy") {
+      bg.addColorStop(0, "#242f3b");
+      bg.addColorStop(1, "#161e27");
+    } else {
+      bg.addColorStop(0, pal.moon ? "#162230" : "#2b3d4f");
+      bg.addColorStop(1, pal.moon ? "#101923" : "#1f2d3b");
     }
-    drawBackCutawayWalls(ctx, map, sky);
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, BATTLE_W, BATTLE_H);
 
-    /* Периферийные предметы самой локации (горн, очаг, ели у краёв) остаются прямо в кадре боя! */
-    map.obstacles.forEach(function (ob) {
-      if (ob.row <= 1 || ob.col <= 1 || ob.col >= 10) {
-        drawProp(ctx, ob, state);
-      }
-    });
+    var reachMap = {};
+    if (f.phase === "exchange" && Bow.fight && Bow.fight.reachableHexes) {
+      Bow.fight.reachableHexes(state).forEach(function (rh) {
+        reachMap[rh.col + "," + rh.row] = true;
+      });
+    }
 
-    /* 2. Тактическая изометрическая сетка 7×5 (35 клеток) прямо на полу локации */
-    var reach = (f.phase === "exchange" && Bow.fight && Bow.fight.reachableHexes) ? Bow.fight.reachableHexes(state) : {};
-    var occ = {};
+    var unitAt = {};
     (f.units || []).forEach(function (u) {
-      if (u && !u.dead && !u.down && !u.fled) {
-        occ[u.col + "," + u.row] = u;
-      }
+      if (u && !u.fled && !u.dead) { unitAt[u.col + "," + u.row] = u; }
     });
 
-    for (var fr = 0; fr < FIGHT_ROWS; fr++) {
-      for (var fc2 = 0; fc2 < FIGHT_COLS; fc2++) {
-        var fpt = fightTileToScreen(fc2, fr);
-        var uAt = occ[fc2 + "," + fr];
-        var isReach = !!reach[fc2 + "," + fr] && !uAt;
-        var isTarget = uAt && uAt.side === "enemy" && f.target === uAt.key;
-
-        var cellFill = "rgba(15, 22, 30, 0.24)";
-        var cellStroke = "rgba(116, 144, 172, 0.30)";
+    for (var r = 0; r < FIGHT_ROWS; r++) {
+      for (var c = 0; c < FIGHT_COLS; c++) {
+        var fpt = fightTileToScreen(c, r);
+        var occ = unitAt[c + "," + r];
+        var isReach = !!reachMap[c + "," + r];
+        var cellFill = "rgba(18, 26, 36, 0.34)";
+        var cellStroke = "rgba(130, 158, 184, 0.24)";
         var lw = 1.0;
 
-        if (uAt) {
-          if (uAt.side === "ally") {
-            cellFill = "rgba(76, 150, 128, 0.24)";
-            cellStroke = "rgba(110, 196, 170, 0.72)";
-            lw = 1.6;
-          } else {
-            cellFill = isTarget ? "rgba(214, 158, 78, 0.28)" : "rgba(196, 76, 86, 0.22)";
-            cellStroke = isTarget ? "#f0cf7b" : "rgba(218, 96, 106, 0.72)";
-            lw = isTarget ? 2.2 : 1.6;
-          }
+        if (occ && occ.key === "player") {
+          cellFill = "rgba(98, 168, 148, 0.24)";
+          cellStroke = "rgba(130, 214, 188, 0.78)";
+          lw = 1.7;
+        } else if (occ && occ.side === "enemy" && f.target === occ.key) {
+          cellFill = "rgba(201, 84, 93, 0.26)";
+          cellStroke = "rgba(238, 118, 126, 0.85)";
+          lw = 1.8;
+        } else if (occ && occ.side === "enemy") {
+          cellFill = "rgba(201, 84, 93, 0.15)";
+          cellStroke = "rgba(201, 84, 93, 0.52)";
         } else if (isReach) {
-          cellFill = "rgba(112, 176, 228, 0.17)";
-          cellStroke = "rgba(146, 206, 252, 0.52)";
-          lw = 1.3;
+          cellFill = "rgba(120, 180, 226, 0.14)";
+          cellStroke = "rgba(136, 196, 242, 0.48)";
         }
 
-        drawDiamond(ctx, fpt.x, fpt.y, FIGHT_TW - 6, FIGHT_TH - 4, cellFill, cellStroke, lw);
+        drawDiamondPoly(ctx, fpt.x, fpt.y, FIGHT_TW - 4, FIGHT_TH - 3, cellFill, cellStroke, lw);
       }
     }
 
-    /* 3. Бойцы на изометрических клетках (те же мягкие приглушённые человечки, без кругов и треугольников!) */
     var sortedUnits = (f.units || []).filter(function (u) { return u && !u.fled; }).slice().sort(function (a, b) {
-      var da = (a.dead || a.down ? -10 : 0) + a.row * 2 + a.col * 0.2;
-      var db = (b.dead || b.down ? -10 : 0) + b.row * 2 + b.col * 0.2;
-      return da - db;
+      return ((a.dead || a.down ? -10 : 0) + a.row * 2 + a.col * 0.2) -
+             ((b.dead || b.down ? -10 : 0) + b.row * 2 + b.col * 0.2);
     });
 
     var recentStrikes = Array.isArray(f.lastStrikes) ? f.lastStrikes : [];
@@ -1408,12 +1874,9 @@
     sortedUnits.forEach(function (u) {
       var pos = fightTileToScreen(u.col, u.row);
       var myStrike = null;
-      var hitOnMe = null;
       for (var si = 0; si < recentStrikes.length; si++) {
         if (recentStrikes[si].from === u.key) { myStrike = recentStrikes[si]; }
-        if (recentStrikes[si].to === u.key) { hitOnMe = recentStrikes[si]; }
       }
-
       var pRef = u.refId && state.people ? state.people[u.refId] : null;
       var rKey = u.roleKey || (u.key === "player" ? "player" : (pRef && pRef.id === "person:tarn" ? "smith" : (pRef && pRef.id === "person:bror" ? "hunter" : "villager")));
       var wep = u.key === "player"
@@ -1426,6 +1889,7 @@
         side: u.side === "ally" ? (u.key === "player" ? "player" : "ally") : "enemy",
         facing: u.side === "ally" ? "SE" : "SW",
         pose: myStrike ? "attack" : "idle",
+        ready: true,
         weapon: u.disarmed ? "none" : wep,
         armor: armObj ? armObj.id : (u.armor || (pRef && pRef.armor) || ""),
         female: !!(pRef && pRef.pron === "f"),
@@ -1435,23 +1899,12 @@
       });
 
       if (sp) {
-        ctx.drawImage(sp, Math.round(pos.x - 32), Math.round(pos.y - 64));
-      }
-
-      /* Лаконичная дуга рассечения при попадании прямо на изометрическом холсте */
-      if (hitOnMe && hitOnMe.outcome === "hit") {
-        ctx.save();
-        ctx.strokeStyle = "rgba(235, 110, 116, 0.85)";
-        ctx.lineWidth = 2.4;
-        ctx.beginPath();
-        ctx.arc(pos.x, pos.y - 34, 18, -0.9, 0.8);
-        ctx.stroke();
-        ctx.restore();
+        ctx.drawImage(sp, Math.round(pos.x - 48), Math.round(pos.y - 96));
       }
     });
   }
 
-  /* ---------- Пошаговая анимация ходьбы Point-and-Click (60 FPS только во время шага!) ---------- */
+  /* ---------- Движение героя без клеток + подход и открытие дверей ---------- */
   function stopWalkLoop() {
     if (runtime.rafId && global.cancelAnimationFrame) {
       global.cancelAnimationFrame(runtime.rafId);
@@ -1460,14 +1913,42 @@
     runtime.lastTs = 0;
   }
 
-  function walkTo(state, targetCol, targetRow, onArrive, onRepaint) {
+  function isHeadlessOrCalm() {
+    var calm = typeof document !== "undefined" && document.documentElement && document.documentElement.classList.contains("bow-motion-calm");
+    if (!global.requestAnimationFrame || calm) { return true; }
+    if (typeof document !== "undefined") {
+      var stCv = document.querySelector("#bow-stage-canvas canvas.bow-iso-canvas");
+      if (!stCv || !stCv.getBoundingClientRect || stCv.getBoundingClientRect().width <= 0) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  function walkTo(state, targetWx, targetWy, onArrive, onRepaint) {
     ensurePlayerPos(state);
     var map = mapOf(state);
-    var path = findPath(map, runtime.px, runtime.py, targetCol, targetRow, state);
+    var clampedX = Math.max(0.4, Math.min(COLS - 0.6, targetWx));
+    var clampedY = Math.max(0.4, Math.min(ROWS - 0.6, targetWy));
+    if (map.id === "jail") { clampedX = Math.min(4.2, clampedX); }
+
+    var gridPath = findPath(map, runtime.px, runtime.py, Math.round(clampedX), Math.round(clampedY), state);
+    var waypoints = gridPath.map(function (pt, idx) {
+      if (idx === gridPath.length - 1 && !isBlocked(map, Math.round(clampedX), Math.round(clampedY), state)) {
+        return { wx: clampedX, wy: clampedY };
+      }
+      return { wx: pt.col, wy: pt.row };
+    });
+    if (!waypoints.length && !isBlocked(map, Math.round(clampedX), Math.round(clampedY), state)) {
+      if (Math.hypot(clampedX - runtime.px, clampedY - runtime.py) > 0.08) {
+        waypoints.push({ wx: clampedX, wy: clampedY });
+      }
+    }
+
     runtime.pendingAction = typeof onArrive === "function" ? onArrive : null;
 
-    if (!path.length) {
-      runtime.facing = facingFromDelta(targetCol - runtime.px, targetRow - runtime.py);
+    if (!waypoints.length) {
+      runtime.facing = facingFromDelta(clampedX - runtime.px, clampedY - runtime.py);
       var cb = runtime.pendingAction;
       runtime.pendingAction = null;
       if (cb) { cb(); }
@@ -1475,22 +1956,13 @@
       return;
     }
 
-    /* В безголовой тестовой среде (rect.width === 0) или при отключённых анимациях приходим сразу,
-       а в живом браузере плавно шагаем 60 FPS по изометрическому маршруту A*! */
-    var calm = typeof document !== "undefined" && document.documentElement && document.documentElement.classList.contains("bow-motion-calm");
-    var headless = false;
-    if (typeof document !== "undefined") {
-      var stCv = document.querySelector("#bow-stage-canvas canvas.bow-iso-canvas");
-      if (!stCv || !stCv.getBoundingClientRect || stCv.getBoundingClientRect().width <= 0) {
-        headless = true;
-      }
-    }
-    if (!global.requestAnimationFrame || calm || headless) {
-      var last = path[path.length - 1];
-      runtime.facing = facingFromDelta(last.col - runtime.px, last.row - runtime.py);
-      runtime.px = last.col;
-      runtime.py = last.row;
+    if (isHeadlessOrCalm()) {
+      var last = waypoints[waypoints.length - 1];
+      runtime.facing = facingFromDelta(last.wx - runtime.px, last.wy - runtime.py);
+      runtime.px = last.wx;
+      runtime.py = last.wy;
       runtime.path = [];
+      runtime.destWorld = null;
       var doneNow = runtime.pendingAction;
       runtime.pendingAction = null;
       if (doneNow) { doneNow(); }
@@ -1498,8 +1970,8 @@
       return;
     }
 
-    runtime.path = path;
-    runtime.destTile = path[path.length - 1];
+    runtime.path = waypoints;
+    runtime.destWorld = waypoints[waypoints.length - 1];
 
     if (runtime.rafId) { return; }
     function frame(ts) {
@@ -1509,6 +1981,7 @@
 
       if (!runtime.path.length) {
         stopWalkLoop();
+        runtime.destWorld = null;
         var fin = runtime.pendingAction;
         runtime.pendingAction = null;
         if (fin) { fin(); }
@@ -1517,22 +1990,21 @@
       }
 
       var next = runtime.path[0];
-      var dc = next.col - runtime.px;
-      var dr = next.row - runtime.py;
+      var dc = next.wx - runtime.px;
+      var dr = next.wy - runtime.py;
       var dist = Math.hypot(dc, dr);
-      var speed = 4.6 * dt; // 4.6 изометрических тайла в секунду
+      var speed = 4.8 * dt;
       runtime.facing = facingFromDelta(dc, dr);
       runtime.stepPhase += dt;
 
-      /* Также плавно двигаем снежинки/капли на улице */
       for (var p = 0; p < runtime.particles.length; p++) {
         runtime.particles[p].y = (runtime.particles[p].y + runtime.particles[p].sp * 38 * dt) % VIEW_H;
         runtime.particles[p].x = (runtime.particles[p].x - 14 * dt + VIEW_W) % VIEW_W;
       }
 
       if (dist <= speed) {
-        runtime.px = next.col;
-        runtime.py = next.row;
+        runtime.px = next.wx;
+        runtime.py = next.wy;
         runtime.path.shift();
       } else {
         runtime.px += (dc / dist) * speed;
@@ -1545,7 +2017,54 @@
     runtime.rafId = global.requestAnimationFrame(frame);
   }
 
-  /* Подойти на соседнюю клетку к цели (NPC, предмету, замку) и выполнить действие */
+  /* Подойти к двери/воротам, открыть створку со скрипом и светом и шагнуть в следующую локацию! */
+  function walkToExitAndMove(state, targetLoc, doMoveFn, onRepaint) {
+    ensurePlayerPos(state);
+    var map = mapOf(state);
+    if (isHeadlessOrCalm() || !map.exits || !map.exits.length) {
+      if (doMoveFn) { doMoveFn(); }
+      return "instant";
+    }
+
+    var ex = null;
+    for (var i = 0; i < map.exits.length; i++) {
+      if (map.exits[i].to === targetLoc) { ex = map.exits[i]; break; }
+    }
+    if (!ex) { ex = map.exits[0]; }
+
+    var approachX = Math.max(0.6, Math.min(COLS - 0.8, ex.col + (ex.col <= 1 ? 0.8 : (ex.col >= 10 ? -0.8 : 0))));
+    var approachY = Math.max(0.6, Math.min(ROWS - 0.8, ex.row));
+
+    walkTo(state, approachX, approachY, function () {
+      runtime.facing = facingFromDelta(ex.col - runtime.px, ex.row - runtime.py);
+      var isDoor = (ex.doorKind === "porch_door" || ex.doorKind === "forge_arch" || ex.doorKind === "inner_door");
+      if (!isDoor) {
+        if (Bow.ui && Bow.ui.triggerVeil) { Bow.ui.triggerVeil(); }
+        if (doMoveFn) { doMoveFn(); }
+        return;
+      }
+
+      /* Плавное открытие створки двери (0.30 с) со скрипом петли и конусом света */
+      if (Bow.audio && Bow.audio.playDoorCreak) { Bow.audio.playDoorCreak(); }
+      runtime.doorAnim = { exitTo: ex.to, progress: 0.05 };
+      var startT = Date.now();
+      function animDoor() {
+        var t = Math.min(1, (Date.now() - startT) / 300);
+        runtime.doorAnim = { exitTo: ex.to, progress: t };
+        if (onRepaint) { onRepaint(); }
+        if (t < 1) {
+          global.requestAnimationFrame(animDoor);
+        } else {
+          runtime.doorAnim = null;
+          if (Bow.ui && Bow.ui.triggerVeil) { Bow.ui.triggerVeil(); }
+          if (doMoveFn) { doMoveFn(); }
+        }
+      }
+      global.requestAnimationFrame(animDoor);
+    }, onRepaint);
+    return "walking";
+  }
+
   function walkAdjacentAndAct(state, targetCol, targetRow, onArrive, onRepaint) {
     ensurePlayerPos(state);
     var map = mapOf(state);
@@ -1557,7 +2076,6 @@
       if (onRepaint) { onRepaint(); }
       return;
     }
-    /* Выбираем ближайшую свободную клетку вплотную к объекту */
     var best = null;
     var bestScore = 9999;
     for (var dr = -1; dr <= 1; dr++) {
@@ -1585,13 +2103,13 @@
   }
 
   function setHoverScreen(sx, sy) {
-    var t = screenToTile(sx, sy);
-    if (t.col >= 0 && t.col < COLS && t.row >= 0 && t.row < ROWS) {
-      runtime.hoverTile = { col: t.col, row: t.row };
+    var w = screenToWorld(sx, sy);
+    if (w.wx >= -0.5 && w.wx <= COLS && w.wy >= -0.5 && w.wy <= ROWS) {
+      runtime.hoverWorld = { wx: w.wx, wy: w.wy, col: Math.round(w.wx), row: Math.round(w.wy) };
     } else {
-      runtime.hoverTile = null;
+      runtime.hoverWorld = null;
     }
-    return runtime.hoverTile;
+    return runtime.hoverWorld;
   }
 
   function getPlayerPos(state) {
@@ -1602,10 +2120,13 @@
   Bow.iso = {
     VIEW_W: VIEW_W,
     VIEW_H: VIEW_H,
+    BATTLE_W: BATTLE_W,
+    BATTLE_H: BATTLE_H,
     COLS: COLS,
     ROWS: ROWS,
     mapOf: mapOf,
     tileToScreen: tileToScreen,
+    screenToWorld: screenToWorld,
     screenToTile: screenToTile,
     fightTileToScreen: fightTileToScreen,
     findPath: findPath,
@@ -1616,9 +2137,11 @@
     paintStageCanvas: paintStageCanvas,
     paintBattleCanvas: paintBattleCanvas,
     walkTo: walkTo,
+    walkToExitAndMove: walkToExitAndMove,
     walkAdjacentAndAct: walkAdjacentAndAct,
     stopWalkLoop: stopWalkLoop,
     setHoverScreen: setHoverScreen,
+    setPlayerPos: setPlayerPos,
     getPlayerPos: getPlayerPos
   };
 

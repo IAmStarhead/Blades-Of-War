@@ -73,14 +73,36 @@
   var handlers = {
     move: function (el) {
       var state = getState();
+      var targetLoc = el.getAttribute("data-loc");
       /* Смена сцены закрывает разговор и окно персонажа.
          Посреди боя уйти нельзя: это было бы бесплатным побегом. */
-      if (state.fight) { return { ok: false, message: "Сначала закончите бой." }; }
+      if (state.fight || (state.skirmish && state.skirmish.active)) {
+        return { ok: false, message: "Сначала закончите схватку." };
+      }
+      if (Bow.ui.setWorldPanel) { Bow.ui.setWorldPanel(false); }
       if (Bow.iso && Bow.iso.stopWalkLoop) { Bow.iso.stopWalkLoop(); }
       if (state.dialog) { Bow.dialog.close(state); }
       state.flags.lastDialogSummary = null;
       openSheet(null);
-      var res = Bow.adapter.act.move(state, el.getAttribute("data-loc"));
+
+      /* Настоящий подход ногами к двери/воротам, открытие створки со скрипом и переход (0.0.9.1)! */
+      if (Bow.iso && Bow.iso.walkToExitAndMove && targetLoc && targetLoc !== state.player.location) {
+        var modeRes = "instant";
+        var syncRes = null;
+        modeRes = Bow.iso.walkToExitAndMove(state, targetLoc, function () {
+          syncRes = Bow.adapter.act.move(state, targetLoc);
+          scheduleAutosave(true, true);
+          if (modeRes === "walking") { say(syncRes); }
+        }, function () {
+          if (Bow.ui.repaintIsoStage) { Bow.ui.repaintIsoStage(state); }
+        });
+        if (modeRes === "walking") {
+          return { ok: true, message: "Идёте к выходу…" };
+        }
+        return syncRes || { ok: true, message: "" };
+      }
+
+      var res = Bow.adapter.act.move(state, targetLoc);
       scheduleAutosave(true, true);
       return res;
     },
@@ -105,12 +127,74 @@
       return res;
     },
     "open-map": function () {
-      Bow.ui.setTab("map");
-      var mapEl = document.getElementById("bow-map");
-      if (mapEl && mapEl.scrollIntoView) {
-        mapEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
-      }
+      if (Bow.ui.setWorldPanel) { Bow.ui.setWorldPanel(true, "map"); }
+      else { Bow.ui.setTab("map"); }
       return { ok: true, message: "" };
+    },
+    "open-world-panel": function (el) {
+      var tabKey = el.getAttribute("data-tab") || "jobs";
+      if (Bow.ui.toggleWorldPanel) { Bow.ui.toggleWorldPanel(tabKey); }
+      return { ok: true, message: "" };
+    },
+    "close-world-panel": function () {
+      if (Bow.ui.setWorldPanel) { Bow.ui.setWorldPanel(false); }
+      return { ok: true, message: "" };
+    },
+    "toggle-aggro": function () {
+      if (!Bow.skirmish) { return { ok: false, message: "" }; }
+      var on = Bow.skirmish.toggleAggressive();
+      return {
+        ok: true,
+        message: on
+          ? "⚔ Боевой режим: клик по цели сразу начинает живую схватку!"
+          : "✋ Мирный режим действий."
+      };
+    },
+    "skirmish-confirm-open": function (el) {
+      var pid = el.getAttribute("data-person");
+      Bow.ui.setStageSelection({ kind: "person", personId: pid, confirmAttack: true });
+      return { ok: true, message: "" };
+    },
+    "skirmish-confirm-cancel": function (el) {
+      var pid = el.getAttribute("data-person");
+      Bow.ui.setStageSelection({ kind: "person", personId: pid, confirmAttack: false });
+      return { ok: true, message: "" };
+    },
+    "skirmish-engage": function (el) {
+      var state = getState();
+      var pid = el.getAttribute("data-person");
+      var mode = el.getAttribute("data-mode") || "crime";
+      return launchLocationSkirmish(state, pid, { mode: mode, unarmed: mode === "brawl" });
+    },
+    "skirmish-pause": function () {
+      var state = getState();
+      if (!Bow.skirmish || !state.skirmish) { return { ok: true, message: "" }; }
+      var paused = Bow.skirmish.togglePause(state);
+      startSkirmishLoop();
+      return { ok: true, message: paused ? "⏸ Тактическая пауза." : "▶ Бой продолжается!" };
+    },
+    "skirmish-order": function (el) {
+      var state = getState();
+      if (!Bow.skirmish || !state.skirmish) { return { ok: true, message: "" }; }
+      Bow.skirmish.setOrder(state, el.getAttribute("data-kind"), el.getAttribute("data-val"));
+      return { ok: true, message: "" };
+    },
+    "skirmish-target": function (el) {
+      var state = getState();
+      if (!Bow.skirmish || !state.skirmish) { return { ok: true, message: "" }; }
+      Bow.skirmish.setTarget(state, el.getAttribute("data-unit"));
+      return { ok: true, message: "" };
+    },
+    "skirmish-ally": function () {
+      return { ok: true, message: "" };
+    },
+    "skirmish-decide": function (el) {
+      var state = getState();
+      if (!Bow.skirmish || !state.skirmish) { return { ok: false, message: "" }; }
+      stopSkirmishLoop();
+      var res = Bow.skirmish.decideAftermath(state, el.getAttribute("data-choice") || "spare");
+      scheduleAutosave(true, true);
+      return res;
     },
     "map-mode": function (el) {
       Bow.ui.setMapMode(el.getAttribute("data-mode"));
@@ -231,15 +315,7 @@
     "guard-insult": function () { return Bow.adapter.act.guardInsult(getState()); },
     "guard-fight": function () {
       var state = getState();
-      if (Bow.iso && Bow.iso.stopWalkLoop) { Bow.iso.stopWalkLoop(); }
-      lastExplicitTargetKey = "";
-      lastExplicitTargetRound = -1;
-      var res = Bow.adapter.act.guardFight(state);
-      if (res && res.ok && state.fight && state.fight.phase === "exchange") {
-        Bow.fight.setOrder(state, "speed", "paused");
-        stopFightClock();
-      }
-      return res;
+      return launchLocationSkirmish(state, null, { mode: "guard" });
     },
 
     /* ---------- Клетка и гибридный взлом замка (0.0.8.2) ---------- */
@@ -329,15 +405,7 @@
     "street-scare": function () { return Bow.adapter.act.streetScare(getState()); },
     "street-fight": function () {
       var state = getState();
-      if (Bow.iso && Bow.iso.stopWalkLoop) { Bow.iso.stopWalkLoop(); }
-      lastExplicitTargetKey = "";
-      lastExplicitTargetRound = -1;
-      var res = Bow.adapter.act.streetFight(state);
-      if (res && res.ok && state.fight && state.fight.phase === "exchange") {
-        Bow.fight.setOrder(state, "speed", "paused");
-        stopFightClock();
-      }
-      return res;
+      return launchLocationSkirmish(state, null, { mode: "robber" });
     },
     "street-flee": function () { return Bow.adapter.act.streetFlee(getState()); },
 
@@ -448,6 +516,15 @@
       var xVal = parseFloat(el.getAttribute("data-x"));
       var isoCol = parseFloat(el.getAttribute("data-iso-col"));
       var isoRow = parseFloat(el.getAttribute("data-iso-row"));
+
+      /* Агрессивный режим (0.0.9.1): клик по человеку / страже / грабителю СРАЗУ бьёт клинками и начинает бой Kenshi! */
+      var isAggro = !!(Bow.skirmish && Bow.skirmish.isAggressive && Bow.skirmish.isAggressive());
+      if (isAggro && !state.jail && (kind === "person" || kind === "guard" || kind === "robber")) {
+        if (kind === "guard") { return launchLocationSkirmish(state, null, { mode: "guard" }); }
+        if (kind === "robber") { return launchLocationSkirmish(state, null, { mode: "robber" }); }
+        return launchLocationSkirmish(state, personId, { mode: "crime" });
+      }
+
       var applySelect = function () {
         Bow.ui.setStageSelection({
           kind: kind,
@@ -550,6 +627,17 @@
     "fight-close": true,
     "loot-corpse": true,
     "open-map": true,
+    "open-world-panel": true,
+    "close-world-panel": true,
+    "toggle-aggro": true,
+    "skirmish-confirm-open": true,
+    "skirmish-confirm-cancel": true,
+    "skirmish-engage": true,
+    "skirmish-pause": true,
+    "skirmish-order": true,
+    "skirmish-target": true,
+    "skirmish-ally": true,
+    "skirmish-decide": true,
     "map-mode": true,
     "stage-select": true,
     "close-panel": true,
@@ -562,6 +650,19 @@
     "toggle-autoeat": true,
     "task-stop": true,
     "tab": true
+  };
+
+  var DURING_SKIRMISH_ALLOWED = {
+    "skirmish-pause": true,
+    "skirmish-order": true,
+    "skirmish-target": true,
+    "skirmish-ally": true,
+    "skirmish-decide": true,
+    "toggle-aggro": true,
+    "panel": true,
+    "close-panel": true,
+    "close-world-panel": true,
+    "audio-toggle": true
   };
 
   /* В клетке доступно только то, что доступно в клетке. */
@@ -611,9 +712,102 @@
     "clock": true
   };
 
+  /* ---------- Живая бесклеточная схватка Kenshi прямо в локации (0.0.9.1) ---------- */
+  var skirmishRaf = null;
+  var skirmishLastTs = 0;
+  var skirmishDomAcc = 0;
+
+  function stopSkirmishLoop() {
+    if (skirmishRaf && global.cancelAnimationFrame) {
+      global.cancelAnimationFrame(skirmishRaf);
+    }
+    skirmishRaf = null;
+    skirmishLastTs = 0;
+  }
+
+  function startSkirmishLoop() {
+    var st = getState();
+    if (!Bow.skirmish || !st || !st.skirmish || (!st.skirmish.active && st.skirmish.phase !== "aftermath")) {
+      stopSkirmishLoop();
+      return;
+    }
+    var stCv = typeof document !== "undefined" ? document.querySelector("#bow-stage-canvas canvas.bow-iso-canvas") : null;
+    if (!global.requestAnimationFrame || !stCv || !stCv.getBoundingClientRect || stCv.getBoundingClientRect().width <= 0) {
+      return;
+    }
+    if (skirmishRaf) { return; }
+
+    function stepFrame(ts) {
+      var cur = getState();
+      if (!cur || !cur.skirmish || (!cur.skirmish.active && (!cur.skirmish.fx || !cur.skirmish.fx.length))) {
+        stopSkirmishLoop();
+        refresh(true);
+        return;
+      }
+      if (!skirmishLastTs) { skirmishLastTs = ts; }
+      var dt = Math.min(0.08, Math.max(0.012, (ts - skirmishLastTs) / 1000));
+      skirmishLastTs = ts;
+
+      var ev = Bow.skirmish.tick(cur, dt);
+      if (ev && (ev.hit || ev.clash)) {
+        if (Bow.audio && Bow.audio.playClashSteel && ev.clash) { Bow.audio.playClashSteel(); }
+      }
+      if (ev && ev.guardsArrived) {
+        if (Bow.ui.flashClashBanner) { Bow.ui.flashClashBanner("⛨ Караул Студёного Брода вбегает в бой!"); }
+        Bow.ui.setMessage("⛨ Караул Брода сбежался на шум схватки!");
+      }
+      if (ev && ev.ended) {
+        stopSkirmishLoop();
+        if (ev.message) { Bow.ui.setMessage(ev.message); }
+        refresh(false, true);
+        return;
+      }
+
+      if (Bow.ui.repaintIsoStage) { Bow.ui.repaintIsoStage(cur); }
+      skirmishDomAcc += dt;
+      if (skirmishDomAcc >= 0.16) {
+        skirmishDomAcc = 0;
+        if (Bow.ui.renderSkirmishHud) { Bow.ui.renderSkirmishHud(cur); }
+        var layer = document.querySelector("#bow-stage-canvas .bow-stage-layer");
+        if (layer && Bow.stage && Bow.stage.renderHotspotsAndActors) {
+          var hHtml = Bow.stage.renderHotspotsAndActors(cur, null);
+          if (layer._lastHtml !== hHtml) {
+            layer._lastHtml = hHtml;
+            layer.innerHTML = hHtml;
+          }
+        }
+      }
+      skirmishRaf = global.requestAnimationFrame(stepFrame);
+    }
+    skirmishRaf = global.requestAnimationFrame(stepFrame);
+  }
+
+  function launchLocationSkirmish(state, personId, opts) {
+    if (!Bow.skirmish) { return { ok: false, message: "Боевой модуль не готов." }; }
+    if (Bow.iso && Bow.iso.stopWalkLoop) { Bow.iso.stopWalkLoop(); }
+    if (state.dialog) { Bow.dialog.close(state); }
+    if (Bow.ui.setWorldPanel) { Bow.ui.setWorldPanel(false); }
+    Bow.ui.setStageSelection(null);
+    openSheet(null);
+
+    var res = Bow.skirmish.engage(state, personId, opts || {});
+    if (res && res.ok) {
+      if (Bow.audio && Bow.audio.playClashSteel) { Bow.audio.playClashSteel(); }
+      if (Bow.audio && Bow.audio.syncMood) { Bow.audio.syncMood(state); }
+      if (Bow.ui.flashClashBanner) {
+        Bow.ui.flashClashBanner(res.clashTitle ? ("⚔ " + res.clashTitle) : "⚔ Звенит сталь — к бою!");
+      }
+      startSkirmishLoop();
+    }
+    return res;
+  }
+
   function blockedBy(state, act) {
     if (ALWAYS_ALLOWED[act]) { return null; }
     if (state.dead) { return act === "death-restart" ? null : "Всё кончено. Начните заново."; }
+    if (state.skirmish && (state.skirmish.active || state.skirmish.phase === "aftermath") && !DURING_SKIRMISH_ALLOWED[act]) {
+      return "Сначала закончите схватку!";
+    }
     if (state.jail && !IN_JAIL_ALLOWED[act]) { return "Вы в клетке. Отсюда не выйти по своей воле."; }
     if (state.guard && !DURING_GUARD_ALLOWED[act]) { return "Сначала решите со стражей."; }
     if (state.encounter && !IN_ENCOUNTER_ALLOWED[act]) { return "Сначала решите с грабителем."; }
@@ -625,11 +819,10 @@
     if (Bow.audio && Bow.audio.wakeOnGesture) { Bow.audio.wakeOnGesture(); }
     var el = event.target.closest("[data-act]");
     if (!el) {
-      /* Point-and-Click на изометрической сцене (0.0.9.0):
-         закрываем открытую карточку и, если клик пришёл по реальной клетке пола/выхода/объекта,
-         ведём героя по честному маршруту A*! */
+      /* Point-and-Click на изометрической сцене (0.0.9.1):
+         свободное бесклеточное позиционирование (включая живой бой Kenshi!) и честный обход A*! */
       var stageWrap = event.target.closest && event.target.closest("#bow-stage-canvas");
-      if (stageWrap && !event.target.closest("#bow-stage-pop")) {
+      if (stageWrap && !event.target.closest("#bow-stage-pop") && !event.target.closest("#bow-skirmish-hud")) {
         Bow.ui.setStageSelection(null);
         var st = getState();
         var isoCv = stageWrap.querySelector("canvas.bow-iso-canvas");
@@ -639,22 +832,30 @@
         if (rect && rect.width > 40 && rect.height > 40 && !isComaNow && !st.fight && Bow.iso) {
           var sx = ((event.clientX - rect.left) / rect.width) * Bow.iso.VIEW_W;
           var sy = ((event.clientY - rect.top) / rect.height) * Bow.iso.VIEW_H;
+          var wPt = Bow.iso.screenToWorld ? Bow.iso.screenToWorld(sx, sy) : null;
           var tile = Bow.iso.screenToTile(sx, sy);
           var map = Bow.iso.mapOf(st);
 
+          /* В живом бою Kenshi клик по земле задаёт манёвр / отход / обход с фланга! */
+          if (st.skirmish && st.skirmish.active && wPt && Bow.skirmish) {
+            Bow.skirmish.orderMove(st, wPt.wx, wPt.wy);
+            if (Bow.ui.repaintIsoStage) { Bow.ui.repaintIsoStage(st); }
+            return;
+          }
+
           if (tile.col >= 0 && tile.col < Bow.iso.COLS && tile.row >= 0 && tile.row < Bow.iso.ROWS) {
-            /* 1. Клик по дорожному маркеру выхода (Exit Grid в духе Fallout) */
+            /* 1. Клик по двери / дорожным воротам — подход ногами, открытие створки и переход! */
             var hitExit = null;
             if (!st.jail && !st.guard && !st.encounter && map.exits) {
               for (var ei = 0; ei < map.exits.length; ei++) {
-                if (map.exits[ei].col === tile.col && map.exits[ei].row === tile.row) {
+                if (Math.hypot((wPt ? wPt.wx : tile.col) - map.exits[ei].col, (wPt ? wPt.wy : tile.row) - map.exits[ei].row) < 1.05) {
                   hitExit = map.exits[ei];
                   break;
                 }
               }
             }
-            if (hitExit) {
-              Bow.iso.walkTo(st, hitExit.col, hitExit.row, function () {
+            if (hitExit && Bow.iso.walkToExitAndMove) {
+              Bow.iso.walkToExitAndMove(st, hitExit.to, function () {
                 var mv = Bow.adapter.act.move(st, hitExit.to);
                 scheduleAutosave(true, true);
                 say(mv);
@@ -691,8 +892,8 @@
               return;
             }
 
-            /* 3. Обычный шаг Point-and-Click по изометрическому полу/снегу */
-            Bow.iso.walkTo(st, tile.col, tile.row, function () {
+            /* 3. Плавный бесклеточный шаг Point-and-Click в точную точку (wx, wy) */
+            Bow.iso.walkTo(st, wPt ? wPt.wx : tile.col, wPt ? wPt.wy : tile.row, function () {
               refresh(true);
             }, function () {
               if (Bow.ui.repaintIsoStage) { Bow.ui.repaintIsoStage(st); }
@@ -761,7 +962,8 @@
     if (!state || !state.time) { return false; }
     if (state.time.scale === "paused") { return false; }
     if (state.dialog) { return false; }
-    /* Бой и его незакрытый итог — пошаговые: часы не тикают во время схватки. */
+    /* Живая схватка и пошаговое поле брани: мировые часы стоят на время боя. */
+    if (state.skirmish && (state.skirmish.active || state.skirmish.phase === "aftermath")) { return false; }
     if (state.fight) { return false; }
     if (state.flags && state.flags.lastFight) { return false; }
     /* Стража на улице и грабитель ждут решения игрока; в клетке живое время ТЕПЕРЬ идёт само и мотает срок (0.0.8.1)! */
@@ -1116,8 +1318,23 @@
           return;
         }
       }
+      if (event.key === "Tab") {
+        var stTab = getState();
+        if (stTab && !stTab.fight && !Bow.ui.isDrawerOpen() && !(Bow.ui.isWorldPanelOpen && Bow.ui.isWorldPanelOpen())) {
+          event.preventDefault();
+          var agRes = handlers["toggle-aggro"]();
+          say(agRes);
+          return;
+        }
+      }
       if (event.key === " " || event.code === "Space") {
         var st = getState();
+        if (st && st.skirmish && st.skirmish.active && !Bow.ui.isDrawerOpen()) {
+          event.preventDefault();
+          var skRes = handlers["skirmish-pause"]();
+          say(skRes);
+          return;
+        }
         if (st && st.fight && st.fight.phase === "exchange" && !Bow.ui.isDrawerOpen()) {
           event.preventDefault();
           var ord = Bow.fight.ensureOrders(st.fight);
@@ -1128,6 +1345,7 @@
         }
       }
       if (event.key !== "Escape") { return; }
+      if (Bow.ui.isWorldPanelOpen && Bow.ui.isWorldPanelOpen()) { Bow.ui.setWorldPanel(false); return; }
       if (Bow.ui.isDrawerOpen()) { Bow.ui.setDrawer(false); startFightClock(); return; }
       if (openPersonId) { openSheet(null); startFightClock(); return; }
       Bow.ui.setStageSelection(null);

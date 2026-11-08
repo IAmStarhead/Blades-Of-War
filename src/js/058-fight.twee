@@ -388,7 +388,10 @@
 
   function alliesAvailable(state) {
     var names = rules().arena.allySpawns || [];
-    return names.map(function (key) {
+    var foeId = state && state.fight && state.fight.personId ? state.fight.personId : null;
+    return names.filter(function (key) {
+      return ("person:" + key) !== foeId;
+    }).map(function (key) {
       return allyState(state, "person:" + key);
     }).filter(Boolean);
   }

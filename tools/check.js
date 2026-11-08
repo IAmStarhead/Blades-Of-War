@@ -808,7 +808,7 @@ function byAct(act, key) {
 
     const back = win.Bow.save.deserialize(win.Bow.save.serialize(g, 1));
     assert(back.ok, "старое сохранение не загрузилось: " + back.reason);
-    eq(back.state.version, "0.0.9.0", "версия после миграции");
+    eq(back.state.version, "0.0.9.1", "версия после миграции");
     assert(back.state.fight === null, "после миграции нет пустого слота боя");
     assert(back.state.people["person:tarn"].weapon, "кузнец остался без топора");
     return "0.0.5 → " + back.state.version + ", топор кузнеца на месте";
@@ -1009,7 +1009,7 @@ function byAct(act, key) {
     delete g.flags.huntedHeat;
 
     const back = win.Bow.save.deserialize(win.Bow.save.serialize(g, 1));
-    eq(back.state.version, "0.0.9.0", "версия после миграции");
+    eq(back.state.version, "0.0.9.1", "версия после миграции");
     assert(back.state.guard && back.state.guard.arrived === true,
       "стража из старого сохранения осталась «непришедшей» — из неё не выбраться");
     eq(back.state.flags.huntedUntil, null, "поле срока розыска");
@@ -1777,7 +1777,7 @@ function byAct(act, key) {
 
     const back = win.Bow.save.deserialize(win.Bow.save.serialize(g, 1));
     assert(back.ok, "сохранение 0.0.6.2 не загрузилось: " + back.reason);
-    eq(back.state.version, "0.0.9.0", "версия после миграции");
+    eq(back.state.version, "0.0.9.1", "версия после миграции");
     assert(back.state.steal && typeof back.state.steal === "object", "нет слота подготовки кражи");
     eq(back.state.player.lastTreat, null, "lastTreat после миграции");
     assert(typeof back.state.player.skills.medicine === "number", "навык лечения не восстановлен");
@@ -1981,9 +1981,9 @@ function byAct(act, key) {
     };
     const back = win.Bow.save.deserialize(win.Bow.save.serialize(g, 1));
     assert(back.ok, "сохранение 0.0.6.3 не загрузилось: " + back.reason);
-    eq(back.state.version, "0.0.9.0", "версия после миграции");
+    eq(back.state.version, "0.0.9.1", "версия после миграции");
     assert(back.state.fight.orders && back.state.fight.orders.aim === "body", "приказы боя созданы при миграции");
-    return "0.0.6.3 → 0.0.9.0, приказы боя созданы";
+    return "0.0.6.3 → 0.0.9.1, приказы боя созданы";
   });
 
   /* 8н. Круг 13 (0.0.7.1): фикс зависания в клетке, честная дистанция боя, логотип и Меню игры */
@@ -3905,10 +3905,10 @@ function byAct(act, key) {
     }
   });
 
-  check("0.0.9.0: миграция состояний доводит версию игры до 0.0.9.0", () => {
-    assert(win.Bow.data.meta.version === "0.0.9.0", "версия в Bow.data.meta не 0.0.9.0");
-    assert(game().version === "0.0.9.0", "версия активного состояния не 0.0.9.0");
-    return "версия 0.0.9.0 подтверждена";
+  check("0.0.9.1: миграция состояний доводит версию игры до 0.0.9.1", () => {
+    assert(win.Bow.data.meta.version === "0.0.9.1", "версия в Bow.data.meta не 0.0.9.1");
+    assert(game().version === "0.0.9.1", "версия активного состояния не 0.0.9.1");
+    return "версия 0.0.9.1 подтверждена";
   });
 
   check("0.0.7.7: щипковые удары по струнам полностью вырезаны из саундтрека", () => {
@@ -4451,13 +4451,13 @@ function byAct(act, key) {
     win.BowGame.refresh(true);
     assert(!doc().querySelector("#bow-stage svg.bow-fig-svg"), "на сцене остались старые кружки-треугольники svg.bow-fig-svg!");
 
-    /* Генератор приглушённых человечков кэширует растровые холсты 64×80 для стоячих и лежачих поз */
+    /* Генератор детальных персонажей 96×112 кэширует растровые холсты для стоячих, шагающих и лежачих поз */
     const spStand = win.Bow.iso.getSprite({ roleKey: "player", side: "player", facing: "SE", weapon: "knife" });
     const spSame = win.Bow.iso.getSprite({ roleKey: "player", side: "player", facing: "SE", weapon: "knife" });
     const spDead = win.Bow.iso.getSprite({ roleKey: "robber", side: "enemy", dead: true });
-    assert(spStand && spStand.width === 64 && spStand.height === 80, "неверный размер спрайта человечка");
+    assert(spStand && spStand.width === 96 && spStand.height === 112, "неверный размер спрайта человечка 96×112");
     assert(spStand === spSame && spStand !== spDead, "кэш спрайтов человечков не переиспользует готовый холст");
-    return "docs/STYLE_GUIDE.md на месте + кэш спрайтов 64×80 без кружков-треугольников";
+    return "docs/STYLE_GUIDE.md на месте + кэш детальных спрайтов 96×112 без кружков-треугольников";
   });
 
   check("0.0.9.0: изометрия 2:1 (Bow.iso) обратимо переводит клетки в экран, обходит препятствия по A* и двигает героя Point-and-Click", () => {
@@ -4595,6 +4595,191 @@ function byAct(act, key) {
       win.BowGame.flushAutosave(true);
     }
     return "OfflineAudioContext bakeTrackAsync + дебаунс localStorage с flushAutosave активны";
+  });
+
+  /* ---------- Круг 24 (0.0.9.1): Полноэкранный мир без клеток, режим агрессии и бой Kenshi в локации, двери с открытием, спрайты 96×112 и хор ---------- */
+
+  check("0.0.9.1: полноэкранная раскладка 100vw×100dvh, холст 1280×680 без клеточной сетки и всплывающая шторка дел", () => {
+    const app = doc().getElementById("bow-app");
+    assert(app && app.classList.contains("bow-fullscreen-app"), "#bow-app не переведён в полноэкранный режим bow-fullscreen-app");
+    const places = doc().querySelector(".bow-places-bar");
+    assert(places && places.classList.contains("bow-sr-only"), "старая полоса телепортации .bow-places-bar не убрана с экрана");
+
+    const cv = doc().querySelector("#bow-stage-canvas canvas.bow-iso-canvas");
+    assert(cv && cv.width === 1280 && cv.height === 680, "холст локации не расширен до полноформатных 1280×680");
+    assert(win.Bow.iso.VIEW_W === 1280 && win.Bow.iso.VIEW_H === 680, "Bow.iso.VIEW_W/VIEW_H не 1280×680");
+
+    /* Шторка дел места (Подряды / Торг / Карта / Место) скрыта по умолчанию и открывается по кнопкам нижней консоли */
+    const worldDrawer = doc().getElementById("bow-world-panel");
+    assert(worldDrawer && !worldDrawer.classList.contains("bow-world-drawer-open"), "шторка дел места открыта при старте вместо чистого экрана");
+    const jobsDockBtn = doc().querySelector('.bow-dock-btn[data-act="open-world-panel"][data-tab="jobs"]');
+    assert(jobsDockBtn, "нет кнопки шторки Подрядов в нижней консоли");
+    jobsDockBtn.click();
+    assert(worldDrawer.classList.contains("bow-world-drawer-open"), "клик по кнопке нижней консоли не открыл шторку дел");
+    const closeBtn = worldDrawer.querySelector('[data-act="close-world-panel"]');
+    closeBtn.click();
+    assert(!worldDrawer.classList.contains("bow-world-drawer-open"), "крестик шторки не закрыл её");
+    return "100vw×100dvh + холст 1280×680 + всплывающая шторка Подряды/Торг/Карта/Место";
+  });
+
+  check("0.0.9.1: переключатель Мирный/К бою и замена окна «Назревает схватка» на простое Да/Нет и живой бой в локации", () => {
+    const g = game();
+    const snap = clone(g);
+    try {
+      g.fight = null;
+      g.skirmish = null;
+      g.jail = null;
+      g.guard = null;
+      g.encounter = null;
+      g.player.location = "square";
+      g.player.needs.health = 100;
+      g.player.needs.fatigue = 90;
+      g.people["person:liva"].alive = true;
+      g.people["person:liva"].location = "square";
+      g.people["person:liva"].needs.health = 100;
+      win.Bow.skirmish.setAggressive(false);
+      win.BowGame.refresh(true);
+
+      /* 1. В мирном режиме карточка персонажа НЕ открывает «Назревает схватка», а спрашивает простое Напасть: Да / Нет */
+      win.Bow.ui.setStageSelection({ kind: "person", personId: "person:liva", x: 40 });
+      win.BowGame.refresh(true);
+      const pop = doc().getElementById("bow-stage-pop");
+      assert(!pop.querySelector('[data-act="fight-open"]'), "в карточке жителя осталась старая кнопка fight-open («Назревает схватка»)");
+      const askBtn = pop.querySelector('[data-act="skirmish-confirm-open"]');
+      assert(askBtn, "нет кнопки «Напасть» в мирной карточке");
+      askBtn.click();
+      assert(pop.querySelector('[data-act="skirmish-engage"][data-mode="crime"]') && pop.querySelector('[data-act="skirmish-confirm-cancel"]'),
+        "не появилось простое подтверждение Напасть — Да / Нет");
+      pop.querySelector('[data-act="skirmish-confirm-cancel"]').click();
+      assert(!g.skirmish, "нажатие «Нет» не должно начинать бой");
+
+      /* 2. В агрессивном режиме клик по персонажу сразу включает звон стали, плашку и живую схватку Kenshi прямо в локации! */
+      const aggroBtn = doc().getElementById("bow-aggro-btn");
+      assert(aggroBtn, "нет переключателя режима #bow-aggro-btn");
+      aggroBtn.click();
+      assert(win.Bow.skirmish.isAggressive() === true, "переключатель не включил агрессивный режим");
+
+      const npcActor = doc().querySelector('#bow-stage-canvas .bow-stage-layer [data-act="stage-select"][data-person="person:liva"]');
+      assert(npcActor, "на площади нет фигурки Ливы");
+      npcActor.click();
+
+      assert(g.skirmish && g.skirmish.active === true && g.skirmish.location === "square",
+        "клик в агрессивном режиме не запустил живую схватку на текущей локации");
+      assert(!g.fight, "вместо живой схватки открылся отдельный экран пошагового боя");
+      const banner = doc().getElementById("bow-clash-banner");
+      assert(banner && banner.classList.contains("bow-clash-banner-on"), "не вспыхнула плашка скрещённых клинков при начале схватки");
+      return "тумблер Мирный/К бою + простое Да/Нет + мгновенный старт живой схватки со звоном клинков";
+    } finally {
+      win.Bow.skirmish.setAggressive(false);
+      Object.assign(g, snap);
+      win.BowGame.refresh(true);
+    }
+  });
+
+  check("0.0.9.1: живой бесклеточный бой Kenshi: тактическая пауза, навыки, приход стражи по таймеру и решение судьбы поверженного", () => {
+    const g = clone(game());
+    g.fight = null;
+    g.skirmish = null;
+    g.jail = null;
+    g.player.location = "square";
+    g.player.skills.combat = 72;
+    g.player.skills.blades = 68;
+    g.player.needs.health = 100;
+    g.player.needs.fatigue = 95;
+    g.people["person:liva"].alive = true;
+    g.people["person:liva"].location = "square";
+    g.people["person:liva"].needs.health = 100;
+
+    /* Старт преступного нападения в поселении запускает таймер тревоги стражи */
+    const startRes = win.Bow.skirmish.engage(g, "person:liva", { mode: "crime" });
+    assert(startRes.ok && g.skirmish && g.skirmish.active, "живая схватка не запустилась");
+    assert(typeof g.skirmish.guardTimer === "number" && g.skirmish.guardTimer > 5, "не включился таймер прихода стражи при нападении на мирного");
+
+    /* Тактическая пауза полностью замораживает движение и удары */
+    win.Bow.skirmish.togglePause(g);
+    assert(g.skirmish.paused === true, "тактическая пауза не включилась");
+    const xBefore = g.skirmish.units[0].wx;
+    win.Bow.skirmish.tick(g, 1.0);
+    eq(g.skirmish.units[0].wx, xBefore, "на тактической паузе бойцы не должны двигаться");
+    win.Bow.skirmish.togglePause(g);
+
+    /* Прокручиваем живое время боя: если затянуть стычку или сдерживать удар в глухой защите, через ~9 с вбегают 3 стражника! */
+    const gGuardTest = clone(g);
+    win.Bow.skirmish.setOrder(gGuardTest, "stance", "guard");
+    gGuardTest.people["person:liva"].needs.health = 450;
+    gGuardTest.skirmish.units[1].hp = 450;
+    gGuardTest.skirmish.units[1].maxHp = 450;
+    let guardsCame = false;
+    for (let i = 0; i < 60; i++) {
+      const ev = win.Bow.skirmish.tick(gGuardTest, 0.2);
+      if (ev && ev.guardsArrived) { guardsCame = true; break; }
+    }
+    assert(guardsCame && gGuardTest.skirmish.guardsCalled === true, "стража не прибежала на помощь мирному жителю по таймеру");
+    const guardUnits = gGuardTest.skirmish.units.filter((u) => u.roleKey === "guard");
+    eq(guardUnits.length, 3, "в локацию должно вбежать звено из 3 стражников");
+
+    /* В обычной дуэли доводим противника до нокдауна и проверяем фазу aftermath (Обобрать / Отпустить / Добить) */
+    g.skirmish.guardTimer = null;
+    for (let step = 0; step < 120 && g.skirmish.active; step++) {
+      win.Bow.skirmish.tick(g, 0.2);
+    }
+    assert(g.skirmish.phase === "aftermath", "после победы над жителем не наступила фаза выбора участи (aftermath)");
+    const purseBefore = g.player.money;
+    const robRes = win.Bow.skirmish.decideAftermath(g, "rob");
+    assert(robRes.ok && g.skirmish === null, "решение «Обобрать» не завершило схватку");
+    assert(g.player.money >= purseBefore, "кошель не перешёл игроку");
+    return "тактическая пауза + вбегание 3 стражников через вход локации + развязка на месте";
+  });
+
+  check("0.0.9.1: честные двери на всех выходах локаций, маршрут walkToExitAndMove и появление у входного порога", () => {
+    const g = game();
+    const snap = clone(g);
+    try {
+      g.fight = null;
+      g.skirmish = null;
+      g.jail = null;
+      g.player.location = "square";
+      win.BowGame.refresh(true);
+
+      /* На площади отрисованы все 3 физических выхода (Трактир, Кузница, Околица) */
+      const doors = doc().querySelectorAll('#bow-stage-canvas .bow-door-hotspot[data-act="move"]');
+      eq(doors.length, 3, "на площади должны быть 3 интерактивные двери/выхода (Трактир, Кузница, Околица)");
+      assert(typeof win.Bow.iso.walkToExitAndMove === "function" && typeof win.Bow.audio.playDoorCreak === "function",
+        "нет функций подхода/открытия двери walkToExitAndMove и playDoorCreak");
+
+      /* При входе в трактир с площади герой появляется прямо у входной двери трактира (entryFrom.square), а не в центре зала */
+      const tavernDoor = doc().querySelector('#bow-stage-canvas .bow-door-hotspot[data-loc="tavern"]');
+      tavernDoor.click();
+      eq(g.player.location, "tavern", "переход через дверь трактира не перевёл в трактир");
+      const posInTavern = win.Bow.iso.getPlayerPos(g);
+      assert(posInTavern.col > 9.0 && Math.abs(posInTavern.row - 5.0) < 0.5,
+        "в трактире герой не появился у входного порога (entryFrom.square)");
+      return "3 двери на площади + walkToExitAndMove + появление у входного порога";
+    } finally {
+      Object.assign(g, snap);
+      win.BowGame.refresh(true);
+    }
+  });
+
+  check("0.0.9.1: ускоренный BPM саундтрека с многоголосным хором и выровненная сетка 7×5 для больших битв отрядов", () => {
+    const tracks = win.Bow.audio.listTracks();
+    const minBpm = Math.min(...tracks.map((t) => t.bpm));
+    const maxBpm = Math.max(...tracks.map((t) => t.bpm));
+    assert(minBpm >= 88 && maxBpm >= 150, "BPM саундтрека не ускорен (мин. " + minBpm + ", макс. " + maxBpm + ")");
+
+    const audioSrc = fs.readFileSync(path.join(__dirname, "..", "src", "js", "108-audio.twee"), "utf8");
+    assert(/playChoir/.test(audioSrc) && /playNordicWarChoir/.test(audioSrc) && /playDoorCreak/.test(audioSrc) && /playClashSteel/.test(audioSrc),
+      "в 108-audio.twee нет многоголосного хора playChoir/playNordicWarChoir или звуков двери/стали");
+
+    /* Полководческое «Поле брани» 7×5 (для крупных стеков ×30/×100): все 35 клеток лежат строго внутри холста 1088×368 без перекоса */
+    for (let r = 0; r < 5; r++) {
+      for (let c = 0; c < 7; c++) {
+        const pt = win.Bow.iso.fightTileToScreen(c, r);
+        assert(pt.x >= 60 && pt.x <= 1028 && pt.y >= 30 && pt.y <= 345,
+          "клетка Поля брани (" + c + "," + r + ") вылезает за пределы 1088×368: " + JSON.stringify(pt));
+      }
+    }
+    return "BPM " + minBpm + "–" + maxBpm + " + многоголосный хор + ровное Поле брани 7×5";
   });
 
   /* ---------- Итоги ---------- */

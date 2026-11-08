@@ -749,6 +749,10 @@
 
   function setStageSelection(sel) {
     if (!sel) { stageSelection = null; return null; }
+    if (typeof sel.confirmAttack === "boolean") {
+      stageSelection = Object.assign({}, stageSelection || {}, sel);
+      return stageSelection;
+    }
     if (stageSelection && stageSelection.kind === sel.kind &&
         (sel.kind !== "person" || stageSelection.personId === sel.personId) &&
         (sel.kind !== "corpse" || stageSelection.corpseId === sel.corpseId)) {
@@ -770,6 +774,50 @@
     box.innerHTML = Bow.stage.renderMap(state, activeMapMode);
   }
 
+  var worldPanelOpen = false;
+  var clashBannerTimer = null;
+
+  function setWorldPanel(open, tabKey) {
+    worldPanelOpen = !!open;
+    if (tabKey) { setTab(tabKey); }
+    var panel = $("bow-world-panel");
+    if (panel) {
+      panel.classList.toggle("bow-world-drawer-open", worldPanelOpen);
+      panel.setAttribute("aria-hidden", worldPanelOpen ? "false" : "true");
+    }
+    var dockBtns = document.querySelectorAll(".bow-dock-btn[data-tab]");
+    for (var i = 0; i < dockBtns.length; i++) {
+      var isOn = worldPanelOpen && dockBtns[i].getAttribute("data-tab") === activeTab;
+      dockBtns[i].classList.toggle("bow-dock-btn-on", isOn);
+    }
+    return worldPanelOpen;
+  }
+
+  function toggleWorldPanel(tabKey) {
+    var target = tabKey || "jobs";
+    if (worldPanelOpen && activeTab === target) {
+      return setWorldPanel(false);
+    }
+    return setWorldPanel(true, target);
+  }
+
+  function isWorldPanelOpen() {
+    return worldPanelOpen;
+  }
+
+  function flashClashBanner(label) {
+    var el = $("bow-clash-banner");
+    if (!el) { return; }
+    if (clashBannerTimer) { clearTimeout(clashBannerTimer); }
+    el.innerHTML = '<span class="bow-clash-swords" aria-hidden="true">⚔</span>' +
+      '<b>' + esc(label || "Звенит сталь — к бою!") + '</b>';
+    el.classList.add("bow-clash-banner-on");
+    clashBannerTimer = setTimeout(function () {
+      clashBannerTimer = null;
+      if (el) { el.classList.remove("bow-clash-banner-on"); }
+    }, 1850);
+  }
+
   function setTab(key) {
     if (["jobs", "map", "trade", "desc"].indexOf(key) === -1) { return activeTab; }
     activeTab = key;
@@ -783,6 +831,10 @@
     for (var j = 0; j < panes.length; j++) {
       var pOn = panes[j].getAttribute("data-tab-pane") === activeTab;
       panes[j].classList.toggle("bow-tab-pane-on", pOn);
+    }
+    var dockBtns = document.querySelectorAll(".bow-dock-btn[data-tab]");
+    for (var d = 0; d < dockBtns.length; d++) {
+      dockBtns[d].classList.toggle("bow-dock-btn-on", worldPanelOpen && dockBtns[d].getAttribute("data-tab") === activeTab);
     }
     return activeTab;
   }
@@ -852,7 +904,19 @@
           '</div>' +
         '</div>';
       }
-      applyStagePopHtml(pop, popKey,
+      var canSpar = p.attitude >= Bow.data.fightRules.sparMinAttitude;
+      var confirmHtml = sel.confirmAttack
+        ? ('<div class="bow-attack-confirm">' +
+            '<span class="bow-attack-q">Напасть на ' + esc(p.name) + '?</span>' +
+            '<div class="bow-attack-confirm-btns">' +
+              '<button type="button" class="bow-trade-btn bow-fight-btn" data-act="skirmish-engage" data-mode="crime" data-person="' + esc(p.id) + '">⚔ Да</button>' +
+              '<button type="button" class="bow-trade-btn" data-act="skirmish-engage" data-mode="brawl" data-person="' + esc(p.id) + '">👊 Кулаки</button>' +
+              '<button type="button" class="bow-trade-btn" data-act="skirmish-confirm-cancel" data-person="' + esc(p.id) + '">Нет</button>' +
+            '</div>' +
+          '</div>')
+        : '';
+
+      applyStagePopHtml(pop, popKey + (sel.confirmAttack ? ":atk" : ""),
         '<div class="bow-stage-card">' +
           '<div class="bow-stage-card-head">' +
             '<div class="bow-stage-card-title">' +
@@ -866,9 +930,12 @@
           '<div class="bow-person-acts bow-person-acts-grid">' +
             '<button type="button" class="bow-trade-btn" data-act="talk" data-person="' + esc(p.id) + '">Говорить</button>' +
             '<button type="button" class="bow-trade-btn" data-act="inspect" data-person="' + esc(p.id) + '">Осмотреть</button>' +
-            '<button type="button" class="bow-trade-btn bow-fight-btn" data-act="fight-open" data-person="' + esc(p.id) + '">' +
-              (p.attitude >= Bow.data.fightRules.sparMinAttitude ? 'Бой' : 'Напасть') + '</button>' +
+            (canSpar
+              ? '<button type="button" class="bow-trade-btn" data-act="skirmish-engage" data-mode="spar" data-person="' + esc(p.id) + '">⚔ Спарринг</button>'
+              : '') +
+            '<button type="button" class="bow-trade-btn bow-fight-btn" data-act="skirmish-confirm-open" data-person="' + esc(p.id) + '">⚔ Напасть</button>' +
           '</div>' +
+          confirmHtml +
           stealHtml +
         '</div>');
       return;
@@ -1081,9 +1148,12 @@
     var wWrap = canvas.querySelector(".bow-stage-weather-wrap");
     var layer = canvas.querySelector(".bow-stage-layer");
 
+    var vw = (Bow.iso && Bow.iso.VIEW_W) ? Bow.iso.VIEW_W : 1280;
+    var vh = (Bow.iso && Bow.iso.VIEW_H) ? Bow.iso.VIEW_H : 680;
+
     if (!bgWrap || !wWrap || !layer) {
       canvas.innerHTML =
-        '<div class="bow-stage-bg-wrap"><canvas class="bow-iso-canvas" width="1088" height="368"></canvas></div>' +
+        '<div class="bow-stage-bg-wrap"><canvas class="bow-iso-canvas" width="' + vw + '" height="' + vh + '"></canvas></div>' +
         '<div class="bow-stage-weather-wrap"></div>' +
         '<div class="bow-stage-layer"></div>';
       bgWrap = canvas.querySelector(".bow-stage-bg-wrap");
@@ -1094,7 +1164,7 @@
     bgWrap.setAttribute("data-loc", locKey);
     var isoCv = bgWrap.querySelector("canvas.bow-iso-canvas");
     if (!isoCv) {
-      bgWrap.innerHTML = '<canvas class="bow-iso-canvas" width="1088" height="368"></canvas>';
+      bgWrap.innerHTML = '<canvas class="bow-iso-canvas" width="' + vw + '" height="' + vh + '"></canvas>';
       isoCv = bgWrap.querySelector("canvas.bow-iso-canvas");
     }
     if (Bow.iso && Bow.iso.paintStageCanvas) {
@@ -2315,6 +2385,95 @@
     app.appendChild(el);
   }
 
+  function renderSkirmishHud(state) {
+    var isAggro = !!(Bow.skirmish && Bow.skirmish.isAggressive && Bow.skirmish.isAggressive());
+    var app = $("bow-app");
+    if (app) { app.classList.toggle("bow-aggro-mode", isAggro); }
+
+    var agBtn = $("bow-aggro-btn");
+    if (agBtn) {
+      agBtn.classList.toggle("bow-mode-aggro", isAggro);
+      agBtn.setAttribute("aria-pressed", isAggro ? "true" : "false");
+      agBtn.innerHTML = isAggro
+        ? '<span class="bow-mode-i">⚔</span><span class="bow-mode-txt"><b>К бою!</b><i>клик по цели — удар</i></span>'
+        : '<span class="bow-mode-i">✋</span><span class="bow-mode-txt"><b>Мирный</b><i>Tab — к бою</i></span>';
+    }
+
+    var box = $("bow-skirmish-hud");
+    if (!box) { return; }
+    var sk = state && state.skirmish;
+    if (!sk || (!sk.active && sk.phase !== "aftermath")) {
+      if (box._lastHtml !== "") {
+        box._lastHtml = "";
+        box.innerHTML = "";
+        box.classList.remove("bow-skirmish-hud-open");
+      }
+      return;
+    }
+
+    var html = "";
+    if (sk.phase === "aftermath") {
+      var downedFoe = null;
+      for (var i = 0; i < sk.units.length; i++) {
+        if (sk.units[i].side === "enemy" && !sk.units[i].dead) { downedFoe = sk.units[i]; break; }
+      }
+      var foeName = downedFoe ? downedFoe.name : "Противник";
+      html = '<div class="bow-sk-card bow-sk-aftermath">' +
+        '<div class="bow-sk-head"><b>⚔ Схватка окончена · ' + esc(foeName) + ' повержен</b></div>' +
+        '<div class="bow-sk-acts">' +
+          '<button type="button" class="bow-btn bow-btn-sm" data-act="skirmish-decide" data-choice="spare">Отпустить</button>' +
+          (sk.mode !== "spar"
+            ? '<button type="button" class="bow-btn bow-btn-sm" data-act="skirmish-decide" data-choice="rob">Обобрать</button>' +
+              '<button type="button" class="bow-btn bow-btn-sm bow-btn-danger" data-act="skirmish-decide" data-choice="kill">☠ Добить</button>'
+            : '') +
+        '</div>' +
+      '</div>';
+    } else {
+      var guardWarn = (!sk.guardsCalled && typeof sk.guardTimer === "number" && sk.guardTimer > 0)
+        ? ('<span class="bow-sk-guard-warn">⛨ Караул Брода сбегается: ' + Math.ceil(sk.guardTimer) + ' с</span>')
+        : (sk.guardsCalled ? '<span class="bow-sk-guard-warn">⛨ Стража Брода в бою!</span>' : '');
+      var lastLog = (sk.log && sk.log.length) ? sk.log[sk.log.length - 1] : "Бойцы сближаются…";
+      var aims = [
+        ["body", "Корпус"],
+        ["head", "Голова"],
+        ["arm", "Рука"],
+        ["legs", "Ноги"]
+      ];
+      var stances = [
+        ["press", "Натиск"],
+        ["balanced", "Равновесие"],
+        ["guard", "Защита"]
+      ];
+      html = '<div class="bow-sk-card">' +
+        '<div class="bow-sk-top">' +
+          '<button type="button" class="bow-btn bow-btn-sm' + (sk.paused ? ' bow-order-on' : '') + '" data-act="skirmish-pause" title="Тактическая пауза [Пробел]">' +
+            (sk.paused ? '▶ В бой [Пробел]' : '⏸ Пауза [Пробел]') +
+          '</button>' +
+          guardWarn +
+          '<span class="bow-sk-log">' + esc(lastLog) + '</span>' +
+        '</div>' +
+        '<div class="bow-sk-orders">' +
+          '<div class="bow-sk-group"><span class="bow-dim">Удар:</span>' +
+            aims.map(function (a) {
+              return '<button type="button" class="bow-btn bow-btn-sm' + (sk.aim === a[0] ? ' bow-order-on' : '') + '" data-act="skirmish-order" data-kind="aim" data-val="' + a[0] + '">' + a[1] + '</button>';
+            }).join("") +
+          '</div>' +
+          '<div class="bow-sk-group"><span class="bow-dim">Стойка:</span>' +
+            stances.map(function (st) {
+              return '<button type="button" class="bow-btn bow-btn-sm' + (sk.stance === st[0] ? ' bow-order-on' : '') + '" data-act="skirmish-order" data-kind="stance" data-val="' + st[0] + '">' + st[1] + '</button>';
+            }).join("") +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    }
+
+    if (box._lastHtml !== html) {
+      box._lastHtml = html;
+      box.innerHTML = html;
+    }
+    box.classList.add("bow-skirmish-hud-open");
+  }
+
   /* ---------- Отрисовка всего ---------- */
   var lastSceneKey = null;
 
@@ -2342,6 +2501,7 @@
     if (sceneChanged) { stageSelection = null; }
     renderAllPeople(state);
     renderScene(state, animate && (sceneChanged || (options && options.forceFade)));
+    renderSkirmishHud(state);
     renderDialog(state);
     var app2 = $("bow-app");
     if (app2) {
@@ -2657,6 +2817,11 @@
     toggleDrawer: toggleDrawer,
     isDrawerOpen: isDrawerOpen,
     scrollDrawerTo: scrollDrawerTo,
+    setWorldPanel: setWorldPanel,
+    toggleWorldPanel: toggleWorldPanel,
+    isWorldPanelOpen: isWorldPanelOpen,
+    flashClashBanner: flashClashBanner,
+    renderSkirmishHud: renderSkirmishHud,
     setTab: setTab,
     setMapMode: setMapMode,
     renderMapPane: renderMapPane,

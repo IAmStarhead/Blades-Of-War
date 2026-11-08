@@ -38,9 +38,9 @@
     {
       id: "hearth_embers",
       title: "Угли у очага",
-      subtitle: "Трактир и тёплый сруб · продольная флейта и камерные виолы",
+      subtitle: "Трактир и тёплый сруб · живой пульс бубна, флейта, виолы и хор",
       realm: "indoor",
-      bpm: 80,
+      bpm: 102,
       meter: 3,
       subPerBeat: 2,
       style: "tavern_waltz",
@@ -66,9 +66,9 @@
     {
       id: "mead_and_anvil",
       title: "Мёд и наковальня",
-      subtitle: "Кузница и людная зала · дуэт виолончели и деревянной флейты",
+      subtitle: "Кузница и людная зала · бодрый ритм боурана, виолончель и флейта",
       realm: "indoor",
-      bpm: 86,
+      bpm: 112,
       meter: 3,
       subPerBeat: 2,
       style: "tavern_lively",
@@ -94,9 +94,9 @@
     {
       id: "timber_hall_tale",
       title: "Былина старого сруба",
-      subtitle: "Ночной очаг · глубокая виола и продольная флейта",
+      subtitle: "Ночной очаг · глубокая виола, мужской распев и флейта",
       realm: "indoor",
-      bpm: 72,
+      bpm: 94,
       meter: 3,
       subPerBeat: 2,
       style: "tavern_calm",
@@ -118,9 +118,9 @@
     {
       id: "amber_ale",
       title: "Янтарный хмель",
-      subtitle: "Кружка у печи · тёплый камерный вальс флейты и смычковых",
+      subtitle: "Кружка у печи · живой северный вальс с бубном и хором",
       realm: "indoor",
-      bpm: 84,
+      bpm: 106,
       meter: 3,
       subPerBeat: 2,
       style: "tavern_waltz",
@@ -144,9 +144,9 @@
     {
       id: "citadel_of_ford",
       title: "Чертоги Студёного Брода",
-      subtitle: "Площадь и переправа · меланхоличный бит Sadeness, хор и флейта",
+      subtitle: "Площадь и переправа · упругий ритм Sadeness, многоголосный хор и флейта",
       realm: "outdoor",
-      bpm: 84,         // Расслабленный гипнотический даунтемпо-пульс в духе Sadeness (4/4, D minor / Dorian)
+      bpm: 98,         // Упругий шагающий пульс (0.0.9.1) с многоголосным северным хором
       meter: 4,
       subPerBeat: 2,   // 8 восьмых долей в такте
       style: "outdoor_enigma",
@@ -164,9 +164,9 @@
     {
       id: "rime_and_stars",
       title: "Хладный иней",
-      subtitle: "Ночной мороз · бархатный даунтемпо, стеклянные флажолеты и хор",
+      subtitle: "Ночной мороз · живой пульс, стеклянные флажолеты и трёхголосный хор",
       realm: "outdoor",
-      bpm: 78,
+      bpm: 92,
       meter: 4,
       subPerBeat: 2,
       style: "outdoor_frost",
@@ -184,9 +184,9 @@
     {
       id: "white_silence",
       title: "Белое безмолвие",
-      subtitle: "Околица и речной ветер · глубокий чиллаут-пульс, смычковые и хор",
+      subtitle: "Околица и речной ветер · глубокий ритм, смычковые и северный хор",
       realm: "outdoor",
-      bpm: 74,
+      bpm: 90,
       meter: 4,
       subPerBeat: 2,
       style: "outdoor_tundra",
@@ -204,9 +204,9 @@
     {
       id: "unbroken_tract",
       title: "Непреклонный тракт",
-      subtitle: "Опушка Матери-Тайги · гипнотический бит Enigma, рога и северный хор",
+      subtitle: "Опушка Матери-Тайги · драйвовый ритм Enigma, рога и многоголосный хор",
       realm: "outdoor",
-      bpm: 86,
+      bpm: 104,
       meter: 4,
       subPerBeat: 2,
       style: "outdoor_epic",
@@ -226,9 +226,9 @@
     {
       id: "tooth_and_claw",
       title: "Клык и сталь",
-      subtitle: "Яростный северный бой 6/8 (в духе Skyrim Battle 1) · спиккато виолончелей, валторны, тайко и боевой хор",
+      subtitle: "Яростный северный бой 6/8 (в духе Skyrim Battle 1) · стремительный галоп, тайко и мощный хор",
       realm: "combat",
-      bpm: 78,         // 6/8 (три восьмых на долю → пульс 234 восьмых в минуту, фирменный галоп Tooth and Claw!)
+      bpm: 92,         // 6/8 (276 восьмых в минуту — мощный боевой галоп 0.0.9.1!)
       meter: 2,
       subPerBeat: 3,   // 6 подшагов в такте: [0, 1, 2, 3, 4, 5] = РАЗ-два-три ЧЕТЫРЕ-пять-шесть
       style: "skyrim_68",
@@ -253,9 +253,9 @@
     {
       id: "steel_on_steel",
       title: "Сталь о сталь",
-      subtitle: "Тревожный боевой марш 4/4 (в духе Skyrim Battle 3) · низкая медь, рваные литавры и грозный хор",
+      subtitle: "Стремительный боевой марш 4/4 (в духе Skyrim Battle 3) · медь, литавры и грозный хор",
       realm: "combat",
-      bpm: 128,
+      bpm: 146,
       meter: 4,
       subPerBeat: 2,   // 8 восьмых в такте
       style: "skyrim_44",
@@ -273,9 +273,9 @@
     {
       id: "blood_and_glory",
       title: "Смерть или слава",
-      subtitle: "Стремительная сеча 3/4 (в духе Skyrim Battle 7) · боевой напор струнных, рога Совнгарда и ратный хор",
+      subtitle: "Вихревая сеча 3/4 (в духе Skyrim Battle 7) · напор струнных, рога Совнгарда и ратный хор",
       realm: "combat",
-      bpm: 142,
+      bpm: 158,
       meter: 3,
       subPerBeat: 2,   // 6 восьмых в такте
       style: "skyrim_34",
@@ -1425,39 +1425,114 @@
     return true;
   }
 
+  /* Тёплый скрип дубовой двери и щелчок щеколды при входе/выходе (0.0.9.1) */
+  function playDoorCreak() {
+    if (!state.enabled || !ensureContext()) { return false; }
+    if (ctx.state === "suspended") { return false; }
+    var now = ctx.currentTime + 0.008;
+    var vol = Math.max(0.18, state.volume || 0.5);
+
+    /* 1. Щелчок кованой щеколды */
+    var latch = ctx.createOscillator();
+    var latchGain = ctx.createGain();
+    latch.type = "triangle";
+    latch.frequency.setValueAtTime(640, now);
+    latch.frequency.exponentialRampToValueAtTime(190, now + 0.05);
+    latchGain.gain.setValueAtTime(0.0001, now);
+    latchGain.gain.linearRampToValueAtTime(0.036 * vol, now + 0.006);
+    latchGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.055);
+    latch.connect(latchGain);
+    latchGain.connect(ctx.destination);
+    latch.start(now);
+    latch.stop(now + 0.065);
+
+    /* 2. Мягкий деревянный скрип петли */
+    var wood = ctx.createOscillator();
+    var woodBp = ctx.createBiquadFilter();
+    var woodGain = ctx.createGain();
+    wood.type = "sawtooth";
+    wood.frequency.setValueAtTime(148, now + 0.045);
+    wood.frequency.linearRampToValueAtTime(182, now + 0.16);
+    wood.frequency.linearRampToValueAtTime(134, now + 0.28);
+    woodBp.type = "bandpass";
+    woodBp.frequency.setValueAtTime(420, now + 0.045);
+    woodBp.Q.value = 3.6;
+    woodGain.gain.setValueAtTime(0.0001, now + 0.045);
+    woodGain.gain.linearRampToValueAtTime(0.024 * vol, now + 0.11);
+    woodGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.30);
+    wood.connect(woodBp);
+    woodBp.connect(woodGain);
+    woodGain.connect(ctx.destination);
+    wood.start(now + 0.045);
+    wood.stop(now + 0.32);
+    return true;
+  }
+
+  /* Звон скрещённых клинков при нападении или блоке в живой схватке (0.0.9.1) */
+  function playClashSteel(soft) {
+    if (!state.enabled || !ensureContext()) { return false; }
+    if (ctx.state === "suspended") { return false; }
+    var now = ctx.currentTime + 0.006;
+    var vol = Math.max(0.16, state.volume || 0.5) * (soft ? 0.52 : 1.0);
+    var partials = [1180, 1765, 2640, 3510];
+    for (var i = 0; i < partials.length; i++) {
+      var o = ctx.createOscillator();
+      var g = ctx.createGain();
+      o.type = (i % 2 === 0) ? "triangle" : "sine";
+      o.frequency.setValueAtTime(partials[i] * (soft ? 0.92 : 1.0), now);
+      o.frequency.exponentialRampToValueAtTime(partials[i] * 0.96, now + 0.26);
+      g.gain.setValueAtTime(0.0001, now);
+      g.gain.linearRampToValueAtTime((0.028 / (i + 1)) * vol, now + 0.008);
+      g.gain.exponentialRampToValueAtTime(0.0001, now + (soft ? 0.18 : 0.34));
+      o.connect(g);
+      g.connect(ctx.destination);
+      o.start(now);
+      o.stop(now + 0.36);
+    }
+    return true;
+  }
+
   /* ---------- Озвучивание одного подшага текущей композиции ---------- */
   function scheduleSubStep(track, bar, sub, totalSubs, subDur, when) {
     var realm = track.realm;
     var barDur = subDur * totalSubs;
 
-    /* === 1. ТРАКТИР И КУЗНИЦА (тёплый камерный очаг в размере 3/4 без ударов по струнам) === */
+    /* === 1. ТРАКТИР И КУЗНИЦА (живой ритм бубна, хор у очага и перекличка флейты со смычковыми) === */
     if (realm === "indoor") {
       var chord = bar.chord || [];
       if (sub === 0) {
         playHearthPad(bar.bass, chord, when, barDur * 0.96);
-      } else if (sub === 2 && chord.length >= 2) {
-        playSoloViola(chord[1], when, subDur * 2.2, 0.016, "indoor", -0.22);
+        if (chord.length >= 3) {
+          /* Мягкий мужской/камерный хоровой подголосок в квинту у очага (0.0.9.1) */
+          playChoir(chord[0], when + 0.04, barDur * 0.90, 0.020, "indoor");
+          playChoir(chord[2], when + 0.06, barDur * 0.86, 0.015, "indoor");
+        }
+      } else if ((sub === 2 || sub === 4) && chord.length >= 2) {
+        playSoloViola(chord[sub === 2 ? 1 : 2] || chord[1], when, subDur * 1.9, 0.019, "indoor", sub === 2 ? -0.22 : 0.18);
       }
 
       var mNote = bar.mel && bar.mel[sub];
       if (mNote && mNote > 0) {
         if (track.style === "tavern_lively") {
-          playSoloViola(mNote - 12, when, subDur * 1.9, 0.028, "indoor", -0.18);
-          playFlute(mNote, when + 0.015, subDur * 1.75, 0.038, "indoor", 0.18);
+          playSoloViola(mNote - 12, when, subDur * 1.85, 0.030, "indoor", -0.18);
+          playFlute(mNote, when + 0.012, subDur * 1.72, 0.040, "indoor", 0.18);
         } else if (track.style === "tavern_calm") {
-          playFlute(mNote, when, subDur * 2.1, 0.042, "indoor", 0.14);
-          if (sub === 0) {
-            playSoloViola(mNote - 12, when + 0.02, subDur * 2.8, 0.022, "indoor", -0.2);
+          playFlute(mNote, when, subDur * 2.05, 0.042, "indoor", 0.14);
+          if (sub === 0 || sub === 3) {
+            playSoloViola(mNote - 12, when + 0.018, subDur * 2.4, 0.024, "indoor", -0.2);
           }
         } else {
-          playFlute(mNote, when, subDur * 1.95, 0.045, "indoor", 0.16);
+          playFlute(mNote, when, subDur * 1.9, 0.045, "indoor", 0.16);
         }
       }
 
-      if (bar.drum === 1 && sub === 0) {
+      /* Упругий пульс северного рамочного бубна (боурана) без вялых провалов */
+      if (sub === 0) {
         playFrameDrum(when, true, false, "indoor");
-      } else if (bar.drum === 2 && (sub === 0 || sub === 4)) {
-        playFrameDrum(when, sub === 0, false, "indoor");
+      } else if (sub === 3 || (bar.drum >= 1 && sub === 4)) {
+        playFrameDrum(when, false, sub === 3, "indoor");
+      } else if (bar.drum === 2 && sub === 2) {
+        playVelvetShaker(when, 0.009);
       }
       return;
     }
@@ -1502,10 +1577,16 @@
       }
 
       /* 4. Ратные выкрики северного мужского хора («ХУ! / ХА! / ДО-РА!») */
+      /* 4. Многоголосный ратный северный хор в квинту и октаву (0.0.9.1) */
       var chNote = bar.choir && bar.choir[sub];
       if (chNote && chNote > 0) {
-        playNordicWarChoir(chNote, when, subDur * 1.95);
-        playChoir(chNote, when + 0.03, subDur * 1.85, 0.024, "combat");
+        playNordicWarChoir(chNote, when, subDur * 2.05);
+        playNordicWarChoir(chNote - 12, when + 0.015, subDur * 1.95);
+        playChoir(chNote, when + 0.025, subDur * 1.95, 0.030, "combat");
+        playChoir(chNote + 7, when + 0.035, subDur * 1.85, 0.022, "combat");
+      } else if (sub === 0 && bar.bass && bar.bass > 0) {
+        /* Басовая опора мужского хора на сильную долю каждого такта сечи */
+        playChoir(bar.bass + 24, when + 0.02, subDur * 2.4, 0.022, "combat");
       }
 
       /* 5. Боевые литавры, кожаные тайко и удары о щит */
@@ -1516,7 +1597,7 @@
       return;
     }
 
-    /* === 3. УЛИЦА И СЕВЕРНЫЕ ПРОСТОРЫ (меланхоличный гипнотический грув Enigma «Sadeness» + Север) === */
+    /* === 3. УЛИЦА И СЕВЕРНЫЕ ПРОСТОРЫ (драйвовый шагающий грув Enigma + трёхголосный северный хор) === */
     if (sub === 0) {
       var fullStrings = [];
       if (bar.bass > 0) { fullStrings.push(bar.bass); }
@@ -1524,26 +1605,27 @@
       playBowedChord(fullStrings, when, barDur * 0.98, 0.026, "outdoor");
 
       if (bar.horn && bar.horn > 0) {
-        playHorn(bar.horn, when + 0.08, barDur * 0.88, 0.032, "outdoor");
+        playHorn(bar.horn, when + 0.06, barDur * 0.88, 0.034, "outdoor");
       }
 
-      if (bar.choir && bar.choir > 0) {
-        playChoir(bar.choir, when + 0.10, barDur * 0.92, 0.034, "outdoor");
+      var chRoot = (bar.choir && bar.choir > 0) ? bar.choir : ((bar.pad && bar.pad[1]) || 0);
+      if (chRoot > 0) {
+        playChoir(chRoot, when + 0.06, barDur * 0.94, 0.038, "outdoor");
+        playChoir(chRoot + 7, when + 0.10, barDur * 0.90, 0.026, "outdoor");
+        playChoir(chRoot - 12, when + 0.08, barDur * 0.92, 0.022, "outdoor");
       }
+    } else if (sub === 4 && bar.choir && bar.choir > 0) {
+      /* Ответный верхний голос хора во второй половине такта */
+      playChoir(bar.choir + 12, when + 0.04, subDur * 3.6, 0.022, "outdoor");
     }
 
-    /* Расслабляющий меланхоличный даунтемпо-бит в стиле Enigma «Sadeness» (для уличных треков 4/4):
-       sub 0 (1-я доля)  — глубокая мягкая бочка
-       sub 2 (2-я доля)  — бархатный выдох-снейр (breath-snare) в эхо
-       sub 3 (и-2)       — синкопированная тихая вторая бочка (фирменная качка Sadeness!)
-       sub 5 (и-3)       — тихая призрачная бочка
-       sub 6 (4-я доля)  — бархатный выдох-снейр
-       + мягкий шёпот снежного шейкера на слабых долях */
     if (state.streetBeat && totalSubs === 8) {
       if (sub === 0) {
         playEnigmaPillowKick(when, true);
       } else if (sub === 3) {
         playEnigmaPillowKick(when + subDur * 0.48, false);
+      } else if (sub === 4) {
+        playEnigmaPillowKick(when, false);
       } else if (sub === 5 && track.style !== "outdoor_tundra") {
         playEnigmaPillowKick(when, false);
       }
@@ -1554,9 +1636,7 @@
         playEnigmaBreathSnare(when + subDur * 0.48, true);
       }
 
-      if (sub % 2 === 1) {
-        playVelvetShaker(when, 0.011);
-      }
+      playVelvetShaker(when, (sub % 2 === 1) ? 0.014 : 0.007);
     }
 
     /* Певучая мелодия улицы (шакухати-флейта с дыханием или мягкий стеклянный флажолет) */
@@ -1993,13 +2073,17 @@
     var loc = gameState.player.location || "square";
     var hour = (gameState.time && typeof gameState.time.hour === "number") ? gameState.time.hour : 12;
     var isNight = (hour >= 21 || hour < 6);
-    var inActiveCombat = !!(gameState.fight && (gameState.fight.phase === "exchange" || gameState.fight.phase === "aftermath"));
+    var inActiveCombat = !!(
+      (gameState.fight && (gameState.fight.phase === "exchange" || gameState.fight.phase === "aftermath")) ||
+      (gameState.skirmish && gameState.skirmish.active)
+    );
 
     if (inActiveCombat) {
       state.mood = "combat";
       if (state.realm !== "combat") {
         state.preCombatTrackId = state.trackId;
-        var cbId = preferredCombatTrack(gameState.fight.mode);
+        var cbMode = (gameState.fight && gameState.fight.mode) || (gameState.skirmish && gameState.skirmish.mode) || "crime";
+        var cbId = preferredCombatTrack(cbMode);
         state.realm = "combat";
         state.trackId = cbId;
         curBarIdx = 0;
@@ -2107,6 +2191,8 @@
     playBattleIntro: playBattleIntro,
     playMgsAlert: playMgsAlert,
     playLockSound: playLockSound,
+    playDoorCreak: playDoorCreak,
+    playClashSteel: playClashSteel,
     selectTrack: function (id) { return switchToTrack(id, true); },
     setAutoMode: setAutoMode,
     nextTrack: nextTrack,

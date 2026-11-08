@@ -5787,6 +5787,454 @@ html.bow-motion-calm .bow-jail-guard-fig { transition: none !important; }
   background: radial-gradient(circle at 50% 45%, rgba(140, 184, 224, 0.18), rgba(8, 12, 18, 0.42)) !important;
 }
 
+/* ============================================================
+   КРУГ 24 (0.0.9.1): ПОЛНОЭКРАННЫЙ МИР 100VW × 100DVH БЕЗ КЛЕТОК,
+   РЕЖИМ АГРЕССИИ / МИРА, БОЙ KENSHI В ЛОКАЦИИ И ВСПЛЫВАЮЩИЕ ШТОРКИ
+   ============================================================ */
+
+html,
+body,
+#story {
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 100vw;
+  height: 100dvh;
+  overflow: hidden;
+  background: #0b1017;
+}
+
+#bow-app.bow-fullscreen-app {
+  max-width: none !important;
+  width: 100vw;
+  height: 100dvh;
+  margin: 0 !important;
+  padding: 0 !important;
+  gap: 0 !important;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #0b1017;
+}
+
+#bow-app.bow-fullscreen-app > .bow-topbar {
+  flex: 0 0 auto;
+  min-height: 44px;
+  padding: 4px 12px;
+  border-radius: 0;
+  border: 0;
+  border-bottom: 1px solid rgba(74, 96, 118, 0.45);
+  background: linear-gradient(180deg, rgba(16, 23, 32, 0.96), rgba(11, 16, 23, 0.96));
+  z-index: 20;
+}
+
+.bow-tb-loc-pill {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-right: 8px;
+  padding-right: 8px;
+  border-right: 1px solid rgba(92, 116, 140, 0.35);
+}
+
+.bow-tb-loc-pill b {
+  color: #e6eff8;
+  font-size: 0.86rem;
+}
+
+.bow-tb-loc-pill i {
+  font-style: normal;
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+}
+
+#bow-app.bow-fullscreen-app .bow-body,
+#bow-app.bow-fullscreen-app .bow-main {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  gap: 0;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+
+#bow-app.bow-fullscreen-app .bow-stage {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  position: relative;
+  overflow: hidden;
+  background: #101822;
+}
+
+#bow-app.bow-fullscreen-app .bow-stage-canvas {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+}
+
+#bow-app.bow-aggro-mode .bow-iso-canvas {
+  cursor: crosshair;
+}
+
+/* Тонкая строка отклика мира в левом нижнем углу сцены */
+#bow-app.bow-fullscreen-app .bow-stage-bottom {
+  position: absolute;
+  left: 14px;
+  bottom: 10px;
+  right: auto;
+  max-width: min(560px, 60vw);
+  padding: 0;
+  background: transparent;
+  border: 0;
+  pointer-events: none;
+  z-index: 8;
+}
+
+#bow-app.bow-fullscreen-app .bow-result:not(:empty) {
+  padding: 4px 10px;
+  background: rgba(9, 14, 20, 0.82);
+  border: 1px solid rgba(90, 118, 145, 0.42);
+  border-radius: 4px;
+  font-size: 0.78rem;
+  color: #dce8f4;
+  backdrop-filter: blur(4px);
+}
+
+/* Увеличенный контур нажатия под спрайты 96×112 и аккуратные подписи без громоздких плашек */
+.bow-actor.bow-iso-actor {
+  transform: translate(-50%, -88%);
+}
+
+.bow-iso-hit {
+  width: 56px;
+  height: 78px;
+  border-radius: 26px;
+}
+
+.bow-actor.bow-iso-actor .bow-actor-tag {
+  opacity: 0.80;
+  transition: opacity 0.14s ease, border-color 0.14s ease, transform 0.14s ease;
+}
+
+.bow-actor.bow-iso-actor:hover .bow-actor-tag,
+.bow-actor.bow-iso-actor.bow-actor-on .bow-actor-tag {
+  opacity: 1;
+  transform: translateY(-1px);
+}
+
+/* Не лепим лишнюю чёрную табличку «Вы» поверх сапог героя в покое */
+.bow-actor-player:not(.bow-actor-working):not(.bow-actor-coma):not(:hover):not(.bow-actor-on) .bow-actor-tag {
+  opacity: 0;
+}
+
+.bow-actor-aggro-hover:hover .bow-actor-tag {
+  border-color: #df5f6b !important;
+  background: rgba(48, 14, 19, 0.92) !important;
+  color: #ffdce0 !important;
+}
+
+/* Компактные бейджи дверей и точек ремесла поверх настоящих дверей и горнов */
+.bow-spot.bow-iso-spot {
+  padding: 2px 7px;
+  font-size: 0.68rem;
+  opacity: 0.82;
+  backdrop-filter: blur(3px);
+}
+
+.bow-spot.bow-iso-spot.bow-door-hotspot {
+  border-color: rgba(196, 156, 88, 0.55);
+  background: rgba(14, 19, 26, 0.80);
+}
+
+.bow-spot.bow-iso-spot.bow-door-hotspot:hover {
+  opacity: 1;
+  border-color: #f0be6e;
+  background: rgba(28, 24, 18, 0.94);
+}
+
+/* Гербовая вспышка «Звенит сталь!» вверху экрана при старте схватки */
+.bow-clash-banner {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translate(-50%, -14px) scale(0.96);
+  opacity: 0;
+  pointer-events: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 18px;
+  background: linear-gradient(180deg, rgba(62, 18, 24, 0.94), rgba(28, 11, 15, 0.94));
+  border: 1px solid #df6b76;
+  border-radius: 5px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.62);
+  color: #ffe8ea;
+  font-size: 0.88rem;
+  letter-spacing: 0.04em;
+  z-index: 24;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.bow-clash-banner.bow-clash-banner-on {
+  opacity: 1;
+  transform: translate(-50%, 0) scale(1);
+}
+
+.bow-clash-swords {
+  font-size: 1.08rem;
+  color: #ffd280;
+}
+
+/* Подтверждение «Напасть — Да / Нет» в мирном режиме вместо старого окна */
+.bow-attack-confirm {
+  margin-top: 7px;
+  padding: 7px 8px;
+  background: rgba(46, 16, 21, 0.65);
+  border: 1px solid rgba(208, 88, 98, 0.58);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.bow-attack-q {
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: #ffd8dc;
+}
+
+.bow-attack-confirm-btns {
+  display: flex;
+  gap: 5px;
+}
+
+/* Живая тактическая панель боя Kenshi внизу сцены */
+.bow-skirmish-hud {
+  position: absolute;
+  left: 50%;
+  bottom: 12px;
+  transform: translateX(-50%);
+  z-index: 18;
+  display: none;
+  width: min(820px, 94vw);
+}
+
+.bow-skirmish-hud.bow-skirmish-hud-open {
+  display: block;
+}
+
+.bow-sk-card {
+  padding: 8px 12px;
+  background: rgba(11, 16, 23, 0.92);
+  border: 1px solid rgba(196, 86, 96, 0.62);
+  border-radius: 6px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(6px);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.bow-sk-top,
+.bow-sk-orders,
+.bow-sk-acts,
+.bow-sk-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.bow-sk-orders {
+  justify-content: space-between;
+}
+
+.bow-sk-guard-warn {
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(168, 52, 62, 0.28);
+  border: 1px solid rgba(224, 96, 106, 0.65);
+  color: #ffb8c0;
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+
+.bow-sk-log {
+  font-size: 0.75rem;
+  color: #cbd9e6;
+  margin-left: auto;
+}
+
+/* Нижняя приборная консоль CRPG на всю ширину экрана */
+#bow-app.bow-fullscreen-app .bow-hud-strip {
+  flex: 0 0 auto;
+  min-height: 50px;
+  margin: 0;
+  padding: 5px 12px;
+  border-radius: 0;
+  border: 0;
+  border-top: 1px solid rgba(74, 96, 118, 0.48);
+  background: linear-gradient(180deg, #131c26 0%, #0c1219 100%);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  z-index: 20;
+}
+
+/* Тумблер Мирный / К бою */
+.bow-mode-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 11px;
+  border-radius: 5px;
+  border: 1px solid #48627a;
+  background: linear-gradient(180deg, #1b2836 0%, #131d28 100%);
+  color: #deebf7;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.bow-mode-btn:hover {
+  border-color: #7ab4e0;
+}
+
+.bow-mode-btn .bow-mode-i {
+  font-size: 1rem;
+}
+
+.bow-mode-btn .bow-mode-txt {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1.08;
+}
+
+.bow-mode-btn .bow-mode-txt b {
+  font-size: 0.76rem;
+}
+
+.bow-mode-btn .bow-mode-txt i {
+  font-style: normal;
+  font-size: 0.62rem;
+  color: #8fa6bc;
+}
+
+.bow-mode-btn.bow-mode-aggro {
+  background: linear-gradient(180deg, #6e222c 0%, #441319 100%);
+  border-color: #ea6c78;
+  color: #ffe8eb;
+  box-shadow: 0 0 14px rgba(218, 76, 88, 0.42);
+}
+
+.bow-mode-btn.bow-mode-aggro .bow-mode-txt i {
+  color: #ffbec5;
+}
+
+/* Кнопки всплывающих шторок справа внизу (Подряды / Торг / Карта / Место) */
+.bow-dock-drawers {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: auto;
+}
+
+.bow-dock-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 4px;
+  border: 1px solid rgba(84, 108, 132, 0.55);
+  background: #16202c;
+  color: #d5e3f0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.bow-dock-btn:hover,
+.bow-dock-btn.bow-dock-btn-on {
+  background: #223346;
+  border-color: #84bcf0;
+  color: #ffffff;
+}
+
+/* Всплывающее окно «Дела места» (Подряды / Торг / Карта / О месте) поверх сцены */
+#bow-world-panel.bow-world-drawer {
+  display: none;
+  position: absolute;
+  left: 50%;
+  bottom: 58px;
+  transform: translateX(-50%);
+  width: min(860px, 95vw);
+  max-height: min(68dvh, 520px);
+  margin: 0;
+  padding: 12px 14px;
+  background: rgba(13, 19, 27, 0.96);
+  border: 1px solid #455c73;
+  border-radius: 7px;
+  box-shadow: 0 20px 54px rgba(0, 0, 0, 0.76);
+  backdrop-filter: blur(8px);
+  z-index: 28;
+  flex-direction: column;
+  gap: 10px;
+}
+
+#bow-world-panel.bow-world-drawer.bow-world-drawer-open {
+  display: flex;
+}
+
+.bow-world-drawer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.bow-world-drawer-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+/* Всплывающие сюжетные карточки и диалог поверх полноэкранной сцены */
+#bow-app.bow-fullscreen-app .bow-floating-overlay.bow-fight-open,
+#bow-app.bow-fullscreen-app .bow-floating-dialog:not(:empty) {
+  position: absolute;
+  left: 50%;
+  bottom: 62px;
+  transform: translateX(-50%);
+  width: min(760px, 94vw);
+  max-height: 70dvh;
+  overflow-y: auto;
+  margin: 0;
+  z-index: 26;
+  box-shadow: 0 18px 46px rgba(0, 0, 0, 0.74);
+}
+
+
 
 
 

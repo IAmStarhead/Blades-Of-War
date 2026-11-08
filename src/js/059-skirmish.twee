@@ -1,0 +1,907 @@
+:: bow-skirmish [script]
+/* ============================================================
+   BOW SKIRMISH (0.0.9.1) — живой бесклеточный бой в духе Kenshi
+   прямо на изометрической локации с тактической паузой (Пробел),
+   переключателем «✋ Мирный / ⚔ К бою» и приходом стражи.
+
+   Два масштаба боёв в игре:
+     1) Bow.skirmish — локальные схватки (1 на 1 и стычки в локации
+        до ~10 человек): идут прямо между столами, колодцем и сугробами
+        без сетки клеток, с реальной физической дистанцией оружия.
+     2) Bow.fight — крупные ратные битвы отрядов и стеков (×30, ×100)
+        в полководческом режиме «Поле брани» (King's Bounty / Heroes).
+   ============================================================ */
+(function (global) {
+  "use strict";
+
+  var Bow = global.Bow = global.Bow || {};
+
+  var aggroMode = false;
+
+  function clamp(v, a, b) { return Bow.util.clamp(v, a, b); }
+  function rollOf(rng) { return (rng || Math.random)(); }
+
+  function isAggressive() { return !!aggroMode; }
+  function setAggressive(on) { aggroMode = !!on; return aggroMode; }
+  function toggleAggressive() { aggroMode = !aggroMode; return aggroMode; }
+
+  /* Дальность оружия в мировых метрах (тайлах) локации */
+  function reachOfWeaponKind(wepKind, mode) {
+    if (mode === "spar") { return 0.88; }
+    if (wepKind === "spear") { return 1.58; }
+    if (wepKind === "axe" || wepKind === "sword") { return 1.16; }
+    if (wepKind === "knife") { return 0.94; }
+    return 0.88;
+  }
+
+  function weaponKindForActor(state, ref, isGuard, isRobber) {
+    if (isGuard) { return "spear"; }
+    if (isRobber) { return "knife"; }
+    if (Bow.stage && Bow.stage.weaponKindOf) {
+      return Bow.stage.weaponKindOf(state, ref);
+    }
+    return "none";
+  }
+
+  function cooldownFor(actor) {
+    var sk = (actor && actor.skills && typeof actor.skills.combat === "number") ? actor.skills.combat : 20;
+    var dex = (actor && actor.attrs && typeof actor.attrs.dexterity === "number") ? actor.attrs.dexterity : 14;
+    var fat = (actor && actor.needs && typeof actor.needs.fatigue === "number") ? actor.needs.fatigue : 75;
+    var base = 1.78 - (sk * 0.0055) - ((dex - 10) * 0.018);
+    if (fat < 35) { base += 0.28; }
+    return clamp(base, 0.92, 2.15);
+  }
+
+  function moveSpeedFor(actor) {
+    var base = 2.85;
+    if (Bow.fight && Bow.fight.hasInjury && Bow.fight.hasInjury(actor, "leg")) {
+      base *= 0.68;
+    }
+    if (actor && actor.body) {
+      var ll = actor.body.leftLeg ? actor.body.leftLeg.hp : 100;
+      var rl = actor.body.rightLeg ? actor.body.rightLeg.hp : 100;
+      if (Math.min(ll, rl) < 40) { base *= 0.72; }
+    }
+    return base;
+  }
+
+  function instrumentalTitle(name, pron) {
+    var s = String(name || "противником").trim();
+    if (!s) { return "противником"; }
+    if (/ой$/i.test(s) && pron !== "f") { return s.replace(/ой$/i, "ым"); }
+    if (/ий$/i.test(s) && pron !== "f") { return s.replace(/ий$/i, "им"); }
+    if (/а$/i.test(s)) { return s.slice(0, -1) + (/[жшчщц]$/i.test(s.slice(0, -1)) ? "ей" : "ой"); }
+    if (/я$/i.test(s)) { return s.slice(0, -1) + "ей"; }
+    if (/ь$/i.test(s)) { return pron === "f" ? (s + "ю") : (s.slice(0, -1) + "ем"); }
+    if (/й$/i.test(s)) { return s.slice(0, -1) + "ем"; }
+    if (/[бвгджзклмнпрстфхцчшщ]$/i.test(s)) {
+      return s + (/[жшчщц]$/i.test(s) ? "ем" : "ом");
+    }
+    return s;
+  }
+
+  function isSettlementLoc(locId) {
+    return locId === "square" || locId === "tavern" || locId === "smithy" || locId === "outskirts";
+  }
+
+  function findScenePos(entities, pred, fallback) {
+    for (var i = 0; i < entities.length; i++) {
+      if (pred(entities[i])) {
+        return { wx: entities[i].col, wy: entities[i].row };
+      }
+    }
+    return fallback;
+  }
+
+  /* Запуск живой бесклеточной схватки прямо в текущей локации */
+  function engage(state, personOrOpts, maybeOpts) {
+    var opts = {};
+    if (typeof personOrOpts === "string" || personOrOpts === null) {
+      opts = Object.assign({}, maybeOpts || {});
+      if (personOrOpts) { opts.personId = personOrOpts; }
+    } else {
+      opts = Object.assign({}, personOrOpts || {});
+    }
+    if (!state || state.dead || state.jail || state.fight) {
+      return { ok: false, message: "Сейчас не до схватки." };
+    }
+    if (state.skirmish && state.skirmish.active) {
+      if (opts.personId) {
+        state.skirmish.targetKey = "enemy:" + opts.personId;
+      }
+      return { ok: true, message: "Цель сменена." };
+    }
+
+    var mode = opts.mode || "crime";
+    if (mode === "robber") { mode = "robbery"; }
+    var forceUnarmed = (mode === "spar" || mode === "brawl" || !!opts.unarmed);
+    if (mode === "brawl") { mode = "crime"; }
+    var p = state.player;
+    var R = Bow.data.fightRules;
+
+    if (mode === "crime" || mode === "spar") {
+      if (p.needs.fatigue < 12) { return { ok: false, message: "Вы едва стоите на ногах — сперва отдохните." }; }
+      if (p.needs.health < 25) { return { ok: false, message: "С такими ранами драку не начать." }; }
+    }
+
+    if (state.dialog && Bow.dialog && Bow.dialog.close) { Bow.dialog.close(state); }
+    if (state.task && Bow.work && Bow.work.stopTask) { Bow.work.stopTask(state); }
+    if (Bow.iso && Bow.iso.stopWalkLoop) { Bow.iso.stopWalkLoop(); }
+
+    var entities = (Bow.iso && Bow.iso.collectSceneEntities) ? Bow.iso.collectSceneEntities(state, null) : [];
+    var pPos = (Bow.iso && Bow.iso.getPlayerPos) ? Bow.iso.getPlayerPos(state) : { col: 3, row: 5 };
+
+    var units = [];
+    var playerWep = forceUnarmed ? "none" : weaponKindForActor(state, p, false, false);
+    units.push({
+      key: "player",
+      side: "ally",
+      refId: null,
+      name: p.name || "Вы",
+      roleKey: "player",
+      female: p.pron === "f",
+      wx: pPos.col,
+      wy: pPos.row,
+      facing: "SE",
+      pose: "idle",
+      poseTtl: 0,
+      weapon: playerWep,
+      armor: (Bow.fight && Bow.fight.armorOf && Bow.fight.armorOf(p)) ? Bow.fight.armorOf(p).id : "",
+      shield: false,
+      hp: Math.round(p.needs.health),
+      maxHp: 100,
+      cd: 0.25,
+      reach: reachOfWeaponKind(playerWep, mode),
+      down: false,
+      dead: false,
+      disarmed: false
+    });
+
+    /* Верные спутники в этой же локации сами вступают за героя */
+    if (mode !== "spar" && Bow.fight && Bow.fight.alliesAvailable) {
+      var avail = Bow.fight.alliesAvailable(state);
+      avail.forEach(function (al, idx) {
+        if (!al.willing || al.id === opts.personId) { return; }
+        var ap = state.people[al.id];
+        if (!ap || !ap.alive || ap.location !== p.location) { return; }
+        var aPos = findScenePos(entities, function (e) { return e.type === "npc" && e.id === al.id; }, { wx: pPos.col - 0.8, wy: pPos.row + (idx ? 0.9 : -0.8) });
+        var aWep = weaponKindForActor(state, ap, false, false);
+        units.push({
+          key: "ally:" + ap.id,
+          side: "ally",
+          refId: ap.id,
+          name: ap.name,
+          roleKey: ap.id === "person:tarn" ? "smith" : (ap.id === "person:bror" ? "hunter" : (ap.id === "person:sigi" ? "innkeeper" : "villager")),
+          female: ap.pron === "f",
+          wx: aPos.wx,
+          wy: aPos.wy,
+          facing: "SE",
+          pose: "idle",
+          poseTtl: 0,
+          weapon: aWep,
+          armor: ap.armor || "",
+          shield: false,
+          hp: Math.round(ap.needs.health),
+          maxHp: 100,
+          cd: 0.45 + idx * 0.2,
+          reach: reachOfWeaponKind(aWep, mode),
+          down: false,
+          dead: false,
+          disarmed: false
+        });
+      });
+    }
+
+    var introTitle = "⚔ Схватка";
+    var primaryPersonId = null;
+
+    if (mode === "guard" && state.guard && Array.isArray(state.guard.squad)) {
+      introTitle = "⚔ Бой со стражей Брода";
+      state.guard.squad.forEach(function (gu, gi) {
+        var gPos = findScenePos(entities, function (e) { return e.type === "guard" && e.id === "guard:" + gi; }, { wx: 7.5 + gi * 0.6, wy: 2.2 + gi * 1.4 });
+        units.push({
+          key: "guard:" + gi,
+          side: "enemy",
+          refId: null,
+          actorObj: {
+            name: gu.name || "Стражник",
+            pron: "m",
+            skills: Bow.util.clone(R.guard.skills),
+            needs: { health: gu.hp || 84, fatigue: 80 },
+            weapon: "item:axe",
+            armor: "item:leather",
+            injuries: []
+          },
+          name: gu.name || "Стражник",
+          roleKey: "guard",
+          female: false,
+          wx: gPos.wx,
+          wy: gPos.wy,
+          facing: "SW",
+          pose: "idle",
+          poseTtl: 0,
+          weapon: "spear",
+          armor: "item:leather",
+          shield: true,
+          hp: gu.hp || 84,
+          maxHp: 84,
+          cd: 0.5 + gi * 0.25,
+          reach: reachOfWeaponKind("spear", mode),
+          down: false,
+          dead: false,
+          disarmed: false
+        });
+      });
+      state.guard = null;
+    } else if (mode === "robbery" && state.encounter && state.encounter.robber) {
+      var rob = state.encounter.robber;
+      introTitle = "⚔ Схватка с " + instrumentalTitle(rob.name || "грабителем", "m");
+      var rPos = findScenePos(entities, function (e) { return e.type === "robber"; }, { wx: 6.4, wy: 3.4 });
+      units.push({
+        key: "robber:0",
+        side: "enemy",
+        refId: null,
+        robberPay: rob.purse || 8,
+        actorObj: {
+          name: rob.name || "Грабитель",
+          pron: "m",
+          skills: { combat: rob.combat || 28, survival: 22 },
+          needs: { health: rob.hp || 76, fatigue: 78 },
+          weapon: "item:knife",
+          armor: "",
+          injuries: []
+        },
+        name: rob.name || "Грабитель",
+        roleKey: "robber",
+        female: false,
+        wx: rPos.wx,
+        wy: rPos.wy,
+        facing: "SW",
+        pose: "idle",
+        poseTtl: 0,
+        weapon: "knife",
+        armor: "",
+        shield: false,
+        hp: rob.hp || 76,
+        maxHp: 76,
+        cd: 0.42,
+        reach: reachOfWeaponKind("knife", mode),
+        down: false,
+        dead: false,
+        disarmed: false
+      });
+    } else {
+      var npc = state.people[opts.personId];
+      if (!npc || !npc.alive || npc.location !== p.location) {
+        return { ok: false, message: "Цель недосягаема." };
+      }
+      if (mode === "spar" && npc.attitude < R.sparMinAttitude) {
+        mode = "crime";
+      }
+      primaryPersonId = npc.id;
+      introTitle = (mode === "spar" ? "⚔ Кулачный бой с " : "⚔ Бой с ") + instrumentalTitle(npc.name, npc.pron);
+      var nPos = findScenePos(entities, function (e) { return e.type === "npc" && e.id === npc.id; }, { wx: 6.2, wy: 3.8 });
+      var nWep = mode === "spar" ? "none" : weaponKindForActor(state, npc, false, false);
+      units.push({
+        key: "enemy:" + npc.id,
+        side: "enemy",
+        refId: npc.id,
+        name: npc.name,
+        roleKey: npc.id === "person:tarn" ? "smith" : (npc.id === "person:bror" ? "hunter" : (npc.id === "person:sigi" ? "innkeeper" : "villager")),
+        female: npc.pron === "f",
+        wx: nPos.wx,
+        wy: nPos.wy,
+        facing: "SW",
+        pose: "idle",
+        poseTtl: 0,
+        weapon: nWep,
+        armor: npc.armor || "",
+        shield: false,
+        hp: Math.round(npc.needs.health),
+        maxHp: 100,
+        cd: 0.48,
+        reach: reachOfWeaponKind(nWep, mode),
+        down: false,
+        dead: false,
+        disarmed: false
+      });
+
+      /* Последствия нападения на мирного жителя + запуск тревоги стражи */
+      if (mode === "crime") {
+        var locDef = Bow.data.locations[p.location];
+        var orgId = (locDef && locDef.orgId) || "org:brod";
+        var witnesses = Object.keys(state.people || {}).filter(function (id) {
+          var w = state.people[id];
+          return w && w.alive && id !== npc.id && w.location === p.location;
+        });
+        var heatGain = R.crimeHeat + witnesses.length * R.witnessHeat;
+        if (Bow.steal && Bow.steal.addHeat) {
+          Bow.steal.addHeat(state, orgId, heatGain);
+          Bow.steal.addHeat(state, "org:guard", Math.round(heatGain * 0.85));
+        }
+        state.reputation[orgId] = clamp((state.reputation[orgId] || 0) + R.crimeRep, -100, 100);
+        state.reputation["org:guard"] = clamp((state.reputation["org:guard"] || 0) - 12, -100, 100);
+        npc.attitude = clamp((npc.attitude || 0) - 18, -100, 100);
+        npc.memory = npc.memory || [];
+        npc.memory.push({ kind: "attacked", at: state.time.totalHours });
+        if (Bow.journal && Bow.journal.add) {
+          Bow.journal.add(state, "crime", "Вы напали на " + npc.name + " (" + (locDef ? locDef.name : p.location) + ").");
+        }
+      }
+    }
+
+    var firstEnemy = units.filter(function (u) { return u.side === "enemy"; })[0];
+    var willCallGuards = (mode === "crime" && isSettlementLoc(p.location));
+
+    state.skirmish = {
+      active: true,
+      paused: false,
+      phase: "combat",
+      mode: mode,
+      personId: primaryPersonId,
+      location: p.location,
+      introTitle: introTitle,
+      targetKey: firstEnemy ? firstEnemy.key : null,
+      stance: "press",
+      aim: "body",
+      moveGoal: null,
+      elapsed: 0,
+      guardTimer: willCallGuards ? 9.0 : null,
+      guardSpawned: mode === "guard",
+      guardsCalled: mode === "guard",
+      units: units,
+      fx: [],
+      log: []
+    };
+
+    return {
+      ok: true,
+      introTitle: introTitle,
+      clashTitle: introTitle,
+      message: willCallGuards
+        ? (introTitle + "! Крики разлетаются по округе — скоро сбежится стража!")
+        : (introTitle + "!")
+    };
+  }
+
+  function actorForUnit(state, u) {
+    if (u.key === "player") { return state.player; }
+    if (u.refId && state.people[u.refId]) { return state.people[u.refId]; }
+    return u.actorObj || {
+      name: u.name,
+      pron: u.female ? "f" : "m",
+      skills: { combat: 30, survival: 20 },
+      needs: { health: u.hp, fatigue: 75 },
+      injuries: []
+    };
+  }
+
+  function syncBackToState(state, u) {
+    if (u.key === "player") {
+      state.player.needs.health = clamp(Math.round(u.hp), 0, 100);
+      if (Bow.iso && Bow.iso.setPlayerPos) {
+        Bow.iso.setPlayerPos(state, u.wx, u.wy, u.facing);
+      }
+    } else if (u.refId && state.people[u.refId]) {
+      state.people[u.refId].needs.health = clamp(Math.round(u.hp), 0, 100);
+    } else if (u.actorObj && u.actorObj.needs) {
+      u.actorObj.needs.health = clamp(Math.round(u.hp), 0, 100);
+    }
+  }
+
+  /* Вход подкрепления Стражи Брода прямо через двери/ворота локации! */
+  function spawnGuardReinforcements(state, sk) {
+    sk.guardSpawned = true;
+    sk.guardsCalled = true;
+    sk.guardTimer = null;
+    var map = (Bow.iso && Bow.iso.mapOf) ? Bow.iso.mapOf(state) : null;
+    var entry = (map && map.exits && map.exits[0]) ? map.exits[0] : { col: 10.2, row: 4.0 };
+    var names = ["Свейн", "Хальвор", "Одд"];
+    var R = Bow.data.fightRules;
+
+    for (var i = 0; i < 3; i++) {
+      var gx = clamp(entry.col + (entry.col < 5 ? 0.6 : -0.6), 0.8, 10.8);
+      var gy = clamp(entry.row + (i - 1) * 0.85, 0.9, 6.8);
+      sk.units.push({
+        key: "reinforce:guard:" + i,
+        side: "enemy",
+        refId: null,
+        isGuard: true,
+        actorObj: {
+          name: names[i] + " (стража)",
+          pron: "m",
+          skills: Bow.util.clone(R.guard.skills),
+          needs: { health: 86, fatigue: 85 },
+          weapon: "item:axe",
+          armor: "item:leather",
+          injuries: []
+        },
+        name: names[i],
+        roleKey: "guard",
+        female: false,
+        wx: gx,
+        wy: gy,
+        facing: entry.col < 5 ? "SE" : "SW",
+        pose: "idle",
+        poseTtl: 0,
+        weapon: "spear",
+        armor: "item:leather",
+        shield: true,
+        hp: 86,
+        maxHp: 86,
+        cd: 0.45 + i * 0.22,
+        reach: reachOfWeaponKind("spear", "guard"),
+        down: false,
+        dead: false,
+        disarmed: false
+      });
+    }
+
+    sk.fx.push({ wx: entry.col, wy: entry.row, text: "⚠ СТРАЖА БРОДА!", kind: "alert", ttl: 1.8 });
+    if (Bow.audio && Bow.audio.playMgsAlert) { Bow.audio.playMgsAlert(); }
+    if (Bow.ui && Bow.ui.setMessage) {
+      Bow.ui.setMessage("«Стой! Бросай сталь!» — стражники с копьями врываются в локацию!");
+    }
+  }
+
+  function stepPosition(map, state, u, tx, ty, maxStep, allUnits) {
+    var dx = tx - u.wx;
+    var dy = ty - u.wy;
+    var dist = Math.hypot(dx, dy);
+    if (dist < 0.04) { return; }
+
+    var ux = dx / dist;
+    var uy = dy / dist;
+
+    /* Мягкое взаимное отталкивание бойцов, чтобы не слипались в одну точку и окружали полукругом */
+    var repX = 0, repY = 0;
+    for (var i = 0; i < allUnits.length; i++) {
+      var o = allUnits[i];
+      if (o === u || o.down || o.dead) { continue; }
+      var odx = u.wx - o.wx;
+      var ody = u.wy - o.wy;
+      var od = Math.hypot(odx, ody);
+      if (od > 0.001 && od < 0.68) {
+        var push = (0.68 - od) * 1.35;
+        repX += (odx / od) * push;
+        repY += (ody / od) * push;
+      }
+    }
+
+    var vx = ux + repX * 0.55;
+    var vy = uy + repY * 0.55;
+    var vLen = Math.hypot(vx, vy) || 1;
+    vx /= vLen;
+    vy /= vLen;
+
+    var step = Math.min(dist, maxStep);
+    var nx = clamp(u.wx + vx * step, 0.55, 11.25);
+    var ny = clamp(u.wy + vy * step, 0.65, 7.25);
+
+    if (map && Bow.iso && Bow.iso.isBlocked) {
+      if (!Bow.iso.isBlocked(map, Math.round(nx), Math.round(ny), state)) {
+        u.wx = nx;
+        u.wy = ny;
+      } else if (!Bow.iso.isBlocked(map, Math.round(nx), Math.round(u.wy), state)) {
+        u.wx = nx;
+      } else if (!Bow.iso.isBlocked(map, Math.round(u.wx), Math.round(ny), state)) {
+        u.wy = ny;
+      }
+    } else {
+      u.wx = nx;
+      u.wy = ny;
+    }
+
+    if (Math.abs(dx) >= Math.abs(dy)) {
+      u.facing = dx >= 0 ? "SE" : "NW";
+    } else {
+      u.facing = dy >= 0 ? "SW" : "NE";
+    }
+  }
+
+  function performSwing(state, sk, attU, defU, rng) {
+    var att = actorForUnit(state, attU);
+    var def = actorForUnit(state, defU);
+    var stanceAtt = attU.key === "player" ? (sk.stance || "press") : "press";
+    var stanceDef = defU.key === "player" ? (sk.stance || "press") : (defU.shield ? "guard" : "press");
+    var aimKey = attU.key === "player" ? (sk.aim || "body") : (rollOf(rng) < 0.22 ? "head" : (rollOf(rng) < 0.3 ? "legs" : "body"));
+    var fightMode = sk.mode === "spar" ? "spar" : "crime";
+
+    attU.pose = "attack";
+    attU.poseTtl = 0.34;
+    attU.facing = (defU.wx - attU.wx >= 0) ? "SE" : "NW";
+
+    var hitCh = Bow.fight.hitChance(att, def, stanceAtt, aimKey);
+    if (stanceDef === "guard") { hitCh *= 0.82; }
+
+    if (rollOf(rng) > hitCh) {
+      sk.fx.push({ wx: defU.wx, wy: defU.wy, text: "✧ уклон", kind: "miss", ttl: 0.78 });
+      return;
+    }
+
+    var dmg = Bow.fight.damageRoll(att, def, fightMode, stanceDef, rng, aimKey);
+    dmg = Math.max(2, Math.round(dmg));
+    var blocked = (stanceDef === "guard" || defU.shield) && rollOf(rng) < 0.38;
+    if (blocked) {
+      dmg = Math.max(1, Math.round(dmg * 0.52));
+      if (Bow.audio && Bow.audio.playClashSteel) { Bow.audio.playClashSteel(true); }
+    }
+
+    defU.hp = Math.max(0, defU.hp - dmg);
+    syncBackToState(state, defU);
+
+    /* Урон по частям тела героя или жителя (как в Kenshi) */
+    if (def && def.body && fightMode !== "spar") {
+      var partMap = {
+        head: "head",
+        body: rollOf(rng) < 0.55 ? "chest" : "stomach",
+        legs: rollOf(rng) < 0.5 ? "leftLeg" : "rightLeg",
+        arms: rollOf(rng) < 0.5 ? "leftArm" : "rightArm"
+      };
+      var pk = partMap[aimKey] || "chest";
+      if (def.body[pk]) {
+        def.body[pk].hp = clamp(Math.round(def.body[pk].hp - dmg * 0.85), -50, 100);
+      }
+    }
+
+    /* Обезоруживание по рукам и сбивание с ног */
+    if (fightMode !== "spar" && aimKey === "arms" && !defU.disarmed && dmg >= 12 && rollOf(rng) < 0.26) {
+      defU.disarmed = true;
+      defU.weapon = "none";
+      defU.reach = reachOfWeaponKind("none", fightMode);
+      sk.fx.push({ wx: defU.wx, wy: defU.wy - 0.15, text: "Оружие выбито!", kind: "alert", ttl: 1.1 });
+    }
+
+    sk.fx.push({
+      wx: defU.wx,
+      wy: defU.wy,
+      fromWx: attU.wx,
+      fromWy: attU.wy,
+      text: (blocked ? "⛨ −" : "−") + dmg,
+      kind: blocked ? "block" : "hit",
+      ttl: 0.86
+    });
+
+    /* Рост боевого навыка героя на ходу */
+    if (attU.key === "player" && state.player.skills) {
+      state.player.skills.combat = Math.min(100, Math.round(((state.player.skills.combat || 15) + 0.25) * 10) / 10);
+    }
+
+    var yieldMark = defU.key === "player" ? Bow.data.fightRules.yieldAt.player : Bow.data.fightRules.yieldAt.npc;
+    if (defU.hp <= yieldMark || (def && Bow.state && Bow.state.isComatose && Bow.state.isComatose(def))) {
+      defU.down = true;
+      defU.pose = "down";
+    }
+  }
+
+  function checkEndConditions(state, sk) {
+    var playerU = sk.units.filter(function (u) { return u.key === "player"; })[0];
+    var liveFoes = sk.units.filter(function (u) { return u.side === "enemy" && !u.down && !u.dead; });
+
+    if (!playerU || playerU.down || (Bow.state && Bow.state.isComatose && Bow.state.isComatose(state.player))) {
+      sk.active = false;
+      state.stats.fightsLost = (state.stats.fightsLost || 0) + 1;
+
+      if (sk.mode === "spar") {
+        state.player.needs.health = Math.max(22, state.player.needs.health);
+        state.skirmish = null;
+        if (Bow.ui && Bow.ui.setMessage) { Bow.ui.setMessage("Кулачный бой окончен — вы уступили, но размяли плечи."); }
+        return "ended";
+      }
+
+      if (sk.mode === "guard" || sk.guardSpawned) {
+        state.skirmish = null;
+        if (Bow.guard && Bow.guard.toJail) {
+          Bow.guard.toJail(state, "сопротивление страже");
+        }
+        if (Bow.ui && Bow.ui.setMessage) {
+          Bow.ui.setMessage("Стражники скрутили вас на снегу и поволокли в клетку у частокола.");
+        }
+        return "jailed";
+      }
+
+      if (sk.mode === "robbery" && state.encounter && state.encounter.robber) {
+        var taken = Math.min(state.player.money, state.encounter.robber.purse || 6);
+        state.player.money -= taken;
+        state.encounter = null;
+        state.skirmish = null;
+        if (Bow.ui && Bow.ui.setMessage) {
+          Bow.ui.setMessage("Грабитель сбил вас с ног, срезал " + taken + " м. и скрылся в переулке.");
+        }
+        return "ended";
+      }
+
+      state.skirmish = null;
+      if (Bow.state && Bow.state.checkComa) { Bow.state.checkComa(state); }
+      if (Bow.ui && Bow.ui.setMessage) {
+        Bow.ui.setMessage("Вы рухнули в снег — противник сплюнул и отошёл.");
+      }
+      return "ended";
+    }
+
+    if (liveFoes.length === 0) {
+      sk.active = false;
+      if (sk.mode === "spar") {
+        state.stats.sparsMade = (state.stats.sparsMade || 0) + 1;
+        state.player.skills.combat = Math.min(100, Math.round(((state.player.skills.combat || 15) + 1.2) * 10) / 10);
+        if (sk.personId && state.people[sk.personId]) {
+          state.people[sk.personId].needs.health = Math.max(28, state.people[sk.personId].needs.health);
+          state.people[sk.personId].attitude = clamp((state.people[sk.personId].attitude || 0) + 2, -100, 100);
+        }
+        state.skirmish = null;
+        setAggressive(false);
+        if (Bow.ui && Bow.ui.setMessage) {
+          Bow.ui.setMessage("Чистая победа в кулачном бою! Вы подали руку сопернику.");
+        }
+        return "ended";
+      }
+
+      state.stats.fightsWon = (state.stats.fightsWon || 0) + 1;
+
+      if (sk.mode === "robbery") {
+        var gain = (state.encounter && state.encounter.robber && state.encounter.robber.purse) ? state.encounter.robber.purse : 8;
+        state.player.money += gain;
+        state.encounter = null;
+        state.skirmish = null;
+        setAggressive(false);
+        if (Bow.ui && Bow.ui.setMessage) {
+          Bow.ui.setMessage("Грабитель повержен! Вы забрали у него " + gain + " м.");
+        }
+        return "ended";
+      }
+
+      if (sk.personId && state.people[sk.personId]) {
+        sk.phase = "aftermath";
+        setAggressive(false);
+        if (Bow.ui && Bow.ui.setMessage) {
+          Bow.ui.setMessage(state.people[sk.personId].name + " без сил лежит перед вами — выберите судьбу поверженного.");
+        }
+        return "aftermath";
+      }
+
+      state.skirmish = null;
+      setAggressive(false);
+      if (Bow.ui && Bow.ui.setMessage) {
+        Bow.ui.setMessage("Схватка окончена — враги повержены.");
+      }
+      return "ended";
+    }
+
+    return "ongoing";
+  }
+
+  /* Решение судьбы поверженного прямо на локации (Отпустить / Обобрать / Добить) */
+  function decideAftermath(state, choice) {
+    var sk = state.skirmish;
+    if (!sk || sk.phase !== "aftermath") {
+      return { ok: false, message: "Сейчас некого обыскивать." };
+    }
+    var npc = sk.personId ? state.people[sk.personId] : null;
+    if (!npc) {
+      state.skirmish = null;
+      return { ok: true, message: "Схватка завершена." };
+    }
+
+    var foeU = sk.units.filter(function (u) { return u.refId === npc.id; })[0];
+    var locDef = Bow.data.locations[state.player.location];
+    var orgId = (locDef && locDef.orgId) || "org:brod";
+
+    if (choice === "spare") {
+      npc.needs.health = Math.max(20, npc.needs.health);
+      state.skirmish = null;
+      return { ok: true, message: "Вы убрали оружие и оставили " + npc.name + " в живых." };
+    }
+
+    var lootedCoins = Math.max(0, npc.money || 0);
+    var lootedItems = [];
+    if (npc.weapon) { lootedItems.push(npc.weapon); npc.weapon = null; }
+    if (npc.armor) { lootedItems.push(npc.armor); npc.armor = null; }
+    if (Array.isArray(npc.pouch)) {
+      npc.pouch.forEach(function (it) { lootedItems.push(it); });
+      npc.pouch = [];
+    }
+
+    if (choice === "rob") {
+      state.player.money += lootedCoins;
+      npc.money = 0;
+      lootedItems.forEach(function (id) {
+        if (Bow.economy && Bow.economy.addItem) { Bow.economy.addItem(state.player, id, 1); }
+      });
+      npc.memory = npc.memory || [];
+      npc.memory.push({ kind: "robbed", at: state.time.totalHours });
+      if (Bow.steal && Bow.steal.addHeat) {
+        Bow.steal.addHeat(state, orgId, 18);
+        Bow.steal.addHeat(state, "org:guard", 18);
+      }
+      state.reputation["org:guard"] = clamp((state.reputation["org:guard"] || 0) - 10, -100, 100);
+      state.skirmish = null;
+      return { ok: true, message: "Вы обобрали поверженного (+" + lootedCoins + " м." + (lootedItems.length ? ", трофеев: " + lootedItems.length : "") + ")." };
+    }
+
+    if (choice === "kill") {
+      npc.alive = false;
+      npc.needs.health = 0;
+      npc.money = 0;
+      state.corpses = state.corpses || [];
+      state.corpses.push({
+        id: "corpse:" + npc.id + ":" + state.time.totalHours,
+        personId: npc.id,
+        roleKey: foeU ? foeU.roleKey : "villager",
+        name: npc.name,
+        role: npc.role,
+        pron: npc.pron,
+        location: state.player.location,
+        isoCol: foeU ? foeU.wx : 6,
+        isoRow: foeU ? foeU.wy : 4,
+        money: lootedCoins,
+        items: lootedItems,
+        looted: (lootedCoins === 0 && lootedItems.length === 0),
+        killedAt: state.time.totalHours
+      });
+      if (Bow.steal && Bow.steal.addHeat) {
+        Bow.steal.addHeat(state, orgId, 55);
+        Bow.steal.addHeat(state, "org:guard", 55);
+      }
+      state.reputation[orgId] = clamp((state.reputation[orgId] || 0) - 28, -100, 100);
+      state.reputation["org:guard"] = clamp((state.reputation["org:guard"] || 0) - 26, -100, 100);
+      if (Bow.journal && Bow.journal.add) {
+        Bow.journal.add(state, "crime", npc.name + " пал от вашей руки.");
+      }
+      state.skirmish = null;
+      return { ok: true, message: npc.name + " добит. Тело осталось лежать на месте." };
+    }
+
+    return { ok: false, message: "Неизвестное действие." };
+  }
+
+  /* Живой шаг симуляции схватки (вызывается ~20-30 раз в секунду) */
+  function tick(state, dt, rng) {
+    var sk = state && state.skirmish;
+    if (!sk) { return null; }
+
+    dt = clamp(dt || 0.05, 0.01, 0.5);
+
+    /* Визуальные всплывающие удары затухают плавно */
+    for (var fi = sk.fx.length - 1; fi >= 0; fi--) {
+      sk.fx[fi].ttl -= dt;
+      if (sk.fx[fi].ttl <= 0) { sk.fx.splice(fi, 1); }
+    }
+
+    if (!sk.active || sk.paused) { return { status: "paused", guardsArrived: false, clash: false, ended: false }; }
+
+    sk.elapsed += dt;
+    var guardsArrived = false;
+    var hadClash = false;
+
+    /* Таймер прихода стражи при преступной драке в поселении */
+    if (typeof sk.guardTimer === "number" && !sk.guardSpawned) {
+      sk.guardTimer -= dt;
+      if (sk.guardTimer <= 0) {
+        spawnGuardReinforcements(state, sk);
+        guardsArrived = true;
+      }
+    }
+
+    var map = (Bow.iso && Bow.iso.mapOf) ? Bow.iso.mapOf(state) : null;
+
+    for (var i = 0; i < sk.units.length; i++) {
+      var u = sk.units[i];
+      if (u.down || u.dead) { continue; }
+
+      if (u.poseTtl > 0) {
+        u.poseTtl -= dt;
+        if (u.poseTtl <= 0) { u.pose = "idle"; }
+      }
+
+      u.cd = Math.max(0, u.cd - dt);
+
+      /* 1. Игрок с активным приказом отбежать в точку на полу (кайт/манёвр за стол или колодец) */
+      if (u.key === "player" && sk.moveGoal) {
+        var md = Math.hypot(sk.moveGoal.wx - u.wx, sk.moveGoal.wy - u.wy);
+        if (md <= 0.18) {
+          sk.moveGoal = null;
+          u.pose = "idle";
+        } else {
+          u.pose = "walk";
+          stepPosition(map, state, u, sk.moveGoal.wx, sk.moveGoal.wy, moveSpeedFor(u) * dt, sk.units);
+          syncBackToState(state, u);
+          continue;
+        }
+      }
+
+      /* 2. Поиск живой цели противоположной стороны */
+      var enemies = sk.units.filter(function (o) { return o.side !== u.side && !o.down && !o.dead; });
+      if (!enemies.length) { break; }
+
+      var tgt = null;
+      if (u.key === "player" && sk.targetKey) {
+        tgt = enemies.filter(function (o) { return o.key === sk.targetKey; })[0] || null;
+      }
+      if (!tgt) {
+        enemies.sort(function (a, b) {
+          return Math.hypot(a.wx - u.wx, a.wy - u.wy) - Math.hypot(b.wx - u.wx, b.wy - u.wy);
+        });
+        tgt = enemies[0];
+        if (u.key === "player") { sk.targetKey = tgt.key; }
+      }
+
+      var dist = Math.hypot(tgt.wx - u.wx, tgt.wy - u.wy);
+      var reach = u.reach || 0.95;
+
+      /* Если игрок в глухой защите — сам не бежит вперёд, встречает врага на месте */
+      if (u.key === "player" && sk.stance === "guard" && dist > reach) {
+        u.facing = (tgt.wx - u.wx >= 0) ? "SE" : "NW";
+        continue;
+      }
+
+      if (dist > reach * 0.92) {
+        u.pose = "walk";
+        stepPosition(map, state, u, tgt.wx, tgt.wy, moveSpeedFor(u) * dt, sk.units);
+        syncBackToState(state, u);
+      } else {
+        if (u.pose === "walk") { u.pose = "idle"; }
+        if (u.cd <= 0) {
+          performSwing(state, sk, u, tgt, rng);
+          hadClash = true;
+          u.cd = cooldownFor(actorForUnit(state, u));
+        }
+      }
+    }
+
+    var endSt = checkEndConditions(state, sk);
+    return {
+      status: endSt,
+      guardsArrived: guardsArrived,
+      clash: hadClash,
+      ended: endSt !== "ongoing"
+    };
+  }
+
+  function orderMove(state, wx, wy) {
+    if (!state || !state.skirmish || !state.skirmish.active) { return false; }
+    state.skirmish.moveGoal = {
+      wx: clamp(wx, 0.55, 11.25),
+      wy: clamp(wy, 0.65, 7.25)
+    };
+    return true;
+  }
+
+  function setOrder(state, kind, val) {
+    if (!state || !state.skirmish) { return false; }
+    if (kind === "aim" && ["body", "head", "arm", "legs"].indexOf(val) !== -1) {
+      state.skirmish.aim = val;
+      return true;
+    }
+    if (kind === "stance" && ["press", "balanced", "guard"].indexOf(val) !== -1) {
+      state.skirmish.stance = val;
+      return true;
+    }
+    return false;
+  }
+
+  function setTarget(state, unitKey) {
+    if (!state || !state.skirmish || !unitKey) { return false; }
+    state.skirmish.targetKey = unitKey;
+    return true;
+  }
+
+  function togglePause(state) {
+    if (!state || !state.skirmish || !state.skirmish.active) { return false; }
+    state.skirmish.paused = !state.skirmish.paused;
+    return state.skirmish.paused;
+  }
+
+  Bow.skirmish = {
+    isAggressive: isAggressive,
+    setAggressive: setAggressive,
+    toggleAggressive: toggleAggressive,
+    engage: engage,
+    tick: tick,
+    orderMove: orderMove,
+    setOrder: setOrder,
+    setTarget: setTarget,
+    togglePause: togglePause,
+    decideAftermath: decideAftermath
+  };
+
+})(typeof window !== "undefined" ? window : this);

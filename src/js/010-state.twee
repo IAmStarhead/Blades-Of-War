@@ -479,6 +479,13 @@
       }
       state.version = "0.0.9.0";
       return state;
+    },
+
+    /* 0.0.9.0 → 0.0.9.1: полный экран 100vw×100vh, бесклеточная изометрия с дверями, бой Kenshi в локации (режим агрессии), спрайты 96×112 и динамичный саундтрек. */
+    "0.0.9.0": function (state) {
+      if (!("skirmish" in state)) { state.skirmish = null; }
+      state.version = "0.0.9.1";
+      return state;
     }
   };
 
@@ -543,8 +550,10 @@
       task: null,
       /* Текущий разговор: { personId, nodeId, visited[], startedAt } */
       dialog: null,
-      /* Текущий бой: { personId, mode, phase, round, log[], witnesses[], units[] } */
+      /* Текущий полководческий бой отрядов/стеков: { personId, mode, phase, round, log[], witnesses[], units[] } */
       fight: null,
+      /* Живая бесклеточная схватка в локации (Kenshi-режим с тактической паузой): { active, paused, mode, location, units[], guardTimer, ... } */
+      skirmish: null,
       /* Тюрьма: { hoursLeft, reason, since } — пока не null, игрок в клетке. */
       jail: null,
       /* Стража на улице: { phase, squad[], heatAt } */

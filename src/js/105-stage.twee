@@ -709,76 +709,76 @@
     var map = (Bow.iso && Bow.iso.mapOf) ? Bow.iso.mapOf(state) : null;
     var props = STAGE_PROPS[locKey] || [];
     var html = [];
+    var inSkirmish = !!(state.skirmish && (state.skirmish.active || state.skirmish.phase === "aftermath"));
+    var vw = (Bow.iso && Bow.iso.VIEW_W) ? Bow.iso.VIEW_W : 1280;
+    var vh = (Bow.iso && Bow.iso.VIEW_H) ? Bow.iso.VIEW_H : 680;
 
-    /* 2. Точки ремесла / торговли / отдыха и изометрические выходы локации */
-    props.forEach(function (pr) {
-      if (pr.kind === "exit") {
-        var mins = Bow.actions.travelMinutes ? Bow.actions.travelMinutes(state, pr.loc) : 15;
-        var subDur = Bow.actions.formatDuration ? Bow.actions.formatDuration(mins) : pr.sub;
-        /* Находим изометрическую клетку выхода, если она описана на карте */
-        var exCol = 10, exRow = 4, exPos = { x: pr.x, y: pr.y };
-        if (map && map.exits) {
-          for (var ei = 0; ei < map.exits.length; ei++) {
-            if (map.exits[ei].to === pr.loc) {
-              exCol = map.exits[ei].col;
-              exRow = map.exits[ei].row;
-              var ep = isoPct(exCol, exRow);
-              exPos = { x: ep.x, y: Math.min(82, Math.max(16, ep.y - 6)) };
+    /* 2А. Все реальные двери, крыльцо и дорожные выходы локации */
+    if (map && Array.isArray(map.exits) && !inSkirmish) {
+      map.exits.forEach(function (ex) {
+        var mins = Bow.actions.travelMinutes ? Bow.actions.travelMinutes(state, ex.to) : 10;
+        var subDur = Bow.actions.formatDuration ? Bow.actions.formatDuration(mins) : "переход";
+        var ep = isoPct(ex.col, ex.row);
+        var exY = Math.min(86, Math.max(14, ep.y - 3));
+        html.push(
+          '<button type="button" class="bow-spot bow-iso-spot bow-spot-exit bow-door-hotspot" style="left:' + ep.x + '%;top:' + exY + '%" ' +
+            'data-act="move" data-loc="' + esc(ex.to) + '" data-iso-col="' + ex.col + '" data-iso-row="' + ex.row + '" data-x="' + ep.x + '" ' +
+            'title="Подойти и войти: ' + esc(ex.label) + ' (' + esc(subDur) + ')">' +
+            '<span class="bow-door-hit" aria-hidden="true"></span>' +
+            '<span class="bow-spot-txt"><b>🚪 ' + esc(ex.label) + '</b><i>' + esc(subDur) + '</i></span>' +
+          '</button>'
+        );
+      });
+    }
+
+    /* 2Б. Интерактивные точки ремесла, торговли и отдыха */
+    if (!inSkirmish) {
+      props.forEach(function (pr) {
+        if (pr.kind === "exit") { return; }
+        var propCol = pr.kind === "trade" ? 8 : (pr.kind === "rest" ? 1 : 4);
+        var propRow = pr.kind === "rest" ? 1 : (pr.kind === "trade" ? 1 : 2);
+        if (map && map.spots && map.spots.length) {
+          for (var si = 0; si < map.spots.length; si++) {
+            var ms = map.spots[si];
+            if ((pr.kind === "trade" && ms.tab === "trade") || (pr.kind === "jobs" && ms.tab === "jobs") || (pr.kind === "rest" && ms.act === "rest")) {
+              propCol = ms.col;
+              propRow = ms.row;
               break;
             }
           }
         }
-        html.push(
-          '<button type="button" class="bow-spot bow-iso-spot bow-spot-exit" style="left:' + exPos.x + '%;top:' + exPos.y + '%" ' +
-            'data-act="move" data-loc="' + esc(pr.loc) + '" data-iso-col="' + exCol + '" data-iso-row="' + exRow + '" data-x="' + exPos.x + '" title="Подойти к выходу: ' + esc(pr.label) + ' (' + esc(subDur) + ')">' +
-            '<span class="bow-spot-dot"></span>' +
-            '<span class="bow-spot-txt"><b>' + esc(pr.label) + '</b><i>' + esc(subDur) + '</i></span>' +
-          '</button>'
-        );
-        return;
-      }
-      var propCol = pr.kind === "trade" ? 8 : (pr.kind === "rest" ? 1 : 4);
-      var propRow = pr.kind === "rest" ? 1 : (pr.kind === "trade" ? 1 : 2);
-      if (map && map.spots && map.spots.length) {
-        for (var si = 0; si < map.spots.length; si++) {
-          var ms = map.spots[si];
-          if ((pr.kind === "trade" && ms.tab === "trade") || (pr.kind === "jobs" && ms.tab === "jobs") || (pr.kind === "rest" && ms.act === "rest")) {
-            propCol = ms.col;
-            propRow = ms.row;
-            break;
-          }
+        var spScr = isoPct(propCol, propRow);
+        var topY = Math.max(12, Math.min(78, spScr.y - 6));
+        if (pr.kind === "rest") {
+          html.push(
+            '<button type="button" class="bow-spot bow-iso-spot bow-spot-prop" style="left:' + spScr.x + '%;top:' + topY + '%" ' +
+              'data-act="rest" data-iso-col="' + propCol + '" data-iso-row="' + propRow + '" data-x="' + spScr.x + '" title="Подойти и отдохнуть">' +
+              '<span class="bow-spot-dot"></span>' +
+              '<span class="bow-spot-txt"><b>' + esc(pr.label) + '</b><i>' + esc(pr.sub) + '</i></span>' +
+            '</button>'
+          );
+          return;
         }
-      }
-      var spScr = isoPct(propCol, propRow);
-      var topY = Math.max(12, Math.min(39, spScr.y - 12));
-      if (pr.kind === "rest") {
+        var active = selected && selected.kind === pr.kind ? " bow-spot-on" : "";
         html.push(
-          '<button type="button" class="bow-spot bow-iso-spot bow-spot-prop" style="left:' + spScr.x + '%;top:' + topY + '%" ' +
-            'data-act="rest" data-iso-col="' + propCol + '" data-iso-row="' + propRow + '" data-x="' + spScr.x + '" title="Подойти и отдохнуть">' +
+          '<button type="button" class="bow-spot bow-iso-spot bow-spot-prop' + active + '" style="left:' + spScr.x + '%;top:' + topY + '%" ' +
+            'data-act="stage-select" data-kind="' + esc(pr.kind) + '" data-iso-col="' + propCol + '" data-iso-row="' + propRow + '" data-x="' + spScr.x + '">' +
             '<span class="bow-spot-dot"></span>' +
             '<span class="bow-spot-txt"><b>' + esc(pr.label) + '</b><i>' + esc(pr.sub) + '</i></span>' +
           '</button>'
         );
-        return;
-      }
-      var active = selected && selected.kind === pr.kind ? " bow-spot-on" : "";
-      html.push(
-        '<button type="button" class="bow-spot bow-iso-spot bow-spot-prop' + active + '" style="left:' + spScr.x + '%;top:' + topY + '%" ' +
-          'data-act="stage-select" data-kind="' + esc(pr.kind) + '" data-iso-col="' + propCol + '" data-iso-row="' + propRow + '" data-x="' + spScr.x + '">' +
-          '<span class="bow-spot-dot"></span>' +
-          '<span class="bow-spot-txt"><b>' + esc(pr.label) + '</b><i>' + esc(pr.sub) + '</i></span>' +
-        '</button>'
-      );
-    });
+      });
+    }
 
-    /* 3. Живые персонажи, стража, грабители и тела на их изометрических клетках */
+    /* 3. Живые персонажи, бойцы в схватке Kenshi, стража, грабители и тела */
     var ents = (Bow.iso && Bow.iso.collectSceneEntities) ? Bow.iso.collectSceneEntities(state, selected) : [];
     var isComa = !!(Bow.state && Bow.state.isComatose && Bow.state.isComatose(state.player));
     var activeTaskDef = (!isComa && state.task && Bow.work && Bow.work.taskByKey) ? Bow.work.taskByKey(state.task.key) : null;
+    var isAggro = !!(Bow.skirmish && Bow.skirmish.isAggressive && Bow.skirmish.isAggressive());
 
     ents.forEach(function (ent) {
-      var xPct = Math.round((ent.x / 1088) * 1000) / 10;
-      var yPct = Math.round((ent.y / 368) * 1000) / 10;
+      var xPct = Math.round((ent.x / vw) * 1000) / 10;
+      var yPct = Math.round((ent.y / vh) * 1000) / 10;
 
       if (ent.type === "player") {
         var selfActive = selected && selected.kind === "self" ? " bow-actor-on" : "";
@@ -793,6 +793,33 @@
             'data-act="stage-select" data-kind="self" data-x="' + xPct + '" title="Вы — припасы, отдых и перевязка">' +
             '<span class="bow-iso-hit"></span>' +
             '<span class="bow-actor-tag"><b>Вы</b>' + playerSub + '</span>' +
+          '</button>'
+        );
+        return;
+      }
+
+      if (ent.type === "skirmish_foe") {
+        var isTarget = !!(state.skirmish && state.skirmish.targetKey === ent.unitKey);
+        html.push(
+          '<button type="button" class="bow-actor bow-iso-actor bow-actor-enemy' + (isTarget ? " bow-actor-on" : "") + '" ' +
+            'style="left:' + xPct + '%;top:' + yPct + '%" ' +
+            'data-act="skirmish-target" data-unit="' + esc(ent.unitKey) + '" data-x="' + xPct + '" ' +
+            'title="Цель в бою: ' + esc(ent.name) + '">' +
+            '<span class="bow-iso-hit"></span>' +
+            '<span class="bow-actor-tag bow-actor-tag-threat"><b>⚔ ' + esc(ent.name) + '</b><i class="bow-tone bow-cold">' + (ent.down ? 'сбит с ног' : (Math.max(0, Math.round(ent.hp)) + ' зд.')) + '</i></span>' +
+          '</button>'
+        );
+        return;
+      }
+
+      if (ent.type === "ally") {
+        html.push(
+          '<button type="button" class="bow-actor bow-iso-actor bow-actor-npc" ' +
+            'style="left:' + xPct + '%;top:' + yPct + '%" ' +
+            'data-act="skirmish-ally" data-unit="' + esc(ent.unitKey) + '" data-x="' + xPct + '" ' +
+            'title="Спутник в строю: ' + esc(ent.name) + '">' +
+            '<span class="bow-iso-hit"></span>' +
+            '<span class="bow-actor-tag"><b>🛡 ' + esc(ent.name) + '</b><i class="bow-tone bow-warm">' + Math.max(0, Math.round(ent.hp)) + ' зд.</i></span>' +
           '</button>'
         );
         return;
@@ -851,14 +878,15 @@
         var tone = p.attitude >= 20 ? "warm" : p.attitude <= -20 ? "cold" : "neutral";
         var hp = Math.round((p.needs && p.needs.health) || 100);
         var sign = p.attitude > 0 ? "+" : "";
+        var aggroTitle = isAggro ? ("⚔ Атаковать: " + p.name) : (p.name + " — " + p.role);
         html.push(
-          '<button type="button" class="bow-actor bow-iso-actor bow-actor-npc' + (isSel ? " bow-actor-on" : "") + '" ' +
+          '<button type="button" class="bow-actor bow-iso-actor bow-actor-npc' + (isSel ? " bow-actor-on" : "") + (isAggro ? " bow-actor-aggro-hover" : "") + '" ' +
             'style="left:' + xPct + '%;top:' + yPct + '%" ' +
             'data-act="stage-select" data-kind="person" data-person="' + esc(p.id) + '" data-iso-col="' + ent.col + '" data-iso-row="' + ent.row + '" data-x="' + xPct + '" ' +
-            'title="' + esc(p.name + " — " + p.role) + '">' +
+            'title="' + esc(aggroTitle) + '">' +
             (hp < 100 ? '<span class="bow-actor-hp"><i style="width:' + hp + '%"></i></span>' : '') +
             '<span class="bow-iso-hit"></span>' +
-            '<span class="bow-actor-tag"><b>' + esc(p.name) + '</b><i class="bow-tone bow-' + tone + '">' + sign + Math.round(p.attitude) + '</i></span>' +
+            '<span class="bow-actor-tag"><b>' + (isAggro ? '⚔ ' : '') + esc(p.name) + '</b><i class="bow-tone bow-' + tone + '">' + sign + Math.round(p.attitude) + '</i></span>' +
           '</button>'
         );
       }
