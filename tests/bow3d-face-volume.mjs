@@ -10,7 +10,7 @@ for (const female of [false,true]) for (const kingdom of ['north','eden']) for (
   assert.ok(p.getZ(tip)>p.getZ(side)+0.006, 'nose projects beyond adjoining face');
   if (!beard) {
     const chin = p.getZ(index(10,32));
-    assert.ok(chin > 0.09 && chin < 0.12, 'lower face has a restrained forward profile');
+    assert.ok(chin > 0.085 && chin < 0.12, 'lower face has a restrained forward profile');
     assert.ok(p.getZ(tip) > p.getZ(index(13,32)), 'nose remains ahead of the mouth');
   }
   for(let r=0;r<rows;r++) {

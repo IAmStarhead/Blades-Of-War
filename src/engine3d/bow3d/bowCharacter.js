@@ -981,55 +981,46 @@ export function buildSculptedHeadGeometry(female = false, hasBeard = false, king
       const sinP = Math.sin(phi);
       const cosP = Math.cos(phi);
 
-      let rx = rxBase * Math.pow(Math.max(0.14, cosT), 0.84);
-      let rz = rzBase * Math.pow(Math.max(0.14, cosT), 0.82);
+      // Профиль головы задаётся отдельными анатомическими сечениями, а не сферой.
+      // Значения сохраняют прежнюю высоту и ширину черепа и UV-раскладку лица.
+      const sections = [
+        // v, ширина, передняя глубина, задняя глубина
+        [0.00, 0.14, 0.12, 0.12], [0.08, 0.34, 0.40, 0.26],
+        [0.16, 0.51, 0.70, 0.40], [0.24, female ? 0.68 : 0.73, 0.90, 0.52],
+        [0.32, female ? 0.82 : 0.88, 0.98, 0.66], [0.40, 0.94, 1.00, 0.83],
+        [0.50, 1.00, 1.00, 1.00], [0.60, 0.96, 0.94, 0.96],
+        [0.72, 0.78, 0.77, 0.79], [0.84, 0.52, 0.52, 0.53],
+        [0.92, 0.28, 0.28, 0.28], [1.00, 0.14, 0.14, 0.14]
+      ];
+      let lo = 0;
+      while (lo < sections.length - 2 && vFrac > sections[lo + 1][0]) lo++;
+      const p0 = sections[lo], p1 = sections[lo + 1];
+      const raw = Math.max(0, Math.min(1, (vFrac - p0[0]) / (p1[0] - p0[0])));
+      // Кубическая интерполяция с непрерывными наклонами: без поперечных
+      // складок в местах заданных сечений.
+      const prev = sections[Math.max(0, lo - 1)], next = sections[Math.min(sections.length - 1, lo + 2)];
+      const span = p1[0] - p0[0], t2 = raw * raw, t3 = t2 * raw;
+      const profile = column => {
+        const m0 = (p1[column] - prev[column]) / (p1[0] - prev[0]);
+        const m1 = (next[column] - p0[column]) / (next[0] - p0[0]);
+        return (2*t3 - 3*t2 + 1)*p0[column] + (t3 - 2*t2 + raw)*span*m0 + (-2*t3 + 3*t2)*p1[column] + (t3 - t2)*span*m1;
+      };
+      const width = profile(1), frontDepth = profile(2), backDepth = profile(3);
       let y = centerY + sinT * ryHalf;
-
-      /* Деликатные виски и скулы (у женщин мягче — без осунувшихся впадин) */
-      const templeFlatten = Math.pow(Math.abs(sinP), 2.2) * Math.exp(-Math.pow((vFrac - 0.56) / 0.25, 2));
-      rx *= (1 - (female ? 0.06 : 0.09) * templeFlatten);
-
-      /* ПОРОДА: у златодворцев высокие точёные скулы с лёгкой подскуловой тенью,
-         у северян кость шире и грубее без аристократической лепки */
-      const cheekBone = Math.exp(-Math.pow((Math.abs(phi) - 0.65) / 0.28, 2)) * Math.exp(-Math.pow((vFrac - 0.46) / 0.07, 2));
-      const cheekHollow = Math.exp(-Math.pow((Math.abs(phi) - 0.68) / 0.30, 2)) * Math.exp(-Math.pow((vFrac - 0.33) / 0.08, 2));
-      rx += cheekBone * (female ? 0.003 : (isEden ? 0.006 : 0.004)) - cheekHollow * (female ? 0.002 : (isEden ? 0.005 : 0.003));
-
-      /* Челюсть: у северян тяжёлая и широкая, у златодворцев узкая аристократическая */
-      if (vFrac < 0.48) {
-        const jawT = Math.max(0, (0.48 - vFrac) / 0.48);
-        rx *= lerp(1.0, female ? 0.88 : (isEden ? 0.95 : 1.02), jawT * 0.62);
-        const jawAngle = Math.exp(-(((vFrac - 0.27) / 0.115) ** 2));
-        rx *= 1 + (female ? 0.06 : 0.10) * jawAngle;
-
-        if (cosP > 0) {
-          const chinMask = Math.exp(-Math.pow(phi / (female ? 0.40 : 0.58), 2)) * Math.exp(-Math.pow((vFrac - 0.17) / 0.12, 2));
-          const beardBulk = (!female && hasBeard) ? 0.032 : (female ? 0.010 : 0.014);
-          rz += chinMask * beardBulk;
-          if (!female && hasBeard && vFrac < 0.25) {
-            y -= chinMask * 0.012;
-          }
-        } else {
-          rz *= lerp(1.0, 0.76, jawT);
-        }
+      const temple = Math.pow(Math.abs(sinP), 2) * Math.exp(-(((vFrac - 0.55) / 0.20) ** 2));
+      const jawSide = Math.exp(-(((Math.abs(phi) - 0.80) / 0.36) ** 2)) * Math.exp(-(((vFrac - 0.28) / 0.12) ** 2));
+      let x = sinP * rxBase * width * (1 - (female ? 0.04 : 0.06) * temple) + Math.sign(sinP) * jawSide * (female ? 0.002 : 0.004);
+      // Передняя часть лица площе черепа; затылок сохраняет округлость.
+      const front = Math.pow(Math.max(0, cosP), 0.78);
+      let z = rzBase * (cosP >= 0 ? front * frontDepth : cosP * backDepth);
+      if (cosP > 0 && !female && hasBeard) {
+        const beard = Math.exp(-((phi / 0.60) ** 2)) * Math.exp(-(((vFrac - 0.19) / 0.13) ** 2));
+        z += beard * 0.018;
+        y -= beard * 0.008;
       }
-
-      /* Надбровный рельеф: у северян ТЯЖЁЛАЯ нависающая дуга, у златодворцев лёгкая */
-      if (cosP > 0.2 && vFrac > 0.50 && vFrac < 0.78) {
-        const browRidge = Math.exp(-Math.pow(phi / 0.86, 2)) * Math.exp(-Math.pow((vFrac - 0.555) / 0.046, 2));
-        rz += browRidge * (female ? 0.004 : (isEden ? 0.006 : 0.013));
-      }
-
-      let x = sinP * rx;
-      let z = cosP * rz;
-
-      // У лица есть нижняя челюсть и подбородок, а не сферический срез под носом.
-      // Поддерживаем профиль широкой плавной формой в самой поверхности головы.
-      if (cosP > 0) {
-        const lowerFace = Math.exp(-((phi / 0.80) ** 2)) * Math.exp(-(((vFrac - 0.245) / 0.14) ** 2));
-        z += lowerFace * (hasBeard ? 0.010 : (female ? 0.016 : 0.018));
-        const jawSide = Math.exp(-(((Math.abs(phi) - 0.75) / 0.30) ** 2)) * Math.exp(-(((vFrac - 0.27) / 0.12) ** 2));
-        x += Math.sign(sinP) * jawSide * (female ? 0.002 : 0.004);
+      if (cosP > 0.2) {
+        const brow = Math.exp(-((phi / 0.86) ** 2)) * Math.exp(-(((vFrac - 0.555) / 0.046) ** 2));
+        z += brow * (female ? 0.004 : (isEden ? 0.006 : 0.010));
       }
 
       // Скулы и поверхность вокруг рта лепятся на той же сетке, что и кожа.
