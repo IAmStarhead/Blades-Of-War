@@ -310,9 +310,12 @@ export function buildBaseBodyGeometry(female = false, metrics) {
         /* Верхний край исподнего: парные кольца -> голый торс */
         [382, 1.018, 0.146, 0.092, 0.106, -0.004, P, 0.60, S, 0.40],
         [208, 1.018, 0.146, 0.092, 0.106, -0.004, P, 0.60, S, 0.40],
-        [184, 1.110, 0.148, 0.100, 0.106,  0.002, S, 0.80, C, 0.20],
+        [184, 1.110, 0.146, 0.100, 0.106,  0.002, S, 0.80, C, 0.20],
+        [156, 1.165, 0.153, 0.107, 0.110,  0.003, S, 0.55, C, 0.45],
         [128, 1.210, 0.164, 0.114, 0.114,  0.004, S, 0.30, C, 0.70],
+        [102, 1.270, 0.175, 0.119, 0.117,  0.002, C, 0.90, S, 0.10],
         [ 76, 1.320, 0.180, 0.118, 0.117,  0.000, C, 1.00, N, 0.00],
+        [ 60, 1.365, 0.183, 0.109, 0.111, -0.002, C, 0.95, N, 0.05],
         [ 46, 1.415, 0.182, 0.096, 0.102, -0.005, C, 0.88, N, 0.12],
         [ 32, 1.455, 0.128, 0.078, 0.085, -0.006, N, 0.50, C, 0.50],
         [ 20, 1.490, 0.066, 0.059, 0.064, -0.004, N, 0.80, H, 0.20],
@@ -346,9 +349,9 @@ export function buildBaseBodyGeometry(female = false, metrics) {
 
       // Небольшая, непрерывная форма грудных мышц в той же поверхности торса.
       if (!female && cosP > 0.15) {
-        const height = Math.exp(-(((yRaw - 1.30) / 0.10) ** 2));
-        const chest = Math.exp(-(((Math.abs(sinP) - 0.48) / 0.35) ** 2));
-        rz += 0.017 * height * chest * cosP;
+        const height = Math.exp(-(((yRaw - 1.30) / 0.075) ** 2));
+        const chest = Math.exp(-(((Math.abs(sinP) - 0.45) / 0.34) ** 2));
+        rz += 0.027 * height * chest * cosP;
       }
       let y = yBase;
       let vb0 = b0, vw0 = w0, vb1 = b1, vw1 = w1;
@@ -488,7 +491,12 @@ export function buildBaseBodyGeometry(female = false, metrics) {
         // Утолщаем бедро и икру, мягко возвращая исходную ширину к щиколотке.
         const blend = [0.75, 1, 1, 1, 0.9, 0.8, 1, 1, 0.25, 0][i];
         const bulk = 1 + ((m.limbBulk || 1) - 1) * blend;
-        ring.push(mb.addVertex(cx + Math.sin(phi) * rx * bulk, cy3d, cz + Math.cos(phi) * rz * bulk, uFrac, vTex, b0, w0, b1, w1));
+        const front = Math.max(0, Math.cos(phi));
+        const back = Math.max(0, -Math.cos(phi));
+        // Мягкая выпуклость квадрицепса и икры без рисованных полос.
+        const quad = female ? 0 : [0, 0.003, 0.003, 0.007, 0.002, 0, 0, 0, 0, 0][i] * front * front;
+        const calf = female ? 0 : [0, 0, 0, 0, 0, 0, 0.004, 0.005, 0, 0][i] * back * back;
+        ring.push(mb.addVertex(cx + Math.sin(phi) * rx * bulk, cy3d, cz + Math.cos(phi) * rz * bulk + quad - calf, uFrac, vTex, b0, w0, b1, w1));
       }
       mb.seamPairs.push([ring[0], ring[segsLeg]]);
       rings.push(ring);
@@ -587,7 +595,10 @@ export function buildBaseBodyGeometry(female = false, metrics) {
         // Объём руки постепенно сходит к запястью, кисти не увеличиваются.
         const blend = [0.45, 0.75, 1, 1, 1, 1, 0.8, 0.15, 0, 0, 0][i];
         const bulk = 1 + ((m.limbBulk || 1) - 1) * blend;
-        ring.push(mb.addVertex(cx + Math.sin(phi) * rx * bulk, cy3d, cz + Math.cos(phi) * rz * bulk, uFrac, vTex, b0, w0, b1, w1));
+        const front = Math.max(0, Math.cos(phi));
+        // Бицепс в расслабленной руке: лёгкий объём спереди, без отдельного шара.
+        const bicep = female ? 0 : [0, 0, 0, 0.002, 0.007, 0.0015, 0, 0, 0, 0, 0][i] * front * front;
+        ring.push(mb.addVertex(cx + Math.sin(phi) * rx * bulk, cy3d, cz + Math.cos(phi) * rz * bulk + bicep, uFrac, vTex, b0, w0, b1, w1));
       }
       mb.seamPairs.push([ring[0], ring[segsArm]]);
       rings.push(ring);
@@ -760,7 +771,7 @@ export function buildGarmentGeometry(female = false, rawOutfit = "villager", kin
       [228, sx - sign * 0.050, sy + 0.026 * hs, -0.005, 0.045 * sc, 0.052 * sc, C, 0.90, bUpper, 0.10],
       [238, sx - sign * 0.012, sy + 0.008 * hs, -0.005, 0.064 * sc, 0.067 * sc, C, 0.52, bUpper, 0.48],
       [252, sx + sign * 0.004, sy - 0.040 * hs, -0.005, 0.054 * sc, 0.056 * sc, C, 0.15, bUpper, 0.85],
-      [274, lerp(sx, ex, 0.54), lerp(sy, ey, 0.54), -0.004, 0.048 * sc, 0.050 * sc, bUpper, 1.0, bFore, 0.0],
+      [274, lerp(sx, ex, 0.54), lerp(sy, ey, 0.54), -0.004, (female ? 0.048 : 0.052) * sc, (female ? 0.050 : 0.058) * sc, bUpper, 1.0, bFore, 0.0],
       [298, ex, ey, -0.007, 0.043 * sc, 0.045 * sc, bUpper, 0.50, bFore, 0.50]
     ];
 
