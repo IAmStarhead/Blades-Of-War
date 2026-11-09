@@ -284,7 +284,7 @@ export function buildBaseBodyGeometry(female = false, metrics) {
         [382, 1.012, 0.128, 0.079, 0.096, -0.005, P, 0.68, S, 0.32],
         [198, 1.012, 0.128, 0.079, 0.096, -0.005, P, 0.68, S, 0.32],
         /* Тонкая высокая талия */
-        [176, 1.080, 0.100, 0.073, 0.082,  0.002, S, 0.85, C, 0.15],
+        [176, 1.080, 0.110, 0.077, 0.086,  0.002, S, 0.85, C, 0.15],
         /* Под грудью: кожа -> нательная льняная повязка (парные кольца) */
         [152, 1.140, 0.114, 0.082, 0.088,  0.004, S, 0.45, C, 0.55],
         [360, 1.140, 0.114, 0.082, 0.088,  0.004, S, 0.45, C, 0.55],
@@ -344,6 +344,12 @@ export function buildBaseBodyGeometry(female = false, metrics) {
         rz += 0.016 * breastW * Math.max(0, cosP);
       }
 
+      // Небольшая, непрерывная форма грудных мышц в той же поверхности торса.
+      if (!female && cosP > 0.15) {
+        const height = Math.exp(-(((yRaw - 1.30) / 0.10) ** 2));
+        const chest = Math.exp(-(((Math.abs(sinP) - 0.48) / 0.35) ** 2));
+        rz += 0.017 * height * chest * cosP;
+      }
       let y = yBase;
       let vb0 = b0, vw0 = w0, vb1 = b1, vw1 = w1;
       if (r === 0) {
@@ -462,8 +468,8 @@ export function buildBaseBodyGeometry(female = false, metrics) {
       [ 92, lerp(hx, kx, 0.54), lerp(hy, ky, 0.54),  0.004, (female ? 0.063 : 0.067) * ws, (female ? 0.068 : 0.073), bThigh, 1.0,  bShin, 0.0],
       [122, lerp(hx, kx, 0.88), lerp(hy, ky, 0.88),  0.000, (female ? 0.050 : 0.054) * ws, (female ? 0.053 : 0.058), bThigh, 0.74, bShin, 0.26],
       [136, kx, ky, 0.002, (female ? 0.047 : 0.052) * ws, (female ? 0.051 : 0.056), bThigh, 0.48, bShin, 0.52],
-      [150, lerp(kx, ax, 0.20), lerp(ky, ay, 0.20), -0.006, (female ? 0.045 : 0.050) * ws, (female ? 0.049 : 0.054), bShin, 0.92, bThigh, 0.08],
-      [168, lerp(kx, ax, 0.52), lerp(ky, ay, 0.52), -0.008, (female ? 0.042 : 0.047) * ws, (female ? 0.046 : 0.052), bShin, 1.0,  bFoot, 0.0],
+      [150, lerp(kx, ax, 0.20), lerp(ky, ay, 0.20), -0.006, (female ? 0.048 : 0.050) * ws, (female ? 0.052 : 0.054), bShin, 0.92, bThigh, 0.08],
+      [168, lerp(kx, ax, 0.52), lerp(ky, ay, 0.52), -0.008, (female ? 0.048 : 0.047) * ws, (female ? 0.052 : 0.052), bShin, 1.0,  bFoot, 0.0],
       [196, ax, ay + 0.030 * hs, -0.002, (female ? 0.033 : 0.038) * ws, (female ? 0.036 : 0.042), bShin, 0.60, bFoot, 0.40],
       [204, ax, ay + 0.024 * hs,  0.002, (female ? 0.034 : 0.039) * ws, (female ? 0.037 : 0.043), bShin, 0.35, bFoot, 0.65]
     ];
@@ -485,10 +491,11 @@ export function buildBaseBodyGeometry(female = false, metrics) {
        вытянутый вперёд носок и округлая пятка — человеческая ступня, а не обрубок! */
     const footScale = (female ? 0.88 : 1.00) * ws;
     const footSpecs = [
-      [208, ax, 0.048 * hs, 0.008, 0.035 * footScale, 0.046 * footScale],
-      [214, ax, 0.030 * hs, 0.020, 0.040 * footScale, 0.060 * footScale],
-      [222, ax, 0.014 * hs, 0.032, 0.042 * footScale, 0.078 * footScale],
-      [228, ax, 0.004 * hs, 0.032, 0.040 * footScale, 0.078 * footScale]
+      [205, ax, 0.070 * hs, 0.002, 0.034 * ws, 0.037],
+      [208, ax, 0.052 * hs, 0.006, 0.035 * footScale, 0.044 * footScale],
+      [214, ax, 0.035 * hs, 0.018, 0.038 * footScale, 0.058 * footScale],
+      [222, ax, 0.018 * hs, 0.029, 0.041 * footScale, 0.076 * footScale],
+      [228, ax, 0.004 * hs, 0.029, 0.039 * footScale, 0.075 * footScale]
     ];
     for (let f = 0; f < footSpecs.length; f++) {
       const [cyTex, fx, fy, fz, frx, frz] = footSpecs[f];
@@ -498,11 +505,13 @@ export function buildBaseBodyGeometry(female = false, metrics) {
         const uFrac = s / segsLeg;
         const phi = (uFrac - 0.5) * Math.PI * 2;
         const cosP = Math.cos(phi);
-        const zStretch = cosP >= 0 ? frz * 1.28 : frz * 0.66;
+        // Переход от круглой голени к стопе постепенный, без резкого «манжета».
+        const footBlend = Math.min(1, f / 3);
+        const zStretch = cosP >= 0 ? frz * (1 + 0.28 * footBlend) : frz * (1 - 0.34 * footBlend);
         const vz = fz + cosP * zStretch;
         /* Передняя часть стопы (плюсна и пальцы) принадлежит кости носка:
            плавный переход весов за суставом подушечки — стопа ПЕРЕКАТЫВАЕТСЯ, а не гнётся доской */
-        const toeW = Math.max(0, Math.min(1, (vz - 0.052) / 0.055));
+        const toeW = Math.max(0, Math.min(1, (vz - 0.052) / 0.055)) * Math.max(0, Math.min(1, (0.055 * hs - fy) / (0.025 * hs)));
         ring.push(mb.addVertex(fx + Math.sin(phi) * frx, fy, vz, uFrac, vTex, bFoot, 1.0 - toeW, bToe, toeW));
       }
       mb.seamPairs.push([ring[0], ring[segsLeg]]);
@@ -542,8 +551,8 @@ export function buildBaseBodyGeometry(female = false, metrics) {
     const musc = (female ? 0.78 : 1.02) * ws;
 
     const armStations = [
-      [ 26, sx - sign * 0.054, sy + 0.022 * hs, -0.005, 0.028 * musc, 0.033 * musc, C, 0.90, bUpper, 0.10],
-      [ 36, sx - sign * 0.012, sy + 0.004 * hs, -0.005, 0.052 * musc, 0.056 * musc, C, 0.52, bUpper, 0.48],
+      [ 26, sx - sign * 0.050, sy + 0.014 * hs, -0.005, 0.033 * musc, 0.039 * musc, C, 0.90, bUpper, 0.10],
+      [ 36, sx - sign * 0.014, sy - 0.006 * hs, -0.005, 0.057 * musc, 0.061 * musc, C, 0.52, bUpper, 0.48],
       [ 50, sx + sign * 0.004, sy - 0.040 * hs, -0.005, 0.049 * musc, 0.052 * musc, C, 0.15, bUpper, 0.85],
       [ 84, lerp(sx, ex, 0.54), lerp(sy, ey, 0.54), -0.004, 0.043 * musc, 0.046 * musc, bUpper, 1.0, bFore, 0.0],
       [116, ex, ey, -0.007, 0.037 * musc, 0.039 * musc, bUpper, 0.50, bFore, 0.50],
@@ -570,7 +579,7 @@ export function buildBaseBodyGeometry(female = false, metrics) {
       rings.push(ring);
     }
 
-    const capTop = mb.addVertex(sx - sign * 0.060, sy + 0.024 * hs, -0.005, 0.5, cyToV(26), C, 0.92, bUpper, 0.08);
+    const capTop = mb.addVertex(sx - sign * 0.065, sy + 0.016 * hs, -0.005, 0.5, cyToV(26), C, 0.92, bUpper, 0.08);
     mb.capRing(rings[0], capTop, true);
     mb.connectRings(rings, false);
 
@@ -670,10 +679,10 @@ export function buildGarmentGeometry(female = false, rawOutfit = "villager", kin
         [180, 1.058, 0.156, 0.104, 0.117, -0.002, P, 0.40, S, 0.60],
         [116, 1.062, 0.156, 0.104, 0.116, -0.002, S, 0.65, P, 0.35],
         [104, 1.115, 0.158, 0.110, 0.117,  0.002, S, 0.80, C, 0.20],
-        [ 76, 1.215, 0.174, 0.124, 0.125,  0.004, S, 0.30, C, 0.70],
-        [ 44, 1.325, 0.190, 0.128, 0.127,  0.000, C, 1.00, N, 0.00],
+        [ 76, 1.215, 0.174, 0.140, 0.125,  0.004, S, 0.30, C, 0.70],
+        [ 44, 1.325, 0.190, 0.147, 0.127,  0.000, C, 1.00, N, 0.00],
         [ 24, 1.420, 0.192, 0.106, 0.112, -0.005, C, 0.88, N, 0.12],
-        [  8, 1.462, 0.136, 0.086, 0.092, -0.006, N, 0.50, C, 0.50]
+        [  8, 1.462, 0.160, 0.086, 0.092, -0.006, N, 0.50, C, 0.50]
       ];
 
   const segsTorso = 20;
@@ -734,8 +743,8 @@ export function buildGarmentGeometry(female = false, rawOutfit = "villager", kin
 
     /* Высокий округлый кат плеча: купол рукава поднят НАД дельтой тела (без прорех на плечах) */
     const rows = [
-      [228, sx - sign * 0.050, sy + 0.018 * hs, -0.005, 0.036 * sc, 0.042 * sc, C, 0.75, bUpper, 0.25],
-      [238, sx - sign * 0.006, sy + 0.010 * hs, -0.005, 0.058 * sc, 0.060 * sc, C, 0.50, bUpper, 0.50],
+      [228, sx - sign * 0.050, sy + 0.026 * hs, -0.005, 0.045 * sc, 0.052 * sc, C, 0.90, bUpper, 0.10],
+      [238, sx - sign * 0.012, sy + 0.008 * hs, -0.005, 0.064 * sc, 0.067 * sc, C, 0.52, bUpper, 0.48],
       [252, sx + sign * 0.004, sy - 0.040 * hs, -0.005, 0.054 * sc, 0.056 * sc, C, 0.15, bUpper, 0.85],
       [274, lerp(sx, ex, 0.54), lerp(sy, ey, 0.54), -0.004, 0.048 * sc, 0.050 * sc, bUpper, 1.0, bFore, 0.0],
       [298, ex, ey, -0.007, 0.043 * sc, 0.045 * sc, bUpper, 0.50, bFore, 0.50]
@@ -771,7 +780,7 @@ export function buildGarmentGeometry(female = false, rawOutfit = "villager", kin
       rings.push(ring);
     }
 
-    const capTop = mb.addVertex(sx - sign * 0.060, sy + 0.022 * hs, -0.005, 0.5, cyToV(226), C, 0.85, bUpper, 0.15);
+    const capTop = mb.addVertex(sx - sign * 0.065, sy + 0.034 * hs, -0.005, 0.5, cyToV(226), C, 0.92, bUpper, 0.08);
     mb.capRing(rings[0], capTop, true);
     mb.connectRings(rings, false);
   }
@@ -1214,6 +1223,25 @@ export function createBowCharacter3D(opts = {}) {
 
   /* Базовое тело НЕ зависит от одежды — строится один раз и больше никогда не перепривязывается! */
   const bodyGeo = buildBaseBodyGeometry(female, metrics);
+  // Упрощённые кулаки — второй вариант тех же кистей для боевой позы.
+  // Остальная сетка, индексы, веса и исходная поза не меняются.
+  const fistGeo = bodyGeo.clone();
+  const fistPositions = fistGeo.attributes.position;
+  const wristY = metrics.shoulderY - metrics.upperArmLen - metrics.forearmLen;
+  for (const [range, hand] of [[bodyGeo.userData.limbRanges.armL, BONE_IDX.HAND_L], [bodyGeo.userData.limbRanges.armR, BONE_IDX.HAND_R]]) {
+    const skinIndex = fistGeo.attributes.skinIndex, skinWeight = fistGeo.attributes.skinWeight;
+    for (let i = range[0]; i < range[1]; i++) {
+      let handWeight = 0;
+      for (let j = 0; j < 4; j++) if (skinIndex.getComponent(i, j) === hand) handWeight += skinWeight.getComponent(i, j);
+      const y = fistPositions.getY(i);
+      if (y >= wristY - 0.01 || handWeight < 0.9) continue;
+      const depth = Math.max(0, wristY - y);
+      fistPositions.setY(i, wristY - depth * 0.60);
+      fistPositions.setZ(i, fistPositions.getZ(i) + Math.min(1, depth / 0.07) * 0.012);
+    }
+  }
+  fistPositions.needsUpdate = true;
+  fistGeo.computeVertexNormals();
   const bodyMesh = new THREE.SkinnedMesh(bodyGeo, bodyMat);
   bodyMesh.castShadow = true;
   bodyMesh.receiveShadow = true;
@@ -1255,6 +1283,8 @@ export function createBowCharacter3D(opts = {}) {
     skeleton,
     metrics,
     bodyMesh,
+    bodyGeo,
+    fistGeo,
     headMesh,
     hairMesh,
     contactShadow,
@@ -1334,6 +1364,8 @@ export function createBowCharacter3D(opts = {}) {
    - Стопы развёрнуты наружу с естественной левой/правой асимметрией
      (больше никаких «двух правых стоп»). */
 export function poseBowCharacter(rig, mode = "idle", timeSec = 0, opts = {}) {
+  // В бою кисти собраны, в остальных режимах возвращается открытая форма.
+  if (rig.bodyGeo && rig.fistGeo) rig.bodyMesh.geometry = mode === "combat" ? rig.fistGeo : rig.bodyGeo;
   const b = rig.bones;
   const m = rig.metrics;
   const fem = rig.female;
@@ -1494,6 +1526,8 @@ export function poseBowCharacter(rig, mode = "idle", timeSec = 0, opts = {}) {
 
 export function disposeBowCharacter(rig) {
   if (!rig) return;
+  // Активная сетка утилизируется при обходе; вторая не находится в сцене.
+  if (rig.bodyGeo && rig.fistGeo) (rig.bodyMesh.geometry === rig.bodyGeo ? rig.fistGeo : rig.bodyGeo).dispose();
   rig.group.traverse((obj) => {
     if (obj.geometry) obj.geometry.dispose();
     if (obj.material) {

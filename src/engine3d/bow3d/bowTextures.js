@@ -462,9 +462,10 @@ export function buildBaseBodyTextureCanvas(opts = {}, canvasFactory = null) {
   const pal = getKingdomAppearance(kingdom, fem);
 
   /* Зона 1 (cy = 0..232): чистая гладкая кожа с лёгким естественным объёмом по бокам */
-  softVBand(ctx, 0, 0, W, 232, pal.skinBase, pal.skinMid, pal.skinBase);
-  softRadial(ctx, W * 0.25, 110, 95, "rgba(110, 72, 48, 0.10)", "rgba(0,0,0,0)");
-  softRadial(ctx, W * 0.75, 110, 95, "rgba(110, 72, 48, 0.10)", "rgba(0,0,0,0)");
+  // Единый тон без вертикального градиента: UV щиколотки и стопы не должны
+  // давать границу цвета, похожую на край носка. Объём создают нормали и свет.
+  ctx.fillStyle = pal.skinBase;
+  ctx.fillRect(0, 0, W, 232);
 
   /* Лёгкая тень под челюстью и подбородком на верху шеи (cy 0..22 — самый верх зоны кожи):
      голова перестаёт выглядеть «приставленной» к шее */

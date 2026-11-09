@@ -27,8 +27,7 @@ function smoothCoincidentNormals(geometry) {
   normals.needsUpdate = true;
 }
 
-function sculptBody(rig) {
-  const geometry = rig.bodyMesh.geometry;
+function sculptBody(rig, geometry = rig.bodyMesh.geometry) {
   const pos = geometry.attributes.position;
   const { hScale: h, wScale: w, shoulderY } = rig.metrics;
   const ranges = rig.limbRanges;
@@ -111,6 +110,7 @@ export function createBowPrototype3D(opts = {}) {
   const rig = createBowCharacter3D({ ...opts, outfit: "underwear" });
   rig.group.name = rig.female ? "PrototypeFemale" : "PrototypeMale";
   sculptBody(rig);
+  sculptBody(rig, rig.fistGeo);
   sculptFace(rig);
   if (!rig.female) addBeard(rig);
   return rig;
