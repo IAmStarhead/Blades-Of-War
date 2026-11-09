@@ -1,0 +1,5 @@
+# Isolated angular/pose trial
+
+A standalone static visual experiment, separate from the appearance editor, original figures and game characters. It uses the same CC0 MakeHuman-based body-study source and the 9,500-triangle simplified surface from `../style-review/` (see `../body-study/README.md` for attribution). The skin is warmer and the mesh uses crease-aware normals for a slightly more angular rendering. The preview moves the arms using a weighted geometric deformation, not a skeletal rig or a game animation. Eyelids and temporary eyebrow guides are adjusted conservatively; gaze has not been tested in animation.
+
+Underwear consists of separate, thin surface-fitted 3D meshes (shorts and a top with straps). They are static preliminary shells without cloth thickness, tailoring, rigging, physics or fitting to the editor sliders; they are not yet production garments. Body hair and hair are hidden. Screenshots are in `docs/previews/angular-trial/`. Run Vite and open `/src/angular-trial/`.
