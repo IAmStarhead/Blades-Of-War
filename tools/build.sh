@@ -45,3 +45,5 @@ if (fs.existsSync(cssPath)) fs.unlinkSync(cssPath);
 if (fs.existsSync(jsPath)) fs.unlinkSync(jsPath);
 console.log("✔ Собрано:", outPath, "(" + Math.round(Buffer.byteLength(html) / 1024) + " KB)");
 EOF
+
+node tools/build-zomboid-demo.mjs
