@@ -8,6 +8,7 @@
    ============================================================================ */
 
 import * as THREE from "three";
+import { createBowPrototype3D } from "./bowPrototype.js";
 import {
   BONE_IDX,
   createBowCharacter3D,
@@ -106,10 +107,10 @@ export function mountBowShowcase(rootEl) {
       <!-- Верхняя панель статуса и метрик производительности -->
       <header class="pz-topbar">
         <div class="pz-brand">
-          <span class="pz-badge">КЛИНКИ ВОЙНЫ · 3D РЕВИЗИЯ 6</span>
+          <span class="pz-badge">КЛИНКИ ВОЙНЫ · 3D РЕВИЗИЯ 6 · СРАВНЕНИЕ</span>
           <div class="pz-titles">
             <h1>Blades Of War · Земли Эдема: Хладные Ветра vs Златодвор</h1>
-            <p>Перекат стопы с носком, породистые лица двух народов и конный воин Севера</p>
+            <p id="pz-description">Прототип тела и головы: кнопка «Сравнить» в фокусе камеры</p>
           </div>
         </div>
         <div class="pz-stats" id="pz-stats">
@@ -178,6 +179,8 @@ export function mountBowShowcase(rootEl) {
             <button type="button" data-focus="facesNorth">Лица Севера</button>
             <button type="button" data-focus="facesEden">Лица Центра</button>
             <button type="button" data-focus="legs">Таз / шаг</button>
+            <button type="button" data-focus="compare">Сравнить</button>
+            <button type="button" data-focus="compareFaces">Сравнить лица</button>
             <button type="button" data-focus="rider">Конник</button>
             <button type="button" data-focus="well">Колодец</button>
           </div>
@@ -338,6 +341,25 @@ export function mountBowShowcase(rootEl) {
   }
   updateReins();
 
+  // Отдельная сцена сравнения: слева направо старая/новая женщина,
+  // старый/новый мужчина. Старые модели на основной сцене не меняются.
+  const compareGroup = new THREE.Group();
+  compareGroup.position.z = 5;
+  compareGroup.visible = false;
+  stageGroup.add(compareGroup);
+  const comparePlinth = createCobblePlinth();
+  compareGroup.add(comparePlinth.group);
+  const compareRigs = [
+    createBowCharacter3D({ female: true, kingdom: "north", outfit: "underwear" }),
+    createBowPrototype3D({ female: true, kingdom: "north" }),
+    createBowCharacter3D({ female: false, kingdom: "north", outfit: "underwear" }),
+    createBowPrototype3D({ female: false, kingdom: "north" })
+  ];
+  compareRigs.forEach((rig, i) => {
+    rig.group.position.set((i - 1.5) * 0.55, 0, 0);
+    compareGroup.add(rig.group);
+  });
+
   function allRigs() {
     return [state.northFemale, state.northMale, state.edenFemale, state.edenMale].filter(Boolean);
   }
@@ -398,8 +420,16 @@ export function mountBowShowcase(rootEl) {
   }
 
   function syncKingdomVisibility() {
-    const showNorth = state.kingdomFilter === "both" || state.kingdomFilter === "north";
-    const showEden  = state.kingdomFilter === "both" || state.kingdomFilter === "eden";
+    const comparing = state.focus === "compare" || state.focus === "compareFaces";
+    const showNorth = !comparing && (state.kingdomFilter === "both" || state.kingdomFilter === "north");
+    const showEden  = !comparing && (state.kingdomFilter === "both" || state.kingdomFilter === "eden");
+    compareGroup.visible = comparing;
+    plinth.group.visible = state.showGround && !comparing;
+    comparePlinth.group.visible = state.showGround && comparing;
+    state.wellProp.group.visible = !comparing;
+    rootEl.querySelector("#pz-description").textContent = comparing
+      ? "Слева направо: старая / новая женщина · старый / новый мужчина. Все в исподнем."
+      : "Прототип тела и головы: кнопка «Сравнить» в фокусе камеры";
     if (state.horse) state.horse.group.visible = showNorth;
     if (state.northFemale) state.northFemale.group.visible = showNorth;
     if (state.northMale)   state.northMale.group.visible = showNorth;
@@ -417,6 +447,8 @@ export function mountBowShowcase(rootEl) {
     facesNorth: { target: [-1.32, 1.48,  0.20], radius: 1.56, yaw: 0.12,  pitch: 0.08 },
     facesEden:  { target: [ 1.32, 1.50,  0.20], radius: 1.56, yaw: -0.12, pitch: 0.08 },
     legs:       { target: [-1.28, 0.72,  0.20], radius: 2.35, yaw: 0.16,  pitch: 0.12 },
+    compare:    { target: [ 0.00, 0.90, 5.00], radius: 4.5, yaw: 0.00, pitch: 0.04 },
+    compareFaces: { target: [0.00, 1.55, 5.00], radius: 3.1, yaw: 0.00, pitch: 0.02 },
     rider:      { target: [ 0.35, 1.12, -1.72], radius: 3.05, yaw: 2.72,  pitch: 0.14 },
     well:       { target: [ 0.00, 1.06, -0.34], radius: 3.05, yaw: -0.22, pitch: 0.25 }
   };
@@ -609,7 +641,7 @@ export function mountBowShowcase(rootEl) {
   bindSegmented("hair", "data-hair", (hairStyle) => {
     if (hairStyle === state.hairStyle) return;
     state.hairStyle = hairStyle;
-    allRigs().forEach((rig) => {
+    [...allRigs(), ...compareRigs].forEach((rig) => {
       rig.setHairStyle(hairStyle);
       if (state.wireframe) applyWireframe(rig.group, true);
     });
@@ -621,6 +653,7 @@ export function mountBowShowcase(rootEl) {
 
   bindSegmented("focus", "data-focus", (focus) => {
     state.focus = focus;
+    syncKingdomVisibility();
     /* Если пользователь кликнул Лица Севера или Лица Центра при скрытом королевстве — автоматически покажем его */
     if (focus === "facesNorth" && state.kingdomFilter === "eden") {
       state.kingdomFilter = "both";
@@ -643,7 +676,9 @@ export function mountBowShowcase(rootEl) {
   const btnGround = rootEl.querySelector("#pz-btn-ground");
   btnGround.addEventListener("click", () => {
     state.showGround = !state.showGround;
-    plinth.group.visible = state.showGround;
+    const comparing = state.focus === "compare" || state.focus === "compareFaces";
+    plinth.group.visible = state.showGround && !comparing;
+    comparePlinth.group.visible = state.showGround && comparing;
     shadowCatcher.visible = !state.showGround;
     btnGround.classList.toggle("is-active", state.showGround);
   });
@@ -713,6 +748,12 @@ export function mountBowShowcase(rootEl) {
       }
     }
 
+    // Синхронные позы в парах делают различия читаемыми.
+    if (compareGroup.visible) {
+      const mode = state.anim === "scene" ? "idle" : state.anim;
+      compareRigs.forEach((rig) => poseBowCharacter(rig, mode, elapsed));
+    }
+
     /* Конный воин: в «Сцене» и «Походке» конь идёт шагом, в «Стойке» отдыхает,
        в «Бою» стоит, а всадник держит поводья */
     if (state.horse && state.rider) {
@@ -747,10 +788,12 @@ export function mountBowShowcase(rootEl) {
       if (resizeObserver) resizeObserver.disconnect();
       window.removeEventListener("resize", syncViewportSize);
       allRigs().forEach((rig) => disposeBowCharacter(rig));
+      compareRigs.forEach((rig) => disposeBowCharacter(rig));
       if (state.rider) { state.rider.group.removeFromParent(); disposeBowCharacter(state.rider); }
       if (state.horse) disposeBowHorse(state.horse);
       if (state.wellProp) state.wellProp.dispose();
       plinth.dispose();
+      comparePlinth.dispose();
       shadowCatcherGeo.dispose();
       shadowCatcherMat.dispose();
       renderer.dispose();
