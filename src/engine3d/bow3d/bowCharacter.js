@@ -284,7 +284,9 @@ export function buildBaseBodyGeometry(female = false, metrics) {
         [382, 1.012, 0.128, 0.079, 0.096, -0.005, P, 0.68, S, 0.32],
         [198, 1.012, 0.128, 0.079, 0.096, -0.005, P, 0.68, S, 0.32],
         /* Тонкая высокая талия */
-        [176, 1.080, 0.110, 0.077, 0.086,  0.002, S, 0.85, C, 0.15],
+        [187, 1.045, 0.121, 0.077, 0.092, -0.002, S, 0.75, P, 0.25],
+        [176, 1.080, 0.114, 0.078, 0.088,  0.002, S, 0.85, C, 0.15],
+        [164, 1.110, 0.113, 0.080, 0.087,  0.003, S, 0.70, C, 0.30],
         /* Под грудью: кожа -> нательная льняная повязка (парные кольца) */
         [152, 1.140, 0.114, 0.082, 0.088,  0.004, S, 0.45, C, 0.55],
         [360, 1.140, 0.114, 0.082, 0.088,  0.004, S, 0.45, C, 0.55],
@@ -353,6 +355,10 @@ export function buildBaseBodyGeometry(female = false, metrics) {
         const chest = Math.exp(-(((Math.abs(sinP) - 0.45) / 0.34) ** 2));
         rz += 0.027 * height * chest * cosP;
       }
+      // Небольшой профиль живота и спины, без текстурных полос на общей UV-зоне.
+      const bellyY = female ? 1.075 : 1.105;
+      const belly = Math.exp(-(((yRaw - bellyY) / 0.075) ** 2));
+      if (cosP > 0) rz += (female ? 0.004 : 0.006) * belly * cosP;
       let y = yBase;
       let vb0 = b0, vw0 = w0, vb1 = b1, vw1 = w1;
       if (r === 0) {
@@ -473,10 +479,14 @@ export function buildBaseBodyGeometry(female = false, metrics) {
       [ 66, hemX, hemY, 0.003, hemRx, hemRz, bThigh, 1.0, 0, 0],
       /* Гладкое голое бедро, колено, икра и щиколотка */
       [ 92, lerp(hx, kx, 0.54), lerp(hy, ky, 0.54),  0.004, (female ? 0.063 : 0.067) * ws, (female ? 0.068 : 0.073), bThigh, 1.0,  bShin, 0.0],
+      [106, lerp(hx, kx, 0.72), lerp(hy, ky, 0.72), 0.003, (female ? 0.057 : 0.060) * ws, (female ? 0.061 : 0.066), bThigh, 0.92, bShin, 0.08],
       [122, lerp(hx, kx, 0.88), lerp(hy, ky, 0.88),  0.000, (female ? 0.050 : 0.054) * ws, (female ? 0.053 : 0.058), bThigh, 0.74, bShin, 0.26],
       [136, kx, ky, 0.002, (female ? 0.047 : 0.052) * ws, (female ? 0.051 : 0.056), bThigh, 0.48, bShin, 0.52],
+      [143, lerp(kx, ax, 0.09), lerp(ky, ay, 0.09), -0.003, (female ? 0.047 : 0.050) * ws, (female ? 0.051 : 0.054), bShin, 0.76, bThigh, 0.24],
       [150, lerp(kx, ax, 0.20), lerp(ky, ay, 0.20), -0.006, (female ? 0.048 : 0.050) * ws, (female ? 0.052 : 0.054), bShin, 0.92, bThigh, 0.08],
+      [158, lerp(kx, ax, 0.35), lerp(ky, ay, 0.35), -0.009, (female ? 0.049 : 0.051) * ws, (female ? 0.054 : 0.056), bShin, 1.0, bFoot, 0.0],
       [168, lerp(kx, ax, 0.52), lerp(ky, ay, 0.52), -0.008, (female ? 0.048 : 0.047) * ws, (female ? 0.052 : 0.052), bShin, 1.0,  bFoot, 0.0],
+      [181, lerp(kx, ax, 0.75), lerp(ky, ay, 0.75), -0.006, (female ? 0.041 : 0.043) * ws, (female ? 0.046 : 0.049), bShin, 0.90, bFoot, 0.10],
       [196, ax, ay + 0.060 * hs, -0.002, (female ? 0.035 : 0.040) * ws, (female ? 0.038 : 0.044), bShin, 0.60, bFoot, 0.40],
       [204, ax, ay + 0.030 * hs,  0.004, (female ? 0.034 : 0.039) * ws, (female ? 0.042 : 0.047), bShin, 0.35, bFoot, 0.65]
     ];
@@ -489,13 +499,13 @@ export function buildBaseBodyGeometry(female = false, metrics) {
         const uFrac = s / segsLeg;
         const phi = (uFrac - 0.5) * Math.PI * 2;
         // Утолщаем бедро и икру, мягко возвращая исходную ширину к щиколотке.
-        const blend = [0.75, 1, 1, 1, 0.9, 0.8, 1, 1, 0.25, 0][i];
+        const blend = [0.75, 1, 1, 1, 0.95, 0.9, 0.8, 0.9, 1, 1, 1, 0.7, 0.25, 0][i];
         const bulk = 1 + ((m.limbBulk || 1) - 1) * blend;
         const front = Math.max(0, Math.cos(phi));
         const back = Math.max(0, -Math.cos(phi));
         // Мягкая выпуклость квадрицепса и икры без рисованных полос.
-        const quad = female ? 0 : [0, 0.003, 0.003, 0.007, 0.002, 0, 0, 0, 0, 0][i] * front * front;
-        const calf = female ? 0 : [0, 0, 0, 0, 0, 0, 0.004, 0.005, 0, 0][i] * back * back;
+        const quad = female ? 0 : [0, 0.003, 0.003, 0.007, 0.005, 0.002, 0, 0, 0, 0, 0, 0, 0, 0][i] * front * front;
+        const calf = female ? 0 : [0, 0, 0, 0, 0, 0, 0, 0.002, 0.004, 0.006, 0.005, 0.002, 0, 0][i] * back * back;
         ring.push(mb.addVertex(cx + Math.sin(phi) * rx * bulk, cy3d, cz + Math.cos(phi) * rz * bulk + quad - calf, uFrac, vTex, b0, w0, b1, w1));
       }
       mb.seamPairs.push([ring[0], ring[segsLeg]]);
@@ -574,7 +584,9 @@ export function buildBaseBodyGeometry(female = false, metrics) {
       [ 36, sx - sign * 0.014, sy - 0.006 * hs, -0.005, 0.054 * musc, 0.059 * musc, C, 0.52, bUpper, 0.48],
       [ 50, sx + sign * 0.004, sy - 0.040 * hs, -0.005, 0.049 * musc, 0.052 * musc, C, 0.15, bUpper, 0.85],
       [ 84, lerp(sx, ex, 0.54), lerp(sy, ey, 0.54), -0.004, 0.043 * musc, 0.046 * musc, bUpper, 1.0, bFore, 0.0],
+      [101, lerp(sx, ex, 0.78), lerp(sy, ey, 0.78), -0.006, 0.039 * musc, 0.042 * musc, bUpper, 0.85, bFore, 0.15],
       [116, ex, ey, -0.007, 0.037 * musc, 0.039 * musc, bUpper, 0.50, bFore, 0.50],
+      [133, lerp(ex, wx, 0.23), lerp(ey, wy, 0.23), -0.004, 0.035 * musc, 0.037 * musc, bFore, 0.80, bUpper, 0.20],
       [150, lerp(ex, wx, 0.55), lerp(ey, wy, 0.55), 0.002, 0.032 * musc, 0.034 * musc, bFore, 1.0, bHand, 0.0],
       [184, lerp(ex, wx, 0.95), lerp(ey, wy, 0.95), 0.007, 0.025 * musc, 0.022 * musc, bFore, 0.55, bHand, 0.45],
       /* Кисть и пальцы */
@@ -593,12 +605,14 @@ export function buildBaseBodyGeometry(female = false, metrics) {
         const uFrac = s / segsArm;
         const phi = (uFrac - 0.5) * Math.PI * 2;
         // Объём руки постепенно сходит к запястью, кисти не увеличиваются.
-        const blend = [0.45, 0.75, 1, 1, 1, 1, 0.8, 0.15, 0, 0, 0][i];
+        const blend = [0.45, 0.75, 1, 1, 1, 1, 1, 0.9, 0.8, 0.15, 0, 0, 0][i];
         const bulk = 1 + ((m.limbBulk || 1) - 1) * blend;
         const front = Math.max(0, Math.cos(phi));
         // Бицепс в расслабленной руке: лёгкий объём спереди, без отдельного шара.
-        const bicep = female ? 0 : [0, 0, 0, 0.002, 0.007, 0.0015, 0, 0, 0, 0, 0][i] * front * front;
-        ring.push(mb.addVertex(cx + Math.sin(phi) * rx * bulk, cy3d, cz + Math.cos(phi) * rz * bulk + bicep, uFrac, vTex, b0, w0, b1, w1));
+        const bicep = female ? 0 : [0, 0, 0, 0.002, 0.007, 0.004, 0.0015, 0, 0, 0, 0, 0, 0][i] * front * front;
+        // Скругляем торец дельты, чтобы верх руки не выглядел плоской площадкой.
+        const shoulderRound = (i <= 2 ? [0.002, 0.005, 0.006][i] : 0) * Math.pow(Math.abs(Math.sin(phi)), 2);
+        ring.push(mb.addVertex(cx + Math.sin(phi) * rx * bulk, cy3d - shoulderRound, cz + Math.cos(phi) * rz * bulk + bicep, uFrac, vTex, b0, w0, b1, w1));
       }
       mb.seamPairs.push([ring[0], ring[segsArm]]);
       rings.push(ring);
@@ -686,7 +700,7 @@ export function buildGarmentGeometry(female = false, rawOutfit = "villager", kin
         [180, 1.048, 0.140, 0.088, 0.104, -0.004, P, 0.45, S, 0.55],
         [116, 1.052, 0.139, 0.088, 0.103, -0.004, S, 0.60, P, 0.40],
         /* Приталенный лиф с плотной сеткой колец по дуге груди */
-        [104, 1.082, 0.116, 0.081, 0.090,  0.002, S, 0.85, C, 0.15],
+        [104, 1.082, 0.122, 0.087, 0.094,  0.002, S, 0.85, C, 0.15],
         [ 88, 1.140, 0.126, 0.091, 0.096,  0.004, S, 0.45, C, 0.55],
         [ 76, 1.180, 0.134, 0.099, 0.098,  0.004, C, 0.80, S, 0.20],
         [ 64, 1.225, 0.144, 0.108, 0.100,  0.004, C, 1.00, S, 0.00],
