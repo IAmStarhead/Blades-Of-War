@@ -1023,6 +1023,15 @@ export function buildSculptedHeadGeometry(female = false, hasBeard = false, king
       let x = sinP * rx;
       let z = cosP * rz;
 
+      // У лица есть нижняя челюсть и подбородок, а не сферический срез под носом.
+      // Поддерживаем профиль широкой плавной формой в самой поверхности головы.
+      if (cosP > 0) {
+        const lowerFace = Math.exp(-((phi / 0.80) ** 2)) * Math.exp(-(((vFrac - 0.245) / 0.14) ** 2));
+        z += lowerFace * (hasBeard ? 0.010 : (female ? 0.016 : 0.018));
+        const jawSide = Math.exp(-(((Math.abs(phi) - 0.75) / 0.30) ** 2)) * Math.exp(-(((vFrac - 0.27) / 0.12) ** 2));
+        x += Math.sign(sinP) * jawSide * (female ? 0.002 : 0.004);
+      }
+
       // Скулы и поверхность вокруг рта лепятся на той же сетке, что и кожа.
       if (cosP > 0.1) {
         const cheek = Math.exp(-(((Math.abs(phi) - 0.64) / 0.28) ** 2)) * Math.exp(-(((vFrac - 0.435) / 0.085) ** 2));

@@ -315,24 +315,24 @@ export function buildHeadTextureCanvas(opts = {}, canvasFactory = null) {
     /* Верхняя губа с «галочкой» Купидона */
     ctx.fillStyle = upperLipCol;
     ctx.beginPath();
-    ctx.moveTo(W * 0.5 - 16.5, mouthY + 1.2);
+    ctx.moveTo(W * 0.5 - 19.0, mouthY + 1.2);
     ctx.quadraticCurveTo(W * 0.5 - 6, mouthY - 5.2, W * 0.5, mouthY - 3.2);
-    ctx.quadraticCurveTo(W * 0.5 + 6, mouthY - 5.2, W * 0.5 + 16.5, mouthY + 1.2);
+    ctx.quadraticCurveTo(W * 0.5 + 6, mouthY - 5.2, W * 0.5 + 19.0, mouthY + 1.2);
     ctx.closePath();
     ctx.fill();
 
     /* Более полная мягкая нижняя губа */
     ctx.fillStyle = lowerLipCol;
     ctx.beginPath();
-    ctx.moveTo(W * 0.5 - 16.0, mouthY + 1.2);
-    ctx.quadraticCurveTo(W * 0.5, mouthY + 9.2, W * 0.5 + 16.0, mouthY + 1.2);
+    ctx.moveTo(W * 0.5 - 18.5, mouthY + 1.2);
+    ctx.quadraticCurveTo(W * 0.5, mouthY + 9.2, W * 0.5 + 18.5, mouthY + 1.2);
     ctx.closePath();
     ctx.fill();
 
     /* Мягкая естественная линия смыкания губ */
     ctx.fillStyle = isEden ? "rgba(86, 34, 38, 0.62)" : "rgba(92, 48, 42, 0.55)";
     ctx.beginPath();
-    ctx.ellipse(W * 0.5, mouthY + 1.2, 15.5, 1.1, 0, 0, Math.PI * 2);
+    ctx.ellipse(W * 0.5, mouthY + 1.2, 18.0, 1.1, 0, 0, Math.PI * 2);
     ctx.fill();
   } else {
     /* Гладко выбритый мужчина Златодвора (или безбородый северянин):
@@ -340,9 +340,9 @@ export function buildHeadTextureCanvas(opts = {}, canvasFactory = null) {
        рот читается главным образом по тёмной линии смыкания */
     ctx.fillStyle = isEden ? "rgba(197, 140, 118, 0.52)" : "rgba(188, 134, 114, 0.48)";
     ctx.beginPath();
-    ctx.moveTo(W * 0.5 - 16.5, mouthY + 0.8);
-    ctx.quadraticCurveTo(W * 0.5, mouthY - 3.8, W * 0.5 + 16.5, mouthY + 0.8);
-    ctx.quadraticCurveTo(W * 0.5, mouthY + 5.8, W * 0.5 - 16.5, mouthY + 0.8);
+    ctx.moveTo(W * 0.5 - 19.0, mouthY + 0.8);
+    ctx.quadraticCurveTo(W * 0.5, mouthY - 3.8, W * 0.5 + 19.0, mouthY + 0.8);
+    ctx.quadraticCurveTo(W * 0.5, mouthY + 5.8, W * 0.5 - 19.0, mouthY + 0.8);
     ctx.closePath();
     ctx.fill();
 
@@ -350,8 +350,8 @@ export function buildHeadTextureCanvas(opts = {}, canvasFactory = null) {
     ctx.strokeStyle = "rgba(74, 38, 28, 0.60)";
     ctx.lineWidth = 1.8;
     ctx.beginPath();
-    ctx.moveTo(W * 0.5 - 15.5, mouthY + 0.6);
-    ctx.quadraticCurveTo(W * 0.5, mouthY + 2.4, W * 0.5 + 15.5, mouthY + 0.6);
+    ctx.moveTo(W * 0.5 - 18.0, mouthY + 0.6);
+    ctx.quadraticCurveTo(W * 0.5, mouthY + 2.4, W * 0.5 + 18.0, mouthY + 0.6);
     ctx.stroke();
     /* Лёгкая благородная ямочка/тень под нижней губой */
     softRadial(ctx, W * 0.5, mouthY + 11, 9, "rgba(116, 74, 52, 0.22)", "rgba(116, 74, 52, 0)");
