@@ -1,11 +1,11 @@
 /* ============================================================================
-   ZOMBOID-STYLE MEDIEVAL 3D PROP — Каменный колодец Студёного Брода
+   BLADES OF WAR — MEDIEVAL 3D PROP — Каменный колодец Студёного Брода
    Честный тёсаный квадратный деревянный брус (не «труба»!), полая бадья с водой,
    бочка с параллельными досками утопленной крышки и каплевидный щит.
    ============================================================================ */
 
 import * as THREE from "three";
-import { buildPropAtlasCanvas, canvasToThreeTexture } from "./zomboidTextures.js";
+import { buildPropAtlasCanvas, canvasToThreeTexture } from "./bowTextures.js";
 
 /* Перемапливает UV геометрии в выбранный участок атласа 512×512:
    - "stone": каменная кладка
@@ -35,9 +35,9 @@ function remapUVToQuadrant(geo, quadKey, repeatU = 1, repeatV = 1) {
   return geo;
 }
 
-export function createZomboidMedievalWell3D(opts = {}) {
+export function createMedievalWell3D(opts = {}) {
   const group = new THREE.Group();
-  group.name = "ZomboidStoneWellProp";
+  group.name = "BowStoneWellProp";
 
   const atlasCv = buildPropAtlasCanvas(opts.canvasFactory);
   const atlasTex = canvasToThreeTexture(atlasCv);
@@ -296,7 +296,7 @@ export function createZomboidMedievalWell3D(opts = {}) {
 }
 
 /* Мягкое покачивание деревянной бадьи на ветру */
-export function animateZomboidWell3D(wellProp, timeSec = 0) {
+export function animateMedievalWell3D(wellProp, timeSec = 0) {
   if (!wellProp || !wellProp.pendulum) return;
   wellProp.pendulum.rotation.z = Math.sin(timeSec * 1.15) * 0.030;
   wellProp.pendulum.rotation.x = Math.cos(timeSec * 0.85) * 0.016;

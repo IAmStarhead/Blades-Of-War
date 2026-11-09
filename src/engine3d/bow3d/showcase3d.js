@@ -1,5 +1,5 @@
 /* ============================================================================
-   BLADES OF WAR — ИНТЕРАКТИВНЫЙ 3D-СТЕНД ДИЗАЙНА (СТИЛЬ PROJECT ZOMBOID B41+)
+   BLADES OF WAR (КЛИНКИ ВОЙНЫ) — ИНТЕРАКТИВНЫЙ 3D-СТЕНД ПЕРСОНАЖЕЙ И ОКРУЖЕНИЯ
    Контраст двух королевств Земли Эдема:
      1) Королевство Хладных Ветров (Север, вождь Норвинг IV) — хладцы
      2) Королевство Златодвор (Центр Эдема, король Родрик II) — златодворцы
@@ -9,18 +9,18 @@
 
 import * as THREE from "three";
 import {
-  createZomboidCharacter3D,
-  poseZomboidCharacter,
-  disposeZomboidCharacter
-} from "./zomboidCharacter.js";
+  createBowCharacter3D,
+  poseBowCharacter,
+  disposeBowCharacter
+} from "./bowCharacter.js";
 import {
-  createZomboidMedievalWell3D,
-  animateZomboidWell3D
-} from "./zomboidProp.js";
+  createMedievalWell3D,
+  animateMedievalWell3D
+} from "./bowProp.js";
 import {
   buildPropAtlasCanvas,
   canvasToThreeTexture
-} from "./zomboidTextures.js";
+} from "./bowTextures.js";
 
 const STUDIO_BG_HEX = 0x2d3034;
 
@@ -61,7 +61,7 @@ function createCobblePlinth() {
   rim.receiveShadow = true;
   group.add(rim);
 
-  group.visible = false; // по умолчанию чистый сланцевый фон #2d3034 как на эталоне Project Zomboid
+  group.visible = false; // по умолчанию чистый сланцевый фон #2d3034 витрины дизайна
   return {
     group,
     dispose: () => {
@@ -90,7 +90,7 @@ function applyWireframe(root, enabled) {
 }
 
 /* ---------- ГЛАВНАЯ ИНИЦИАЛИЗАЦИЯ СТЕНДА ---------- */
-export function mountZomboidShowcase(rootEl) {
+export function mountBowShowcase(rootEl) {
   if (!rootEl) return;
 
   rootEl.innerHTML = `
@@ -100,10 +100,10 @@ export function mountZomboidShowcase(rootEl) {
       <!-- Верхняя панель статуса и метрик производительности -->
       <header class="pz-topbar">
         <div class="pz-brand">
-          <span class="pz-badge">3D ЭТАЛОН РЕВИЗИЯ 3</span>
+          <span class="pz-badge">КЛИНКИ ВОЙНЫ · 3D РЕВИЗИЯ 4</span>
           <div class="pz-titles">
             <h1>Blades Of War · Земли Эдема: Хладные Ветра vs Златодвор</h1>
-            <p>Суровые лица Project Zomboid, цельная развилка таза, чёткие доспехи и контраст двух королевств</p>
+            <p>Два народа Земли Эдема: раздельные слои тела и одежды, живые лица и заземлённая походка</p>
           </div>
         </div>
         <div class="pz-stats" id="pz-stats">
@@ -112,7 +112,7 @@ export function mountZomboidShowcase(rootEl) {
           <span id="pz-tris">— треуг.</span>
           <span class="pz-sep">·</span>
           <span id="pz-calls">— вызовов</span>
-          <a class="pz-dl-btn" id="pz-dl-btn" href="/download" download="BladesOfWar-Zomboid3D-Demo.html" title="Скачать автономный 3D-пример одним HTML-файлом">Скачать HTML</a>
+          <a class="pz-dl-btn" id="pz-dl-btn" href="/download" download="BladesOfWar-3D-Demo.html" title="Скачать автономный 3D-пример одним HTML-файлом">Скачать HTML</a>
         </div>
       </header>
 
@@ -223,7 +223,7 @@ export function mountZomboidShowcase(rootEl) {
 
   const camera = new THREE.PerspectiveCamera(34, 16 / 9, 0.1, 60);
 
-  /* ---------- 2. МЯГКОЕ ТРЁХТОЧЕЧНОЕ ОСВЕЩЕНИЕ PROJECT ZOMBOID ---------- */
+  /* ---------- 2. МЯГКОЕ ТРЁХТОЧЕЧНОЕ ОСВЕЩЕНИЕ ВИТРИНЫ ---------- */
   const hemiLight = new THREE.HemisphereLight(0xf3f6fb, 0x3b4048, 1.06);
   hemiLight.position.set(0, 6, 0);
   scene.add(hemiLight);
@@ -278,7 +278,7 @@ export function mountZomboidShowcase(rootEl) {
   };
 
   /* Эталонный средневековый колодец (10/10) в сердце сцены между двумя королевствами */
-  state.wellProp = createZomboidMedievalWell3D();
+  state.wellProp = createMedievalWell3D();
   state.wellProp.group.position.set(0.0, 0, -0.34);
   state.wellProp.group.rotation.y = -0.22;
   stageGroup.add(state.wellProp.group);
@@ -290,11 +290,11 @@ export function mountZomboidShowcase(rootEl) {
   function rebuildCharacters(outfit) {
     allRigs().forEach((rig) => {
       stageGroup.remove(rig.group);
-      disposeZomboidCharacter(rig);
+      disposeBowCharacter(rig);
     });
 
     /* 1. КОРОЛЕВСТВО ХЛАДНЫХ ВЕТРОВ (СЕВЕР, НОРВИНГ IV) — СЛЕВА */
-    state.northFemale = createZomboidCharacter3D({
+    state.northFemale = createBowCharacter3D({
       female: true,
       kingdom: "north",
       outfit,
@@ -305,7 +305,7 @@ export function mountZomboidShowcase(rootEl) {
     state.northFemale.group.rotation.y = 0.18;
     stageGroup.add(state.northFemale.group);
 
-    state.northMale = createZomboidCharacter3D({
+    state.northMale = createBowCharacter3D({
       female: false,
       kingdom: "north",
       outfit,
@@ -318,7 +318,7 @@ export function mountZomboidShowcase(rootEl) {
     stageGroup.add(state.northMale.group);
 
     /* 2. КОРОЛЕВСТВО ЗЛАТОДВОР (ЦЕНТР ЗЕМЛИ ЭДЕМА, РОДРИК II) — СПРАВА */
-    state.edenFemale = createZomboidCharacter3D({
+    state.edenFemale = createBowCharacter3D({
       female: true,
       kingdom: "eden",
       outfit,
@@ -329,7 +329,7 @@ export function mountZomboidShowcase(rootEl) {
     state.edenFemale.group.rotation.y = -0.08;
     stageGroup.add(state.edenFemale.group);
 
-    state.edenMale = createZomboidCharacter3D({
+    state.edenMale = createBowCharacter3D({
       female: false,
       kingdom: "eden",
       outfit,
@@ -640,29 +640,29 @@ export function mountZomboidShowcase(rootEl) {
     /* Анимация скелетов обоих королевств (естественный живой темп ходьбы без замедления и хромоты!) */
     if (state.northFemale && state.northMale && state.edenFemale && state.edenMale) {
       if (state.anim === "scene") {
-        poseZomboidCharacter(state.northFemale, "idle", elapsed,        { lookYaw: 0.06 });
-        poseZomboidCharacter(state.northMale,   "walk", elapsed * 0.94, { lookYaw: 0.04 });
-        poseZomboidCharacter(state.edenFemale,  "idle", elapsed + 1.3,  { lookYaw: -0.06 });
-        poseZomboidCharacter(state.edenMale,    "walk", elapsed * 0.94 + 0.65, { lookYaw: -0.04 });
+        poseBowCharacter(state.northFemale, "idle", elapsed,        { lookYaw: 0.06 });
+        poseBowCharacter(state.northMale,   "walk", elapsed * 0.94, { lookYaw: 0.04 });
+        poseBowCharacter(state.edenFemale,  "idle", elapsed + 1.3,  { lookYaw: -0.06 });
+        poseBowCharacter(state.edenMale,    "walk", elapsed * 0.94 + 0.65, { lookYaw: -0.04 });
       } else if (state.anim === "idle") {
-        poseZomboidCharacter(state.northFemale, "idle", elapsed,       { lookYaw: 0 });
-        poseZomboidCharacter(state.northMale,   "idle", elapsed + 0.9, { lookYaw: 0 });
-        poseZomboidCharacter(state.edenFemale,  "idle", elapsed + 1.7, { lookYaw: 0 });
-        poseZomboidCharacter(state.edenMale,    "idle", elapsed + 2.4, { lookYaw: 0 });
+        poseBowCharacter(state.northFemale, "idle", elapsed,       { lookYaw: 0 });
+        poseBowCharacter(state.northMale,   "idle", elapsed + 0.9, { lookYaw: 0 });
+        poseBowCharacter(state.edenFemale,  "idle", elapsed + 1.7, { lookYaw: 0 });
+        poseBowCharacter(state.edenMale,    "idle", elapsed + 2.4, { lookYaw: 0 });
       } else if (state.anim === "walk") {
-        poseZomboidCharacter(state.northFemale, "walk", elapsed,        { lookYaw: 0 });
-        poseZomboidCharacter(state.northMale,   "walk", elapsed + 0.35, { lookYaw: 0 });
-        poseZomboidCharacter(state.edenFemale,  "walk", elapsed + 0.70, { lookYaw: 0 });
-        poseZomboidCharacter(state.edenMale,    "walk", elapsed + 1.05, { lookYaw: 0 });
+        poseBowCharacter(state.northFemale, "walk", elapsed,        { lookYaw: 0 });
+        poseBowCharacter(state.northMale,   "walk", elapsed + 0.35, { lookYaw: 0 });
+        poseBowCharacter(state.edenFemale,  "walk", elapsed + 0.70, { lookYaw: 0 });
+        poseBowCharacter(state.edenMale,    "walk", elapsed + 1.05, { lookYaw: 0 });
       } else if (state.anim === "combat") {
-        poseZomboidCharacter(state.northFemale, "combat", elapsed,       { lookYaw: 0.08 });
-        poseZomboidCharacter(state.northMale,   "combat", elapsed + 0.6, { lookYaw: 0.06 });
-        poseZomboidCharacter(state.edenFemale,  "combat", elapsed + 1.2, { lookYaw: -0.06 });
-        poseZomboidCharacter(state.edenMale,    "combat", elapsed + 1.8, { lookYaw: -0.08 });
+        poseBowCharacter(state.northFemale, "combat", elapsed,       { lookYaw: 0.08 });
+        poseBowCharacter(state.northMale,   "combat", elapsed + 0.6, { lookYaw: 0.06 });
+        poseBowCharacter(state.edenFemale,  "combat", elapsed + 1.2, { lookYaw: -0.06 });
+        poseBowCharacter(state.edenMale,    "combat", elapsed + 1.8, { lookYaw: -0.08 });
       }
     }
 
-    animateZomboidWell3D(state.wellProp, elapsed);
+    animateMedievalWell3D(state.wellProp, elapsed);
 
     renderer.render(scene, camera);
 
@@ -686,7 +686,7 @@ export function mountZomboidShowcase(rootEl) {
       cancelAnimationFrame(rafId);
       if (resizeObserver) resizeObserver.disconnect();
       window.removeEventListener("resize", syncViewportSize);
-      allRigs().forEach((rig) => disposeZomboidCharacter(rig));
+      allRigs().forEach((rig) => disposeBowCharacter(rig));
       if (state.wellProp) state.wellProp.dispose();
       plinth.dispose();
       shadowCatcherGeo.dispose();
@@ -700,6 +700,6 @@ export function mountZomboidShowcase(rootEl) {
 if (typeof document !== "undefined") {
   const autoRoot = document.getElementById("pz-showcase-root");
   if (autoRoot) {
-    mountZomboidShowcase(autoRoot);
+    mountBowShowcase(autoRoot);
   }
 }

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /* ============================================================================
-   Сборщик автономного интерактивного 3D-примера дизайна Project Zomboid B41+
-   Создаёт self-contained файл dist/Zomboid3D-Demo.html (мужчина, женщина и
+   Сборщик автономного интерактивного 3D-стенда «Клинки Войны» (Blades Of War)
+   Создаёт self-contained файл dist/BladesOfWar-3D-Demo.html (мужчина, женщина и
    средневековый колодец на Three.js WebGL), не затрагивая dist/BladesOfWar.html.
    ============================================================================ */
 
@@ -24,15 +24,15 @@ await build({
     sourcemap: false,
     chunkSizeWarningLimit: 2500,
     lib: {
-      entry: path.join(rootDir, "src/engine3d/zomboid/showcase3d.js"),
-      name: "BOWZomboidShowcase",
+      entry: path.join(rootDir, "src/engine3d/bow3d/showcase3d.js"),
+      name: "BOW3DShowcase",
       formats: ["iife"],
-      fileName: () => "zomboid-showcase-bundle.js"
+      fileName: () => "bow3d-showcase-bundle.js"
     }
   }
 });
 
-const bundlePath = path.join(distDir, "zomboid-showcase-bundle.js");
+const bundlePath = path.join(distDir, "bow3d-showcase-bundle.js");
 const jsCode = fs.readFileSync(bundlePath, "utf8").replace(/<\/script>/gi, "<\\/script>");
 fs.unlinkSync(bundlePath);
 
@@ -237,7 +237,7 @@ const html = `<!DOCTYPE html>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <meta name="theme-color" content="#2d3034" />
-  <title>Blades Of War — 3D Прототип дизайна (Project Zomboid Style)</title>
+  <title>Blades Of War (Клинки Войны) — 3D стенд персонажей</title>
   <style>${css}</style>
 </head>
 <body>
@@ -247,6 +247,6 @@ const html = `<!DOCTYPE html>
 </html>
 `;
 
-const outPath = path.join(distDir, "Zomboid3D-Demo.html");
+const outPath = path.join(distDir, "BladesOfWar-3D-Demo.html");
 fs.writeFileSync(outPath, html, "utf8");
 console.log("✔ Собран 3D-стенд дизайна:", outPath, "(" + Math.round(Buffer.byteLength(html) / 1024) + " KB)");
