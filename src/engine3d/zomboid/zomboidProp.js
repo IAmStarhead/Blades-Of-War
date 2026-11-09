@@ -1,25 +1,29 @@
 /* ============================================================================
-   ZOMBOID-STYLE MEDIEVAL 3D PROP — Каменный колодец Студёного Брода с дубовой
-   бочкой, кованой бадьёй и прислонённым северным щитом (рисованные UV-текстуры
-   тёсаного камня, мореного дуба, кованого железа и пухлого снега).
+   ZOMBOID-STYLE MEDIEVAL 3D PROP — Каменный колодец Студёного Брода
+   Честный тёсаный квадратный деревянный брус (не «труба»!), полая бадья с водой,
+   бочка с параллельными досками утопленной крышки и каплевидный щит.
    ============================================================================ */
 
 import * as THREE from "three";
 import { buildPropAtlasCanvas, canvasToThreeTexture } from "./zomboidTextures.js";
 
-/* Перемапливает UV геометрии в выбранный квадрант атласа 512×512:
-   "stone" (0..0.5, 0.5..1.0), "wood" (0.5..1.0, 0.5..1.0),
-   "iron"  (0..0.5, 0.0..0.5), "snow" (0.5..1.0, 0.0..0.5) */
+/* Перемапливает UV геометрии в выбранный участок атласа 512×512:
+   - "stone": каменная кладка
+   - "wood":  дощатый щит / клёпки (4 плахи)
+   - "beam":  цельный тёсаный деревянный брус (1 монолитная плаха без полосок!)
+   - "iron":  кованое железо
+   - "snow":  снег */
 function remapUVToQuadrant(geo, quadKey, repeatU = 1, repeatV = 1) {
   const ranges = {
     stone: [0.01, 0.49, 0.51, 0.99],
     wood:  [0.51, 0.99, 0.51, 0.99],
+    beam:  [0.52, 0.73, 0.52, 0.98], // одна широкая плаха дерева на всю грань бруса!
     iron:  [0.01, 0.49, 0.01, 0.49],
     snow:  [0.51, 0.99, 0.01, 0.49]
   };
   const [u0, u1, v0, v1] = ranges[quadKey] || ranges.stone;
   const uv = geo.getAttribute("uv");
-  if (!uv) { return geo; }
+  if (!uv) return geo;
   for (let i = 0; i < uv.count; i++) {
     const ux = uv.getX(i) * repeatU;
     const vy = uv.getY(i) * repeatV;
@@ -40,8 +44,12 @@ export function createZomboidMedievalWell3D(opts = {}) {
   atlasTex.wrapS = THREE.ClampToEdgeWrapping;
   atlasTex.wrapT = THREE.ClampToEdgeWrapping;
 
+  /* Гладкий материал для камня/снега/металла и чёткий гранёный материал для тёсаного дерева! */
   const mat = new THREE.MeshLambertMaterial({ map: atlasTex });
-  const darkWaterMat = new THREE.MeshBasicMaterial({ color: 0x0c131c });
+  const timberMat = new THREE.MeshLambertMaterial({ map: atlasTex, flatShading: true });
+  const darkInnerMat = new THREE.MeshLambertMaterial({ map: atlasTex, side: THREE.BackSide, color: 0x5c646e });
+  const darkWoodBackMat = new THREE.MeshLambertMaterial({ color: 0x2c1d11, side: THREE.DoubleSide });
+  const darkWaterMat = new THREE.MeshBasicMaterial({ color: 0x101c28 });
 
   /* 1. Пухлый снежный накат у подножия колодца */
   const snowBaseGeo = remapUVToQuadrant(new THREE.CylinderGeometry(0.68, 0.86, 0.11, 20), "snow", 1, 1);
@@ -50,7 +58,7 @@ export function createZomboidMedievalWell3D(opts = {}) {
   snowBase.receiveShadow = true;
   group.add(snowBase);
 
-  /* 2. Толстостенный каменный сруб колодца (полая шахта + внутренние стены + тёмная вода в глубине!) */
+  /* 2. Толстостенный каменный сруб колодца (полая шахта + внутренняя кладка + вода) */
   const wallGeo = remapUVToQuadrant(new THREE.CylinderGeometry(0.54, 0.58, 0.72, 18, 1, true), "stone", 3, 1);
   const wall = new THREE.Mesh(wallGeo, mat);
   wall.position.y = 0.36;
@@ -58,9 +66,8 @@ export function createZomboidMedievalWell3D(opts = {}) {
   wall.receiveShadow = true;
   group.add(wall);
 
-  const innerMat = new THREE.MeshLambertMaterial({ map: atlasTex, side: THREE.BackSide, color: 0x66707a });
   const innerWallGeo = remapUVToQuadrant(new THREE.CylinderGeometry(0.43, 0.43, 0.72, 16, 1, true), "stone", 2, 1);
-  const innerWall = new THREE.Mesh(innerWallGeo, innerMat);
+  const innerWall = new THREE.Mesh(innerWallGeo, darkInnerMat);
   innerWall.position.y = 0.36;
   group.add(innerWall);
 
@@ -77,38 +84,60 @@ export function createZomboidMedievalWell3D(opts = {}) {
   water.position.y = 0.24;
   group.add(water);
 
-  /* 3. Две массивные дубовые стойки с подкосами */
+  /* 3. Массивные четырёхгранные тёсаные брусья стоек, верхняя матица и подкосы + кованые хомуты */
   [-0.50, 0.50].forEach((px) => {
-    const postGeo = remapUVToQuadrant(new THREE.BoxGeometry(0.11, 1.32, 0.11), "wood", 1, 2);
-    const post = new THREE.Mesh(postGeo, mat);
+    const postGeo = remapUVToQuadrant(new THREE.BoxGeometry(0.115, 1.32, 0.115), "beam", 1, 1);
+    const post = new THREE.Mesh(postGeo, timberMat);
     post.position.set(px, 1.34, 0);
     post.castShadow = true;
+    post.receiveShadow = true;
     group.add(post);
 
-    const braceGeo = remapUVToQuadrant(new THREE.BoxGeometry(0.07, 0.38, 0.08), "wood", 1, 1);
-    const brace = new THREE.Mesh(braceGeo, mat);
+    /* Кованая железная обойма у основания стойки на каменном срубе */
+    const bracketGeo = remapUVToQuadrant(new THREE.BoxGeometry(0.132, 0.07, 0.132), "iron", 1, 1);
+    const bracket = new THREE.Mesh(bracketGeo, mat);
+    bracket.position.set(px, 0.76, 0);
+    group.add(bracket);
+
+    const braceGeo = remapUVToQuadrant(new THREE.BoxGeometry(0.075, 0.38, 0.085), "beam", 1, 1);
+    const brace = new THREE.Mesh(braceGeo, timberMat);
     brace.position.set(px * 0.78, 1.82, 0);
     brace.rotation.z = px < 0 ? -0.58 : 0.58;
+    brace.castShadow = true;
     group.add(brace);
   });
 
-  /* 4. Вал ворота, железная рукоять и окованная железом дубовая бадья */
-  const axleGeo = remapUVToQuadrant(new THREE.CylinderGeometry(0.065, 0.065, 1.06, 12), "wood", 1, 2);
+  /* Верхняя коньковая деревянная балка между стойками */
+  const topBeamGeo = remapUVToQuadrant(new THREE.BoxGeometry(1.22, 0.09, 0.095), "beam", 1, 1);
+  const topBeam = new THREE.Mesh(topBeamGeo, timberMat);
+  topBeam.position.set(0, 1.98, 0);
+  topBeam.castShadow = true;
+  group.add(topBeam);
+
+  /* 4. Гранёный деревянный ворот, кованая рукоять и полая деревянная бадья с водой */
+  const axleGeo = remapUVToQuadrant(new THREE.CylinderGeometry(0.062, 0.062, 1.02, 8), "beam", 1, 1);
   axleGeo.rotateZ(Math.PI * 0.5);
-  const axle = new THREE.Mesh(axleGeo, mat);
-  axle.position.set(0, 1.66, 0);
+  const axle = new THREE.Mesh(axleGeo, timberMat);
+  axle.position.set(0, 1.64, 0);
   axle.castShadow = true;
   group.add(axle);
 
-  const crankGeo = remapUVToQuadrant(new THREE.CylinderGeometry(0.02, 0.02, 0.24, 8), "iron", 1, 1);
-  const crank = new THREE.Mesh(crankGeo, mat);
-  crank.position.set(0.58, 1.56, 0.06);
-  crank.rotation.x = 0.45;
-  group.add(crank);
+  /* Г-образная кованая железная ручка ворота */
+  const crankArmGeo = remapUVToQuadrant(new THREE.BoxGeometry(0.03, 0.22, 0.03), "iron", 1, 1);
+  const crankArm = new THREE.Mesh(crankArmGeo, mat);
+  crankArm.position.set(0.55, 1.55, 0.03);
+  crankArm.rotation.x = 0.32;
+  group.add(crankArm);
 
-  /* Подвес бадьи на кованой цепи с точкой подвеса на вороте (y = 1.64) для мягкого покачивания */
+  const crankGripGeo = remapUVToQuadrant(new THREE.CylinderGeometry(0.018, 0.018, 0.13, 8), "beam", 1, 1);
+  crankGripGeo.rotateZ(Math.PI * 0.5);
+  const crankGrip = new THREE.Mesh(crankGripGeo, timberMat);
+  crankGrip.position.set(0.61, 1.46, 0.065);
+  group.add(crankGrip);
+
+  /* Подвес бадьи на кованой цепи */
   const pendulum = new THREE.Group();
-  pendulum.position.set(0, 1.64, 0.05);
+  pendulum.position.set(0, 1.64, 0.04);
   group.add(pendulum);
 
   const chainGeo = remapUVToQuadrant(new THREE.CylinderGeometry(0.014, 0.014, 0.56, 6), "iron", 1, 1);
@@ -116,27 +145,42 @@ export function createZomboidMedievalWell3D(opts = {}) {
   chain.position.set(0, -0.28, 0);
   pendulum.add(chain);
 
-  const bucketGeo = remapUVToQuadrant(new THREE.CylinderGeometry(0.13, 0.105, 0.24, 12), "wood", 2, 1);
-  const bucket = new THREE.Mesh(bucketGeo, mat);
-  bucket.position.set(0, -0.62, 0);
-  bucket.castShadow = true;
-  pendulum.add(bucket);
+  /* Полая клёпочная бадья (открытая сверху, с водой внутри, а не «пенек с лучами»!) */
+  const bucketWallGeo = remapUVToQuadrant(new THREE.CylinderGeometry(0.13, 0.105, 0.24, 10, 1, true), "wood", 2, 1);
+  const bucketWall = new THREE.Mesh(bucketWallGeo, timberMat);
+  bucketWall.position.set(0, -0.62, 0);
+  bucketWall.castShadow = true;
+  pendulum.add(bucketWall);
 
-  const hoopGeo = remapUVToQuadrant(new THREE.TorusGeometry(0.122, 0.014, 6, 14), "iron", 1, 1);
+  const bucketInner = new THREE.Mesh(new THREE.CylinderGeometry(0.122, 0.10, 0.23, 10, 1, true), darkWoodBackMat);
+  bucketInner.position.set(0, -0.62, 0);
+  pendulum.add(bucketInner);
+
+  const bucketWater = new THREE.Mesh(new THREE.CircleGeometry(0.118, 10).rotateX(-Math.PI * 0.5), darkWaterMat);
+  bucketWater.position.set(0, -0.54, 0);
+  pendulum.add(bucketWater);
+
+  /* Железная дужка над бадьёй и два кованых обруча */
+  const bailGeo = remapUVToQuadrant(new THREE.TorusGeometry(0.125, 0.010, 6, 12, Math.PI), "iron", 1, 1);
+  const bail = new THREE.Mesh(bailGeo, mat);
+  bail.position.set(0, -0.50, 0);
+  pendulum.add(bail);
+
+  const hoopGeo = remapUVToQuadrant(new THREE.TorusGeometry(0.122, 0.013, 6, 12), "iron", 1, 1);
   hoopGeo.rotateX(Math.PI * 0.5);
   const hoop1 = new THREE.Mesh(hoopGeo, mat);
   hoop1.position.set(0, -0.55, 0);
   const hoop2 = hoop1.clone();
-  hoop2.scale.set(0.92, 1, 0.92);
+  hoop2.scale.set(0.91, 1, 0.91);
   hoop2.position.set(0, -0.69, 0);
   pendulum.add(hoop1, hoop2);
 
-  /* 5. Двускатная тесовая крыша колодца с толстой пушистой шапкой снега сверху */
+  /* 5. Двускатная тесовая крыша колодца со снежной шапкой */
   const slopeLen = 0.78;
   const roofW = 1.32;
   [-1, 1].forEach((side) => {
     const plankGeo = remapUVToQuadrant(new THREE.BoxGeometry(roofW, 0.055, slopeLen), "wood", 2, 1);
-    const plank = new THREE.Mesh(plankGeo, mat);
+    const plank = new THREE.Mesh(plankGeo, timberMat);
     plank.position.set(0, 2.08, side * 0.28);
     plank.rotation.x = side * 0.58;
     plank.castShadow = true;
@@ -150,43 +194,73 @@ export function createZomboidMedievalWell3D(opts = {}) {
     group.add(snowRoof);
   });
 
-  /* 6. Рядом со срубом — пузатая дубовая бочка с коваными обручами и прислонённый щит (живая диорама!) */
-  const barrelPts = [
-    new THREE.Vector2(0.01, 0.0),
-    new THREE.Vector2(0.20, 0.0),
-    new THREE.Vector2(0.25, 0.28),
-    new THREE.Vector2(0.20, 0.56),
-    new THREE.Vector2(0.01, 0.56)
+  /* 6. Гранёная дубовая бочка с УТОПЛЕННОЙ КРЫШКОЙ ИЗ ПАРАЛЛЕЛЬНЫХ ДОСОК (никаких «лучей из центра»!) */
+  const barrelStavePts = [
+    new THREE.Vector2(0.195, 0.0),
+    new THREE.Vector2(0.245, 0.28),
+    new THREE.Vector2(0.195, 0.56),
+    new THREE.Vector2(0.180, 0.56),
+    new THREE.Vector2(0.180, 0.52)
   ];
-  const barrelGeo = remapUVToQuadrant(new THREE.LatheGeometry(barrelPts, 14), "wood", 2, 1);
-  const barrel = new THREE.Mesh(barrelGeo, mat);
+  const barrelGeo = remapUVToQuadrant(new THREE.LatheGeometry(barrelStavePts, 12), "wood", 2, 1);
+  const barrel = new THREE.Mesh(barrelGeo, timberMat);
   barrel.position.set(-0.68, 0.04, 0.34);
   barrel.castShadow = true;
+  barrel.receiveShadow = true;
   group.add(barrel);
 
-  [0.14, 0.42].forEach((hy) => {
-    const bHoopGeo = remapUVToQuadrant(new THREE.TorusGeometry(0.235, 0.014, 6, 16), "iron", 1, 1);
+  /* Плоское донце-крышка с планарной развёрткой (параллельные доски!) */
+  const barrelLidGeo = remapUVToQuadrant(new THREE.CircleGeometry(0.182, 12), "wood", 1, 1);
+  barrelLidGeo.rotateX(-Math.PI * 0.5);
+  const barrelLid = new THREE.Mesh(barrelLidGeo, timberMat);
+  barrelLid.position.set(-0.68, 0.04 + 0.525, 0.34);
+  barrelLid.receiveShadow = true;
+  group.add(barrelLid);
+
+  [0.13, 0.43].forEach((hy) => {
+    const bHoopGeo = remapUVToQuadrant(new THREE.TorusGeometry(0.232, 0.014, 6, 14), "iron", 1, 1);
     bHoopGeo.rotateX(Math.PI * 0.5);
     const bHoop = new THREE.Mesh(bHoopGeo, mat);
     bHoop.position.set(-0.68, 0.04 + hy, 0.34);
     group.add(bHoop);
   });
 
-  /* Каплевидный деревянный щит со стальным умбоном, прислонённый к бочке */
+  /* 7. Каплевидный деревянный щит из прямых плах со стальным умбоном и оковкой */
   const shieldGroup = new THREE.Group();
-  const shieldBoardGeo = remapUVToQuadrant(new THREE.CylinderGeometry(0.26, 0.14, 0.54, 8, 1), "wood", 1, 1);
-  shieldBoardGeo.scale(1, 1, 0.18);
-  const shieldBoard = new THREE.Mesh(shieldBoardGeo, mat);
+  const shieldShape = new THREE.Shape();
+  shieldShape.moveTo(-0.22, 0.24);
+  shieldShape.quadraticCurveTo(0, 0.28, 0.22, 0.24);
+  shieldShape.quadraticCurveTo(0.23, -0.04, 0, -0.30);
+  shieldShape.quadraticCurveTo(-0.23, -0.04, -0.22, 0.24);
+
+  const shieldGeo = new THREE.ExtrudeGeometry(shieldShape, {
+    depth: 0.036,
+    bevelEnabled: true,
+    bevelThickness: 0.008,
+    bevelSize: 0.008,
+    bevelSegments: 1
+  });
+  /* Нормализуем планарные UV щита в 0..1 по ширине и высоте -> ровные вертикальные плахи щита! */
+  const sUv = shieldGeo.attributes.uv;
+  const sPos = shieldGeo.attributes.position;
+  for (let i = 0; i < sUv.count; i++) {
+    const u = (sPos.getX(i) + 0.24) / 0.48;
+    const v = (sPos.getY(i) + 0.31) / 0.60;
+    sUv.setXY(i, Math.max(0, Math.min(1, u)), Math.max(0, Math.min(1, v)));
+  }
+  remapUVToQuadrant(shieldGeo, "wood", 1, 1);
+
+  const shieldBoard = new THREE.Mesh(shieldGeo, timberMat);
   shieldBoard.castShadow = true;
   shieldGroup.add(shieldBoard);
 
-  const bossGeo = remapUVToQuadrant(new THREE.SphereGeometry(0.075, 10, 8), "iron", 1, 1);
-  bossGeo.scale(1, 1, 0.55);
+  const bossGeo = remapUVToQuadrant(new THREE.SphereGeometry(0.068, 10, 8), "iron", 1, 1);
+  bossGeo.scale(1, 1, 0.52);
   const boss = new THREE.Mesh(bossGeo, mat);
-  boss.position.set(0, 0.04, 0.05);
+  boss.position.set(0, 0.03, 0.048);
   shieldGroup.add(boss);
 
-  shieldGroup.position.set(-0.50, 0.30, 0.56);
+  shieldGroup.position.set(-0.50, 0.31, 0.56);
   shieldGroup.rotation.set(-0.28, 0.42, 0.08);
   group.add(shieldGroup);
 
@@ -196,7 +270,7 @@ export function createZomboidMedievalWell3D(opts = {}) {
   const shMat = new THREE.MeshBasicMaterial({
     color: 0x090b0e,
     transparent: true,
-    opacity: 0.42,
+    opacity: 0.40,
     depthWrite: false
   });
   const sh = new THREE.Mesh(shGeo, shMat);
@@ -211,9 +285,11 @@ export function createZomboidMedievalWell3D(opts = {}) {
     dispose() {
       group.traverse((obj) => {
         if (obj.geometry) obj.geometry.dispose();
-        if (obj.material && obj.material !== mat) obj.material.dispose();
+        if (obj.material) {
+          const list = Array.isArray(obj.material) ? obj.material : [obj.material];
+          list.forEach((m) => m.dispose());
+        }
       });
-      mat.dispose();
       atlasTex.dispose();
     }
   };
@@ -222,6 +298,6 @@ export function createZomboidMedievalWell3D(opts = {}) {
 /* Мягкое покачивание деревянной бадьи на ветру */
 export function animateZomboidWell3D(wellProp, timeSec = 0) {
   if (!wellProp || !wellProp.pendulum) return;
-  wellProp.pendulum.rotation.z = Math.sin(timeSec * 1.15) * 0.032;
-  wellProp.pendulum.rotation.x = Math.cos(timeSec * 0.85) * 0.018;
+  wellProp.pendulum.rotation.z = Math.sin(timeSec * 1.15) * 0.030;
+  wellProp.pendulum.rotation.x = Math.cos(timeSec * 0.85) * 0.016;
 }

@@ -125,6 +125,15 @@ export function mountZomboidShowcase(rootEl) {
         </div>
 
         <div class="pz-group">
+          <span class="pz-label">Причёска / убор</span>
+          <div class="pz-segmented" data-role="hair">
+            <button type="button" data-hair="classic" class="is-active">Косы / стрижка</button>
+            <button type="button" data-hair="long">До плеч</button>
+            <button type="button" data-hair="headwear">Плат / шапка</button>
+          </div>
+        </div>
+
+        <div class="pz-group">
           <span class="pz-label">Анимация (18 костей)</span>
           <div class="pz-segmented" data-role="anim">
             <button type="button" data-anim="scene" class="is-active">Живая сцена</button>
@@ -232,6 +241,7 @@ export function mountZomboidShowcase(rootEl) {
 
   const state = {
     outfit: "villager",
+    hairStyle: "classic",
     anim: "scene",
     focus: "all",
     turntable: false,
@@ -261,7 +271,8 @@ export function mountZomboidShowcase(rootEl) {
     state.femaleRig = createZomboidCharacter3D({
       female: true,
       outfit,
-      hairColor: "#4b2514"
+      hairStyle: state.hairStyle,
+      hairColor: "#4f2d1b"
     });
     state.femaleRig.group.position.set(-1.05, 0, 0.14);
     state.femaleRig.group.rotation.y = 0.16;
@@ -270,7 +281,8 @@ export function mountZomboidShowcase(rootEl) {
     state.maleRig = createZomboidCharacter3D({
       female: false,
       outfit,
-      hairColor: "#6b3c1b",
+      hairStyle: state.hairStyle,
+      hairColor: "#5a361e",
       beard: true
     });
     state.maleRig.group.position.set(-0.22, 0, 0.18);
@@ -446,6 +458,19 @@ export function mountZomboidShowcase(rootEl) {
       }
     } else {
       rebuildCharacters(outfit);
+    }
+  });
+
+  bindSegmented("hair", "data-hair", (hairStyle) => {
+    if (hairStyle === state.hairStyle) return;
+    state.hairStyle = hairStyle;
+    if (state.femaleRig && state.maleRig) {
+      state.femaleRig.setHairStyle(hairStyle);
+      state.maleRig.setHairStyle(hairStyle);
+      if (state.wireframe) {
+        applyWireframe(state.femaleRig.group, true);
+        applyWireframe(state.maleRig.group, true);
+      }
     }
   });
 
