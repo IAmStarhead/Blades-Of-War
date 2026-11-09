@@ -9,6 +9,7 @@
 
 import * as THREE from "three";
 import {
+  BONE_IDX,
   createBowCharacter3D,
   poseBowCharacter,
   disposeBowCharacter
@@ -105,7 +106,7 @@ export function mountBowShowcase(rootEl) {
       <!-- Верхняя панель статуса и метрик производительности -->
       <header class="pz-topbar">
         <div class="pz-brand">
-          <span class="pz-badge">КЛИНКИ ВОЙНЫ · 3D РЕВИЗИЯ 5</span>
+          <span class="pz-badge">КЛИНКИ ВОЙНЫ · 3D РЕВИЗИЯ 6</span>
           <div class="pz-titles">
             <h1>Blades Of War · Земли Эдема: Хладные Ветра vs Златодвор</h1>
             <p>Перекат стопы с носком, породистые лица двух народов и конный воин Севера</p>
@@ -309,6 +310,33 @@ export function mountBowShowcase(rootEl) {
   state.rider.contactShadow.visible = false; // тень даёт конь
   state.horse.saddleAnchor.add(state.rider.group);
   poseBowCharacter(state.rider, "ride", 0);
+  // Два независимых повода от уздечки до кистей, обновляются вместе с позой.
+  const reinMaterial = new THREE.LineBasicMaterial({ color: 0x39271a });
+  const reins = [1, -1].map(() => {
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute("position", new THREE.BufferAttribute(new Float32Array(9), 3));
+    const line = new THREE.Line(geometry, reinMaterial);
+    line.frustumCulled = false;
+    state.horse.group.add(line);
+    return line;
+  });
+  function updateReins() {
+    state.horse.group.updateWorldMatrix(true, true);
+    reins.forEach((line, i) => {
+      const side = i === 0 ? 1 : -1;
+      const from = state.horse.parts.headPivot.localToWorld(new THREE.Vector3(side * 0.075, -0.025, 0.18));
+      const hand = state.rider.bones[i === 0 ? BONE_IDX.HAND_L : BONE_IDX.HAND_R];
+      const to = hand.localToWorld(new THREE.Vector3(0, -0.04, 0.01));
+      state.horse.group.worldToLocal(from);
+      state.horse.group.worldToLocal(to);
+      const middle = from.clone().lerp(to, 0.5);
+      middle.y -= 0.08;
+      const pos = line.geometry.attributes.position;
+      [from, middle, to].forEach((v, j) => pos.setXYZ(j, v.x, v.y, v.z));
+      pos.needsUpdate = true;
+    });
+  }
+  updateReins();
 
   function allRigs() {
     return [state.northFemale, state.northMale, state.edenFemale, state.edenMale].filter(Boolean);
@@ -372,6 +400,7 @@ export function mountBowShowcase(rootEl) {
   function syncKingdomVisibility() {
     const showNorth = state.kingdomFilter === "both" || state.kingdomFilter === "north";
     const showEden  = state.kingdomFilter === "both" || state.kingdomFilter === "eden";
+    if (state.horse) state.horse.group.visible = showNorth;
     if (state.northFemale) state.northFemale.group.visible = showNorth;
     if (state.northMale)   state.northMale.group.visible = showNorth;
     if (state.edenFemale)  state.edenFemale.group.visible = showEden;
@@ -685,11 +714,12 @@ export function mountBowShowcase(rootEl) {
     }
 
     /* Конный воин: в «Сцене» и «Походке» конь идёт шагом, в «Стойке» отдыхает,
-       в «Бою» стоит, а всадник вскидывает клинок */
+       в «Бою» стоит, а всадник держит поводья */
     if (state.horse && state.rider) {
       const horseMode = (state.anim === "scene" || state.anim === "walk") ? "walk" : "idle";
       animateHorse3D(state.horse, horseMode, elapsed);
-      poseBowCharacter(state.rider, "ride", elapsed, { swordArm: state.anim === "combat" });
+      poseBowCharacter(state.rider, "ride", elapsed);
+      updateReins();
     }
 
     animateMedievalWell3D(state.wellProp, elapsed);
@@ -717,7 +747,7 @@ export function mountBowShowcase(rootEl) {
       if (resizeObserver) resizeObserver.disconnect();
       window.removeEventListener("resize", syncViewportSize);
       allRigs().forEach((rig) => disposeBowCharacter(rig));
-      if (state.rider) disposeBowCharacter(state.rider);
+      if (state.rider) { state.rider.group.removeFromParent(); disposeBowCharacter(state.rider); }
       if (state.horse) disposeBowHorse(state.horse);
       if (state.wellProp) state.wellProp.dispose();
       plinth.dispose();

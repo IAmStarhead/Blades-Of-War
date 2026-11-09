@@ -337,12 +337,11 @@ export function buildBaseBodyGeometry(female = false, metrics) {
       const cosP = Math.cos(phi);
 
       let rz = cosP >= 0 ? rzFBase : rzBBase;
-      /* Настоящий женственный объём груди (двойной купол, пик на yRaw ~ 1.23) */
+      /* Мягкий объём груди без раздельных заострённых куполов. */
       if (female && cosP > 0.1 && yRaw > 1.150 && yRaw < 1.310) {
         const tB = (yRaw - 1.150) / 0.160;
         const breastW = Math.sin(tB * Math.PI);
-        const twinCup = Math.pow(Math.sin(Math.min(1, Math.abs(sinP) * 1.9) * Math.PI), 1.2);
-        rz += 0.030 * breastW * twinCup * Math.max(0, cosP);
+        rz += 0.016 * breastW * Math.max(0, cosP);
       }
 
       let y = yBase;
@@ -487,9 +486,9 @@ export function buildBaseBodyGeometry(female = false, metrics) {
     const footScale = (female ? 0.88 : 1.00) * ws;
     const footSpecs = [
       [208, ax, 0.048 * hs, 0.008, 0.035 * footScale, 0.046 * footScale],
-      [214, ax, 0.030 * hs, 0.024, 0.038 * footScale, 0.068 * footScale],
-      [222, ax, 0.014 * hs, 0.042, 0.040 * footScale, 0.096 * footScale],
-      [228, ax, 0.004 * hs, 0.044, 0.037 * footScale, 0.092 * footScale]
+      [214, ax, 0.030 * hs, 0.020, 0.040 * footScale, 0.060 * footScale],
+      [222, ax, 0.014 * hs, 0.032, 0.042 * footScale, 0.078 * footScale],
+      [228, ax, 0.004 * hs, 0.032, 0.040 * footScale, 0.078 * footScale]
     ];
     for (let f = 0; f < footSpecs.length; f++) {
       const [cyTex, fx, fy, fz, frx, frz] = footSpecs[f];
@@ -642,9 +641,9 @@ export function buildGarmentGeometry(female = false, rawOutfit = "villager", kin
   const torsoRows = female
     ? [
         dress
-          ? [164, hemY, 0.176, 0.152, 0.152, -0.004, P, 1.00, S, 0.00]
+          ? [164, hemY, 0.195, 0.195, 0.190, -0.004, P, 1.00, S, 0.00]
           : [164, hemY, 0.170, 0.124, 0.136, -0.006, P, 1.00, S, 0.00],
-        [150, dress ? 0.760 : 0.820, 0.168, dress ? 0.124 : 0.102, dress ? 0.134 : 0.126, -0.006, P, 1.00, S, 0.00],
+        [150, dress ? 0.760 : 0.820, 0.168, dress ? 0.165 : 0.135, dress ? 0.165 : 0.145, -0.006, P, 1.00, S, 0.00],
         [138, 0.875, 0.172, 0.096, 0.126, -0.008, P, 0.85, S, 0.15],
         [128, 0.950, 0.174, 0.094, 0.126, -0.007, P, 0.80, S, 0.20],
         /* Пояс (парные кольца на границах полосы Б) */
@@ -663,8 +662,8 @@ export function buildGarmentGeometry(female = false, rawOutfit = "villager", kin
         [  8, 1.390, 0.104, 0.068, 0.074, -0.005, N, 0.55, C, 0.45]
       ]
     : [
-        [164, hemY, 0.166, 0.118, 0.132, -0.006, P, 1.00, S, 0.00],
-        [150, 0.870, 0.160, 0.102, 0.124, -0.006, P, 0.85, S, 0.15],
+        [164, hemY, 0.185, 0.165, 0.165, -0.006, P, 1.00, S, 0.00],
+        [150, 0.870, 0.170, 0.135, 0.145, -0.006, P, 0.85, S, 0.15],
         [140, 0.975, 0.160, 0.103, 0.124, -0.006, P, 0.80, S, 0.20],
         [130, 1.016, 0.158, 0.103, 0.119, -0.004, P, 0.55, S, 0.45],
         [212, 1.016, 0.158, 0.103, 0.119, -0.004, P, 0.55, S, 0.45],
@@ -689,19 +688,18 @@ export function buildGarmentGeometry(female = false, rawOutfit = "villager", kin
       const sinP = Math.sin(phi);
       const cosP = Math.cos(phi);
       let rz = (cosP >= 0 ? rzFBase : rzBBase) * bulk;
-      /* Купол груди одежды шире и выше купола тела (0.040 против 0.030) — ткань лежит НАД телом */
+      /* Плавный объём одежды поверх груди. */
       if (female && cosP > 0.1 && yRaw > 1.125 && yRaw < 1.315) {
         const tB = (yRaw - 1.125) / 0.190;
         const breastW = Math.sin(tB * Math.PI);
-        const twinCup = Math.pow(Math.sin(Math.min(1, Math.abs(sinP) * 1.9) * Math.PI), 1.2);
-        rz += 0.040 * breastW * twinCup * Math.max(0, cosP);
+        rz += 0.021 * breastW * Math.max(0, cosP);
       }
       /* Нижние кольца подола: боковые вершины частично следуют за бедром своей стороны —
-         нога при шаге несёт ткань с собой и больше НЕ протыкает юбку/подол туники */
+         нога при шаге частично увлекает ткань; пересечения требуют визуальной проверки */
       let vb0 = b0, vw0 = w0, vb1 = b1, vw1 = w1;
       if (b0 === P && yRaw < 0.90) {
         const follow = Math.max(0, Math.min(1, (0.95 - yRaw) / 0.40));
-        const thighShare = Math.abs(sinP) * follow * 0.62;
+        const thighShare = Math.abs(sinP) * follow * 0.90;
         if (thighShare > 0.03) {
           vb0 = P; vw0 = 1 - thighShare;
           vb1 = sinP > 0 ? BONE_IDX.THIGH_L : BONE_IDX.THIGH_R;
@@ -736,7 +734,7 @@ export function buildGarmentGeometry(female = false, rawOutfit = "villager", kin
 
     /* Высокий округлый кат плеча: купол рукава поднят НАД дельтой тела (без прорех на плечах) */
     const rows = [
-      [228, sx - sign * 0.034, sy + 0.034 * hs, -0.005, 0.036 * sc, 0.042 * sc, C, 0.75, bUpper, 0.25],
+      [228, sx - sign * 0.050, sy + 0.018 * hs, -0.005, 0.036 * sc, 0.042 * sc, C, 0.75, bUpper, 0.25],
       [238, sx - sign * 0.006, sy + 0.010 * hs, -0.005, 0.058 * sc, 0.060 * sc, C, 0.50, bUpper, 0.50],
       [252, sx + sign * 0.004, sy - 0.040 * hs, -0.005, 0.054 * sc, 0.056 * sc, C, 0.15, bUpper, 0.85],
       [274, lerp(sx, ex, 0.54), lerp(sy, ey, 0.54), -0.004, 0.048 * sc, 0.050 * sc, bUpper, 1.0, bFore, 0.0],
@@ -773,7 +771,7 @@ export function buildGarmentGeometry(female = false, rawOutfit = "villager", kin
       rings.push(ring);
     }
 
-    const capTop = mb.addVertex(sx - sign * 0.042, sy + 0.042 * hs, -0.005, 0.5, cyToV(226), C, 0.85, bUpper, 0.15);
+    const capTop = mb.addVertex(sx - sign * 0.060, sy + 0.022 * hs, -0.005, 0.5, cyToV(226), C, 0.85, bUpper, 0.15);
     mb.capRing(rings[0], capTop, true);
     mb.connectRings(rings, false);
   }
@@ -955,7 +953,7 @@ export function buildSculptedHeadGeometry(female = false, hasBeard = false, king
 
         if (cosP > 0) {
           const chinMask = Math.exp(-Math.pow(phi / (female ? 0.40 : 0.58), 2)) * Math.exp(-Math.pow((vFrac - 0.17) / 0.12, 2));
-          const beardBulk = (!female && hasBeard) ? 0.025 : (female ? 0.010 : 0.014);
+          const beardBulk = (!female && hasBeard) ? 0.032 : (female ? 0.010 : 0.014);
           rz += chinMask * beardBulk;
           if (!female && hasBeard && vFrac < 0.25) {
             y -= chinMask * 0.012;
@@ -1163,12 +1161,12 @@ export function buildHairGeometry(female = false, styleKey = "classic", kingdom 
        (никакого «пажеского горшка»!) */
     buildSolidCap(0.224, -0.006, [
       [0.94, 0.214, 0.002, 0.043, 0.049, 0.052, -0.004],
-      [0.76, 0.188, 0.004, 0.087, 0.098, 0.104, -0.005],
-      [0.50, 0.140, 0.054, 0.089, 0.088, 0.106, -0.009],
-      [0.22, 0.094, 0.112, 0.084, 0.064, 0.100, -0.014],
-      [0.06, 0.062, 0.138, 0.070, 0.052, 0.084, -0.015],
-      [0.01, 0.072, 0.130, 0.054, 0.044, 0.064, -0.012]
-    ], 0.016);
+      [0.76, 0.190, 0.004, 0.085, 0.096, 0.102, -0.005],
+      [0.50, 0.151, 0.040, 0.088, 0.091, 0.105, -0.009],
+      [0.22, 0.112, 0.080, 0.083, 0.075, 0.099, -0.012],
+      [0.06, 0.090, 0.100, 0.070, 0.059, 0.082, -0.014],
+      [0.01, 0.096, 0.095, 0.054, 0.046, 0.063, -0.012]
+    ], 0.008);
   } else {
     /* Северянин: грубая лохматая копна до ушей с тяжёлым длинным затылком —
        совсем другой силуэт, чем ухоженный зачёс Златодвора */
@@ -1350,7 +1348,7 @@ export function poseBowCharacter(rig, mode = "idle", timeSec = 0, opts = {}) {
     const w = timeSec * 3.9; // спокойный уверенный шаг (~74 шага/мин)
     const s = Math.sin(w);
     const c = Math.cos(w);
-    const A = fem ? 0.32 : 0.38; // амплитуда бедра
+    const A = fem ? 0.25 : 0.29; // амплитуда бедра
 
     /* Живой цикл шага: опора занимает ~62% цикла, перенос — короткий и быстрый.
        Нога отрывается от пола только когда вторая уже плотно приняла вес! */
@@ -1429,16 +1427,12 @@ export function poseBowCharacter(rig, mode = "idle", timeSec = 0, opts = {}) {
     b[BONE_IDX.FOOT_L].rotation.x = -(b[BONE_IDX.THIGH_L].rotation.x + b[BONE_IDX.SHIN_L].rotation.x) - 0.14;
     b[BONE_IDX.FOOT_R].rotation.x = -(b[BONE_IDX.THIGH_R].rotation.x + b[BONE_IDX.SHIN_R].rotation.x) - 0.14;
 
-    /* Левая рука всегда держит повод; правая — повод или поднятый клинок (opts.swordArm) */
+    /* Обе руки направлены к поводьям. */
     b[BONE_IDX.UPPER_ARM_L].rotation.set(-0.40, -0.20, 0.14);
     b[BONE_IDX.FOREARM_L].rotation.x = -0.80;
-    if (opts.swordArm) {
-      b[BONE_IDX.UPPER_ARM_R].rotation.set(-1.72, 0.30, -0.34);
-      b[BONE_IDX.FOREARM_R].rotation.x = -0.42 + bob * 0.02;
-    } else {
-      b[BONE_IDX.UPPER_ARM_R].rotation.set(-0.40, 0.20, -0.14);
-      b[BONE_IDX.FOREARM_R].rotation.x = -0.80;
-    }
+    // Нет оружия в руке: обе руки остаются у поводьев и в боевом режиме.
+    b[BONE_IDX.UPPER_ARM_R].rotation.set(-0.40, 0.20, -0.14);
+    b[BONE_IDX.FOREARM_R].rotation.x = -0.80;
   } else if (mode === "combat") {
     const br = Math.sin(timeSec * 2.6);
     b[BONE_IDX.PELVIS].position.y = m.hipY - 0.03 + br * 0.005;
@@ -1448,10 +1442,10 @@ export function poseBowCharacter(rig, mode = "idle", timeSec = 0, opts = {}) {
     b[BONE_IDX.HEAD].rotation.y = 0.32;
     b[BONE_IDX.HEAD].rotation.x = -0.05;
 
-    b[BONE_IDX.UPPER_ARM_L].rotation.set(-0.58, -0.14, 0.20);
-    b[BONE_IDX.FOREARM_L].rotation.x = -0.92 + br * 0.04;
-    b[BONE_IDX.UPPER_ARM_R].rotation.set(-0.42, 0.14, -0.22);
-    b[BONE_IDX.FOREARM_R].rotation.x = -0.78 - br * 0.04;
+    b[BONE_IDX.UPPER_ARM_L].rotation.set(-0.22, -0.10, 0.16);
+    b[BONE_IDX.FOREARM_L].rotation.x = -0.45 + br * 0.025;
+    b[BONE_IDX.UPPER_ARM_R].rotation.set(-0.15, 0.10, -0.16);
+    b[BONE_IDX.FOREARM_R].rotation.x = -0.38 - br * 0.025;
 
     b[BONE_IDX.THIGH_L].rotation.set(-0.18, 0.04, 0.02);
     b[BONE_IDX.SHIN_L].rotation.x = 0.26;

@@ -28,14 +28,6 @@ function buildHorseAtlasCanvas(kingdom = "north", canvasFactory = null) {
   coatG.addColorStop(1, "#4a2d1a");
   ctx.fillStyle = coatG;
   ctx.fillRect(0, 0, 128, 128);
-  ctx.fillStyle = "rgba(255, 222, 180, 0.05)";
-  for (let i = 0; i < 26; i++) {
-    const x = (i * 37) % 118;
-    const y = (i * 53) % 118;
-    ctx.beginPath();
-    ctx.arc(x + 6, y + 6, 5 + (i % 3) * 2, 0, Math.PI * 2);
-    ctx.fill();
-  }
 
   /* Грива и хвост: тёмные, почти вороные пряди */
   const maneG = ctx.createLinearGradient(128, 0, 256, 0);
@@ -117,7 +109,7 @@ export function createBowHorse3D(opts = {}) {
   atlasTex.wrapT = THREE.ClampToEdgeWrapping;
   const mat = new THREE.MeshLambertMaterial({ map: atlasTex });
 
-  const BODY_Y = 0.80;
+  const BODY_Y = 0.72;
 
   function part(geo, quad, parent, x = 0, y = 0, z = 0) {
     remapUV(geo, quad);
@@ -134,17 +126,17 @@ export function createBowHorse3D(opts = {}) {
   body.position.y = BODY_Y;
   group.add(body);
 
-  const barrelGeo = new THREE.CylinderGeometry(0.235, 0.255, 0.82, 14, 1);
-  barrelGeo.rotateX(Math.PI * 0.5);
+  const barrelGeo = new THREE.SphereGeometry(1, 16, 12);
+  barrelGeo.scale(0.225, 0.245, 0.58);
   part(barrelGeo, "coat", body, 0, 0, 0.02);
 
   const chestGeo = new THREE.SphereGeometry(0.235, 12, 10);
-  chestGeo.scale(0.92, 1.0, 1.1);
-  part(chestGeo, "coat", body, 0, 0.015, 0.44);
+  chestGeo.scale(0.88, 1.15, 0.90);
+  part(chestGeo, "coat", body, 0, 0.015, 0.35);
 
   const rumpGeo = new THREE.SphereGeometry(0.25, 12, 10);
-  rumpGeo.scale(0.98, 1.02, 1.12);
-  part(rumpGeo, "coat", body, 0, 0.02, -0.42);
+  rumpGeo.scale(0.90, 1.0, 1.04);
+  part(rumpGeo, "coat", body, 0, 0.02, -0.37);
 
   /* Холка — плавный подъём к шее */
   const withersGeo = new THREE.SphereGeometry(0.17, 10, 8);
@@ -164,12 +156,15 @@ export function createBowHorse3D(opts = {}) {
   headPivot.position.set(0, 0.47, 0.015);
   neckPivot.add(headPivot);
 
-  const skullGeo = new THREE.BoxGeometry(0.155, 0.17, 0.24);
+  const skullGeo = new THREE.SphereGeometry(1, 12, 10);
+  skullGeo.scale(0.083, 0.105, 0.145);
   part(skullGeo, "coat", headPivot, 0, 0.015, 0.05);
-  const muzzleGeo = new THREE.BoxGeometry(0.105, 0.125, 0.17);
+  const muzzleGeo = new THREE.SphereGeometry(1, 12, 8);
+  muzzleGeo.scale(0.064, 0.072, 0.12);
   part(muzzleGeo, "coat", headPivot, 0, -0.03, 0.21);
   /* Храп (тёмный нос) и налобный ремень уздечки */
-  const noseGeo = new THREE.BoxGeometry(0.108, 0.05, 0.05);
+  const noseGeo = new THREE.SphereGeometry(1, 12, 8);
+  noseGeo.scale(0.059, 0.038, 0.035);
   part(noseGeo, "mane", headPivot, 0, -0.055, 0.275);
   const browbandGeo = new THREE.BoxGeometry(0.16, 0.028, 0.02);
   part(browbandGeo, "leather", headPivot, 0, 0.06, 0.172);
@@ -178,6 +173,13 @@ export function createBowHorse3D(opts = {}) {
   const cheekStrapGeoR = new THREE.BoxGeometry(0.015, 0.025, 0.2);
   part(cheekStrapGeoR, "leather", headPivot, -0.082, 0.0, 0.1);
 
+  // Глаза на боках головы — небольшие объёмные тёмные поверхности.
+  for (const side of [-1, 1]) {
+    const eyeGeo = new THREE.SphereGeometry(1, 8, 6);
+    eyeGeo.scale(0.008, 0.011, 0.014);
+    part(eyeGeo, "mane", headPivot, side * 0.079, 0.035, 0.085);
+  }
+
   /* Уши */
   const earL = part(new THREE.ConeGeometry(0.030, 0.085, 5), "coat", headPivot, 0.052, 0.135, -0.015);
   const earR = part(new THREE.ConeGeometry(0.030, 0.085, 5), "coat", headPivot, -0.052, 0.135, -0.015);
@@ -185,7 +187,7 @@ export function createBowHorse3D(opts = {}) {
   earR.rotation.z = 0.18;
 
   /* Грива: гребень по шее + чёлка */
-  const maneGeo = new THREE.BoxGeometry(0.05, 0.52, 0.11);
+  const maneGeo = new THREE.CylinderGeometry(0.045, 0.075, 0.52, 8);
   maneGeo.translate(0, 0.24, 0);
   const mane = part(maneGeo, "mane", neckPivot, 0, 0.015, -0.115);
   mane.rotation.x = -0.06;
@@ -198,13 +200,13 @@ export function createBowHorse3D(opts = {}) {
     body.add(hip);
 
     const upperLen = isHind ? 0.30 : 0.285;
-    const upperGeo = new THREE.CylinderGeometry(isHind ? 0.055 : 0.050, 0.040, upperLen, 8, 1);
+    const upperGeo = new THREE.CylinderGeometry(isHind ? 0.085 : 0.072, 0.043, upperLen, 8, 1);
     upperGeo.translate(0, -upperLen * 0.5, 0);
     part(upperGeo, "coat", hip, 0, 0, 0);
-    if (isHind) {
-      /* Мощная ляжка задней ноги */
+    {
+      /* Мышцы бедра и лопатки, с плавным переходом к суставу. */
       const gaskinGeo = new THREE.SphereGeometry(0.105, 8, 7);
-      gaskinGeo.scale(0.7, 1.25, 1.05);
+      gaskinGeo.scale(isHind ? 0.75 : 0.70, isHind ? 1.55 : 1.35, isHind ? 1.05 : 0.85);
       part(gaskinGeo, "coat", hip, 0, -0.06, -0.01);
     }
 
@@ -218,9 +220,9 @@ export function createBowHorse3D(opts = {}) {
     part(lowerGeo, "coat", knee, 0, 0, 0);
 
     const hoofGeo = new THREE.CylinderGeometry(0.042, 0.047, 0.075, 8, 1);
-    part(hoofGeo, "leather", knee, 0, -lowerLen - 0.028, 0.008);
+    const hoof = part(hoofGeo, "leather", knee, 0, -lowerLen - 0.028, 0.008);
 
-    return { hip, knee };
+    return { hip, knee, hoof };
   }
 
   const legFL = buildLeg(0.155, 0.40, false);
@@ -232,14 +234,17 @@ export function createBowHorse3D(opts = {}) {
   const tailPivot = new THREE.Group();
   tailPivot.position.set(0, 0.13, -0.60);
   body.add(tailPivot);
-  const tailGeo = new THREE.CylinderGeometry(0.052, 0.020, 0.52, 7, 2);
-  tailGeo.translate(0, -0.26, 0);
-  const tailMesh = part(tailGeo, "mane", tailPivot, 0, 0, 0);
-  tailMesh.rotation.x = -0.38;
+  // Хвост выходит из крупа назад, затем ниспадает прядями.
+  const tailRoot = part(new THREE.CylinderGeometry(0.025, 0.037, 0.18, 8), "mane", tailPivot, 0, -0.045, -0.07);
+  tailRoot.rotation.x = 0.85;
+  const tailGeo = new THREE.CylinderGeometry(0.035, 0.012, 0.38, 8, 2);
+  const tailMesh = part(tailGeo, "mane", tailPivot, 0, -0.25, -0.14);
+  tailMesh.rotation.x = 0.12;
 
   /* === Попона и седло ===
      Попона НИЖЕ и УЖЕ линии бёдер всадника — ноги ложатся поверх ткани */
-  const caparisonGeo = new THREE.BoxGeometry(0.50, 0.24, 0.44);
+  const caparisonGeo = new THREE.CylinderGeometry(0.25, 0.25, 0.44, 14, 1, true);
+  caparisonGeo.rotateX(Math.PI * 0.5);
   part(caparisonGeo, "cloth", body, 0, 0.09, 0.03);
 
   const saddleSeatGeo = new THREE.BoxGeometry(0.24, 0.07, 0.30);
@@ -364,6 +369,22 @@ export function animateHorse3D(horse, mode = "idle", timeSec = 0) {
     p.earL.rotation.x = Math.sin(t * 2.3) * 0.10;
     p.earR.rotation.x = Math.sin(t * 2.0 + 1.4) * 0.10;
   }
+  // Корректируем высоту корпуса по самому низкому копыту после поворотов суставов.
+  // Это предотвращает зависание модели, но не заменяет полноценный IK походки.
+  horse.group.updateWorldMatrix(true, true);
+  let lowest = Infinity;
+  const point = new THREE.Vector3();
+  for (const leg of [p.legFL, p.legFR, p.legHL, p.legHR]) {
+    const positions = leg.hoof.geometry.attributes.position;
+    for (let i = 0; i < positions.count; i++) {
+      point.fromBufferAttribute(positions, i);
+      leg.hoof.localToWorld(point);
+      horse.group.worldToLocal(point);
+      lowest = Math.min(lowest, point.y);
+    }
+  }
+  body.position.y -= lowest;
+
 }
 
 export function disposeBowHorse(horse) {

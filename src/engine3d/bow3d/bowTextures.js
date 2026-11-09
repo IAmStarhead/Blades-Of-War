@@ -424,20 +424,14 @@ export function buildHairTextureCanvas(hairColor = null, styleKey = "classic", f
   ctx.fillRect(0, 0, W, H);
   softVBand(ctx, 0, 0, W, H, "rgba(255, 240, 215, 0.14)", "rgba(0, 0, 0, 0.04)", "rgba(18, 10, 4, 0.32)");
 
-  for (let x = 0; x < W; x += 9) {
-    ctx.fillStyle = x % 18 === 0 ? "rgba(255, 232, 195, 0.07)" : "rgba(20, 10, 4, 0.09)";
-    ctx.fillRect(x, 0, 4, H);
-  }
-
-  /* Косой ПРОБОР короткой придворной стрижки златодворца: тонкая тёмная линия
-     кожи и светлый блик причёсанных от неё волос (сбоку от центра, u ~ 0.59) */
-  if (isEden && !female && styleKey === "classic") {
-    const px = W * 0.59;
-    ctx.fillStyle = "rgba(38, 24, 12, 0.50)";
-    ctx.fillRect(px - 1.5, 0, 3, H * 0.52);
-    ctx.fillStyle = "rgba(255, 236, 200, 0.16)";
-    ctx.fillRect(px - 7, 0, 5, H * 0.50);
-    ctx.fillRect(px + 2, 0, 4, H * 0.46);
+  // Мягкие нерегулярные пряди вместо повторяющихся вертикальных полос.
+  for (let x = 3; x < W; x += 19) {
+    ctx.strokeStyle = x % 38 === 3 ? "rgba(255, 232, 195, 0.045)" : "rgba(20, 10, 4, 0.055)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.quadraticCurveTo(x + 8, H * 0.45, x + 3, H);
+    ctx.stroke();
   }
 
   /* У жительниц Златодвора на классической причёске — тонкий золочёный обруч/лента в русых волосах */
@@ -476,23 +470,7 @@ export function buildBaseBodyTextureCanvas(opts = {}, canvasFactory = null) {
      голова перестаёт выглядеть «приставленной» к шее */
   softVBand(ctx, 0, 0, W, 22, "rgba(88, 56, 38, 0.26)", "rgba(88, 56, 38, 0.10)", "rgba(88, 56, 38, 0)");
 
-  /* Волосы на теле мужчин: деликатный тёмный крап по всей зоне кожи
-     (у северян гуще и заметнее, у холёных златодворцев едва-едва) */
-  if (!fem) {
-    const count = isEden ? 1500 : 2800;
-    const alpha = isEden ? 0.045 : 0.085;
-    let seed = isEden ? 20417 : 9973;
-    const rnd = () => {
-      seed = (seed * 1103515245 + 12345) & 0x7fffffff;
-      return seed / 0x7fffffff;
-    };
-    ctx.fillStyle = `rgba(56, 36, 22, ${alpha})`;
-    for (let i = 0; i < count; i++) {
-      const x = rnd() * W;
-      const y = 24 + rnd() * 206; // ниже шеи, по всей коже рук/торса/ног
-      ctx.fillRect(x, y, 1.3, 2.1 + rnd() * 1.4);
-    }
-  }
+  /* Волосы на теле временно отключены: кожа без равномерного крапа. */
   /* Лёгкая ложбинка ключиц и грудины спереди (u ~ 0.5) */
   softRadial(ctx, W * 0.50, 36, 22, "rgba(120, 78, 54, 0.14)", "rgba(0,0,0,0)");
   if (fem) {
