@@ -958,8 +958,9 @@ export function buildGarmentGeometry(female = false, rawOutfit = "villager", kin
 export function buildSculptedHeadGeometry(female = false, hasBeard = false, kingdom = "north") {
   const isEden = normalizeKingdomKey(kingdom) === "eden";
   const mb = new MeshBuilder(false);
-  const segsU = 22;
-  const segsV = 16;
+  // Более частая сетка нужна самой поверхности лица, а не накладным примитивам.
+  const segsU = 64;
+  const segsV = 40;
 
   const rxBase = (female ? 0.074 : 0.081) * (isEden ? 0.96 : 1.02);
   const ryHalf = female ? 0.114 : 0.120;
@@ -997,7 +998,9 @@ export function buildSculptedHeadGeometry(female = false, hasBeard = false, king
       /* Челюсть: у северян тяжёлая и широкая, у златодворцев узкая аристократическая */
       if (vFrac < 0.48) {
         const jawT = Math.max(0, (0.48 - vFrac) / 0.48);
-        rx *= lerp(1.0, female ? 0.78 : (isEden ? 0.84 : 0.95), jawT * 0.62);
+        rx *= lerp(1.0, female ? 0.88 : (isEden ? 0.95 : 1.02), jawT * 0.62);
+        const jawAngle = Math.exp(-(((vFrac - 0.27) / 0.115) ** 2));
+        rx *= 1 + (female ? 0.06 : 0.10) * jawAngle;
 
         if (cosP > 0) {
           const chinMask = Math.exp(-Math.pow(phi / (female ? 0.40 : 0.58), 2)) * Math.exp(-Math.pow((vFrac - 0.17) / 0.12, 2));
@@ -1020,25 +1023,33 @@ export function buildSculptedHeadGeometry(female = false, hasBeard = false, king
       let x = sinP * rx;
       let z = cosP * rz;
 
+      // Скулы и поверхность вокруг рта лепятся на той же сетке, что и кожа.
+      if (cosP > 0.1) {
+        const cheek = Math.exp(-(((Math.abs(phi) - 0.64) / 0.28) ** 2)) * Math.exp(-(((vFrac - 0.435) / 0.085) ** 2));
+        z += cheek * (female ? 0.004 : 0.006);
+        if (!hasBeard) {
+          const muzzle = Math.exp(-((phi / 0.36) ** 2)) * Math.exp(-(((vFrac - 0.34) / 0.07) ** 2));
+          const lips = Math.exp(-((phi / 0.25) ** 2)) * Math.exp(-(((vFrac - 0.325) / 0.025) ** 2));
+          z += muzzle * 0.005 + lips * (female ? 0.003 : 0.002);
+        }
+      }
+
       /* Плавные глазницы */
       if (cosP > 0.42) {
         const eyeDist = Math.min(Math.abs(phi - 0.44), Math.abs(phi + 0.44));
         const socket = Math.exp(-Math.pow(eyeDist / 0.22, 2)) * Math.exp(-Math.pow((vFrac - 0.495) / 0.048, 2));
-        z -= socket * (female ? 0.0035 : 0.006);
+        z -= socket * (female ? 0.004 : 0.006);
+        const eyelid = Math.exp(-Math.pow(eyeDist / 0.19, 2)) * Math.exp(-Math.pow((vFrac - 0.52) / 0.024, 2));
+        z += eyelid * (female ? 0.003 : 0.004);
       }
 
-      /* Анатомичный прямой нос: у златодворцев тонкий изящный, у северян шире в переносице */
-      const noseHalf = female ? 0.19 : (isEden ? 0.165 : 0.215);
-      if (Math.abs(phi) < noseHalf && vFrac > 0.385 && vFrac < 0.525) {
-        const noseW = Math.cos((phi / noseHalf) * Math.PI * 0.5);
-        let noseProfile = 0;
-        if (vFrac >= 0.415) {
-          const tBridge = (vFrac - 0.415) / 0.110;
-          noseProfile = Math.pow(Math.max(0, 1 - tBridge), 1.35);
-        } else {
-          noseProfile = Math.max(0, (vFrac - 0.385) / 0.030);
-        }
-        z += noseW * noseProfile * (female ? 0.014 : (isEden ? 0.018 : 0.020));
+      /* Переносица, кончик и крылья носа — непрерывное изменение поверхности лица. */
+      if (cosP > 0.5) {
+        const noseWidth = female ? 0.14 : (isEden ? 0.145 : 0.16);
+        const bridge = Math.exp(-((phi / noseWidth) ** 2)) * Math.exp(-(((vFrac - 0.47) / 0.085) ** 2));
+        const tip = Math.exp(-((phi / (noseWidth * 0.82)) ** 2)) * Math.exp(-(((vFrac - 0.405) / 0.034) ** 2));
+        const wings = Math.exp(-(((Math.abs(phi) - noseWidth * 0.85) / (noseWidth * 0.42)) ** 2)) * Math.exp(-(((vFrac - 0.405) / 0.025) ** 2));
+        z += bridge * (female ? 0.012 : 0.015) + tip * (female ? 0.008 : 0.010) + wings * 0.003;
       }
 
       /* Компактные уши */
