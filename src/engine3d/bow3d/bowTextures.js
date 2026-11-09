@@ -141,15 +141,6 @@ export function buildHeadTextureCanvas(opts = {}, canvasFactory = null) {
     softRadial(ctx, W * 0.50, H * 0.585, 18, "rgba(188, 112, 104, 0.13)", "rgba(0,0,0,0)");
   }
 
-  /* Аккуратные уши по бокам (u = 0.25 и u = 0.75) */
-  [W * 0.25, W * 0.75].forEach((ex) => {
-    softRadial(ctx, ex, H * 0.50, 20, "rgba(130, 84, 58, 0.26)", "rgba(130, 84, 58, 0)");
-    ctx.fillStyle = pal.skinDark;
-    ctx.beginPath();
-    ctx.ellipse(ex, H * 0.50, 5.5, 13, 0, 0, Math.PI * 2);
-    ctx.fill();
-  });
-
   /* ПОРОДА ДВУХ НАРОДОВ (до прорисовки глаз, чтобы брови и веки легли поверх):
      Север — тяжёлая нависающая надбровная дуга и широкая переносица;
      Златодвор — высокие точёные скулы и тонкий нос аристократа */
@@ -369,8 +360,6 @@ export function buildHeadTextureCanvas(opts = {}, canvasFactory = null) {
   /* Подложка волос по темени и за ушами (в цвет причёски народа!) */
   ctx.fillStyle = hairBase;
   ctx.fillRect(0, 0, W, H * 0.22);
-  ctx.fillRect(0, 0, W * 0.26, H * 0.54);
-  ctx.fillRect(W * 0.74, 0, W * 0.26, H * 0.54);
 
   return cv;
 }

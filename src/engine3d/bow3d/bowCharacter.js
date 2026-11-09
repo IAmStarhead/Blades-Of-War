@@ -253,7 +253,7 @@ export function createHumanoidSkeleton(female = false, kingdom = "north") {
     bones,
     skeleton: new THREE.Skeleton(bones), // boneInverses зафиксированы в rest-позе!
     metrics: {
-      hScale, wScale,
+      hScale, wScale, limbBulk: female ? 1 : (isEden ? 1.06 : 1.12),
       hipY, spineY, chestY, neckY, headY,
       shoulderX, shoulderY, upperArmLen, forearmLen,
       hipX, thighLen, shinLen
@@ -485,7 +485,10 @@ export function buildBaseBodyGeometry(female = false, metrics) {
       for (let s = 0; s <= segsLeg; s++) {
         const uFrac = s / segsLeg;
         const phi = (uFrac - 0.5) * Math.PI * 2;
-        ring.push(mb.addVertex(cx + Math.sin(phi) * rx, cy3d, cz + Math.cos(phi) * rz, uFrac, vTex, b0, w0, b1, w1));
+        // Утолщаем бедро и икру, мягко возвращая исходную ширину к щиколотке.
+        const blend = [0.75, 1, 1, 1, 0.9, 0.8, 1, 1, 0.25, 0][i];
+        const bulk = 1 + ((m.limbBulk || 1) - 1) * blend;
+        ring.push(mb.addVertex(cx + Math.sin(phi) * rx * bulk, cy3d, cz + Math.cos(phi) * rz * bulk, uFrac, vTex, b0, w0, b1, w1));
       }
       mb.seamPairs.push([ring[0], ring[segsLeg]]);
       rings.push(ring);
@@ -581,7 +584,10 @@ export function buildBaseBodyGeometry(female = false, metrics) {
       for (let s = 0; s <= segsArm; s++) {
         const uFrac = s / segsArm;
         const phi = (uFrac - 0.5) * Math.PI * 2;
-        ring.push(mb.addVertex(cx + Math.sin(phi) * rx, cy3d, cz + Math.cos(phi) * rz, uFrac, vTex, b0, w0, b1, w1));
+        // Объём руки постепенно сходит к запястью, кисти не увеличиваются.
+        const blend = [0.45, 0.75, 1, 1, 1, 1, 0.8, 0.15, 0, 0, 0][i];
+        const bulk = 1 + ((m.limbBulk || 1) - 1) * blend;
+        ring.push(mb.addVertex(cx + Math.sin(phi) * rx * bulk, cy3d, cz + Math.cos(phi) * rz * bulk, uFrac, vTex, b0, w0, b1, w1));
       }
       mb.seamPairs.push([ring[0], ring[segsArm]]);
       rings.push(ring);
@@ -747,7 +753,7 @@ export function buildGarmentGeometry(female = false, rawOutfit = "villager", kin
     const wx = ex + sign * 0.006;
     const wy = ey - m.forearmLen;
 
-    const sc = (female ? 0.99 : 1.06) * ws * (isWarrior ? 1.05 : 1.0);
+    const sc = (female ? 0.99 : 1.06 * (m.limbBulk || 1)) * ws * (isWarrior ? 1.05 : 1.0);
 
     /* Высокий округлый кат плеча: купол рукава поднят НАД дельтой тела (без прорех на плечах) */
     const rows = [
@@ -799,8 +805,8 @@ export function buildGarmentGeometry(female = false, rawOutfit = "villager", kin
   /* === Д. ШТАНЫ / ШОССЫ (две штанины сверху вниз; верх скрыт под подолом) ===
      Радиусы по X и Z масштабируются раздельно: глубина ноги тела НЕ зависит от ширины
      кости народа, поэтому запас по Z обязан быть собственным (фикс «прогрызенных» штанин). */
-  const pantsSX = (female ? 0.97 : 1.0) * ws;
-  const pantsSZ = female ? 0.98 : 1.06;
+  const pantsSX = (female ? 0.97 : (m.limbBulk || 1)) * ws;
+  const pantsSZ = female ? 0.98 : 1.06 * (m.limbBulk || 1);
 
   function buildPantLeg(isLeft) {
     const sign = isLeft ? 1 : -1;
@@ -1026,6 +1032,33 @@ export function buildSculptedHeadGeometry(female = false, hasBeard = false, king
   const topPole = mb.addVertex(0, centerY + ryHalf, -0.002, 0.5, 1.0);
   mb.capRing(rings[rings.length - 1], topPole, true);
 
+  // Небольшие прилегающие ушные раковины: вытянутый силуэт, мягкая мочка,
+  // без отверстия. Кольца вшиты в геометрию головы и используют участок кожи.
+  for (const side of [-1, 1]) {
+    const earRings = [];
+    const baseX = rxBase * 0.94;
+    const scale = female ? 0.92 : 1;
+    const count = 16;
+    for (const radial of [0.34, 0.68, 1]) {
+      const earRing = [];
+      for (let j = 0; j <= count; j++) {
+        const a = 2 * Math.PI * j / count;
+        const c = Math.cos(a), sin = Math.sin(a);
+        const height = 0.027 * scale * radial * c;
+        const width = 0.014 * scale * radial * sin * (c < 0 ? 0.72 : 1);
+        const y = centerY + height;
+        const z = 0.012 + width + height * 0.12;
+        const x = side * (baseX + 0.006 + 0.012 * (1 - radial * radial));
+        earRing.push(mb.addVertex(x, y, z, 0.31, 0.48));
+      }
+      mb.seamPairs.push([earRing[0], earRing[count]]);
+      earRings.push(earRing);
+    }
+    const center = mb.addVertex(side * (baseX + 0.018), centerY, 0.012, 0.31, 0.48);
+    mb.capRing(earRings[0], center, side > 0);
+    mb.connectRings(earRings, side < 0);
+  }
+
   return mb.toGeometry();
 }
 
@@ -1053,7 +1086,14 @@ export function buildHairGeometry(female = false, styleKey = "classic", kingdom 
         // Незначительный плавный рельеф пробора и линии роста, без острых зубцов.
         const hairlineWave = styleKey !== "headwear" && r >= profileRows.length - 3
           ? 0.003 * Math.cos(phi * 3 + (female ? 0.3 : 0.8)) * faceArch : 0;
-        const y = baseY + faceArch * (frontLiftY + sinP * sideSweep) + hairlineWave;
+        let y = baseY + faceArch * (frontLiftY + sinP * sideSweep) + hairlineWave;
+        // В короткой причёске приподнимаем край у виска, открывая ухо;
+        // длинные волосы и головные уборы могут его закрывать.
+        if (styleKey !== "long" && styleKey !== "headwear") {
+          const temple = Math.exp(-(((Math.abs(phi) - Math.PI / 2) / 0.33) ** 2));
+          const earTop = (female ? 0.092 : 0.096) + 0.025;
+          y += Math.max(0, earTop - y) * temple;
+        }
         const rz = cosP >= 0 ? rzF : rzB;
         const locks = styleKey === "headwear" ? 0 : 0.0022 * Math.cos(phi * 5 + r * 0.32) * Math.sin(Math.PI * r / (profileRows.length - 1));
         ring.push(mb.addVertex(sinP * (rx + locks) * wMul, y, zShift + cosP * (rz + locks), uFrac, vTex));
