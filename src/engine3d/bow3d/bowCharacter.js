@@ -1345,6 +1345,8 @@ export function createBowCharacter3D(opts = {}) {
 
   const hairGeo = buildHairGeometry(female, hairStyle, kingdom);
   const hairMesh = new THREE.Mesh(hairGeo, hairMat);
+  // На время анатомической работы причёски скрыты; головной убор доступен.
+  hairMesh.visible = hairStyle === "headwear";
   hairMesh.castShadow = true;
   hairMesh.receiveShadow = true;
   bones[BONE_IDX.HEAD].add(hairMesh);
@@ -1430,6 +1432,7 @@ export function createBowCharacter3D(opts = {}) {
       const nextHairGeo = buildHairGeometry(female, nextStyle, kingdom);
       hairMesh.geometry.dispose();
       hairMesh.geometry = nextHairGeo;
+      hairMesh.visible = nextStyle === "headwear";
     }
   };
 

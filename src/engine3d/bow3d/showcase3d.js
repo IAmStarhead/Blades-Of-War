@@ -153,11 +153,9 @@ export function mountBowShowcase(rootEl) {
         </div>
 
         <div class="pz-group">
-          <span class="pz-label">Причёска / убор</span>
+          <span class="pz-label">Волосы временно скрыты</span>
           <div class="pz-segmented" data-role="hair">
-            <button type="button" data-hair="classic" class="is-active">Классика</button>
-            <button type="button" data-hair="short">Короткая</button>
-            <button type="button" data-hair="long">До плеч</button>
+            <button type="button" data-hair="classic" class="is-active">Без волос</button>
             <button type="button" data-hair="headwear">Убор</button>
           </div>
         </div>

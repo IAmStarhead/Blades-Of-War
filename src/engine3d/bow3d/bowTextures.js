@@ -166,6 +166,11 @@ export function buildHeadTextureCanvas(opts = {}, canvasFactory = null) {
 
   [-1, 1].forEach((side) => {
     const ex = W * 0.5 + side * eyeDX;
+    // Глаза не должны теряться на лице при игровом масштабе.
+    ctx.save();
+    ctx.translate(ex, eyeY);
+    ctx.scale(1.12, 1.15);
+    ctx.translate(-ex, -eyeY);
 
     /* Деликатная тёплая тень верхнего века (у женщин Златодвора — чуть мягкого дымчатого тона век) */
     softRadial(
@@ -251,6 +256,7 @@ export function buildHeadTextureCanvas(opts = {}, canvasFactory = null) {
     }
     ctx.closePath();
     ctx.fill();
+    ctx.restore();
   });
 
   /* 3. АККУРАТНЫЙ НОС (без старческих носогубных складок!) */
@@ -357,9 +363,7 @@ export function buildHeadTextureCanvas(opts = {}, canvasFactory = null) {
     softRadial(ctx, W * 0.5, mouthY + 11, 9, "rgba(116, 74, 52, 0.22)", "rgba(116, 74, 52, 0)");
   }
 
-  /* Подложка волос по темени и за ушами (в цвет причёски народа!) */
-  ctx.fillStyle = hairBase;
-  ctx.fillRect(0, 0, W, H * 0.22);
+  /* Временно без нарисованной линии волос: поверхность головы открыта. */
 
   return cv;
 }
