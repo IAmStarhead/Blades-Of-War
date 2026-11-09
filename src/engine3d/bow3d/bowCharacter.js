@@ -368,7 +368,11 @@ export function buildBaseBodyGeometry(female = false, metrics) {
         }
       }
 
-      ring.push(mb.addVertex(sinP * rx, y, zOff + cosP * rz, uFrac, vTex, vb0, vw0, vb1, vw1));
+      // Мягко расширяем верхние боковые сечения грудной клетки к дельте.
+      const shoulderY = female ? 1.345 : 1.415;
+      const shoulder = Math.exp(-(((yRaw - shoulderY) / 0.055) ** 2)) * Math.pow(Math.abs(sinP), 4);
+      const shoulderX = sinP * (rx + (female ? 0.013 : 0.010) * ws * shoulder);
+      ring.push(mb.addVertex(shoulderX, y, zOff + cosP * rz, uFrac, vTex, vb0, vw0, vb1, vw1));
     }
     mb.seamPairs.push([ring[0], ring[segsTorso]]);
     torsoRings.push(ring);
@@ -470,8 +474,8 @@ export function buildBaseBodyGeometry(female = false, metrics) {
       [136, kx, ky, 0.002, (female ? 0.047 : 0.052) * ws, (female ? 0.051 : 0.056), bThigh, 0.48, bShin, 0.52],
       [150, lerp(kx, ax, 0.20), lerp(ky, ay, 0.20), -0.006, (female ? 0.048 : 0.050) * ws, (female ? 0.052 : 0.054), bShin, 0.92, bThigh, 0.08],
       [168, lerp(kx, ax, 0.52), lerp(ky, ay, 0.52), -0.008, (female ? 0.048 : 0.047) * ws, (female ? 0.052 : 0.052), bShin, 1.0,  bFoot, 0.0],
-      [196, ax, ay + 0.030 * hs, -0.002, (female ? 0.033 : 0.038) * ws, (female ? 0.036 : 0.042), bShin, 0.60, bFoot, 0.40],
-      [204, ax, ay + 0.024 * hs,  0.002, (female ? 0.034 : 0.039) * ws, (female ? 0.037 : 0.043), bShin, 0.35, bFoot, 0.65]
+      [196, ax, ay + 0.060 * hs, -0.002, (female ? 0.035 : 0.040) * ws, (female ? 0.038 : 0.044), bShin, 0.60, bFoot, 0.40],
+      [204, ax, ay + 0.030 * hs,  0.004, (female ? 0.034 : 0.039) * ws, (female ? 0.042 : 0.047), bShin, 0.35, bFoot, 0.65]
     ];
 
     for (let i = 0; i < legStations.length; i++) {
@@ -491,8 +495,8 @@ export function buildBaseBodyGeometry(female = false, metrics) {
        вытянутый вперёд носок и округлая пятка — человеческая ступня, а не обрубок! */
     const footScale = (female ? 0.88 : 1.00) * ws;
     const footSpecs = [
-      [205, ax, 0.070 * hs, 0.002, 0.034 * ws, 0.037],
-      [208, ax, 0.052 * hs, 0.006, 0.035 * footScale, 0.044 * footScale],
+      [205, ax, 0.070 * hs, 0.009, 0.034 * ws, 0.048],
+      [208, ax, 0.052 * hs, 0.014, 0.037 * footScale, 0.053 * footScale],
       [214, ax, 0.035 * hs, 0.018, 0.038 * footScale, 0.058 * footScale],
       [222, ax, 0.018 * hs, 0.029, 0.041 * footScale, 0.076 * footScale],
       [228, ax, 0.004 * hs, 0.029, 0.039 * footScale, 0.075 * footScale]
@@ -508,7 +512,10 @@ export function buildBaseBodyGeometry(female = false, metrics) {
         // Переход от круглой голени к стопе постепенный, без резкого «манжета».
         const footBlend = Math.min(1, f / 3);
         const zStretch = cosP >= 0 ? frz * (1 + 0.28 * footBlend) : frz * (1 - 0.34 * footBlend);
-        const vz = fz + cosP * zStretch;
+        // Более широкая линия передка, не заострённый «носок».
+        const toeShape = Math.max(0, Math.min(1, (0.045 * hs - fy) / (0.025 * hs)));
+        const front = cosP > 0 ? cosP * (1 - toeShape) + Math.sqrt(cosP) * toeShape : cosP;
+        const vz = fz + front * zStretch;
         /* Передняя часть стопы (плюсна и пальцы) принадлежит кости носка:
            плавный переход весов за суставом подушечки — стопа ПЕРЕКАТЫВАЕТСЯ, а не гнётся доской */
         const toeW = Math.max(0, Math.min(1, (vz - 0.052) / 0.055)) * Math.max(0, Math.min(1, (0.055 * hs - fy) / (0.025 * hs)));
@@ -548,7 +555,7 @@ export function buildBaseBodyGeometry(female = false, metrics) {
     const wx = ex + sign * 0.006;
     const wy = ey - m.forearmLen;
 
-    const musc = (female ? 0.78 : 1.02) * ws;
+    const musc = (female ? 0.89 : 1.02) * ws;
 
     const armStations = [
       [ 26, sx - sign * 0.050, sy + 0.014 * hs, -0.005, 0.033 * musc, 0.039 * musc, C, 0.90, bUpper, 0.10],
@@ -739,7 +746,7 @@ export function buildGarmentGeometry(female = false, rawOutfit = "villager", kin
     const wx = ex + sign * 0.006;
     const wy = ey - m.forearmLen;
 
-    const sc = (female ? 0.86 : 1.06) * ws * (isWarrior ? 1.05 : 1.0);
+    const sc = (female ? 0.99 : 1.06) * ws * (isWarrior ? 1.05 : 1.0);
 
     /* Высокий округлый кат плеча: купол рукава поднят НАД дельтой тела (без прорех на плечах) */
     const rows = [
