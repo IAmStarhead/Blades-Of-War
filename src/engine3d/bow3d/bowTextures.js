@@ -304,9 +304,15 @@ export function buildHeadTextureCanvas(opts = {}, canvasFactory = null) {
     ctx.fill();
 
     /* Едва заметная фактура прядей бороды (деликатные полупрозрачные штрихи, не «зубья») */
-    ctx.fillStyle = "rgba(122, 86, 56, 0.20)";
-    for (let bx = W * 0.36; bx <= W * 0.64; bx += 13) {
-      ctx.fillRect(bx, mouthY + 12, 2, 26);
+    for (let i = 0; i < 38; i++) {
+      const bx = W * 0.31 + (i * 37 % Math.floor(W * 0.38));
+      const by = mouthY + 8 + (i * 19 % 75);
+      ctx.strokeStyle = i % 3 === 0 ? "rgba(215, 173, 125, 0.18)" : "rgba(24, 13, 7, 0.14)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(bx, by);
+      ctx.quadraticCurveTo(bx + (bx - W * 0.5) * 0.04, by + 8, bx + (bx - W * 0.5) * 0.08, by + 16);
+      ctx.stroke();
     }
   } else if (fem) {
     /* Женственные мягкие губы:
@@ -424,13 +430,17 @@ export function buildHairTextureCanvas(hairColor = null, styleKey = "classic", f
   ctx.fillRect(0, 0, W, H);
   softVBand(ctx, 0, 0, W, H, "rgba(255, 240, 215, 0.14)", "rgba(0, 0, 0, 0.04)", "rgba(18, 10, 4, 0.32)");
 
-  // Мягкие нерегулярные пряди вместо повторяющихся вертикальных полос.
-  for (let x = 3; x < W; x += 19) {
-    ctx.strokeStyle = x % 38 === 3 ? "rgba(255, 232, 195, 0.045)" : "rgba(20, 10, 4, 0.055)";
-    ctx.lineWidth = 2;
+  // Короткие изогнутые пучки, а не одинаковые полосы от макушки до края.
+  for (let i = 0; i < 76; i++) {
+    const x = (i * 67 + 13) % W;
+    const y = (i * 47 + 9) % 220;
+    const length = 22 + (i * 17 % 36);
+    const bend = (i % 3 - 1) * 7 + (female ? 3 : -3);
+    ctx.strokeStyle = i % 3 === 0 ? "rgba(255, 226, 181, 0.10)" : "rgba(20, 10, 4, 0.12)";
+    ctx.lineWidth = i % 4 === 0 ? 1.4 : 0.8;
     ctx.beginPath();
-    ctx.moveTo(x, 0);
-    ctx.quadraticCurveTo(x + 8, H * 0.45, x + 3, H);
+    ctx.moveTo(x, y);
+    ctx.quadraticCurveTo(x + bend, y + length * 0.48, x + bend * 0.6, y + length);
     ctx.stroke();
   }
 

@@ -499,7 +499,7 @@ export function buildBaseBodyGeometry(female = false, metrics) {
       [208, ax, 0.052 * hs, 0.014, 0.037 * footScale, 0.053 * footScale],
       [214, ax, 0.035 * hs, 0.018, 0.038 * footScale, 0.058 * footScale],
       [222, ax, 0.018 * hs, 0.029, 0.041 * footScale, 0.076 * footScale],
-      [228, ax, 0.004 * hs, 0.029, 0.039 * footScale, 0.075 * footScale]
+      [228, ax, 0.004 * hs, 0.022, 0.039 * footScale, 0.075 * footScale]
     ];
     for (let f = 0; f < footSpecs.length; f++) {
       const [cyTex, fx, fy, fz, frx, frz] = footSpecs[f];
@@ -511,7 +511,7 @@ export function buildBaseBodyGeometry(female = false, metrics) {
         const cosP = Math.cos(phi);
         // Переход от круглой голени к стопе постепенный, без резкого «манжета».
         const footBlend = Math.min(1, f / 3);
-        const zStretch = cosP >= 0 ? frz * (1 + 0.28 * footBlend) : frz * (1 - 0.34 * footBlend);
+        const zStretch = cosP >= 0 ? frz * (1 + 0.28 * footBlend) : frz * (1 - 0.18 * footBlend);
         // Более широкая линия передка, не заострённый «носок».
         const toeShape = Math.max(0, Math.min(1, (0.045 * hs - fy) / (0.025 * hs)));
         const front = cosP > 0 ? cosP * (1 - toeShape) + Math.sqrt(cosP) * toeShape : cosP;
@@ -558,8 +558,9 @@ export function buildBaseBodyGeometry(female = false, metrics) {
     const musc = (female ? 0.89 : 1.02) * ws;
 
     const armStations = [
-      [ 26, sx - sign * 0.050, sy + 0.014 * hs, -0.005, 0.033 * musc, 0.039 * musc, C, 0.90, bUpper, 0.10],
-      [ 36, sx - sign * 0.014, sy - 0.006 * hs, -0.005, 0.057 * musc, 0.061 * musc, C, 0.52, bUpper, 0.48],
+      [ 26, sx - sign * 0.040, sy + 0.022 * hs, -0.005, 0.026 * musc, 0.034 * musc, C, 0.90, bUpper, 0.10],
+      [ 31, sx - sign * 0.025, sy + 0.012 * hs, -0.005, 0.045 * musc, 0.052 * musc, C, 0.70, bUpper, 0.30],
+      [ 36, sx - sign * 0.014, sy - 0.006 * hs, -0.005, 0.054 * musc, 0.059 * musc, C, 0.52, bUpper, 0.48],
       [ 50, sx + sign * 0.004, sy - 0.040 * hs, -0.005, 0.049 * musc, 0.052 * musc, C, 0.15, bUpper, 0.85],
       [ 84, lerp(sx, ex, 0.54), lerp(sy, ey, 0.54), -0.004, 0.043 * musc, 0.046 * musc, bUpper, 1.0, bFore, 0.0],
       [116, ex, ey, -0.007, 0.037 * musc, 0.039 * musc, bUpper, 0.50, bFore, 0.50],
@@ -571,7 +572,7 @@ export function buildBaseBodyGeometry(female = false, metrics) {
       [218, wx - sign * 0.008, wy - 0.104 * hs, 0.018, 0.010 * musc, 0.018 * musc, bHand, 1.0, bFore, 0.0]
     ];
 
-    const segsArm = 12;
+    const segsArm = 20;
     const rings = [];
     for (let i = 0; i < armStations.length; i++) {
       const [cyTex, cx, cy3d, cz, rx, rz, b0, w0, b1, w1] = armStations[i];
@@ -586,7 +587,7 @@ export function buildBaseBodyGeometry(female = false, metrics) {
       rings.push(ring);
     }
 
-    const capTop = mb.addVertex(sx - sign * 0.065, sy + 0.016 * hs, -0.005, 0.5, cyToV(26), C, 0.92, bUpper, 0.08);
+    const capTop = mb.addVertex(sx - sign * 0.065, sy + 0.024 * hs, -0.005, 0.5, cyToV(26), C, 0.92, bUpper, 0.08);
     mb.capRing(rings[0], capTop, true);
     mb.connectRings(rings, false);
 
@@ -1035,7 +1036,7 @@ export function buildHairGeometry(female = false, styleKey = "classic", kingdom 
   const isEden = normalizeKingdomKey(kingdom) === "eden";
   const wMul = isEden ? 0.96 : 1.02;
   const mb = new MeshBuilder(false);
-  const segsU = 22;
+  const segsU = 36;
 
   function buildSolidCap(apexY, apexZ, profileRows, sideSweep = 0) {
     const capRings = [];
@@ -1049,9 +1050,13 @@ export function buildHairGeometry(female = false, styleKey = "classic", kingdom 
         const cosP = Math.cos(phi);
         const faceArch = Math.pow(Math.max(0, cosP), 1.35);
         /* sideSweep: диагональная чёлка причёсанных на косой пробор волос */
-        const y = baseY + faceArch * (frontLiftY + sinP * sideSweep);
+        // Незначительный плавный рельеф пробора и линии роста, без острых зубцов.
+        const hairlineWave = styleKey !== "headwear" && r >= profileRows.length - 3
+          ? 0.003 * Math.cos(phi * 3 + (female ? 0.3 : 0.8)) * faceArch : 0;
+        const y = baseY + faceArch * (frontLiftY + sinP * sideSweep) + hairlineWave;
         const rz = cosP >= 0 ? rzF : rzB;
-        ring.push(mb.addVertex(sinP * rx * wMul, y, zShift + cosP * rz, uFrac, vTex));
+        const locks = styleKey === "headwear" ? 0 : 0.0022 * Math.cos(phi * 5 + r * 0.32) * Math.sin(Math.PI * r / (profileRows.length - 1));
+        ring.push(mb.addVertex(sinP * (rx + locks) * wMul, y, zShift + cosP * (rz + locks), uFrac, vTex));
       }
       mb.seamPairs.push([ring[0], ring[segsU]]);
       capRings.push(ring);
