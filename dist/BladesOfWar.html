@@ -223,7 +223,10 @@ var LZString=function(){var r=String.fromCharCode,o="ABCDEFGHIJKLMNOPQRSTUVWXYZa
 html, body {
   margin: 0;
   padding: 0;
+  width: 100%;
+  height: 100%;
   background: var(--bow-bg-deep);
+  font-variant-emoji: text;
 }
 
 body {
@@ -232,11 +235,22 @@ body {
   font-size: 16px;
   line-height: var(--bow-leading);
   -webkit-text-size-adjust: 100%;
+  overflow: hidden;
 }
 
-#story, #passages { margin: 0; padding: 0; }
+#story, #passages {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+}
 
-.passage { margin: 0; }
+.passage {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+}
 
 /* --- Каркас --- */
 .bow-app {
@@ -5910,9 +5924,13 @@ body,
 }
 
 #bow-app.bow-fullscreen-app {
+  position: fixed;
+  inset: 0;
   max-width: none !important;
   width: 100vw;
+  height: 100vh;
   height: 100dvh;
+  min-height: 0 !important;
   margin: 0 !important;
   padding: 0 !important;
   gap: 0 !important;
@@ -5920,11 +5938,13 @@ body,
   flex-direction: column;
   overflow: hidden;
   background: #0b1017;
+  font-variant-emoji: text;
 }
 
 #bow-app.bow-fullscreen-app > .bow-topbar {
   flex: 0 0 auto;
   min-height: 44px;
+  margin: 0 !important;
   padding: 4px 12px;
   border-radius: 0;
   border: 0;
@@ -6363,7 +6383,6 @@ body,
   width: 1280px;
   height: 680px;
   transform-origin: 0 0;
-  will-change: transform;
 }
 
 .bow-stage-world > .bow-stage-bg-wrap,
@@ -6540,87 +6559,128 @@ body,
   color: #ffffff;
 }
 
-/* 5. Стартовое окно выбора устройства «Компьютер / Телефон» */
+/* 5. Стартовое всплывающее окно выбора устройства «Компьютер / Телефон» (0.0.9.2f) */
+#bow-device-modal,
+.bow-device-modal,
 .bow-device-backdrop {
-  display: none;
-  position: fixed;
-  inset: 0;
-  z-index: 90;
-  background: rgba(5, 8, 13, 0.84);
-  backdrop-filter: blur(6px);
+  display: none !important;
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 160 !important;
+  background: rgba(6, 10, 15, 0.86);
+  backdrop-filter: blur(5px);
   align-items: center;
   justify-content: center;
   padding: 16px;
+  box-sizing: border-box;
+  font-variant-emoji: text;
 }
 
+#bow-device-modal[hidden] {
+  display: none !important;
+}
+
+#bow-device-modal.bow-device-modal-open:not([hidden]),
+.bow-device-modal.bow-device-modal-open:not([hidden]),
 .bow-device-backdrop.bow-device-open {
-  display: flex;
+  display: flex !important;
 }
 
 .bow-device-card {
-  width: min(500px, 94vw);
-  padding: 20px 22px;
-  background: linear-gradient(180deg, #16202b 0%, #0f161f 100%);
-  border: 1px solid rgba(156, 214, 255, 0.36);
-  border-radius: 8px;
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.82);
+  width: min(520px, 94vw);
+  padding: 22px 24px;
+  background: linear-gradient(180deg, #17212c 0%, #101720 100%);
+  border: 1px solid rgba(156, 200, 232, 0.42);
+  border-radius: 6px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.86);
   text-align: center;
 }
 
 .bow-device-kicker {
   font-family: var(--bow-mono);
   font-size: 0.68rem;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: #c9a961;
-  margin-bottom: 6px;
+  margin: 0 0 6px;
 }
 
 .bow-device-title {
   margin: 0 0 8px;
-  font-size: 1.15rem;
+  font-size: 1.18rem;
   color: #eef5fc;
 }
 
 .bow-device-sub {
-  margin: 0 0 16px;
-  font-size: 0.82rem;
-  line-height: 1.45;
+  margin: 0 0 18px;
+  font-size: 0.83rem;
+  line-height: 1.48;
   color: #9bb0c4;
 }
 
+.bow-device-choices,
 .bow-device-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  gap: 12px;
 }
 
 .bow-device-choice {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 5px;
-  padding: 14px 12px;
-  border-radius: 6px;
-  border: 1px solid rgba(108, 134, 160, 0.45);
-  background: rgba(21, 31, 42, 0.9);
+  gap: 7px;
+  padding: 16px 14px;
+  border-radius: 5px;
+  border: 1px solid rgba(108, 134, 160, 0.48);
+  background: rgba(21, 31, 42, 0.92);
   color: #e4effa;
+  font-family: inherit;
   cursor: pointer;
   transition: border-color 0.15s ease, background 0.15s ease, transform 0.12s ease;
 }
 
-.bow-device-choice:hover {
-  border-color: #9cd6ff;
-  background: rgba(31, 46, 62, 0.96);
+.bow-device-choice:hover,
+.bow-device-choice:focus-visible {
+  border-color: #c9a961;
+  background: rgba(31, 46, 62, 0.98);
   transform: translateY(-1px);
+  outline: none;
 }
 
 .bow-device-icon {
-  font-size: 1.6rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 40px;
+  color: #c8d6e4;
+}
+
+.bow-device-choice:hover .bow-device-icon {
+  color: #e9d094;
 }
 
 .bow-device-choice b {
-  font-size: 0.9rem;
+  font-size: 0.94rem;
+  color: #f0f6fc;
+}
+
+.bow-device-choice i {
+  font-style: normal;
+  font-size: 0.76rem;
+  line-height: 1.42;
+  color: #98adbf;
+}
+
+.bow-pd-slot-svg {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  color: #9fb4c7;
+  flex-shrink: 0;
 }
 
 .bow-device-choice small {
@@ -6912,6 +6972,7 @@ body,
 }
 
 @media (max-width: 680px) {
+  .bow-device-choices,
   .bow-device-grid {
     grid-template-columns: 1fr;
   }
@@ -7036,7 +7097,7 @@ body,
   Bow.data = {
 
     meta: {
-      version: "0.0.9.2",
+      version: "0.0.9.2f",
       title: "Blades Of War",
       worldName: "Эдем · Королевство Хладных Ветров",
       regionShort: "Хладные Ветра",
@@ -8502,6 +8563,12 @@ body,
       }
       if (!("pendingOrder" in state)) { state.pendingOrder = null; }
       state.version = "0.0.9.2";
+      return state;
+    },
+
+    /* 0.0.9.2 → 0.0.9.2f: исправление модального окна выбора устройства, HiDPI-чёткость без размытия и чистая средневековая типографика без цветных эмодзи. */
+    "0.0.9.2": function (state) {
+      state.version = "0.0.9.2f";
       return state;
     }
   };
@@ -13004,9 +13071,9 @@ body,
   };
 
 })(typeof window !== "undefined" ? window : this);/* ============================================================
-   BOW SKIRMISH (0.0.9.1) — живой бесклеточный бой в духе Kenshi
+   BOW SKIRMISH (0.0.9.2f) — живой бесклеточный бой в духе Kenshi
    прямо на изометрической локации с тактической паузой (Пробел),
-   переключателем «✋ Мирный / ⚔ К бою» и приходом стражи.
+   переключателем «◈ Мирный / ⚔ К бою» и приходом стражи.
 
    Два масштаба боёв в игре:
      1) Bow.skirmish — локальные схватки (1 на 1 и стычки в локации
@@ -16375,7 +16442,15 @@ body,
     return !!(state && state.time && state.time.scale === "paused");
   }
 
-  /* ---------- Свободная камера без сплющивания холста (ПК + Телефон) ---------- */
+  function isLiveBrowser() {
+    if (typeof document === "undefined") { return false; }
+    var el = document.getElementById("bow-stage-canvas") || document.getElementById("bow-app") || document.documentElement;
+    if (!el || !el.getBoundingClientRect) { return false; }
+    var r = el.getBoundingClientRect();
+    return !!(r && r.width > 0);
+  }
+
+  /* ---------- Свободная камера без сплющивания холста (ПК + Телефон, чёткий HiDPI без мыла) ---------- */
   function getCamera() {
     return {
       zoom: runtime.camera.zoom,
@@ -16393,7 +16468,8 @@ body,
 
     var rect = vp.getBoundingClientRect ? vp.getBoundingClientRect() : { width: 0, height: 0 };
     if (!rect || rect.width <= 0 || rect.height <= 0) {
-      world.style.transform = "translate3d(0px,0px,0) scale(1)";
+      runtime.camera.lastScale = 1;
+      world.style.transform = "translate(0px,0px) scale(1)";
       return;
     }
 
@@ -16408,6 +16484,7 @@ body,
 
     var z = clampVal(runtime.camera.zoom || 1, 0.65, 2.25);
     var scale = baseScale * z;
+    runtime.camera.lastScale = scale;
     var scaledW = VIEW_W * scale;
     var scaledH = VIEW_H * scale;
 
@@ -16419,7 +16496,8 @@ body,
 
     var tx = Math.round((vw - scaledW) * 0.5 + runtime.camera.panX);
     var ty = Math.round((vh - scaledH) * 0.5 + runtime.camera.panY);
-    world.style.transform = "translate3d(" + tx + "px," + ty + "px,0) scale(" + scale.toFixed(4) + ")";
+    /* Чистый 2D-трансформ без translate3d/will-change — браузер не запекает 1x-текстуру в мыло! */
+    world.style.transform = "translate(" + tx + "px," + ty + "px) scale(" + scale.toFixed(4) + ")";
   }
 
   function centerCameraOnPlayer(state, viewportEl, resetZoom) {
@@ -16452,6 +16530,13 @@ body,
   function setCameraZoom(nextZoom, viewportEl, state) {
     runtime.camera.zoom = clampVal(nextZoom, 0.65, 2.25);
     applyCameraToDom(viewportEl, state);
+    if (isLiveBrowser()) {
+      var stCv = typeof document !== "undefined" ? document.querySelector("#bow-stage-canvas canvas.bow-iso-canvas") : null;
+      var st = state || (global.BowGame && global.BowGame.getState ? global.BowGame.getState() : null);
+      if (stCv && st) {
+        paintStageCanvas(stCv, st, Bow.ui && Bow.ui.getStageSelection ? Bow.ui.getStageSelection() : null);
+      }
+    }
     return runtime.camera.zoom;
   }
 
@@ -16681,32 +16766,35 @@ body,
     poly(g, [m1, m2, b2, b1], stepTone(baseHex, -22));
   }
 
-  /* Контурная подсветка выделенной цели / объекта (всегда активна: #9cd6ff или #ee4246) */
+  /* Контурная подсветка выделенной цели / объекта (всегда активна: #9cd6ff или #ee4246; с поддержкой HiDPI _hi) */
   function blitWithOutline(ctx, srcCanvas, dx, dy, outlineColor, thickness) {
     if (!srcCanvas) { return; }
+    var src = srcCanvas._hi || srcCanvas;
+    var lw = srcCanvas.width || 96;
+    var lh = srcCanvas.height || 112;
     if (!outlineColor) {
-      ctx.drawImage(srcCanvas, dx, dy);
+      ctx.drawImage(src, dx, dy, lw, lh);
       return;
     }
     if (!outlineScratch && typeof document !== "undefined") {
       outlineScratch = document.createElement("canvas");
     }
     if (!outlineScratch || !outlineScratch.getContext) {
-      ctx.drawImage(srcCanvas, dx, dy);
+      ctx.drawImage(src, dx, dy, lw, lh);
       return;
     }
-    if (outlineScratch.width !== srcCanvas.width || outlineScratch.height !== srcCanvas.height) {
-      outlineScratch.width = srcCanvas.width;
-      outlineScratch.height = srcCanvas.height;
+    if (outlineScratch.width !== src.width || outlineScratch.height !== src.height) {
+      outlineScratch.width = src.width;
+      outlineScratch.height = src.height;
     }
     var og = outlineScratch.getContext("2d");
     if (!og) {
-      ctx.drawImage(srcCanvas, dx, dy);
+      ctx.drawImage(src, dx, dy, lw, lh);
       return;
     }
     og.clearRect(0, 0, outlineScratch.width, outlineScratch.height);
     og.globalCompositeOperation = "source-over";
-    og.drawImage(srcCanvas, 0, 0);
+    og.drawImage(src, 0, 0);
     og.globalCompositeOperation = "source-in";
     og.fillStyle = outlineColor;
     og.fillRect(0, 0, outlineScratch.width, outlineScratch.height);
@@ -16721,10 +16809,10 @@ body,
     ctx.save();
     ctx.globalAlpha = 0.92;
     for (var i = 0; i < offsets.length; i++) {
-      ctx.drawImage(outlineScratch, Math.round(dx + offsets[i][0]), Math.round(dy + offsets[i][1]));
+      ctx.drawImage(outlineScratch, dx + offsets[i][0], dy + offsets[i][1], lw, lh);
     }
     ctx.restore();
-    ctx.drawImage(srcCanvas, dx, dy);
+    ctx.drawImage(src, dx, dy, lw, lh);
   }
 
   function outfitPalette(roleKey, side, armorId, female, headId, legsId, bootsId, handsId) {
@@ -17029,44 +17117,7 @@ body,
     }
   }
 
-  function getSprite(opts) {
-    opts = opts || {};
-    var roleKey = opts.roleKey || "villager";
-    var side = opts.side || "neutral";
-    var facing = opts.facing || "SE";
-    var weapon = opts.disarmed ? "none" : (opts.weapon || "none");
-    var armor = opts.armor || "";
-    var headGear = opts.headGear || "";
-    var handsGear = opts.handsGear || "";
-    var legsGear = opts.legsGear || "";
-    var bootsGear = opts.bootsGear || "";
-    var female = !!opts.female;
-    var pose = opts.dead ? "dead" : (opts.down ? "down" : (opts.pose || "idle"));
-    var shieldKind = opts.shield === true
-      ? (roleKey === "guard" ? "heater_shield" : "wood_shield")
-      : (typeof opts.shield === "string" && opts.shield ? opts.shield : "");
-    var ready = !!opts.ready;
-    var walkStep = (pose === "walk" && typeof opts.walkFrame === "number") ? (opts.walkFrame % 4) : 0;
-
-    var key = [
-      "v2", roleKey, side, facing, weapon, armor, headGear, handsGear, legsGear, bootsGear,
-      female ? "f" : "m", pose, shieldKind || "0", ready ? "r1" : "r0", walkStep
-    ].join("|");
-    if (spriteCache[key]) { return spriteCache[key]; }
-
-    var cv = document.createElement("canvas");
-    cv.width = 96;
-    cv.height = 112;
-    var g = cv.getContext && cv.getContext("2d");
-    if (!g) {
-      spriteCache[key] = cv;
-      return cv;
-    }
-
-    var pal = outfitPalette(roleKey, side, armor, female, headGear, legsGear, bootsGear, handsGear);
-    var isBack = (facing === "NW" || facing === "NE");
-    var flipX = (facing === "SW" || facing === "NW");
-
+  function paintSpriteGeometry(g, roleKey, female, pal, isBack, flipX, pose, weapon, shieldKind, ready, walkStep) {
     g.save();
     if (pose === "down" || pose === "dead") {
       /* Поверженный боец в гранёном ракурсе без чёрного контура */
@@ -17090,8 +17141,7 @@ body,
       poly(g, [[-11, -7], [16, -8], [16, -1], [-10, 0]], stepTone(pal.coat, 18));
       poly(g, [[17, -6], [27, -5], [26, 4], [17, 3]], stepTone(pal.skin, -10));
       g.restore();
-      spriteCache[key] = cv;
-      return cv;
+      return;
     }
 
     /* Мягкая опорная тень на снегу/полу */
@@ -17240,17 +17290,87 @@ body,
     drawChiseledWeapon(g, weapon, rHandX, rHandY, pose, ready);
 
     g.restore();
+  }
+
+  function getSprite(opts) {
+    opts = opts || {};
+    var roleKey = opts.roleKey || "villager";
+    var side = opts.side || "neutral";
+    var facing = opts.facing || "SE";
+    var weapon = opts.disarmed ? "none" : (opts.weapon || "none");
+    var armor = opts.armor || "";
+    var headGear = opts.headGear || "";
+    var handsGear = opts.handsGear || "";
+    var legsGear = opts.legsGear || "";
+    var bootsGear = opts.bootsGear || "";
+    var female = !!opts.female;
+    var pose = opts.dead ? "dead" : (opts.down ? "down" : (opts.pose || "idle"));
+    var shieldKind = opts.shield === true
+      ? (roleKey === "guard" ? "heater_shield" : "wood_shield")
+      : (typeof opts.shield === "string" && opts.shield ? opts.shield : "");
+    var ready = !!opts.ready;
+    var walkStep = (pose === "walk" && typeof opts.walkFrame === "number") ? (opts.walkFrame % 4) : 0;
+
+    var key = [
+      "v2h", roleKey, side, facing, weapon, armor, headGear, handsGear, legsGear, bootsGear,
+      female ? "f" : "m", pose, shieldKind || "0", ready ? "r1" : "r0", walkStep
+    ].join("|");
+    if (spriteCache[key]) { return spriteCache[key]; }
+
+    var cv = document.createElement("canvas");
+    cv.width = 96;
+    cv.height = 112;
+    var g = cv.getContext && cv.getContext("2d");
+    if (!g) {
+      spriteCache[key] = cv;
+      return cv;
+    }
+
+    var pal = outfitPalette(roleKey, side, armor, female, headGear, legsGear, bootsGear, handsGear);
+    var isBack = (facing === "NW" || facing === "NE");
+    var flipX = (facing === "SW" || facing === "NW");
+
+    paintSpriteGeometry(g, roleKey, female, pal, isBack, flipX, pose, weapon, shieldKind, ready, walkStep);
+
+    /* В реальном браузере дополнительно кэшируем векторный 3× HiDPI-спрайт (288×336) для идеальной резкости на Retina и при зуме */
+    if (isLiveBrowser()) {
+      var hi = document.createElement("canvas");
+      hi.width = 288;
+      hi.height = 336;
+      var hg = hi.getContext && hi.getContext("2d");
+      if (hg) {
+        hg.scale(3, 3);
+        paintSpriteGeometry(hg, roleKey, female, pal, isBack, flipX, pose, weapon, shieldKind, ready, walkStep);
+        cv._hi = hi;
+      }
+    }
+
     spriteCache[key] = cv;
     return cv;
   }
 
-  /* Отрисовка куклы персонажа в инвентаре (крупный план 2× в стиле v2) */
+  /* Отрисовка куклы персонажа в инвентаре (крупный план HiDPI в стиле v2) */
   function paintPaperdollCanvas(canvas, state) {
     if (!canvas || !canvas.getContext || !state || !state.player) { return; }
     var ctx = canvas.getContext("2d");
     if (!ctx) { return; }
-    var w = canvas.width || 160;
-    var h = canvas.height || 200;
+    var w = 160;
+    var h = 200;
+    var dpr = isLiveBrowser() ? clampVal(global.devicePixelRatio || 1, 2, 3) : 1;
+    var bw = Math.round(w * dpr);
+    var bh = Math.round(h * dpr);
+    if (isLiveBrowser()) {
+      canvas.style.width = w + "px";
+      canvas.style.height = h + "px";
+      if (canvas.width !== bw || canvas.height !== bh) {
+        canvas.width = bw;
+        canvas.height = bh;
+      }
+      if (ctx.setTransform) { ctx.setTransform(dpr, 0, 0, dpr, 0, 0); }
+    } else {
+      w = canvas.width || 160;
+      h = canvas.height || 200;
+    }
     ctx.clearRect(0, 0, w, h);
 
     /* Гранёный каменный постамент под героем */
@@ -17296,10 +17416,11 @@ body,
     if (sp) {
       ctx.save();
       ctx.imageSmoothingEnabled = true;
+      if ("imageSmoothingQuality" in ctx) { ctx.imageSmoothingQuality = "high"; }
       var scale = 1.58;
       var dw = Math.round(96 * scale);
       var dh = Math.round(112 * scale);
-      ctx.drawImage(sp, Math.round((w - dw) * 0.5), Math.round(h - 24 - dh + 22), dw, dh);
+      ctx.drawImage(sp._hi || sp, Math.round((w - dw) * 0.5), Math.round(h - 24 - dh + 22), dw, dh);
       ctx.restore();
     }
   }
@@ -18125,6 +18246,25 @@ body,
 
     initParticles();
     ensurePlayerPos(state);
+    applyCameraToDom(null, state);
+
+    /* HiDPI / Retina Supersampling (2.0×–3.0×): чёткая векторная сцена и спрайты без размытости на ПК и телефонах */
+    if (isLiveBrowser()) {
+      var rawDpr = global.devicePixelRatio || 1;
+      var camScale = Math.max(1, runtime.camera.lastScale || 1);
+      var rawTarget = clampVal(Math.max(rawDpr, 1.5) * camScale, 2.0, 3.0);
+      var targetDpr = Math.round(rawTarget * 4) / 4;
+      var targetW = Math.round(VIEW_W * targetDpr);
+      var targetH = Math.round(VIEW_H * targetDpr);
+      if (canvas.width !== targetW || canvas.height !== targetH) {
+        canvas.width = targetW;
+        canvas.height = targetH;
+      }
+      if (ctx.setTransform) { ctx.setTransform(targetDpr, 0, 0, targetDpr, 0, 0); }
+      ctx.imageSmoothingEnabled = true;
+      if ("imageSmoothingQuality" in ctx) { ctx.imageSmoothingQuality = "high"; }
+    }
+
     var map = mapOf(state);
     var pal = Bow.stage && Bow.stage.skyOf ? Bow.stage.skyOf(state) : { moon: false };
     var isAggro = !!(Bow.skirmish && Bow.skirmish.isAggressive && Bow.skirmish.isAggressive());
@@ -18351,11 +18491,24 @@ body,
     applyCameraToDom(null, state);
   }
 
-  /* ---------- Полководческое «Поле брани» (1088×368) для больших отрядов-стеков ---------- */
+  /* ---------- Полководческое «Поле брани» (1088×368, HiDPI) для больших отрядов-стеков ---------- */
   function paintBattleCanvas(canvas, state) {
     if (!canvas || !canvas.getContext || !state || !state.fight) { return; }
     var ctx = canvas.getContext("2d");
     if (!ctx) { return; }
+
+    if (isLiveBrowser()) {
+      var bDpr = clampVal(global.devicePixelRatio || 1, 2.0, 2.5);
+      var bTargetW = Math.round(BATTLE_W * bDpr);
+      var bTargetH = Math.round(BATTLE_H * bDpr);
+      if (canvas.width !== bTargetW || canvas.height !== bTargetH) {
+        canvas.width = bTargetW;
+        canvas.height = bTargetH;
+      }
+      if (ctx.setTransform) { ctx.setTransform(bDpr, 0, 0, bDpr, 0, 0); }
+      ctx.imageSmoothingEnabled = true;
+      if ("imageSmoothingQuality" in ctx) { ctx.imageSmoothingQuality = "high"; }
+    }
 
     var f = state.fight;
     var locId = (state.player && state.player.location) || "square";
@@ -19495,7 +19648,7 @@ body,
             'data-act="move" data-from-stage="1" data-loc="' + esc(ex.to) + '" data-iso-col="' + ex.col + '" data-iso-row="' + ex.row + '" data-x="' + ep.x + '" ' +
             'title="Подойти и войти: ' + esc(ex.label) + ' (' + esc(subDur) + ')">' +
             '<span class="bow-door-hit" aria-hidden="true"></span>' +
-            '<span class="bow-spot-txt"><b>🚪 ' + esc(ex.label) + '</b><i>' + esc(exitQueued ? 'приказ отдан' : subDur) + '</i></span>' +
+            '<span class="bow-spot-txt"><b>↪ ' + esc(ex.label) + '</b><i>' + esc(exitQueued ? 'приказ отдан' : subDur) + '</i></span>' +
           '</button>'
         );
       });
@@ -19589,7 +19742,7 @@ body,
             'data-act="skirmish-ally" data-entity-id="' + esc(ent.unitKey) + '" data-unit="' + esc(ent.unitKey) + '" data-x="' + xPct + '" ' +
             'title="Спутник в строю: ' + esc(ent.name) + '">' +
             '<span class="bow-iso-hit"></span>' +
-            '<span class="bow-actor-tag"><b>🛡 ' + esc(ent.name) + '</b><i class="bow-tone bow-warm">' + Math.max(0, Math.round(ent.hp)) + ' зд.</i></span>' +
+            '<span class="bow-actor-tag"><b>⛨ ' + esc(ent.name) + '</b><i class="bow-tone bow-warm">' + Math.max(0, Math.round(ent.hp)) + ' зд.</i></span>' +
           '</button>'
         );
         return;
@@ -22610,7 +22763,7 @@ body,
       pills.push('<span class="bow-stat-pill">Пробит. <b>' + penPct + '%</b></span>');
     }
     if (typeof def.defense === "number" && def.defense !== 0) {
-      pills.push('<span class="bow-stat-pill">🛡 Защ. <b>+' + def.defense + '</b></span>');
+      pills.push('<span class="bow-stat-pill">⛨ Защ. <b>+' + def.defense + '</b></span>');
       var eqDef = (equippedDef && typeof equippedDef.defense === "number") ? equippedDef.defense : 0;
       if (!equippedDef || equippedDef.id !== def.id) {
         var dD = formatDeltaBadge(def.defense - eqDef, "защ.");
@@ -22642,14 +22795,26 @@ body,
       pills.push('<span class="bow-stat-pill">Подвижн. <b>' + (def.mobility > 0 ? "+" : "") + def.mobility + '</b></span>');
     }
     if (typeof def.food === "number" && def.food > 0) {
-      pills.push('<span class="bow-stat-pill">🍞 Сытость <b>+' + def.food + '</b></span>');
+      pills.push('<span class="bow-stat-pill">◈ Сытость <b>+' + def.food + '</b></span>');
     }
     if (typeof def.mood === "number" && def.mood > 0) {
-      pills.push('<span class="bow-stat-pill">🍺 Дух <b>+' + def.mood + '</b></span>');
+      pills.push('<span class="bow-stat-pill">✦ Дух <b>+' + def.mood + '</b></span>');
     }
     if (!pills.length && !deltas.length) { return ""; }
     return '<div class="bow-item-stats">' + pills.join("") + deltas.join("") + '</div>';
   }
+
+  /* Строгие сланцево-серебряные силуэты средневекового снаряжения для 8 слотов (без системных цветных эмодзи) */
+  var SLOT_SVG = {
+    head: '<span class="bow-pd-slot-svg" aria-hidden="true"><svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M3 9a5 5 0 0 1 10 0v3.5H10.5V9.5h-5v3H3V9z"/><line x1="8" y1="3.5" x2="8" y2="11"/></svg></span>',
+    armor: '<span class="bow-pd-slot-svg" aria-hidden="true"><svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M4.5 2.5L2 4.5l1.5 2.5L5 6v7.5h6V6l1.5 1L14 4.5l-2.5-2-1.8 1.5H6.3L4.5 2.5z"/></svg></span>',
+    hands: '<span class="bow-pd-slot-svg" aria-hidden="true"><svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M5 7V3.5h4.5V7l2 1.5V11l-1.5 2.5H4.5L3.5 10V7.5L5 7z"/></svg></span>',
+    legs: '<span class="bow-pd-slot-svg" aria-hidden="true"><svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M4.5 2.5h7l1 11h-3L8 6.5l-1.5 7h-3l1-11z"/></svg></span>',
+    boots: '<span class="bow-pd-slot-svg" aria-hidden="true"><svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M4.5 2.5h4v6.5l4.5 2v2.5H3.5V9.5l1-7z"/></svg></span>',
+    weapon: '<span class="bow-pd-slot-svg" aria-hidden="true"><svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M12.5 2.5L13.5 3.5 6.5 10.5l-1-1 7-7z"/><line x1="4" y1="9" x2="7.5" y2="12.5"/><line x1="3" y1="13" x2="5.5" y2="10.5"/></svg></span>',
+    weapon2: '<span class="bow-pd-slot-svg" aria-hidden="true"><svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.4"><line x1="3.5" y1="13" x2="11.5" y2="3"/><path d="M8.5 3c2.5 0 4.5 1.8 4.5 4.2-1.8.4-3.3-.2-4.2-1.2"/></svg></span>',
+    offhand: '<span class="bow-pd-slot-svg" aria-hidden="true"><svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M3.5 3h9v4.5c0 3.2-2.2 5.2-4.5 6.3-2.3-1.1-4.5-3.1-4.5-6.3V3z"/><circle cx="8" cy="7.5" r="1.1"/></svg></span>'
+  };
 
   function renderSlotBoxHtml(person, slotKey, slotLabel, slotIcon, isActiveWep) {
     var eq = Bow.equip;
@@ -22670,10 +22835,11 @@ body,
       if (typeof itemDef.warmth === "number" && itemDef.warmth > 0 && !parts.length) { parts.push("+" + itemDef.warmth + " тепл."); }
       subStat = parts.join(" · ") || "надето";
     }
+    var icoHtml = SLOT_SVG[slotKey] || esc(slotIcon || "◈");
 
     return '<div class="bow-pd-slot' + (itemDef ? " bow-pd-slot-filled" : "") + (isActiveWep ? " bow-pd-slot-active" : "") + '" data-slot-box="' + esc(slotKey) + '">' +
       '<div class="bow-pd-slot-head">' +
-        '<span class="bow-pd-slot-lbl">' + slotIcon + ' ' + esc(slotLabel) + '</span>' +
+        '<span class="bow-pd-slot-lbl">' + icoHtml + ' ' + esc(slotLabel) + '</span>' +
         (itemDef
           ? '<button type="button" class="bow-pd-unequip" data-act="unequip-slot" data-slot="' + esc(slotKey) + '" title="Снять в сумку">✕</button>'
           : '') +
@@ -22700,15 +22866,15 @@ body,
     var activeSet = p.activeWeaponSet === 2 ? 2 : 1;
 
     var leftSlotsHtml =
-      renderSlotBoxHtml(p, "head", "Шлем", "🪖", false) +
-      renderSlotBoxHtml(p, "armor", "Доспехи", "🛡", false) +
-      renderSlotBoxHtml(p, "hands", "Перчатки", "🧤", false) +
-      renderSlotBoxHtml(p, "legs", "Штаны", "👖", false);
+      renderSlotBoxHtml(p, "head", "Шлем", "◈", false) +
+      renderSlotBoxHtml(p, "armor", "Доспехи", "⛨", false) +
+      renderSlotBoxHtml(p, "hands", "Перчатки", "◈", false) +
+      renderSlotBoxHtml(p, "legs", "Штаны", "◈", false);
 
     var rightSlotsHtml =
-      renderSlotBoxHtml(p, "boots", "Сапоги", "🥾", false) +
+      renderSlotBoxHtml(p, "boots", "Сапоги", "◈", false) +
       renderSlotBoxHtml(p, "weapon", "Оружие I", "⚔", activeSet === 1) +
-      renderSlotBoxHtml(p, "weapon2", "Оружие II", "🗡", activeSet === 2) +
+      renderSlotBoxHtml(p, "weapon2", "Оружие II", "⚔", activeSet === 2) +
       renderSlotBoxHtml(p, "offhand", "Щит / Снаряды", "⛨", false);
 
     var paperdollHtml =
@@ -22725,11 +22891,11 @@ body,
         '</div>' +
         '<div class="bow-gear-summary">' +
           '<span>⚔ Удар: <b>' + atkPow + '</b></span>' +
-          '<span>🛡 Защита: <b>' + defPow + '</b></span>' +
+          '<span>⛨ Защита: <b>' + defPow + '</b></span>' +
           '<span>⛨ Блок: <b>' + ((gearTotals.block || 0) <= 1 ? Math.round((gearTotals.block || 0) * 100) : Math.round(gearTotals.block || 0)) + '%</b></span>' +
           '<span>⌖ Пробитие: <b>+' + Math.round(gearTotals.armorPenBonus || 0) + '%</b></span>' +
           '<span>❄ Тепло: <b>+' + Math.round(gearTotals.warmth || 0) + '</b></span>' +
-          '<span>👣 Подвижн.: <b>' + ((gearTotals.mobility || 0) > 0 ? "+" : "") + Math.round(gearTotals.mobility || 0) + '</b></span>' +
+          '<span>» Подвижн.: <b>' + ((gearTotals.mobility || 0) > 0 ? "+" : "") + Math.round(gearTotals.mobility || 0) + '</b></span>' +
         '</div>' +
       '</div>';
 
@@ -22943,7 +23109,7 @@ body,
         (isCur
           ? '<div class="bow-work-progress"><div class="bow-bar"><i class="bow-fill bow-good" style="width:' + pctDone + '%"></i></div>' +
             '<span class="bow-dim">' + Math.round(activeTask.elapsedMin || 0) + ' / ' + cyc + ' мин.</span></div>' +
-            '<button type="button" class="bow-btn bow-btn-sm bow-btn-danger" data-act="task-stop">⏹ Прекратить работу</button>'
+            '<button type="button" class="bow-btn bow-btn-sm bow-btn-danger" data-act="task-stop">■ Прекратить работу</button>'
           : '<button type="button" class="bow-btn bow-btn-sm bow-job-go" data-act="task-start" data-task="' + esc(w.key) + '">Взяться за работу</button>') +
       '</div>';
     }).join("");
@@ -23286,7 +23452,6 @@ body,
             '<span class="bow-attack-q">Напасть на ' + esc(p.name) + '?</span>' +
             '<div class="bow-attack-confirm-btns">' +
               '<button type="button" class="bow-trade-btn bow-fight-btn" data-act="skirmish-engage" data-mode="crime" data-person="' + esc(p.id) + '">⚔ Да</button>' +
-              '<button type="button" class="bow-trade-btn" data-act="skirmish-engage" data-mode="brawl" data-person="' + esc(p.id) + '">👊 Кулаки</button>' +
               '<button type="button" class="bow-trade-btn" data-act="skirmish-confirm-cancel" data-person="' + esc(p.id) + '">Нет</button>' +
             '</div>' +
           '</div>')
@@ -23331,7 +23496,7 @@ body,
           '<span class="bow-stage-mini-name">' + esc(w.title) + ' <i class="bow-dim">(' + (w.cycleMinutes || 30) + ' мин.)</i></span>' +
           '<b class="bow-gold-txt">' + esc(payHint) + '</b>' +
           (isCur
-            ? '<button type="button" class="bow-trade-btn bow-fight-btn" data-act="task-stop">⏹ Прекратить</button>'
+            ? '<button type="button" class="bow-trade-btn bow-fight-btn" data-act="task-stop">■ Прекратить</button>'
             : '<button type="button" class="bow-trade-btn" data-act="task-start" data-task="' + esc(w.key) + '">Взяться за работу</button>') +
         '</div>';
       }).join("") || '<div class="bow-empty">Работы нет.</div>';
@@ -24373,9 +24538,9 @@ body,
               : 'Пошаговый бой · клик по клетке — шаг · клик по выбранному врагу или кнопке ниже — удар') +
           '</span>' +
           '<div class="bow-fight-speed-btns">' +
-            '<button class="bow-btn bow-btn-sm' + (!isAuto ? ' bow-order-on' : '') + '" data-act="fight-order" data-kind="speed" data-val="paused" title="Пошаговый режим без автобоя (по умолчанию)">⏸ Пошагово</button>' +
+            '<button class="bow-btn bow-btn-sm' + (!isAuto ? ' bow-order-on' : '') + '" data-act="fight-order" data-kind="speed" data-val="paused" title="Пошаговый режим без автобоя (по умолчанию)">❙❙ Пошагово</button>' +
             '<button class="bow-btn bow-btn-sm' + (isAuto ? ' bow-order-on' : '') + '" data-act="fight-order" data-kind="speed" data-val="auto" title="Включить размеренный автобой по желанию">▶ Автобой</button>' +
-            '<button class="bow-btn bow-btn-sm bow-step-btn" data-act="fight-step" title="Сделать один ход по текущей тактике">⏭ Ход</button>' +
+            '<button class="bow-btn bow-btn-sm bow-step-btn" data-act="fight-step" title="Сделать один ход по текущей тактике">▶❙ Ход</button>' +
           '</div>' +
         '</div>';
 
@@ -24495,7 +24660,7 @@ body,
         (inSettlement
           ? '<button class="bow-btn bow-btn-sm" data-act="rescue-coma" data-how="passerby">✚ Помощь жителей Брода' + (fee > 0 ? ' · ' + fee + ' м.' : ' · в долг') + '</button>'
           : '') +
-        '<button class="bow-btn bow-btn-sm" data-act="rescue-coma" data-how="wait">⏳ Ждать прохожего (1 ч.)</button>' +
+        '<button class="bow-btn bow-btn-sm" data-act="rescue-coma" data-how="wait">⧗ Ждать прохожего (1 ч.)</button>' +
       '</div>' +
     '</div>';
     box.classList.add("bow-fight-open");
@@ -24606,10 +24771,10 @@ body,
     var gazeCls = gPhase === "away" ? "bow-lp-gaze-safe"
       : (gPhase === "turning" ? "bow-lp-gaze-warn" : "bow-lp-gaze-danger");
     var gazeText = gPhase === "away"
-      ? "👁 Сторож отвернулся — можно тихо крутить замок"
+      ? "◉ Сторож отвернулся — можно тихо крутить замок"
       : gPhase === "turning"
         ? "⚠ Сторож начинает поворачиваться — приготовьтесь замереть!"
-        : "❗ Сторож смотрит прямо на клетку — НЕ ПОВОРАЧИВАЙТЕ ЗАМОК!";
+        : "▲ Сторож смотрит прямо на клетку — НЕ ПОВОРАЧИВАЙТЕ ЗАМОК!";
 
     var pickRot = Math.round(lpModal.pickAngle || 0);
     var cylRot = Math.round(lpModal.cylinderAngle || 0);
@@ -24714,7 +24879,7 @@ body,
       '<div class="bow-fight-acts">' +
         '<button class="bow-btn bow-btn-sm" data-act="jail-serve">Отсидеть 4 ч.</button>' +
         '<button class="bow-btn bow-btn-sm' + (isPicking ? ' bow-btn-danger' : '') + '" data-act="jail-pick-toggle">' +
-          (isPicking ? ('✋ Замереть (' + lpProg + '%)') : ('🗝 Взлом замка' + (lpProg > 0 ? ' (' + lpProg + '%)' : ''))) +
+          (isPicking ? ('❙❙ Замереть (' + lpProg + '%)') : ('✧ Взлом замка' + (lpProg > 0 ? ' (' + lpProg + '%)' : ''))) +
         '</button>' +
         '<button class="bow-btn bow-btn-sm" data-act="jail-bribe">Подкупить сторожа</button>' +
         '<button class="bow-btn bow-btn-sm" data-act="jail-escape">Рвануть напролом</button>' +
@@ -24800,7 +24965,7 @@ body,
 
     var html =
       '<div class="bow-pause-badge">' +
-        '<span class="bow-pause-main">⏸ ПАУЗА</span>' +
+        '<span class="bow-pause-main">❙❙ ПАУЗА</span>' +
         '<span class="bow-pause-sub">Мир и бой замерли · отдайте приказ или нажмите ▶ / Пробел</span>' +
       '</div>' + orderLine;
 
@@ -24821,8 +24986,8 @@ body,
       agBtn.classList.toggle("bow-mode-aggro", isAggro);
       agBtn.setAttribute("aria-pressed", isAggro ? "true" : "false");
       agBtn.innerHTML = isAggro
-        ? '<span class="bow-mode-i">⚔</span><span class="bow-mode-txt"><b>К бою!</b><i>клик по цели — удар</i></span>'
-        : '<span class="bow-mode-i">✋</span><span class="bow-mode-txt"><b>Мирный</b><i>Tab — к бою</i></span>';
+        ? '<span class="bow-mode-i" aria-hidden="true">⚔</span><span class="bow-mode-txt"><b>К бою!</b><i>клик по цели — удар</i></span>'
+        : '<span class="bow-mode-i" aria-hidden="true">◈</span><span class="bow-mode-txt"><b>Мирный</b><i>Tab — к бою</i></span>';
     }
 
     var box = $("bow-skirmish-hud");
@@ -24874,7 +25039,7 @@ body,
       html = '<div class="bow-sk-card">' +
         '<div class="bow-sk-top">' +
           '<button type="button" class="bow-btn bow-btn-sm' + (pausedNow ? ' bow-order-on' : '') + '" data-act="skirmish-pause" title="Тактическая пауза [Пробел]">' +
-            (pausedNow ? '▶ В бой [Пробел]' : '⏸ Пауза [Пробел]') +
+            (pausedNow ? '▶ В бой [Пробел]' : '❙❙ Пауза [Пробел]') +
           '</button>' +
           guardWarn +
           '<span class="bow-sk-log">' + esc(lastLog) + '</span>' +
@@ -25118,15 +25283,17 @@ body,
       if (global.localStorage) { global.localStorage.setItem(SETTINGS_KEY, JSON.stringify(cur)); }
     } catch (err) { /* ignore */ }
     applySettings(cur);
-    if (key === "device" && Bow.iso && Bow.iso.centerCameraOnPlayer && global.BowGame && global.BowGame.getState) {
-      Bow.iso.centerCameraOnPlayer(global.BowGame.getState(), null, true);
+    if (key === "device" && Bow.iso && global.BowGame && global.BowGame.getState) {
+      var curSt = global.BowGame.getState();
+      if (Bow.iso.centerCameraOnPlayer) { Bow.iso.centerCameraOnPlayer(curSt, null, true); }
+      if (repaintIsoStage) { repaintIsoStage(curSt); }
     }
     renderSettings();
     return {
       ok: true,
       settings: cur,
       message: key === "device"
-        ? (val === "mobile" ? "📱 Включён компактный интерфейс для телефона." : "🖥 Включён полноразмерный интерфейс для ПК.")
+        ? (val === "mobile" ? "◈ Включён компактный интерфейс для телефона." : "◈ Включён полноразмерный интерфейс для ПК.")
         : "Настройки сохранены."
     };
   }
@@ -25144,6 +25311,8 @@ body,
   function openDeviceModal() {
     var m = $("bow-device-modal");
     if (!m) { return; }
+    m.hidden = false;
+    m.removeAttribute("hidden");
     m.classList.add("bow-device-modal-open");
     m.setAttribute("aria-hidden", "false");
   }
@@ -25153,15 +25322,23 @@ body,
     if (!m) { return; }
     m.classList.remove("bow-device-modal-open");
     m.setAttribute("aria-hidden", "true");
+    m.hidden = true;
+    m.setAttribute("hidden", "hidden");
   }
 
   function showDeviceModalIfNeeded() {
     var s = getSettings();
-    if (s.deviceChosen) { return false; }
+    if (s.deviceChosen) {
+      closeDeviceModal();
+      return false;
+    }
     /* В безголовых JSDOM-тестах rect.width === 0, поэтому автодиалог не мешает тестам */
     var stEl = $("bow-stage-canvas") || $("bow-app");
     var r = (stEl && stEl.getBoundingClientRect) ? stEl.getBoundingClientRect() : null;
-    if (!r || r.width <= 0) { return false; }
+    if (!r || r.width <= 0) {
+      closeDeviceModal();
+      return false;
+    }
     openDeviceModal();
     return true;
   }
@@ -25174,8 +25351,8 @@ body,
       '<div class="bow-setting-row">' +
         '<div class="bow-setting-label"><b>Устройство и интерфейс</b><span class="bow-dim">Полноэкранный CRPG для ПК или компактный сенсорный режим для телефона</span></div>' +
         '<div class="bow-setting-opts">' +
-          '<button type="button" class="bow-btn bow-btn-sm' + (s.device !== "mobile" ? " bow-order-on" : "") + '" data-act="setting" data-key="device" data-val="pc">🖥 Компьютер (ПК)</button>' +
-          '<button type="button" class="bow-btn bow-btn-sm' + (s.device === "mobile" ? " bow-order-on" : "") + '" data-act="setting" data-key="device" data-val="mobile">📱 Телефон</button>' +
+          '<button type="button" class="bow-btn bow-btn-sm' + (s.device !== "mobile" ? " bow-order-on" : "") + '" data-act="setting" data-key="device" data-val="pc">◈ Компьютер (ПК)</button>' +
+          '<button type="button" class="bow-btn bow-btn-sm' + (s.device === "mobile" ? " bow-order-on" : "") + '" data-act="setting" data-key="device" data-val="mobile">▯ Телефон</button>' +
         '</div>' +
       '</div>' +
       '<div class="bow-setting-row">' +
@@ -25217,7 +25394,7 @@ body,
           '<button type="button" class="bow-btn bow-btn-sm' + ((Bow.audio && Bow.audio.isStreetBeat && Bow.audio.isStreetBeat()) ? " bow-order-on" : "") + '" data-act="audio-beat" title="Мягкий меланхоличный даунтемпо-бит в стиле Enigma «Sadeness» в уличных темах">' +
             ((Bow.audio && Bow.audio.isStreetBeat && Bow.audio.isStreetBeat()) ? "Бит улицы (Enigma): вкл" : "Бит улицы (Enigma): выкл") +
           '</button>' +
-          '<button type="button" class="bow-btn bow-btn-sm" data-act="audio-next" title="Следующая композиция">⏭ След.</button>' +
+          '<button type="button" class="bow-btn bow-btn-sm" data-act="audio-next" title="Следующая композиция">▶❙ След.</button>' +
           '<input type="range" class="bow-vol-range" data-act="audio-vol" min="0" max="100" step="5" value="' +
             Math.round((Bow.audio ? Bow.audio.getVolume() : 0.45) * 100) + '" aria-label="Громкость музыки" title="Громкость музыки"/>' +
         '</div>' +
@@ -25438,7 +25615,7 @@ body,
     }
     return {
       ok: true,
-      message: "⏸ Приказ отдан на паузе: «" + (order.label || "Действие") + "». Нажмите ▶ или Пробел для исполнения."
+      message: "❙❙ Приказ отдан на паузе: «" + (order.label || "Действие") + "». Нажмите ▶ или Пробел для исполнения."
     };
   }
 
@@ -25517,7 +25694,7 @@ body,
       stopClock();
       stopJailClock();
       refresh(true);
-      return { ok: true, message: "⏸ Пауза: все процессы в мире остановлены. Камера и раздача приказов доступны." };
+      return { ok: true, message: "❙❙ Пауза: все процессы в мире остановлены. Камера и раздача приказов доступны." };
     }
 
     if (state.skirmish && state.skirmish.active) {
@@ -25534,7 +25711,7 @@ body,
     }
     return {
       ok: true,
-      message: scale === "1x" ? "▶ Время идёт (1 мин. = 2 сек.)." : "⏩ Время идёт вчетверо быстрее."
+      message: scale === "1x" ? "▶ Время идёт (1 мин. = 2 сек.)." : "▶▶ Время идёт вчетверо быстрее."
     };
   }
 
@@ -25625,17 +25802,21 @@ body,
       var dev = el.getAttribute("data-device") === "mobile" ? "mobile" : "pc";
       if (Bow.audio && Bow.audio.unlockGesture) { Bow.audio.unlockGesture(true); }
       var setRes = Bow.ui.setDeviceMode ? Bow.ui.setDeviceMode(dev) : { ok: true };
+      if (Bow.ui.closeDeviceModal) { Bow.ui.closeDeviceModal(); }
       if (state && state.time && state.time.scale === "paused" && !state.pendingOrder) {
         applyGlobalScale(state, "1x");
       }
       if (Bow.iso && Bow.iso.centerCameraOnPlayer) {
         Bow.iso.centerCameraOnPlayer(state, null, true);
       }
+      if (Bow.ui.repaintIsoStage) {
+        Bow.ui.repaintIsoStage(state);
+      }
       return {
         ok: true,
         message: dev === "mobile"
-          ? "📱 Мобильный режим активен: водите пальцем для обзора, сводите два пальца для зума."
-          : (setRes.message || "🖥 Режим ПК активен.")
+          ? "◈ Мобильный режим активен: водите пальцем для обзора, сводите два пальца для зума."
+          : (setRes.message || "◈ Режим ПК активен.")
       };
     },
     "cam-zoom": function (el) {
@@ -25679,7 +25860,7 @@ body,
         ok: true,
         message: on
           ? "⚔ Боевой режим: клик по цели сразу начинает живую схватку!"
-          : "✋ Мирный режим действий."
+          : "◈ Мирный режим действий."
       };
     },
     "skirmish-confirm-open": function (el) {
@@ -25696,7 +25877,7 @@ body,
       var state = getState();
       var pid = el.getAttribute("data-person");
       var mode = el.getAttribute("data-mode") || "crime";
-      return launchLocationSkirmish(state, pid, { mode: mode, unarmed: mode === "brawl" });
+      return launchLocationSkirmish(state, pid, { mode: mode });
     },
     "skirmish-pause": function () {
       var state = getState();
@@ -25704,7 +25885,7 @@ body,
       var currentlyPaused = isWorldPaused(state) || !!state.skirmish.paused;
       var nextScale = currentlyPaused ? "1x" : "paused";
       applyGlobalScale(state, nextScale);
-      return { ok: true, message: !currentlyPaused ? "⏸ Тактическая пауза." : "▶ Бой продолжается!" };
+      return { ok: true, message: !currentlyPaused ? "❙❙ Тактическая пауза." : "▶ Бой продолжается!" };
     },
     "skirmish-order": function (el) {
       var state = getState();
@@ -26416,7 +26597,7 @@ body,
     if (st.skirmish && st.skirmish.active && Bow.skirmish) {
       Bow.skirmish.orderMove(st, wx, wy);
       if (isWorldPaused(st)) {
-        Bow.ui.setMessage("⏸ Приказ манёвра принят. Нажмите ▶ или Пробел для продолжения боя.");
+        Bow.ui.setMessage("❙❙ Приказ манёвра принят. Нажмите ▶ или Пробел для продолжения боя.");
       }
       refresh(true);
       return true;
@@ -27106,7 +27287,7 @@ body,
         event.preventDefault();
         var nextGlobalScale = isWorldPaused(st) ? "1x" : "paused";
         var spMsg = applyGlobalScale(st, nextGlobalScale);
-        Bow.ui.setMessage(spMsg || (nextGlobalScale === "paused" ? "⏸ Тактическая пауза." : "▶ Время идёт."));
+        Bow.ui.setMessage(spMsg || (nextGlobalScale === "paused" ? "❙❙ Тактическая пауза." : "▶ Время идёт."));
         return;
       }
       if (event.key !== "Escape") { return; }
@@ -27160,6 +27341,11 @@ body,
     /* Гарантированный сброс отложенного автосейва при закрытии или сворачивании вкладки */
     global.addEventListener("pagehide", function () { if (autosaveDirty) { flushAutosave(true); } });
     global.addEventListener("beforeunload", function () { if (autosaveDirty) { flushAutosave(true); } });
+    global.addEventListener("resize", function () {
+      var stNow = getState();
+      if (Bow.iso && Bow.iso.applyCameraToDom) { Bow.iso.applyCameraToDom(null, stNow); }
+      if (Bow.ui.repaintIsoStage && stNow) { Bow.ui.repaintIsoStage(stNow); }
+    });
 
     /* Применяем сохранённые настройки и отрисовываем стартовый экран. */
     if (Bow.ui.applySettings) { Bow.ui.applySettings(); }
@@ -27290,7 +27476,7 @@ body,
       &lt;section class=&quot;bow-hud-strip&quot; aria-label=&quot;Нижняя консоль управления&quot;&gt;
         &lt;div class=&quot;bow-hud-mode-wrap&quot;&gt;
           &lt;button type=&quot;button&quot; id=&quot;bow-aggro-btn&quot; class=&quot;bow-mode-btn&quot; data-act=&quot;toggle-aggro&quot; aria-pressed=&quot;false&quot; title=&quot;Переключить мирный и агрессивный режим действий [Tab]. В боевом режиме клик по цели сразу начинает схватку.&quot;&gt;
-            &lt;span class=&quot;bow-mode-i&quot;&gt;✋&lt;/span&gt;
+            &lt;span class=&quot;bow-mode-i&quot; aria-hidden=&quot;true&quot;&gt;◈&lt;/span&gt;
             &lt;span class=&quot;bow-mode-txt&quot;&gt;&lt;b&gt;Мирный&lt;/b&gt;&lt;i&gt;Tab — к бою&lt;/i&gt;&lt;/span&gt;
           &lt;/button&gt;
         &lt;/div&gt;
@@ -27315,7 +27501,7 @@ body,
             &lt;span&gt;◈ Карта&lt;/span&gt;
           &lt;/button&gt;
           &lt;button type=&quot;button&quot; class=&quot;bow-dock-btn&quot; data-act=&quot;open-world-panel&quot; data-tab=&quot;desc&quot; title=&quot;Сведения об этом месте&quot;&gt;
-            &lt;span&gt;📜 Место&lt;/span&gt;
+            &lt;span&gt;❖ Место&lt;/span&gt;
           &lt;/button&gt;
         &lt;/div&gt;
       &lt;/section&gt;
@@ -27478,20 +27664,32 @@ body,
 
   &lt;div id=&quot;bow-sheet&quot; class=&quot;bow-sheet&quot; aria-hidden=&quot;true&quot;&gt;&lt;/div&gt;
 
-  &lt;!-- Модальное окно выбора режима управления при запуске (ПК / Телефон, 0.0.9.2) --&gt;
-  &lt;div id=&quot;bow-device-modal&quot; class=&quot;bow-device-modal&quot; aria-hidden=&quot;true&quot; role=&quot;dialog&quot; aria-modal=&quot;true&quot; aria-labelledby=&quot;bow-device-title&quot;&gt;
+  &lt;!-- Всплывающее окно выбора режима управления при запуске (ПК / Телефон, 0.0.9.2f) --&gt;
+  &lt;div id=&quot;bow-device-modal&quot; class=&quot;bow-device-modal&quot; hidden aria-hidden=&quot;true&quot; role=&quot;dialog&quot; aria-modal=&quot;true&quot; aria-labelledby=&quot;bow-device-title&quot;&gt;
     &lt;div class=&quot;bow-device-card&quot;&gt;
       &lt;p class=&quot;bow-device-kicker&quot;&gt;СТУДЁНЫЙ БРОД · ХЛАДНЫЕ ВЕТРА&lt;/p&gt;
-      &lt;h2 id=&quot;bow-device-title&quot; class=&quot;bow-device-title&quot;&gt;Выберите режим управления&lt;/h2&gt;
-      &lt;p class=&quot;bow-device-sub&quot;&gt;Режим можно в любой момент переключить в меню настроек (☰).&lt;/p&gt;
+      &lt;h2 id=&quot;bow-device-title&quot; class=&quot;bow-device-title&quot;&gt;Выберите тип устройства&lt;/h2&gt;
+      &lt;p class=&quot;bow-device-sub&quot;&gt;Интерфейс и камера подстроятся под ваш экран. Позже режим можно в любой момент переключить в меню настроек (☰).&lt;/p&gt;
       &lt;div class=&quot;bow-device-choices&quot;&gt;
         &lt;button type=&quot;button&quot; class=&quot;bow-device-choice&quot; data-act=&quot;device-pick&quot; data-device=&quot;pc&quot;&gt;
-          &lt;span class=&quot;bow-device-icon&quot; aria-hidden=&quot;true&quot;&gt;🖥&lt;/span&gt;
+          &lt;span class=&quot;bow-device-icon&quot; aria-hidden=&quot;true&quot;&gt;
+            &lt;svg viewBox=&quot;0 0 36 28&quot; width=&quot;36&quot; height=&quot;28&quot; fill=&quot;none&quot; stroke=&quot;currentColor&quot; stroke-width=&quot;1.8&quot; stroke-linejoin=&quot;miter&quot;&gt;
+              &lt;rect x=&quot;3&quot; y=&quot;3&quot; width=&quot;30&quot; height=&quot;18&quot; rx=&quot;1&quot;/&gt;
+              &lt;line x1=&quot;18&quot; y1=&quot;21&quot; x2=&quot;18&quot; y2=&quot;25&quot;/&gt;
+              &lt;line x1=&quot;11&quot; y1=&quot;25&quot; x2=&quot;25&quot; y2=&quot;25&quot;/&gt;
+            &lt;/svg&gt;
+          &lt;/span&gt;
           &lt;b&gt;Компьютер (ПК)&lt;/b&gt;
           &lt;i&gt;Полноразмерный интерфейс CRPG, наведение мышью, клавиши Пробел / Tab / Esc и зум колесом.&lt;/i&gt;
         &lt;/button&gt;
         &lt;button type=&quot;button&quot; class=&quot;bow-device-choice&quot; data-act=&quot;device-pick&quot; data-device=&quot;mobile&quot;&gt;
-          &lt;span class=&quot;bow-device-icon&quot; aria-hidden=&quot;true&quot;&gt;📱&lt;/span&gt;
+          &lt;span class=&quot;bow-device-icon&quot; aria-hidden=&quot;true&quot;&gt;
+            &lt;svg viewBox=&quot;0 0 28 36&quot; width=&quot;28&quot; height=&quot;36&quot; fill=&quot;none&quot; stroke=&quot;currentColor&quot; stroke-width=&quot;1.8&quot; stroke-linejoin=&quot;miter&quot;&gt;
+              &lt;rect x=&quot;6&quot; y=&quot;2.5&quot; width=&quot;16&quot; height=&quot;31&quot; rx=&quot;1.5&quot;/&gt;
+              &lt;line x1=&quot;11.5&quot; y1=&quot;6&quot; x2=&quot;16.5&quot; y2=&quot;6&quot;/&gt;
+              &lt;circle cx=&quot;14&quot; cy=&quot;29.5&quot; r=&quot;1.2&quot; fill=&quot;currentColor&quot; stroke=&quot;none&quot;/&gt;
+            &lt;/svg&gt;
+          &lt;/span&gt;
           &lt;b&gt;Телефон / Сенсор&lt;/b&gt;
           &lt;i&gt;Компактный мобильный интерфейс, свободная камера пальцем, зум щипком и точные касания по силуэту.&lt;/i&gt;
         &lt;/button&gt;
@@ -27500,7 +27698,7 @@ body,
   &lt;/div&gt;
 
   &lt;footer class=&quot;bow-footer bow-sr-only&quot; aria-hidden=&quot;true&quot;&gt;
-    &lt;span&gt;Blades Of War · прототип 0.0.9.2 · Хладные Ветра · Студёный Брод&lt;/span&gt;
+    &lt;span&gt;Blades Of War · прототип 0.0.9.2f · Хладные Ветра · Студёный Брод&lt;/span&gt;
   &lt;/footer&gt;
 
 &lt;/div&gt;</tw-passagedata>

@@ -83,7 +83,7 @@
     }
     return {
       ok: true,
-      message: "⏸ Приказ отдан на паузе: «" + (order.label || "Действие") + "». Нажмите ▶ или Пробел для исполнения."
+      message: "❙❙ Приказ отдан на паузе: «" + (order.label || "Действие") + "». Нажмите ▶ или Пробел для исполнения."
     };
   }
 
@@ -162,7 +162,7 @@
       stopClock();
       stopJailClock();
       refresh(true);
-      return { ok: true, message: "⏸ Пауза: все процессы в мире остановлены. Камера и раздача приказов доступны." };
+      return { ok: true, message: "❙❙ Пауза: все процессы в мире остановлены. Камера и раздача приказов доступны." };
     }
 
     if (state.skirmish && state.skirmish.active) {
@@ -179,7 +179,7 @@
     }
     return {
       ok: true,
-      message: scale === "1x" ? "▶ Время идёт (1 мин. = 2 сек.)." : "⏩ Время идёт вчетверо быстрее."
+      message: scale === "1x" ? "▶ Время идёт (1 мин. = 2 сек.)." : "▶▶ Время идёт вчетверо быстрее."
     };
   }
 
@@ -270,17 +270,21 @@
       var dev = el.getAttribute("data-device") === "mobile" ? "mobile" : "pc";
       if (Bow.audio && Bow.audio.unlockGesture) { Bow.audio.unlockGesture(true); }
       var setRes = Bow.ui.setDeviceMode ? Bow.ui.setDeviceMode(dev) : { ok: true };
+      if (Bow.ui.closeDeviceModal) { Bow.ui.closeDeviceModal(); }
       if (state && state.time && state.time.scale === "paused" && !state.pendingOrder) {
         applyGlobalScale(state, "1x");
       }
       if (Bow.iso && Bow.iso.centerCameraOnPlayer) {
         Bow.iso.centerCameraOnPlayer(state, null, true);
       }
+      if (Bow.ui.repaintIsoStage) {
+        Bow.ui.repaintIsoStage(state);
+      }
       return {
         ok: true,
         message: dev === "mobile"
-          ? "📱 Мобильный режим активен: водите пальцем для обзора, сводите два пальца для зума."
-          : (setRes.message || "🖥 Режим ПК активен.")
+          ? "◈ Мобильный режим активен: водите пальцем для обзора, сводите два пальца для зума."
+          : (setRes.message || "◈ Режим ПК активен.")
       };
     },
     "cam-zoom": function (el) {
@@ -324,7 +328,7 @@
         ok: true,
         message: on
           ? "⚔ Боевой режим: клик по цели сразу начинает живую схватку!"
-          : "✋ Мирный режим действий."
+          : "◈ Мирный режим действий."
       };
     },
     "skirmish-confirm-open": function (el) {
@@ -341,7 +345,7 @@
       var state = getState();
       var pid = el.getAttribute("data-person");
       var mode = el.getAttribute("data-mode") || "crime";
-      return launchLocationSkirmish(state, pid, { mode: mode, unarmed: mode === "brawl" });
+      return launchLocationSkirmish(state, pid, { mode: mode });
     },
     "skirmish-pause": function () {
       var state = getState();
@@ -349,7 +353,7 @@
       var currentlyPaused = isWorldPaused(state) || !!state.skirmish.paused;
       var nextScale = currentlyPaused ? "1x" : "paused";
       applyGlobalScale(state, nextScale);
-      return { ok: true, message: !currentlyPaused ? "⏸ Тактическая пауза." : "▶ Бой продолжается!" };
+      return { ok: true, message: !currentlyPaused ? "❙❙ Тактическая пауза." : "▶ Бой продолжается!" };
     },
     "skirmish-order": function (el) {
       var state = getState();
@@ -1061,7 +1065,7 @@
     if (st.skirmish && st.skirmish.active && Bow.skirmish) {
       Bow.skirmish.orderMove(st, wx, wy);
       if (isWorldPaused(st)) {
-        Bow.ui.setMessage("⏸ Приказ манёвра принят. Нажмите ▶ или Пробел для продолжения боя.");
+        Bow.ui.setMessage("❙❙ Приказ манёвра принят. Нажмите ▶ или Пробел для продолжения боя.");
       }
       refresh(true);
       return true;
@@ -1751,7 +1755,7 @@
         event.preventDefault();
         var nextGlobalScale = isWorldPaused(st) ? "1x" : "paused";
         var spMsg = applyGlobalScale(st, nextGlobalScale);
-        Bow.ui.setMessage(spMsg || (nextGlobalScale === "paused" ? "⏸ Тактическая пауза." : "▶ Время идёт."));
+        Bow.ui.setMessage(spMsg || (nextGlobalScale === "paused" ? "❙❙ Тактическая пауза." : "▶ Время идёт."));
         return;
       }
       if (event.key !== "Escape") { return; }
@@ -1805,6 +1809,11 @@
     /* Гарантированный сброс отложенного автосейва при закрытии или сворачивании вкладки */
     global.addEventListener("pagehide", function () { if (autosaveDirty) { flushAutosave(true); } });
     global.addEventListener("beforeunload", function () { if (autosaveDirty) { flushAutosave(true); } });
+    global.addEventListener("resize", function () {
+      var stNow = getState();
+      if (Bow.iso && Bow.iso.applyCameraToDom) { Bow.iso.applyCameraToDom(null, stNow); }
+      if (Bow.ui.repaintIsoStage && stNow) { Bow.ui.repaintIsoStage(stNow); }
+    });
 
     /* Применяем сохранённые настройки и отрисовываем стартовый экран. */
     if (Bow.ui.applySettings) { Bow.ui.applySettings(); }

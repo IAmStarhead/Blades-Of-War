@@ -117,7 +117,10 @@
 html, body {
   margin: 0;
   padding: 0;
+  width: 100%;
+  height: 100%;
   background: var(--bow-bg-deep);
+  font-variant-emoji: text;
 }
 
 body {
@@ -126,11 +129,22 @@ body {
   font-size: 16px;
   line-height: var(--bow-leading);
   -webkit-text-size-adjust: 100%;
+  overflow: hidden;
 }
 
-#story, #passages { margin: 0; padding: 0; }
+#story, #passages {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+}
 
-.passage { margin: 0; }
+.passage {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+}
 
 /* --- Каркас --- */
 .bow-app {
@@ -5804,9 +5818,13 @@ body,
 }
 
 #bow-app.bow-fullscreen-app {
+  position: fixed;
+  inset: 0;
   max-width: none !important;
   width: 100vw;
+  height: 100vh;
   height: 100dvh;
+  min-height: 0 !important;
   margin: 0 !important;
   padding: 0 !important;
   gap: 0 !important;
@@ -5814,11 +5832,13 @@ body,
   flex-direction: column;
   overflow: hidden;
   background: #0b1017;
+  font-variant-emoji: text;
 }
 
 #bow-app.bow-fullscreen-app > .bow-topbar {
   flex: 0 0 auto;
   min-height: 44px;
+  margin: 0 !important;
   padding: 4px 12px;
   border-radius: 0;
   border: 0;
@@ -6257,7 +6277,6 @@ body,
   width: 1280px;
   height: 680px;
   transform-origin: 0 0;
-  will-change: transform;
 }
 
 .bow-stage-world > .bow-stage-bg-wrap,
@@ -6434,87 +6453,128 @@ body,
   color: #ffffff;
 }
 
-/* 5. Стартовое окно выбора устройства «Компьютер / Телефон» */
+/* 5. Стартовое всплывающее окно выбора устройства «Компьютер / Телефон» (0.0.9.2f) */
+#bow-device-modal,
+.bow-device-modal,
 .bow-device-backdrop {
-  display: none;
-  position: fixed;
-  inset: 0;
-  z-index: 90;
-  background: rgba(5, 8, 13, 0.84);
-  backdrop-filter: blur(6px);
+  display: none !important;
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 160 !important;
+  background: rgba(6, 10, 15, 0.86);
+  backdrop-filter: blur(5px);
   align-items: center;
   justify-content: center;
   padding: 16px;
+  box-sizing: border-box;
+  font-variant-emoji: text;
 }
 
+#bow-device-modal[hidden] {
+  display: none !important;
+}
+
+#bow-device-modal.bow-device-modal-open:not([hidden]),
+.bow-device-modal.bow-device-modal-open:not([hidden]),
 .bow-device-backdrop.bow-device-open {
-  display: flex;
+  display: flex !important;
 }
 
 .bow-device-card {
-  width: min(500px, 94vw);
-  padding: 20px 22px;
-  background: linear-gradient(180deg, #16202b 0%, #0f161f 100%);
-  border: 1px solid rgba(156, 214, 255, 0.36);
-  border-radius: 8px;
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.82);
+  width: min(520px, 94vw);
+  padding: 22px 24px;
+  background: linear-gradient(180deg, #17212c 0%, #101720 100%);
+  border: 1px solid rgba(156, 200, 232, 0.42);
+  border-radius: 6px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.86);
   text-align: center;
 }
 
 .bow-device-kicker {
   font-family: var(--bow-mono);
   font-size: 0.68rem;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: #c9a961;
-  margin-bottom: 6px;
+  margin: 0 0 6px;
 }
 
 .bow-device-title {
   margin: 0 0 8px;
-  font-size: 1.15rem;
+  font-size: 1.18rem;
   color: #eef5fc;
 }
 
 .bow-device-sub {
-  margin: 0 0 16px;
-  font-size: 0.82rem;
-  line-height: 1.45;
+  margin: 0 0 18px;
+  font-size: 0.83rem;
+  line-height: 1.48;
   color: #9bb0c4;
 }
 
+.bow-device-choices,
 .bow-device-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  gap: 12px;
 }
 
 .bow-device-choice {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 5px;
-  padding: 14px 12px;
-  border-radius: 6px;
-  border: 1px solid rgba(108, 134, 160, 0.45);
-  background: rgba(21, 31, 42, 0.9);
+  gap: 7px;
+  padding: 16px 14px;
+  border-radius: 5px;
+  border: 1px solid rgba(108, 134, 160, 0.48);
+  background: rgba(21, 31, 42, 0.92);
   color: #e4effa;
+  font-family: inherit;
   cursor: pointer;
   transition: border-color 0.15s ease, background 0.15s ease, transform 0.12s ease;
 }
 
-.bow-device-choice:hover {
-  border-color: #9cd6ff;
-  background: rgba(31, 46, 62, 0.96);
+.bow-device-choice:hover,
+.bow-device-choice:focus-visible {
+  border-color: #c9a961;
+  background: rgba(31, 46, 62, 0.98);
   transform: translateY(-1px);
+  outline: none;
 }
 
 .bow-device-icon {
-  font-size: 1.6rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 40px;
+  color: #c8d6e4;
+}
+
+.bow-device-choice:hover .bow-device-icon {
+  color: #e9d094;
 }
 
 .bow-device-choice b {
-  font-size: 0.9rem;
+  font-size: 0.94rem;
+  color: #f0f6fc;
+}
+
+.bow-device-choice i {
+  font-style: normal;
+  font-size: 0.76rem;
+  line-height: 1.42;
+  color: #98adbf;
+}
+
+.bow-pd-slot-svg {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  color: #9fb4c7;
+  flex-shrink: 0;
 }
 
 .bow-device-choice small {
@@ -6806,6 +6866,7 @@ body,
 }
 
 @media (max-width: 680px) {
+  .bow-device-choices,
   .bow-device-grid {
     grid-template-columns: 1fr;
   }

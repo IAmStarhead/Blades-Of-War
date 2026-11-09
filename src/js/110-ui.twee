@@ -442,7 +442,7 @@
       pills.push('<span class="bow-stat-pill">Пробит. <b>' + penPct + '%</b></span>');
     }
     if (typeof def.defense === "number" && def.defense !== 0) {
-      pills.push('<span class="bow-stat-pill">🛡 Защ. <b>+' + def.defense + '</b></span>');
+      pills.push('<span class="bow-stat-pill">⛨ Защ. <b>+' + def.defense + '</b></span>');
       var eqDef = (equippedDef && typeof equippedDef.defense === "number") ? equippedDef.defense : 0;
       if (!equippedDef || equippedDef.id !== def.id) {
         var dD = formatDeltaBadge(def.defense - eqDef, "защ.");
@@ -474,14 +474,26 @@
       pills.push('<span class="bow-stat-pill">Подвижн. <b>' + (def.mobility > 0 ? "+" : "") + def.mobility + '</b></span>');
     }
     if (typeof def.food === "number" && def.food > 0) {
-      pills.push('<span class="bow-stat-pill">🍞 Сытость <b>+' + def.food + '</b></span>');
+      pills.push('<span class="bow-stat-pill">◈ Сытость <b>+' + def.food + '</b></span>');
     }
     if (typeof def.mood === "number" && def.mood > 0) {
-      pills.push('<span class="bow-stat-pill">🍺 Дух <b>+' + def.mood + '</b></span>');
+      pills.push('<span class="bow-stat-pill">✦ Дух <b>+' + def.mood + '</b></span>');
     }
     if (!pills.length && !deltas.length) { return ""; }
     return '<div class="bow-item-stats">' + pills.join("") + deltas.join("") + '</div>';
   }
+
+  /* Строгие сланцево-серебряные силуэты средневекового снаряжения для 8 слотов (без системных цветных эмодзи) */
+  var SLOT_SVG = {
+    head: '<span class="bow-pd-slot-svg" aria-hidden="true"><svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M3 9a5 5 0 0 1 10 0v3.5H10.5V9.5h-5v3H3V9z"/><line x1="8" y1="3.5" x2="8" y2="11"/></svg></span>',
+    armor: '<span class="bow-pd-slot-svg" aria-hidden="true"><svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M4.5 2.5L2 4.5l1.5 2.5L5 6v7.5h6V6l1.5 1L14 4.5l-2.5-2-1.8 1.5H6.3L4.5 2.5z"/></svg></span>',
+    hands: '<span class="bow-pd-slot-svg" aria-hidden="true"><svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M5 7V3.5h4.5V7l2 1.5V11l-1.5 2.5H4.5L3.5 10V7.5L5 7z"/></svg></span>',
+    legs: '<span class="bow-pd-slot-svg" aria-hidden="true"><svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M4.5 2.5h7l1 11h-3L8 6.5l-1.5 7h-3l1-11z"/></svg></span>',
+    boots: '<span class="bow-pd-slot-svg" aria-hidden="true"><svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M4.5 2.5h4v6.5l4.5 2v2.5H3.5V9.5l1-7z"/></svg></span>',
+    weapon: '<span class="bow-pd-slot-svg" aria-hidden="true"><svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M12.5 2.5L13.5 3.5 6.5 10.5l-1-1 7-7z"/><line x1="4" y1="9" x2="7.5" y2="12.5"/><line x1="3" y1="13" x2="5.5" y2="10.5"/></svg></span>',
+    weapon2: '<span class="bow-pd-slot-svg" aria-hidden="true"><svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.4"><line x1="3.5" y1="13" x2="11.5" y2="3"/><path d="M8.5 3c2.5 0 4.5 1.8 4.5 4.2-1.8.4-3.3-.2-4.2-1.2"/></svg></span>',
+    offhand: '<span class="bow-pd-slot-svg" aria-hidden="true"><svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M3.5 3h9v4.5c0 3.2-2.2 5.2-4.5 6.3-2.3-1.1-4.5-3.1-4.5-6.3V3z"/><circle cx="8" cy="7.5" r="1.1"/></svg></span>'
+  };
 
   function renderSlotBoxHtml(person, slotKey, slotLabel, slotIcon, isActiveWep) {
     var eq = Bow.equip;
@@ -502,10 +514,11 @@
       if (typeof itemDef.warmth === "number" && itemDef.warmth > 0 && !parts.length) { parts.push("+" + itemDef.warmth + " тепл."); }
       subStat = parts.join(" · ") || "надето";
     }
+    var icoHtml = SLOT_SVG[slotKey] || esc(slotIcon || "◈");
 
     return '<div class="bow-pd-slot' + (itemDef ? " bow-pd-slot-filled" : "") + (isActiveWep ? " bow-pd-slot-active" : "") + '" data-slot-box="' + esc(slotKey) + '">' +
       '<div class="bow-pd-slot-head">' +
-        '<span class="bow-pd-slot-lbl">' + slotIcon + ' ' + esc(slotLabel) + '</span>' +
+        '<span class="bow-pd-slot-lbl">' + icoHtml + ' ' + esc(slotLabel) + '</span>' +
         (itemDef
           ? '<button type="button" class="bow-pd-unequip" data-act="unequip-slot" data-slot="' + esc(slotKey) + '" title="Снять в сумку">✕</button>'
           : '') +
@@ -532,15 +545,15 @@
     var activeSet = p.activeWeaponSet === 2 ? 2 : 1;
 
     var leftSlotsHtml =
-      renderSlotBoxHtml(p, "head", "Шлем", "🪖", false) +
-      renderSlotBoxHtml(p, "armor", "Доспехи", "🛡", false) +
-      renderSlotBoxHtml(p, "hands", "Перчатки", "🧤", false) +
-      renderSlotBoxHtml(p, "legs", "Штаны", "👖", false);
+      renderSlotBoxHtml(p, "head", "Шлем", "◈", false) +
+      renderSlotBoxHtml(p, "armor", "Доспехи", "⛨", false) +
+      renderSlotBoxHtml(p, "hands", "Перчатки", "◈", false) +
+      renderSlotBoxHtml(p, "legs", "Штаны", "◈", false);
 
     var rightSlotsHtml =
-      renderSlotBoxHtml(p, "boots", "Сапоги", "🥾", false) +
+      renderSlotBoxHtml(p, "boots", "Сапоги", "◈", false) +
       renderSlotBoxHtml(p, "weapon", "Оружие I", "⚔", activeSet === 1) +
-      renderSlotBoxHtml(p, "weapon2", "Оружие II", "🗡", activeSet === 2) +
+      renderSlotBoxHtml(p, "weapon2", "Оружие II", "⚔", activeSet === 2) +
       renderSlotBoxHtml(p, "offhand", "Щит / Снаряды", "⛨", false);
 
     var paperdollHtml =
@@ -557,11 +570,11 @@
         '</div>' +
         '<div class="bow-gear-summary">' +
           '<span>⚔ Удар: <b>' + atkPow + '</b></span>' +
-          '<span>🛡 Защита: <b>' + defPow + '</b></span>' +
+          '<span>⛨ Защита: <b>' + defPow + '</b></span>' +
           '<span>⛨ Блок: <b>' + ((gearTotals.block || 0) <= 1 ? Math.round((gearTotals.block || 0) * 100) : Math.round(gearTotals.block || 0)) + '%</b></span>' +
           '<span>⌖ Пробитие: <b>+' + Math.round(gearTotals.armorPenBonus || 0) + '%</b></span>' +
           '<span>❄ Тепло: <b>+' + Math.round(gearTotals.warmth || 0) + '</b></span>' +
-          '<span>👣 Подвижн.: <b>' + ((gearTotals.mobility || 0) > 0 ? "+" : "") + Math.round(gearTotals.mobility || 0) + '</b></span>' +
+          '<span>» Подвижн.: <b>' + ((gearTotals.mobility || 0) > 0 ? "+" : "") + Math.round(gearTotals.mobility || 0) + '</b></span>' +
         '</div>' +
       '</div>';
 
@@ -775,7 +788,7 @@
         (isCur
           ? '<div class="bow-work-progress"><div class="bow-bar"><i class="bow-fill bow-good" style="width:' + pctDone + '%"></i></div>' +
             '<span class="bow-dim">' + Math.round(activeTask.elapsedMin || 0) + ' / ' + cyc + ' мин.</span></div>' +
-            '<button type="button" class="bow-btn bow-btn-sm bow-btn-danger" data-act="task-stop">⏹ Прекратить работу</button>'
+            '<button type="button" class="bow-btn bow-btn-sm bow-btn-danger" data-act="task-stop">■ Прекратить работу</button>'
           : '<button type="button" class="bow-btn bow-btn-sm bow-job-go" data-act="task-start" data-task="' + esc(w.key) + '">Взяться за работу</button>') +
       '</div>';
     }).join("");
@@ -1118,7 +1131,6 @@
             '<span class="bow-attack-q">Напасть на ' + esc(p.name) + '?</span>' +
             '<div class="bow-attack-confirm-btns">' +
               '<button type="button" class="bow-trade-btn bow-fight-btn" data-act="skirmish-engage" data-mode="crime" data-person="' + esc(p.id) + '">⚔ Да</button>' +
-              '<button type="button" class="bow-trade-btn" data-act="skirmish-engage" data-mode="brawl" data-person="' + esc(p.id) + '">👊 Кулаки</button>' +
               '<button type="button" class="bow-trade-btn" data-act="skirmish-confirm-cancel" data-person="' + esc(p.id) + '">Нет</button>' +
             '</div>' +
           '</div>')
@@ -1163,7 +1175,7 @@
           '<span class="bow-stage-mini-name">' + esc(w.title) + ' <i class="bow-dim">(' + (w.cycleMinutes || 30) + ' мин.)</i></span>' +
           '<b class="bow-gold-txt">' + esc(payHint) + '</b>' +
           (isCur
-            ? '<button type="button" class="bow-trade-btn bow-fight-btn" data-act="task-stop">⏹ Прекратить</button>'
+            ? '<button type="button" class="bow-trade-btn bow-fight-btn" data-act="task-stop">■ Прекратить</button>'
             : '<button type="button" class="bow-trade-btn" data-act="task-start" data-task="' + esc(w.key) + '">Взяться за работу</button>') +
         '</div>';
       }).join("") || '<div class="bow-empty">Работы нет.</div>';
@@ -2205,9 +2217,9 @@
               : 'Пошаговый бой · клик по клетке — шаг · клик по выбранному врагу или кнопке ниже — удар') +
           '</span>' +
           '<div class="bow-fight-speed-btns">' +
-            '<button class="bow-btn bow-btn-sm' + (!isAuto ? ' bow-order-on' : '') + '" data-act="fight-order" data-kind="speed" data-val="paused" title="Пошаговый режим без автобоя (по умолчанию)">⏸ Пошагово</button>' +
+            '<button class="bow-btn bow-btn-sm' + (!isAuto ? ' bow-order-on' : '') + '" data-act="fight-order" data-kind="speed" data-val="paused" title="Пошаговый режим без автобоя (по умолчанию)">❙❙ Пошагово</button>' +
             '<button class="bow-btn bow-btn-sm' + (isAuto ? ' bow-order-on' : '') + '" data-act="fight-order" data-kind="speed" data-val="auto" title="Включить размеренный автобой по желанию">▶ Автобой</button>' +
-            '<button class="bow-btn bow-btn-sm bow-step-btn" data-act="fight-step" title="Сделать один ход по текущей тактике">⏭ Ход</button>' +
+            '<button class="bow-btn bow-btn-sm bow-step-btn" data-act="fight-step" title="Сделать один ход по текущей тактике">▶❙ Ход</button>' +
           '</div>' +
         '</div>';
 
@@ -2327,7 +2339,7 @@
         (inSettlement
           ? '<button class="bow-btn bow-btn-sm" data-act="rescue-coma" data-how="passerby">✚ Помощь жителей Брода' + (fee > 0 ? ' · ' + fee + ' м.' : ' · в долг') + '</button>'
           : '') +
-        '<button class="bow-btn bow-btn-sm" data-act="rescue-coma" data-how="wait">⏳ Ждать прохожего (1 ч.)</button>' +
+        '<button class="bow-btn bow-btn-sm" data-act="rescue-coma" data-how="wait">⧗ Ждать прохожего (1 ч.)</button>' +
       '</div>' +
     '</div>';
     box.classList.add("bow-fight-open");
@@ -2438,10 +2450,10 @@
     var gazeCls = gPhase === "away" ? "bow-lp-gaze-safe"
       : (gPhase === "turning" ? "bow-lp-gaze-warn" : "bow-lp-gaze-danger");
     var gazeText = gPhase === "away"
-      ? "👁 Сторож отвернулся — можно тихо крутить замок"
+      ? "◉ Сторож отвернулся — можно тихо крутить замок"
       : gPhase === "turning"
         ? "⚠ Сторож начинает поворачиваться — приготовьтесь замереть!"
-        : "❗ Сторож смотрит прямо на клетку — НЕ ПОВОРАЧИВАЙТЕ ЗАМОК!";
+        : "▲ Сторож смотрит прямо на клетку — НЕ ПОВОРАЧИВАЙТЕ ЗАМОК!";
 
     var pickRot = Math.round(lpModal.pickAngle || 0);
     var cylRot = Math.round(lpModal.cylinderAngle || 0);
@@ -2546,7 +2558,7 @@
       '<div class="bow-fight-acts">' +
         '<button class="bow-btn bow-btn-sm" data-act="jail-serve">Отсидеть 4 ч.</button>' +
         '<button class="bow-btn bow-btn-sm' + (isPicking ? ' bow-btn-danger' : '') + '" data-act="jail-pick-toggle">' +
-          (isPicking ? ('✋ Замереть (' + lpProg + '%)') : ('🗝 Взлом замка' + (lpProg > 0 ? ' (' + lpProg + '%)' : ''))) +
+          (isPicking ? ('❙❙ Замереть (' + lpProg + '%)') : ('✧ Взлом замка' + (lpProg > 0 ? ' (' + lpProg + '%)' : ''))) +
         '</button>' +
         '<button class="bow-btn bow-btn-sm" data-act="jail-bribe">Подкупить сторожа</button>' +
         '<button class="bow-btn bow-btn-sm" data-act="jail-escape">Рвануть напролом</button>' +
@@ -2632,7 +2644,7 @@
 
     var html =
       '<div class="bow-pause-badge">' +
-        '<span class="bow-pause-main">⏸ ПАУЗА</span>' +
+        '<span class="bow-pause-main">❙❙ ПАУЗА</span>' +
         '<span class="bow-pause-sub">Мир и бой замерли · отдайте приказ или нажмите ▶ / Пробел</span>' +
       '</div>' + orderLine;
 
@@ -2653,8 +2665,8 @@
       agBtn.classList.toggle("bow-mode-aggro", isAggro);
       agBtn.setAttribute("aria-pressed", isAggro ? "true" : "false");
       agBtn.innerHTML = isAggro
-        ? '<span class="bow-mode-i">⚔</span><span class="bow-mode-txt"><b>К бою!</b><i>клик по цели — удар</i></span>'
-        : '<span class="bow-mode-i">✋</span><span class="bow-mode-txt"><b>Мирный</b><i>Tab — к бою</i></span>';
+        ? '<span class="bow-mode-i" aria-hidden="true">⚔</span><span class="bow-mode-txt"><b>К бою!</b><i>клик по цели — удар</i></span>'
+        : '<span class="bow-mode-i" aria-hidden="true">◈</span><span class="bow-mode-txt"><b>Мирный</b><i>Tab — к бою</i></span>';
     }
 
     var box = $("bow-skirmish-hud");
@@ -2706,7 +2718,7 @@
       html = '<div class="bow-sk-card">' +
         '<div class="bow-sk-top">' +
           '<button type="button" class="bow-btn bow-btn-sm' + (pausedNow ? ' bow-order-on' : '') + '" data-act="skirmish-pause" title="Тактическая пауза [Пробел]">' +
-            (pausedNow ? '▶ В бой [Пробел]' : '⏸ Пауза [Пробел]') +
+            (pausedNow ? '▶ В бой [Пробел]' : '❙❙ Пауза [Пробел]') +
           '</button>' +
           guardWarn +
           '<span class="bow-sk-log">' + esc(lastLog) + '</span>' +
@@ -2950,15 +2962,17 @@
       if (global.localStorage) { global.localStorage.setItem(SETTINGS_KEY, JSON.stringify(cur)); }
     } catch (err) { /* ignore */ }
     applySettings(cur);
-    if (key === "device" && Bow.iso && Bow.iso.centerCameraOnPlayer && global.BowGame && global.BowGame.getState) {
-      Bow.iso.centerCameraOnPlayer(global.BowGame.getState(), null, true);
+    if (key === "device" && Bow.iso && global.BowGame && global.BowGame.getState) {
+      var curSt = global.BowGame.getState();
+      if (Bow.iso.centerCameraOnPlayer) { Bow.iso.centerCameraOnPlayer(curSt, null, true); }
+      if (repaintIsoStage) { repaintIsoStage(curSt); }
     }
     renderSettings();
     return {
       ok: true,
       settings: cur,
       message: key === "device"
-        ? (val === "mobile" ? "📱 Включён компактный интерфейс для телефона." : "🖥 Включён полноразмерный интерфейс для ПК.")
+        ? (val === "mobile" ? "◈ Включён компактный интерфейс для телефона." : "◈ Включён полноразмерный интерфейс для ПК.")
         : "Настройки сохранены."
     };
   }
@@ -2976,6 +2990,8 @@
   function openDeviceModal() {
     var m = $("bow-device-modal");
     if (!m) { return; }
+    m.hidden = false;
+    m.removeAttribute("hidden");
     m.classList.add("bow-device-modal-open");
     m.setAttribute("aria-hidden", "false");
   }
@@ -2985,15 +3001,23 @@
     if (!m) { return; }
     m.classList.remove("bow-device-modal-open");
     m.setAttribute("aria-hidden", "true");
+    m.hidden = true;
+    m.setAttribute("hidden", "hidden");
   }
 
   function showDeviceModalIfNeeded() {
     var s = getSettings();
-    if (s.deviceChosen) { return false; }
+    if (s.deviceChosen) {
+      closeDeviceModal();
+      return false;
+    }
     /* В безголовых JSDOM-тестах rect.width === 0, поэтому автодиалог не мешает тестам */
     var stEl = $("bow-stage-canvas") || $("bow-app");
     var r = (stEl && stEl.getBoundingClientRect) ? stEl.getBoundingClientRect() : null;
-    if (!r || r.width <= 0) { return false; }
+    if (!r || r.width <= 0) {
+      closeDeviceModal();
+      return false;
+    }
     openDeviceModal();
     return true;
   }
@@ -3006,8 +3030,8 @@
       '<div class="bow-setting-row">' +
         '<div class="bow-setting-label"><b>Устройство и интерфейс</b><span class="bow-dim">Полноэкранный CRPG для ПК или компактный сенсорный режим для телефона</span></div>' +
         '<div class="bow-setting-opts">' +
-          '<button type="button" class="bow-btn bow-btn-sm' + (s.device !== "mobile" ? " bow-order-on" : "") + '" data-act="setting" data-key="device" data-val="pc">🖥 Компьютер (ПК)</button>' +
-          '<button type="button" class="bow-btn bow-btn-sm' + (s.device === "mobile" ? " bow-order-on" : "") + '" data-act="setting" data-key="device" data-val="mobile">📱 Телефон</button>' +
+          '<button type="button" class="bow-btn bow-btn-sm' + (s.device !== "mobile" ? " bow-order-on" : "") + '" data-act="setting" data-key="device" data-val="pc">◈ Компьютер (ПК)</button>' +
+          '<button type="button" class="bow-btn bow-btn-sm' + (s.device === "mobile" ? " bow-order-on" : "") + '" data-act="setting" data-key="device" data-val="mobile">▯ Телефон</button>' +
         '</div>' +
       '</div>' +
       '<div class="bow-setting-row">' +
@@ -3049,7 +3073,7 @@
           '<button type="button" class="bow-btn bow-btn-sm' + ((Bow.audio && Bow.audio.isStreetBeat && Bow.audio.isStreetBeat()) ? " bow-order-on" : "") + '" data-act="audio-beat" title="Мягкий меланхоличный даунтемпо-бит в стиле Enigma «Sadeness» в уличных темах">' +
             ((Bow.audio && Bow.audio.isStreetBeat && Bow.audio.isStreetBeat()) ? "Бит улицы (Enigma): вкл" : "Бит улицы (Enigma): выкл") +
           '</button>' +
-          '<button type="button" class="bow-btn bow-btn-sm" data-act="audio-next" title="Следующая композиция">⏭ След.</button>' +
+          '<button type="button" class="bow-btn bow-btn-sm" data-act="audio-next" title="Следующая композиция">▶❙ След.</button>' +
           '<input type="range" class="bow-vol-range" data-act="audio-vol" min="0" max="100" step="5" value="' +
             Math.round((Bow.audio ? Bow.audio.getVolume() : 0.45) * 100) + '" aria-label="Громкость музыки" title="Громкость музыки"/>' +
         '</div>' +

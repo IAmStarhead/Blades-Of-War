@@ -808,7 +808,7 @@ function byAct(act, key) {
 
     const back = win.Bow.save.deserialize(win.Bow.save.serialize(g, 1));
     assert(back.ok, "старое сохранение не загрузилось: " + back.reason);
-    eq(back.state.version, "0.0.9.2", "версия после миграции");
+    eq(back.state.version, "0.0.9.2f", "версия после миграции");
     assert(back.state.fight === null, "после миграции нет пустого слота боя");
     assert(back.state.people["person:tarn"].weapon, "кузнец остался без топора");
     return "0.0.5 → " + back.state.version + ", топор кузнеца на месте";
@@ -1009,7 +1009,7 @@ function byAct(act, key) {
     delete g.flags.huntedHeat;
 
     const back = win.Bow.save.deserialize(win.Bow.save.serialize(g, 1));
-    eq(back.state.version, "0.0.9.2", "версия после миграции");
+    eq(back.state.version, "0.0.9.2f", "версия после миграции");
     assert(back.state.guard && back.state.guard.arrived === true,
       "стража из старого сохранения осталась «непришедшей» — из неё не выбраться");
     eq(back.state.flags.huntedUntil, null, "поле срока розыска");
@@ -1777,7 +1777,7 @@ function byAct(act, key) {
 
     const back = win.Bow.save.deserialize(win.Bow.save.serialize(g, 1));
     assert(back.ok, "сохранение 0.0.6.2 не загрузилось: " + back.reason);
-    eq(back.state.version, "0.0.9.2", "версия после миграции");
+    eq(back.state.version, "0.0.9.2f", "версия после миграции");
     assert(back.state.steal && typeof back.state.steal === "object", "нет слота подготовки кражи");
     eq(back.state.player.lastTreat, null, "lastTreat после миграции");
     assert(typeof back.state.player.skills.medicine === "number", "навык лечения не восстановлен");
@@ -1981,9 +1981,9 @@ function byAct(act, key) {
     };
     const back = win.Bow.save.deserialize(win.Bow.save.serialize(g, 1));
     assert(back.ok, "сохранение 0.0.6.3 не загрузилось: " + back.reason);
-    eq(back.state.version, "0.0.9.2", "версия после миграции");
+    eq(back.state.version, "0.0.9.2f", "версия после миграции");
     assert(back.state.fight.orders && back.state.fight.orders.aim === "body", "приказы боя созданы при миграции");
-    return "0.0.6.3 → 0.0.9.2, приказы боя созданы";
+    return "0.0.6.3 → 0.0.9.2f, приказы боя созданы";
   });
 
   /* 8н. Круг 13 (0.0.7.1): фикс зависания в клетке, честная дистанция боя, логотип и Меню игры */
@@ -3905,10 +3905,10 @@ function byAct(act, key) {
     }
   });
 
-  check("0.0.9.2: миграция состояний доводит версию игры до 0.0.9.2", () => {
-    assert(win.Bow.data.meta.version === "0.0.9.2", "версия в Bow.data.meta не 0.0.9.2");
-    assert(game().version === "0.0.9.2", "версия активного состояния не 0.0.9.2");
-    return "версия 0.0.9.2 подтверждена";
+  check("0.0.9.2f: миграция состояний доводит версию игры до 0.0.9.2f", () => {
+    assert(win.Bow.data.meta.version === "0.0.9.2f", "версия в Bow.data.meta не 0.0.9.2f");
+    assert(game().version === "0.0.9.2f", "версия активного состояния не 0.0.9.2f");
+    return "версия 0.0.9.2f подтверждена";
   });
 
   check("0.0.7.7: щипковые удары по струнам полностью вырезаны из саундтрека", () => {
@@ -4707,6 +4707,8 @@ function byAct(act, key) {
 
     /* Прокручиваем живое время боя: если затянуть стычку или сдерживать удар в глухой защите, через ~9 с вбегают 3 стражника! */
     const gGuardTest = clone(g);
+    gGuardTest.player.skills.combat = 8;
+    gGuardTest.player.skills.blades = 8;
     win.Bow.skirmish.setOrder(gGuardTest, "stance", "guard");
     win.Bow.skirmish.orderMove(gGuardTest, 1.2, 6.4);
     gGuardTest.people["person:liva"].needs.health = 450;
@@ -4986,6 +4988,127 @@ function byAct(act, key) {
     assert(/startLiveBridge/.test(audioSrc) && /tooth_and_claw/.test(audioSrc),
       "в 108-audio.twee нет мгновенного боевого моста startLiveBridge до запекания буфера");
     return "unlockGesture + startLiveBridge + ensureCombatMusic";
+  });
+
+  /* ==================== КРУГ 26 (0.0.9.2f — ХОТФИКС) ==================== */
+
+  check("0.0.9.2f: #bow-device-modal всплывает поверх экрана (position: fixed) и мгновенно исчезает после выбора устройства", () => {
+    const cssSrc = fs.readFileSync(path.join(__dirname, "..", "src", "ui", "900-styles.twee"), "utf8");
+    assert(/#bow-device-modal[\s\S]{0,160}display:\s*none\s*!important/.test(cssSrc),
+      "в 900-styles.twee нет скрытия #bow-device-modal (display: none !important)");
+    assert(/#bow-device-modal[\s\S]{0,200}position:\s*fixed\s*!important/.test(cssSrc),
+      "в 900-styles.twee у #bow-device-modal нет position: fixed !important (плашка сожмёт окно игры)");
+    assert(/#bow-device-modal\.bow-device-modal-open:not\(\[hidden\]\)/.test(cssSrc),
+      "в 900-styles.twee нет селектора открытия #bow-device-modal.bow-device-modal-open:not([hidden])");
+
+    const modal = doc().getElementById("bow-device-modal");
+    assert(modal, "в DOM отсутствует #bow-device-modal");
+    win.Bow.ui.closeDeviceModal();
+    assert(modal.hidden === true && !modal.classList.contains("bow-device-modal-open"),
+      "#bow-device-modal не скрыт по умолчанию");
+
+    win.Bow.ui.openDeviceModal();
+    assert(modal.hidden === false && modal.classList.contains("bow-device-modal-open"),
+      "openDeviceModal() не открыл всплывающее окно");
+
+    const pickMob = modal.querySelector('[data-act="device-pick"][data-device="mobile"]');
+    assert(pickMob, "в #bow-device-modal нет кнопки выбора телефона");
+    click(pickMob);
+    assert(modal.hidden === true && !modal.classList.contains("bow-device-modal-open"),
+      "после клика по карточке выбора устройства #bow-device-modal не закрылся!");
+    eq(win.Bow.ui.getDeviceMode(), "mobile", "клик по карточке mobile не активировал мобильный профиль");
+
+    win.Bow.ui.openDeviceModal();
+    const pickPc = modal.querySelector('[data-act="device-pick"][data-device="pc"]');
+    assert(pickPc, "в #bow-device-modal нет кнопки выбора ПК");
+    click(pickPc);
+    assert(modal.hidden === true && !modal.classList.contains("bow-device-modal-open"),
+      "после клика по карточке ПК #bow-device-modal не закрылся!");
+    eq(win.Bow.ui.getDeviceMode(), "pc", "клик по карточке ПК не вернул профиль ПК");
+    return "fixed-оверлей + мгновенное закрытие при клике ПК/Телефон + полноэкранный #bow-app";
+  });
+
+  check("0.0.9.2f: чёткий HiDPI-рендер без замыливания (нет will-change/translate3d на сцене, 3× _hi спрайты и DPR-буфер)", () => {
+    const cssSrc = fs.readFileSync(path.join(__dirname, "..", "src", "ui", "900-styles.twee"), "utf8");
+    const worldRule = cssSrc.match(/\.bow-stage-world\s*\{[^}]*\}/);
+    assert(worldRule && !/will-change/.test(worldRule[0]),
+      "на .bow-stage-world остался will-change: transform, вызывающий замыливание текстуры при масштабировании");
+
+    const isoSrc = fs.readFileSync(path.join(__dirname, "..", "src", "js", "104-iso.twee"), "utf8");
+    assert(!/translate3d\(/.test(isoSrc),
+      "в 104-iso.twee остался translate3d, принуждающий браузер мылить сцену при зуме");
+    assert(/cv\._hi\s*=\s*hi/.test(isoSrc) && /288/.test(isoSrc) && /336/.test(isoSrc) && /targetDpr/.test(isoSrc),
+      "в 104-iso.twee нет 3× HiDPI-спрайтов (_hi 288×336) и адаптивного targetDpr для холста");
+    return "0 GPU-blur + 3× векторные спрайты + адаптивный DPR холстов";
+  });
+
+  check("0.0.9.2f: полное отсутствие обычных цветных эмодзи в исходниках src/ и в живом DOM игры", () => {
+    const srcRoot = path.join(__dirname, "..", "src");
+    function listTwee(dir) {
+      let acc = [];
+      for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
+        const full = path.join(dir, ent.name);
+        if (ent.isDirectory()) acc = acc.concat(listTwee(full));
+        else if (ent.name.endsWith(".twee")) acc.push(full);
+      }
+      return acc;
+    }
+    const emojiRe = /\p{Emoji_Presentation}/gu;
+    const leaks = [];
+    for (const file of listTwee(srcRoot)) {
+      const txt = fs.readFileSync(file, "utf8");
+      const found = txt.match(emojiRe);
+      if (found) leaks.push(path.relative(srcRoot, file) + ": " + [...new Set(found)].join(" "));
+    }
+    assert(leaks.length === 0, "в src/ обнаружены системные цветные эмодзи: " + leaks.join("; "));
+
+    win.Bow.ui.openModal("inv");
+    win.BowGame.refresh(true);
+    const domTxt = doc().getElementById("bow-app").textContent || "";
+    const domLeaks = domTxt.match(emojiRe);
+    win.Bow.ui.setDrawer(false);
+    assert(!domLeaks, "в живом DOM игры найдены цветные эмодзи: " + (domLeaks || []).join(" "));
+    return "0 цветных эмодзи в src/ и DOM + стальные монохромные знаки и SVG";
+  });
+
+  check("0.0.9.2f: подтверждение нападения без лишнего выбора кулачного боя (только «Да» и «Нет»)", () => {
+    const g = game();
+    const snap = clone(g);
+    try {
+      g.fight = null;
+      g.skirmish = null;
+      g.jail = null;
+      g.guard = null;
+      g.player.location = "square";
+      g.people["person:liva"].alive = true;
+      g.people["person:liva"].location = "square";
+      win.Bow.ui.setStageSelection({ kind: "person", personId: "person:liva", confirmAttack: true });
+      win.BowGame.refresh(true);
+
+      const pop = doc().getElementById("bow-stage-pop");
+      assert(pop.querySelector('[data-act="skirmish-engage"][data-mode="crime"]'),
+        "нет кнопки подтверждения нападения «Да» (data-mode=crime)");
+      assert(pop.querySelector('[data-act="skirmish-confirm-cancel"]'),
+        "нет кнопки отмены нападения «Нет»");
+      assert(!pop.querySelector('[data-mode="brawl"]'),
+        "в подтверждении нападения осталась удалённая кнопка кулачного боя (data-mode=brawl)");
+      return "чистое подтверждение «Напасть: Да / Нет» без кулачного режима";
+    } finally {
+      Object.assign(g, snap);
+      win.Bow.ui.setStageSelection(null);
+      win.BowGame.refresh(true);
+    }
+  });
+
+  check("0.0.9.2f: прозрачная миграция сохранения 0.0.9.2 → 0.0.9.2f без потери прогресса", () => {
+    const g = clone(game());
+    g.version = "0.0.9.2";
+    g.player.coins = 77;
+    const res = win.Bow.save.deserialize(win.Bow.save.serialize(g, 1));
+    assert(res.ok, "сохранение 0.0.9.2 не загрузилось: " + res.reason);
+    eq(res.state.version, "0.0.9.2f", "версия после миграции 0.0.9.2 → 0.0.9.2f");
+    eq(res.state.player.coins, 77, "потеряны монеты при миграции 0.0.9.2 → 0.0.9.2f");
+    return "0.0.9.2 → 0.0.9.2f сохраняет весь прогресс";
   });
 
   /* ---------- Итоги ---------- */

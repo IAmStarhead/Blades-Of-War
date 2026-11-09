@@ -734,7 +734,7 @@
             'data-act="move" data-from-stage="1" data-loc="' + esc(ex.to) + '" data-iso-col="' + ex.col + '" data-iso-row="' + ex.row + '" data-x="' + ep.x + '" ' +
             'title="Подойти и войти: ' + esc(ex.label) + ' (' + esc(subDur) + ')">' +
             '<span class="bow-door-hit" aria-hidden="true"></span>' +
-            '<span class="bow-spot-txt"><b>🚪 ' + esc(ex.label) + '</b><i>' + esc(exitQueued ? 'приказ отдан' : subDur) + '</i></span>' +
+            '<span class="bow-spot-txt"><b>↪ ' + esc(ex.label) + '</b><i>' + esc(exitQueued ? 'приказ отдан' : subDur) + '</i></span>' +
           '</button>'
         );
       });
@@ -828,7 +828,7 @@
             'data-act="skirmish-ally" data-entity-id="' + esc(ent.unitKey) + '" data-unit="' + esc(ent.unitKey) + '" data-x="' + xPct + '" ' +
             'title="Спутник в строю: ' + esc(ent.name) + '">' +
             '<span class="bow-iso-hit"></span>' +
-            '<span class="bow-actor-tag"><b>🛡 ' + esc(ent.name) + '</b><i class="bow-tone bow-warm">' + Math.max(0, Math.round(ent.hp)) + ' зд.</i></span>' +
+            '<span class="bow-actor-tag"><b>⛨ ' + esc(ent.name) + '</b><i class="bow-tone bow-warm">' + Math.max(0, Math.round(ent.hp)) + ' зд.</i></span>' +
           '</button>'
         );
         return;

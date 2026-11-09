@@ -285,7 +285,15 @@
     return !!(state && state.time && state.time.scale === "paused");
   }
 
-  /* ---------- Свободная камера без сплющивания холста (ПК + Телефон) ---------- */
+  function isLiveBrowser() {
+    if (typeof document === "undefined") { return false; }
+    var el = document.getElementById("bow-stage-canvas") || document.getElementById("bow-app") || document.documentElement;
+    if (!el || !el.getBoundingClientRect) { return false; }
+    var r = el.getBoundingClientRect();
+    return !!(r && r.width > 0);
+  }
+
+  /* ---------- Свободная камера без сплющивания холста (ПК + Телефон, чёткий HiDPI без мыла) ---------- */
   function getCamera() {
     return {
       zoom: runtime.camera.zoom,
@@ -303,7 +311,8 @@
 
     var rect = vp.getBoundingClientRect ? vp.getBoundingClientRect() : { width: 0, height: 0 };
     if (!rect || rect.width <= 0 || rect.height <= 0) {
-      world.style.transform = "translate3d(0px,0px,0) scale(1)";
+      runtime.camera.lastScale = 1;
+      world.style.transform = "translate(0px,0px) scale(1)";
       return;
     }
 
@@ -318,6 +327,7 @@
 
     var z = clampVal(runtime.camera.zoom || 1, 0.65, 2.25);
     var scale = baseScale * z;
+    runtime.camera.lastScale = scale;
     var scaledW = VIEW_W * scale;
     var scaledH = VIEW_H * scale;
 
@@ -329,7 +339,8 @@
 
     var tx = Math.round((vw - scaledW) * 0.5 + runtime.camera.panX);
     var ty = Math.round((vh - scaledH) * 0.5 + runtime.camera.panY);
-    world.style.transform = "translate3d(" + tx + "px," + ty + "px,0) scale(" + scale.toFixed(4) + ")";
+    /* Чистый 2D-трансформ без translate3d/will-change — браузер не запекает 1x-текстуру в мыло! */
+    world.style.transform = "translate(" + tx + "px," + ty + "px) scale(" + scale.toFixed(4) + ")";
   }
 
   function centerCameraOnPlayer(state, viewportEl, resetZoom) {
@@ -362,6 +373,13 @@
   function setCameraZoom(nextZoom, viewportEl, state) {
     runtime.camera.zoom = clampVal(nextZoom, 0.65, 2.25);
     applyCameraToDom(viewportEl, state);
+    if (isLiveBrowser()) {
+      var stCv = typeof document !== "undefined" ? document.querySelector("#bow-stage-canvas canvas.bow-iso-canvas") : null;
+      var st = state || (global.BowGame && global.BowGame.getState ? global.BowGame.getState() : null);
+      if (stCv && st) {
+        paintStageCanvas(stCv, st, Bow.ui && Bow.ui.getStageSelection ? Bow.ui.getStageSelection() : null);
+      }
+    }
     return runtime.camera.zoom;
   }
 
@@ -591,32 +609,35 @@
     poly(g, [m1, m2, b2, b1], stepTone(baseHex, -22));
   }
 
-  /* Контурная подсветка выделенной цели / объекта (всегда активна: #9cd6ff или #ee4246) */
+  /* Контурная подсветка выделенной цели / объекта (всегда активна: #9cd6ff или #ee4246; с поддержкой HiDPI _hi) */
   function blitWithOutline(ctx, srcCanvas, dx, dy, outlineColor, thickness) {
     if (!srcCanvas) { return; }
+    var src = srcCanvas._hi || srcCanvas;
+    var lw = srcCanvas.width || 96;
+    var lh = srcCanvas.height || 112;
     if (!outlineColor) {
-      ctx.drawImage(srcCanvas, dx, dy);
+      ctx.drawImage(src, dx, dy, lw, lh);
       return;
     }
     if (!outlineScratch && typeof document !== "undefined") {
       outlineScratch = document.createElement("canvas");
     }
     if (!outlineScratch || !outlineScratch.getContext) {
-      ctx.drawImage(srcCanvas, dx, dy);
+      ctx.drawImage(src, dx, dy, lw, lh);
       return;
     }
-    if (outlineScratch.width !== srcCanvas.width || outlineScratch.height !== srcCanvas.height) {
-      outlineScratch.width = srcCanvas.width;
-      outlineScratch.height = srcCanvas.height;
+    if (outlineScratch.width !== src.width || outlineScratch.height !== src.height) {
+      outlineScratch.width = src.width;
+      outlineScratch.height = src.height;
     }
     var og = outlineScratch.getContext("2d");
     if (!og) {
-      ctx.drawImage(srcCanvas, dx, dy);
+      ctx.drawImage(src, dx, dy, lw, lh);
       return;
     }
     og.clearRect(0, 0, outlineScratch.width, outlineScratch.height);
     og.globalCompositeOperation = "source-over";
-    og.drawImage(srcCanvas, 0, 0);
+    og.drawImage(src, 0, 0);
     og.globalCompositeOperation = "source-in";
     og.fillStyle = outlineColor;
     og.fillRect(0, 0, outlineScratch.width, outlineScratch.height);
@@ -631,10 +652,10 @@
     ctx.save();
     ctx.globalAlpha = 0.92;
     for (var i = 0; i < offsets.length; i++) {
-      ctx.drawImage(outlineScratch, Math.round(dx + offsets[i][0]), Math.round(dy + offsets[i][1]));
+      ctx.drawImage(outlineScratch, dx + offsets[i][0], dy + offsets[i][1], lw, lh);
     }
     ctx.restore();
-    ctx.drawImage(srcCanvas, dx, dy);
+    ctx.drawImage(src, dx, dy, lw, lh);
   }
 
   function outfitPalette(roleKey, side, armorId, female, headId, legsId, bootsId, handsId) {
@@ -939,44 +960,7 @@
     }
   }
 
-  function getSprite(opts) {
-    opts = opts || {};
-    var roleKey = opts.roleKey || "villager";
-    var side = opts.side || "neutral";
-    var facing = opts.facing || "SE";
-    var weapon = opts.disarmed ? "none" : (opts.weapon || "none");
-    var armor = opts.armor || "";
-    var headGear = opts.headGear || "";
-    var handsGear = opts.handsGear || "";
-    var legsGear = opts.legsGear || "";
-    var bootsGear = opts.bootsGear || "";
-    var female = !!opts.female;
-    var pose = opts.dead ? "dead" : (opts.down ? "down" : (opts.pose || "idle"));
-    var shieldKind = opts.shield === true
-      ? (roleKey === "guard" ? "heater_shield" : "wood_shield")
-      : (typeof opts.shield === "string" && opts.shield ? opts.shield : "");
-    var ready = !!opts.ready;
-    var walkStep = (pose === "walk" && typeof opts.walkFrame === "number") ? (opts.walkFrame % 4) : 0;
-
-    var key = [
-      "v2", roleKey, side, facing, weapon, armor, headGear, handsGear, legsGear, bootsGear,
-      female ? "f" : "m", pose, shieldKind || "0", ready ? "r1" : "r0", walkStep
-    ].join("|");
-    if (spriteCache[key]) { return spriteCache[key]; }
-
-    var cv = document.createElement("canvas");
-    cv.width = 96;
-    cv.height = 112;
-    var g = cv.getContext && cv.getContext("2d");
-    if (!g) {
-      spriteCache[key] = cv;
-      return cv;
-    }
-
-    var pal = outfitPalette(roleKey, side, armor, female, headGear, legsGear, bootsGear, handsGear);
-    var isBack = (facing === "NW" || facing === "NE");
-    var flipX = (facing === "SW" || facing === "NW");
-
+  function paintSpriteGeometry(g, roleKey, female, pal, isBack, flipX, pose, weapon, shieldKind, ready, walkStep) {
     g.save();
     if (pose === "down" || pose === "dead") {
       /* Поверженный боец в гранёном ракурсе без чёрного контура */
@@ -1000,8 +984,7 @@
       poly(g, [[-11, -7], [16, -8], [16, -1], [-10, 0]], stepTone(pal.coat, 18));
       poly(g, [[17, -6], [27, -5], [26, 4], [17, 3]], stepTone(pal.skin, -10));
       g.restore();
-      spriteCache[key] = cv;
-      return cv;
+      return;
     }
 
     /* Мягкая опорная тень на снегу/полу */
@@ -1150,17 +1133,87 @@
     drawChiseledWeapon(g, weapon, rHandX, rHandY, pose, ready);
 
     g.restore();
+  }
+
+  function getSprite(opts) {
+    opts = opts || {};
+    var roleKey = opts.roleKey || "villager";
+    var side = opts.side || "neutral";
+    var facing = opts.facing || "SE";
+    var weapon = opts.disarmed ? "none" : (opts.weapon || "none");
+    var armor = opts.armor || "";
+    var headGear = opts.headGear || "";
+    var handsGear = opts.handsGear || "";
+    var legsGear = opts.legsGear || "";
+    var bootsGear = opts.bootsGear || "";
+    var female = !!opts.female;
+    var pose = opts.dead ? "dead" : (opts.down ? "down" : (opts.pose || "idle"));
+    var shieldKind = opts.shield === true
+      ? (roleKey === "guard" ? "heater_shield" : "wood_shield")
+      : (typeof opts.shield === "string" && opts.shield ? opts.shield : "");
+    var ready = !!opts.ready;
+    var walkStep = (pose === "walk" && typeof opts.walkFrame === "number") ? (opts.walkFrame % 4) : 0;
+
+    var key = [
+      "v2h", roleKey, side, facing, weapon, armor, headGear, handsGear, legsGear, bootsGear,
+      female ? "f" : "m", pose, shieldKind || "0", ready ? "r1" : "r0", walkStep
+    ].join("|");
+    if (spriteCache[key]) { return spriteCache[key]; }
+
+    var cv = document.createElement("canvas");
+    cv.width = 96;
+    cv.height = 112;
+    var g = cv.getContext && cv.getContext("2d");
+    if (!g) {
+      spriteCache[key] = cv;
+      return cv;
+    }
+
+    var pal = outfitPalette(roleKey, side, armor, female, headGear, legsGear, bootsGear, handsGear);
+    var isBack = (facing === "NW" || facing === "NE");
+    var flipX = (facing === "SW" || facing === "NW");
+
+    paintSpriteGeometry(g, roleKey, female, pal, isBack, flipX, pose, weapon, shieldKind, ready, walkStep);
+
+    /* В реальном браузере дополнительно кэшируем векторный 3× HiDPI-спрайт (288×336) для идеальной резкости на Retina и при зуме */
+    if (isLiveBrowser()) {
+      var hi = document.createElement("canvas");
+      hi.width = 288;
+      hi.height = 336;
+      var hg = hi.getContext && hi.getContext("2d");
+      if (hg) {
+        hg.scale(3, 3);
+        paintSpriteGeometry(hg, roleKey, female, pal, isBack, flipX, pose, weapon, shieldKind, ready, walkStep);
+        cv._hi = hi;
+      }
+    }
+
     spriteCache[key] = cv;
     return cv;
   }
 
-  /* Отрисовка куклы персонажа в инвентаре (крупный план 2× в стиле v2) */
+  /* Отрисовка куклы персонажа в инвентаре (крупный план HiDPI в стиле v2) */
   function paintPaperdollCanvas(canvas, state) {
     if (!canvas || !canvas.getContext || !state || !state.player) { return; }
     var ctx = canvas.getContext("2d");
     if (!ctx) { return; }
-    var w = canvas.width || 160;
-    var h = canvas.height || 200;
+    var w = 160;
+    var h = 200;
+    var dpr = isLiveBrowser() ? clampVal(global.devicePixelRatio || 1, 2, 3) : 1;
+    var bw = Math.round(w * dpr);
+    var bh = Math.round(h * dpr);
+    if (isLiveBrowser()) {
+      canvas.style.width = w + "px";
+      canvas.style.height = h + "px";
+      if (canvas.width !== bw || canvas.height !== bh) {
+        canvas.width = bw;
+        canvas.height = bh;
+      }
+      if (ctx.setTransform) { ctx.setTransform(dpr, 0, 0, dpr, 0, 0); }
+    } else {
+      w = canvas.width || 160;
+      h = canvas.height || 200;
+    }
     ctx.clearRect(0, 0, w, h);
 
     /* Гранёный каменный постамент под героем */
@@ -1206,10 +1259,11 @@
     if (sp) {
       ctx.save();
       ctx.imageSmoothingEnabled = true;
+      if ("imageSmoothingQuality" in ctx) { ctx.imageSmoothingQuality = "high"; }
       var scale = 1.58;
       var dw = Math.round(96 * scale);
       var dh = Math.round(112 * scale);
-      ctx.drawImage(sp, Math.round((w - dw) * 0.5), Math.round(h - 24 - dh + 22), dw, dh);
+      ctx.drawImage(sp._hi || sp, Math.round((w - dw) * 0.5), Math.round(h - 24 - dh + 22), dw, dh);
       ctx.restore();
     }
   }
@@ -2035,6 +2089,25 @@
 
     initParticles();
     ensurePlayerPos(state);
+    applyCameraToDom(null, state);
+
+    /* HiDPI / Retina Supersampling (2.0×–3.0×): чёткая векторная сцена и спрайты без размытости на ПК и телефонах */
+    if (isLiveBrowser()) {
+      var rawDpr = global.devicePixelRatio || 1;
+      var camScale = Math.max(1, runtime.camera.lastScale || 1);
+      var rawTarget = clampVal(Math.max(rawDpr, 1.5) * camScale, 2.0, 3.0);
+      var targetDpr = Math.round(rawTarget * 4) / 4;
+      var targetW = Math.round(VIEW_W * targetDpr);
+      var targetH = Math.round(VIEW_H * targetDpr);
+      if (canvas.width !== targetW || canvas.height !== targetH) {
+        canvas.width = targetW;
+        canvas.height = targetH;
+      }
+      if (ctx.setTransform) { ctx.setTransform(targetDpr, 0, 0, targetDpr, 0, 0); }
+      ctx.imageSmoothingEnabled = true;
+      if ("imageSmoothingQuality" in ctx) { ctx.imageSmoothingQuality = "high"; }
+    }
+
     var map = mapOf(state);
     var pal = Bow.stage && Bow.stage.skyOf ? Bow.stage.skyOf(state) : { moon: false };
     var isAggro = !!(Bow.skirmish && Bow.skirmish.isAggressive && Bow.skirmish.isAggressive());
@@ -2261,11 +2334,24 @@
     applyCameraToDom(null, state);
   }
 
-  /* ---------- Полководческое «Поле брани» (1088×368) для больших отрядов-стеков ---------- */
+  /* ---------- Полководческое «Поле брани» (1088×368, HiDPI) для больших отрядов-стеков ---------- */
   function paintBattleCanvas(canvas, state) {
     if (!canvas || !canvas.getContext || !state || !state.fight) { return; }
     var ctx = canvas.getContext("2d");
     if (!ctx) { return; }
+
+    if (isLiveBrowser()) {
+      var bDpr = clampVal(global.devicePixelRatio || 1, 2.0, 2.5);
+      var bTargetW = Math.round(BATTLE_W * bDpr);
+      var bTargetH = Math.round(BATTLE_H * bDpr);
+      if (canvas.width !== bTargetW || canvas.height !== bTargetH) {
+        canvas.width = bTargetW;
+        canvas.height = bTargetH;
+      }
+      if (ctx.setTransform) { ctx.setTransform(bDpr, 0, 0, bDpr, 0, 0); }
+      ctx.imageSmoothingEnabled = true;
+      if ("imageSmoothingQuality" in ctx) { ctx.imageSmoothingQuality = "high"; }
+    }
 
     var f = state.fight;
     var locId = (state.player && state.player.location) || "square";

@@ -507,6 +507,12 @@
       if (!("pendingOrder" in state)) { state.pendingOrder = null; }
       state.version = "0.0.9.2";
       return state;
+    },
+
+    /* 0.0.9.2 → 0.0.9.2f: исправление модального окна выбора устройства, HiDPI-чёткость без размытия и чистая средневековая типографика без цветных эмодзи. */
+    "0.0.9.2": function (state) {
+      state.version = "0.0.9.2f";
+      return state;
     }
   };
 

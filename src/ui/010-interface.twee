@@ -113,7 +113,7 @@
       <section class="bow-hud-strip" aria-label="Нижняя консоль управления">
         <div class="bow-hud-mode-wrap">
           <button type="button" id="bow-aggro-btn" class="bow-mode-btn" data-act="toggle-aggro" aria-pressed="false" title="Переключить мирный и агрессивный режим действий [Tab]. В боевом режиме клик по цели сразу начинает схватку.">
-            <span class="bow-mode-i">✋</span>
+            <span class="bow-mode-i" aria-hidden="true">◈</span>
             <span class="bow-mode-txt"><b>Мирный</b><i>Tab — к бою</i></span>
           </button>
         </div>
@@ -138,7 +138,7 @@
             <span>◈ Карта</span>
           </button>
           <button type="button" class="bow-dock-btn" data-act="open-world-panel" data-tab="desc" title="Сведения об этом месте">
-            <span>📜 Место</span>
+            <span>❖ Место</span>
           </button>
         </div>
       </section>
@@ -301,20 +301,32 @@
 
   <div id="bow-sheet" class="bow-sheet" aria-hidden="true"></div>
 
-  <!-- Модальное окно выбора режима управления при запуске (ПК / Телефон, 0.0.9.2) -->
-  <div id="bow-device-modal" class="bow-device-modal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="bow-device-title">
+  <!-- Всплывающее окно выбора режима управления при запуске (ПК / Телефон, 0.0.9.2f) -->
+  <div id="bow-device-modal" class="bow-device-modal" hidden aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="bow-device-title">
     <div class="bow-device-card">
       <p class="bow-device-kicker">СТУДЁНЫЙ БРОД · ХЛАДНЫЕ ВЕТРА</p>
-      <h2 id="bow-device-title" class="bow-device-title">Выберите режим управления</h2>
-      <p class="bow-device-sub">Режим можно в любой момент переключить в меню настроек (☰).</p>
+      <h2 id="bow-device-title" class="bow-device-title">Выберите тип устройства</h2>
+      <p class="bow-device-sub">Интерфейс и камера подстроятся под ваш экран. Позже режим можно в любой момент переключить в меню настроек (☰).</p>
       <div class="bow-device-choices">
         <button type="button" class="bow-device-choice" data-act="device-pick" data-device="pc">
-          <span class="bow-device-icon" aria-hidden="true">🖥</span>
+          <span class="bow-device-icon" aria-hidden="true">
+            <svg viewBox="0 0 36 28" width="36" height="28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="miter">
+              <rect x="3" y="3" width="30" height="18" rx="1"/>
+              <line x1="18" y1="21" x2="18" y2="25"/>
+              <line x1="11" y1="25" x2="25" y2="25"/>
+            </svg>
+          </span>
           <b>Компьютер (ПК)</b>
           <i>Полноразмерный интерфейс CRPG, наведение мышью, клавиши Пробел / Tab / Esc и зум колесом.</i>
         </button>
         <button type="button" class="bow-device-choice" data-act="device-pick" data-device="mobile">
-          <span class="bow-device-icon" aria-hidden="true">📱</span>
+          <span class="bow-device-icon" aria-hidden="true">
+            <svg viewBox="0 0 28 36" width="28" height="36" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="miter">
+              <rect x="6" y="2.5" width="16" height="31" rx="1.5"/>
+              <line x1="11.5" y1="6" x2="16.5" y2="6"/>
+              <circle cx="14" cy="29.5" r="1.2" fill="currentColor" stroke="none"/>
+            </svg>
+          </span>
           <b>Телефон / Сенсор</b>
           <i>Компактный мобильный интерфейс, свободная камера пальцем, зум щипком и точные касания по силуэту.</i>
         </button>
@@ -323,7 +335,7 @@
   </div>
 
   <footer class="bow-footer bow-sr-only" aria-hidden="true">
-    <span>Blades Of War · прототип 0.0.9.2 · Хладные Ветра · Студёный Брод</span>
+    <span>Blades Of War · прототип 0.0.9.2f · Хладные Ветра · Студёный Брод</span>
   </footer>
 
 </div>
