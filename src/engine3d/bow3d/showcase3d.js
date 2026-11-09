@@ -18,6 +18,11 @@ import {
   animateMedievalWell3D
 } from "./bowProp.js";
 import {
+  createBowHorse3D,
+  animateHorse3D,
+  disposeBowHorse
+} from "./bowHorse.js";
+import {
   buildPropAtlasCanvas,
   canvasToThreeTexture
 } from "./bowTextures.js";
@@ -100,10 +105,10 @@ export function mountBowShowcase(rootEl) {
       <!-- Верхняя панель статуса и метрик производительности -->
       <header class="pz-topbar">
         <div class="pz-brand">
-          <span class="pz-badge">КЛИНКИ ВОЙНЫ · 3D РЕВИЗИЯ 4</span>
+          <span class="pz-badge">КЛИНКИ ВОЙНЫ · 3D РЕВИЗИЯ 5</span>
           <div class="pz-titles">
             <h1>Blades Of War · Земли Эдема: Хладные Ветра vs Златодвор</h1>
-            <p>Два народа Земли Эдема: раздельные слои тела и одежды, живые лица и заземлённая походка</p>
+            <p>Перекат стопы с носком, породистые лица двух народов и конный воин Севера</p>
           </div>
         </div>
         <div class="pz-stats" id="pz-stats">
@@ -172,6 +177,7 @@ export function mountBowShowcase(rootEl) {
             <button type="button" data-focus="facesNorth">Лица Севера</button>
             <button type="button" data-focus="facesEden">Лица Центра</button>
             <button type="button" data-focus="legs">Таз / шаг</button>
+            <button type="button" data-focus="rider">Конник</button>
             <button type="button" data-focus="well">Колодец</button>
           </div>
         </div>
@@ -274,7 +280,9 @@ export function mountBowShowcase(rootEl) {
     northMale: null,
     edenFemale: null,
     edenMale: null,
-    wellProp: null
+    wellProp: null,
+    horse: null,
+    rider: null
   };
 
   /* Эталонный средневековый колодец (10/10) в сердце сцены между двумя королевствами */
@@ -282,6 +290,25 @@ export function mountBowShowcase(rootEl) {
   state.wellProp.group.position.set(0.0, 0, -0.34);
   state.wellProp.group.rotation.y = -0.22;
   stageGroup.add(state.wellProp.group);
+
+  /* БОЕВОЙ КОНЬ СЕВЕРА со всадником — за колодцем, в глубине сцены.
+     Всадник — северянин-воин, сидит ребёнком якоря седла в позе "ride". */
+  state.horse = createBowHorse3D({ kingdom: "north" });
+  state.horse.group.position.set(0.35, 0, -1.72);
+  state.horse.group.rotation.y = 0.55;
+  stageGroup.add(state.horse.group);
+
+  state.rider = createBowCharacter3D({
+    female: false,
+    kingdom: "north",
+    outfit: "warrior",
+    hairStyle: "classic"
+  });
+  /* Таз всадника садится точно в седло: опускаем группу на высоту таза позы "ride" */
+  state.rider.group.position.set(0, -(state.rider.metrics.hipY - 0.012), 0.01);
+  state.rider.contactShadow.visible = false; // тень даёт конь
+  state.horse.saddleAnchor.add(state.rider.group);
+  poseBowCharacter(state.rider, "ride", 0);
 
   function allRigs() {
     return [state.northFemale, state.northMale, state.edenFemale, state.edenMale].filter(Boolean);
@@ -361,6 +388,7 @@ export function mountBowShowcase(rootEl) {
     facesNorth: { target: [-1.32, 1.48,  0.20], radius: 1.56, yaw: 0.12,  pitch: 0.08 },
     facesEden:  { target: [ 1.32, 1.50,  0.20], radius: 1.56, yaw: -0.12, pitch: 0.08 },
     legs:       { target: [-1.28, 0.72,  0.20], radius: 2.35, yaw: 0.16,  pitch: 0.12 },
+    rider:      { target: [ 0.35, 1.12, -1.72], radius: 3.05, yaw: 2.72,  pitch: 0.14 },
     well:       { target: [ 0.00, 1.06, -0.34], radius: 3.05, yaw: -0.22, pitch: 0.25 }
   };
 
@@ -656,6 +684,14 @@ export function mountBowShowcase(rootEl) {
       }
     }
 
+    /* Конный воин: в «Сцене» и «Походке» конь идёт шагом, в «Стойке» отдыхает,
+       в «Бою» стоит, а всадник вскидывает клинок */
+    if (state.horse && state.rider) {
+      const horseMode = (state.anim === "scene" || state.anim === "walk") ? "walk" : "idle";
+      animateHorse3D(state.horse, horseMode, elapsed);
+      poseBowCharacter(state.rider, "ride", elapsed, { swordArm: state.anim === "combat" });
+    }
+
     animateMedievalWell3D(state.wellProp, elapsed);
 
     renderer.render(scene, camera);
@@ -681,6 +717,8 @@ export function mountBowShowcase(rootEl) {
       if (resizeObserver) resizeObserver.disconnect();
       window.removeEventListener("resize", syncViewportSize);
       allRigs().forEach((rig) => disposeBowCharacter(rig));
+      if (state.rider) disposeBowCharacter(state.rider);
+      if (state.horse) disposeBowHorse(state.horse);
       if (state.wellProp) state.wellProp.dispose();
       plinth.dispose();
       shadowCatcherGeo.dispose();

@@ -150,7 +150,26 @@ export function buildHeadTextureCanvas(opts = {}, canvasFactory = null) {
     ctx.fill();
   });
 
-  /* 2. ЖИВЫЕ ЧЕЛОВЕЧЕСКИЕ ГЛАЗА И БРОВИ (основа прошлого удачного варианта, улучшенная) */
+  /* ПОРОДА ДВУХ НАРОДОВ (до прорисовки глаз, чтобы брови и веки легли поверх):
+     Север — тяжёлая нависающая надбровная дуга и широкая переносица;
+     Златодвор — высокие точёные скулы и тонкий нос аристократа */
+  if (!fem && !isEden) {
+    /* Тень под тяжёлой надбровной дугой северянина */
+    softRadial(ctx, W * 0.5 - 37, H * 0.470, 30, "rgba(96, 62, 42, 0.20)", "rgba(96, 62, 42, 0)");
+    softRadial(ctx, W * 0.5 + 37, H * 0.470, 30, "rgba(96, 62, 42, 0.20)", "rgba(96, 62, 42, 0)");
+    /* Широкая грубая переносица */
+    softRadial(ctx, W * 0.5 - 13, H * 0.520, 15, "rgba(118, 76, 50, 0.18)", "rgba(118, 76, 50, 0)");
+    softRadial(ctx, W * 0.5 + 13, H * 0.520, 15, "rgba(118, 76, 50, 0.18)", "rgba(118, 76, 50, 0)");
+  } else if (!fem && isEden) {
+    /* Светлый блик высоких скул и лёгкая подскуловая тень златодворца */
+    softRadial(ctx, W * 0.395, H * 0.530, 22, "rgba(255, 238, 216, 0.16)", "rgba(255, 238, 216, 0)");
+    softRadial(ctx, W * 0.605, H * 0.530, 22, "rgba(255, 238, 216, 0.16)", "rgba(255, 238, 216, 0)");
+    softRadial(ctx, W * 0.400, H * 0.585, 18, "rgba(118, 76, 52, 0.13)", "rgba(118, 76, 52, 0)");
+    softRadial(ctx, W * 0.600, H * 0.585, 18, "rgba(118, 76, 52, 0.13)", "rgba(118, 76, 52, 0)");
+  }
+
+  /* 2. ЖИВЫЕ ЧЕЛОВЕЧЕСКИЕ ГЛАЗА И БРОВИ (основа прошлого удачного варианта, улучшенная:
+     глаза КРУПНЕЕ, с читаемым верхним веком и мягкой линией нижнего века) */
   const eyeY = H * 0.495;
   const eyeDX = fem ? 35 : 37;
 
@@ -172,7 +191,7 @@ export function buildHeadTextureCanvas(opts = {}, canvasFactory = null) {
     /* Приглушённая естественная склера в тени ресниц (не ярко-белая, но даёт живой человеческий взгляд!) */
     ctx.fillStyle = isEden ? "#d8cec2" : "#d3c9be";
     ctx.beginPath();
-    ctx.ellipse(ex, eyeY + 2.4, fem ? 13.5 : 13.0, fem ? 5.0 : 4.3, 0, 0, Math.PI * 2);
+    ctx.ellipse(ex, eyeY + 2.4, fem ? 14.3 : 13.8, fem ? 5.6 : 5.0, 0, 0, Math.PI * 2);
     ctx.fill();
 
     /* Радужка: у северян серо-ледяная / тёмно-серая, у златодворцев орехово-каряя / сине-зелёная */
@@ -180,14 +199,34 @@ export function buildHeadTextureCanvas(opts = {}, canvasFactory = null) {
       ? (fem ? "#3c4c3e" : "#473524")
       : (fem ? "#42525e" : "#38454f");
     ctx.beginPath();
-    ctx.ellipse(ex - side * 0.7, eyeY + 2.2, fem ? 6.8 : 6.5, fem ? 4.9 : 4.3, 0, 0, Math.PI * 2);
+    ctx.ellipse(ex - side * 0.7, eyeY + 2.2, fem ? 7.3 : 7.0, fem ? 5.4 : 4.9, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    /* Зрачок */
+    /* Зрачок + живой блик */
     ctx.fillStyle = "#120d0a";
     ctx.beginPath();
-    ctx.arc(ex - side * 0.7, eyeY + 2.2, 3.1, 0, Math.PI * 2);
+    ctx.arc(ex - side * 0.7, eyeY + 2.2, 3.3, 0, Math.PI * 2);
     ctx.fill();
+    ctx.fillStyle = "rgba(255, 252, 244, 0.65)";
+    ctx.beginPath();
+    ctx.arc(ex - side * 0.7 - 1.6, eyeY + 0.8, 1.1, 0, Math.PI * 2);
+    ctx.fill();
+
+    /* Складка верхнего века (чёткое человеческое веко над ресницами) */
+    ctx.strokeStyle = fem ? "rgba(112, 72, 52, 0.38)" : "rgba(104, 66, 46, 0.42)";
+    ctx.lineWidth = 1.7;
+    ctx.beginPath();
+    ctx.moveTo(ex - 13.6, eyeY - 4.6);
+    ctx.quadraticCurveTo(ex, eyeY - (fem ? 10.4 : 9.2), ex + 13.6, eyeY - 4.6);
+    ctx.stroke();
+
+    /* Мягкая линия нижнего века */
+    ctx.strokeStyle = "rgba(126, 82, 60, 0.30)";
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.moveTo(ex - 11.5, eyeY + 6.6);
+    ctx.quadraticCurveTo(ex, eyeY + (fem ? 9.6 : 8.8), ex + 11.5, eyeY + 6.6);
+    ctx.stroke();
 
     /* Ресничный контур верхнего века (у женщин Златодвора — тонкая подводка сурьмой с ресничкой у края) */
     ctx.fillStyle = fem && isEden ? "#19100d" : "#261810";
@@ -300,17 +339,23 @@ export function buildHeadTextureCanvas(opts = {}, canvasFactory = null) {
     ctx.fill();
   } else {
     /* Гладко выбритый мужчина Златодвора (или безбородый северянин):
-       спокойные мужские губы нормальной полноты и волевой подбородок */
-    ctx.fillStyle = isEden ? "#b07d6e" : "#a87b6f";
+       БЛЕДНЫЕ мужские губы почти в тон кожи (никакого коричневого пятна!) —
+       рот читается главным образом по тёмной линии смыкания */
+    ctx.fillStyle = isEden ? "rgba(197, 140, 118, 0.52)" : "rgba(188, 134, 114, 0.48)";
     ctx.beginPath();
-    ctx.moveTo(W * 0.5 - 18, mouthY + 1.0);
-    ctx.quadraticCurveTo(W * 0.5, mouthY - 4.4, W * 0.5 + 18, mouthY + 1.0);
-    ctx.quadraticCurveTo(W * 0.5, mouthY + 6.8, W * 0.5 - 18, mouthY + 1.0);
+    ctx.moveTo(W * 0.5 - 16.5, mouthY + 0.8);
+    ctx.quadraticCurveTo(W * 0.5, mouthY - 3.8, W * 0.5 + 16.5, mouthY + 0.8);
+    ctx.quadraticCurveTo(W * 0.5, mouthY + 5.8, W * 0.5 - 16.5, mouthY + 0.8);
     ctx.closePath();
     ctx.fill();
 
-    ctx.fillStyle = "rgba(74, 38, 28, 0.62)";
-    ctx.fillRect(W * 0.5 - 17, mouthY + 0.5, 34, 1.7);
+    /* Тёмная линия смыкания губ с лёгким изгибом */
+    ctx.strokeStyle = "rgba(74, 38, 28, 0.60)";
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ctx.moveTo(W * 0.5 - 15.5, mouthY + 0.6);
+    ctx.quadraticCurveTo(W * 0.5, mouthY + 2.4, W * 0.5 + 15.5, mouthY + 0.6);
+    ctx.stroke();
     /* Лёгкая благородная ямочка/тень под нижней губой */
     softRadial(ctx, W * 0.5, mouthY + 11, 9, "rgba(116, 74, 52, 0.22)", "rgba(116, 74, 52, 0)");
   }
@@ -373,14 +418,26 @@ export function buildHairTextureCanvas(hairColor = null, styleKey = "classic", f
     return cv;
   }
 
-  /* Волосы: живые пряди с естественным переливом (особенно хорошо читаются на русых волосах Златодвора!) */
+  /* Волосы: живые пряди с естественным переливом. Полосы ДЕЛИКАТНЫЕ —
+     прежние alpha 0.11/0.14 читались как «древесные волокна», приглушено */
   ctx.fillStyle = baseCol;
   ctx.fillRect(0, 0, W, H);
   softVBand(ctx, 0, 0, W, H, "rgba(255, 240, 215, 0.14)", "rgba(0, 0, 0, 0.04)", "rgba(18, 10, 4, 0.32)");
 
   for (let x = 0; x < W; x += 9) {
-    ctx.fillStyle = x % 18 === 0 ? "rgba(255, 232, 195, 0.11)" : "rgba(20, 10, 4, 0.14)";
+    ctx.fillStyle = x % 18 === 0 ? "rgba(255, 232, 195, 0.07)" : "rgba(20, 10, 4, 0.09)";
     ctx.fillRect(x, 0, 4, H);
+  }
+
+  /* Косой ПРОБОР короткой придворной стрижки златодворца: тонкая тёмная линия
+     кожи и светлый блик причёсанных от неё волос (сбоку от центра, u ~ 0.59) */
+  if (isEden && !female && styleKey === "classic") {
+    const px = W * 0.59;
+    ctx.fillStyle = "rgba(38, 24, 12, 0.50)";
+    ctx.fillRect(px - 1.5, 0, 3, H * 0.52);
+    ctx.fillStyle = "rgba(255, 236, 200, 0.16)";
+    ctx.fillRect(px - 7, 0, 5, H * 0.50);
+    ctx.fillRect(px + 2, 0, 4, H * 0.46);
   }
 
   /* У жительниц Златодвора на классической причёске — тонкий золочёный обруч/лента в русых волосах */
@@ -414,6 +471,28 @@ export function buildBaseBodyTextureCanvas(opts = {}, canvasFactory = null) {
   softVBand(ctx, 0, 0, W, 232, pal.skinBase, pal.skinMid, pal.skinBase);
   softRadial(ctx, W * 0.25, 110, 95, "rgba(110, 72, 48, 0.10)", "rgba(0,0,0,0)");
   softRadial(ctx, W * 0.75, 110, 95, "rgba(110, 72, 48, 0.10)", "rgba(0,0,0,0)");
+
+  /* Лёгкая тень под челюстью и подбородком на верху шеи (cy 0..22 — самый верх зоны кожи):
+     голова перестаёт выглядеть «приставленной» к шее */
+  softVBand(ctx, 0, 0, W, 22, "rgba(88, 56, 38, 0.26)", "rgba(88, 56, 38, 0.10)", "rgba(88, 56, 38, 0)");
+
+  /* Волосы на теле мужчин: деликатный тёмный крап по всей зоне кожи
+     (у северян гуще и заметнее, у холёных златодворцев едва-едва) */
+  if (!fem) {
+    const count = isEden ? 1500 : 2800;
+    const alpha = isEden ? 0.045 : 0.085;
+    let seed = isEden ? 20417 : 9973;
+    const rnd = () => {
+      seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+      return seed / 0x7fffffff;
+    };
+    ctx.fillStyle = `rgba(56, 36, 22, ${alpha})`;
+    for (let i = 0; i < count; i++) {
+      const x = rnd() * W;
+      const y = 24 + rnd() * 206; // ниже шеи, по всей коже рук/торса/ног
+      ctx.fillRect(x, y, 1.3, 2.1 + rnd() * 1.4);
+    }
+  }
   /* Лёгкая ложбинка ключиц и грудины спереди (u ~ 0.5) */
   softRadial(ctx, W * 0.50, 36, 22, "rgba(120, 78, 54, 0.14)", "rgba(0,0,0,0)");
   if (fem) {

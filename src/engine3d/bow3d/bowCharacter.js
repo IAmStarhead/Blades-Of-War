@@ -41,8 +41,12 @@ export const BONE_IDX = {
   FOOT_L: 14,
   THIGH_R: 15,
   SHIN_R: 16,
-  FOOT_R: 17
+  FOOT_R: 17,
+  TOE_L: 18,
+  TOE_R: 19
 };
+
+export const BONE_COUNT = 20;
 
 const IDENTITY_BIND = new THREE.Matrix4();
 
@@ -162,7 +166,7 @@ class MeshBuilder {
 export function createHumanoidSkeleton(female = false, kingdom = "north") {
   const isEden = normalizeKingdomKey(kingdom) === "eden";
   const bones = [];
-  for (let i = 0; i < 18; i++) {
+  for (let i = 0; i < BONE_COUNT; i++) {
     bones.push(new THREE.Bone());
   }
 
@@ -176,11 +180,12 @@ export function createHumanoidSkeleton(female = false, kingdom = "north") {
   const neckY     = (female ? 1.385 : 1.455) * hScale;
   const headY     = (female ? 1.450 : 1.525) * hScale;
 
-  /* Женские плечи заметно уже и покатее мужских */
+  /* Женские плечи заметно уже и покатее мужских.
+     Руки анатомической длины: кисть достаёт до середины бедра (канон 7.5 голов роста) */
   const shoulderX = (female ? 0.154 : 0.204) * wScale;
   const shoulderY = (female ? 1.345 : 1.42)  * hScale;
-  const upperArmLen = (female ? 0.250 : 0.275) * hScale;
-  const forearmLen  = (female ? 0.230 : 0.255) * hScale;
+  const upperArmLen = (female ? 0.257 : 0.284) * hScale;
+  const forearmLen  = (female ? 0.236 : 0.263) * hScale;
 
   const hipX     = (female ? 0.082 : 0.084) * wScale;
   const thighLen = (female ? 0.41  : 0.43)  * hScale;
@@ -224,20 +229,24 @@ export function createHumanoidSkeleton(female = false, kingdom = "north") {
   bones[BONE_IDX.UPPER_ARM_R].add(bones[BONE_IDX.FOREARM_R]);
   bones[BONE_IDX.FOREARM_R].add(bones[BONE_IDX.HAND_R]);
 
-  /* Ноги */
+  /* Ноги (с суставом плюсны: стопа умеет перекатываться с пятки на пальцы!) */
   bones[BONE_IDX.THIGH_L].position.set(hipX, -0.03, 0);
   bones[BONE_IDX.SHIN_L].position.set(0, -thighLen, 0);
   bones[BONE_IDX.FOOT_L].position.set(0, -shinLen, 0.008);
+  bones[BONE_IDX.TOE_L].position.set(0, -0.048 * hScale, 0.062); // сустав у подушечки стопы
   bones[BONE_IDX.PELVIS].add(bones[BONE_IDX.THIGH_L]);
   bones[BONE_IDX.THIGH_L].add(bones[BONE_IDX.SHIN_L]);
   bones[BONE_IDX.SHIN_L].add(bones[BONE_IDX.FOOT_L]);
+  bones[BONE_IDX.FOOT_L].add(bones[BONE_IDX.TOE_L]);
 
   bones[BONE_IDX.THIGH_R].position.set(-hipX, -0.03, 0);
   bones[BONE_IDX.SHIN_R].position.set(0, -thighLen, 0);
   bones[BONE_IDX.FOOT_R].position.set(0, -shinLen, 0.008);
+  bones[BONE_IDX.TOE_R].position.set(0, -0.048 * hScale, 0.062);
   bones[BONE_IDX.PELVIS].add(bones[BONE_IDX.THIGH_R]);
   bones[BONE_IDX.THIGH_R].add(bones[BONE_IDX.SHIN_R]);
   bones[BONE_IDX.SHIN_R].add(bones[BONE_IDX.FOOT_R]);
+  bones[BONE_IDX.FOOT_R].add(bones[BONE_IDX.TOE_R]);
 
   bones[BONE_IDX.ROOT].updateMatrixWorld(true);
   return {
@@ -383,6 +392,7 @@ export function buildBaseBodyGeometry(female = false, metrics) {
     const bThigh = isLeft ? BONE_IDX.THIGH_L : BONE_IDX.THIGH_R;
     const bShin  = isLeft ? BONE_IDX.SHIN_L  : BONE_IDX.SHIN_R;
     const bFoot  = isLeft ? BONE_IDX.FOOT_L  : BONE_IDX.FOOT_R;
+    const bToe   = isLeft ? BONE_IDX.TOE_L   : BONE_IDX.TOE_R;
 
     const hx = sign * m.hipX;
     const hy = m.hipY - 0.03 * hs;
@@ -490,7 +500,11 @@ export function buildBaseBodyGeometry(female = false, metrics) {
         const phi = (uFrac - 0.5) * Math.PI * 2;
         const cosP = Math.cos(phi);
         const zStretch = cosP >= 0 ? frz * 1.28 : frz * 0.66;
-        ring.push(mb.addVertex(fx + Math.sin(phi) * frx, fy, fz + cosP * zStretch, uFrac, vTex, bFoot, 1.0, bShin, 0.0));
+        const vz = fz + cosP * zStretch;
+        /* Передняя часть стопы (плюсна и пальцы) принадлежит кости носка:
+           плавный переход весов за суставом подушечки — стопа ПЕРЕКАТЫВАЕТСЯ, а не гнётся доской */
+        const toeW = Math.max(0, Math.min(1, (vz - 0.052) / 0.055));
+        ring.push(mb.addVertex(fx + Math.sin(phi) * frx, fy, vz, uFrac, vTex, bFoot, 1.0 - toeW, bToe, toeW));
       }
       mb.seamPairs.push([ring[0], ring[segsLeg]]);
       rings.push(ring);
@@ -501,8 +515,16 @@ export function buildBaseBodyGeometry(female = false, metrics) {
     mb.capRing(rings[rings.length - 1], soleCenter, false);
   }
 
+  /* Диапазоны вершин конечностей — задел под механику отсечения (Kenshi-style):
+     [от, до) в индексах вершин итоговой геометрии */
+  const limbRanges = { torso: [0, mb.vertCount] };
+
+  let mark = mb.vertCount;
   buildLeg(false);
+  limbRanges.legR = [mark, mb.vertCount];
+  mark = mb.vertCount;
   buildLeg(true);
+  limbRanges.legL = [mark, mb.vertCount];
 
   /* === В. ГЛАДКИЕ ГОЛЫЕ РУКИ (ни одной ступеньки обшлага — только чистая кожа) === */
   function buildArm(isLeft) {
@@ -580,10 +602,16 @@ export function buildBaseBodyGeometry(female = false, metrics) {
     mb.capRing(thumbRings[2], tTip, false);
   }
 
+  mark = mb.vertCount;
   buildArm(true);
+  limbRanges.armL = [mark, mb.vertCount];
+  mark = mb.vertCount;
   buildArm(false);
+  limbRanges.armR = [mark, mb.vertCount];
 
-  return mb.toGeometry();
+  const geo = mb.toGeometry();
+  geo.userData.limbRanges = limbRanges;
+  return geo;
 }
 
 /* ---------- 2. ОТДЕЛЬНАЯ ГЕОМЕТРИЯ ВЕРХНЕЙ ОДЕЖДЫ, НАРУЧЕЙ, ШТАНОВ И САПОГ ----------
@@ -668,7 +696,19 @@ export function buildGarmentGeometry(female = false, rawOutfit = "villager", kin
         const twinCup = Math.pow(Math.sin(Math.min(1, Math.abs(sinP) * 1.9) * Math.PI), 1.2);
         rz += 0.040 * breastW * twinCup * Math.max(0, cosP);
       }
-      ring.push(mb.addVertex(sinP * rxBase * ws * bulk, yRaw * hs, zOff + cosP * rz, uFrac, vTex, b0, w0, b1, w1));
+      /* Нижние кольца подола: боковые вершины частично следуют за бедром своей стороны —
+         нога при шаге несёт ткань с собой и больше НЕ протыкает юбку/подол туники */
+      let vb0 = b0, vw0 = w0, vb1 = b1, vw1 = w1;
+      if (b0 === P && yRaw < 0.90) {
+        const follow = Math.max(0, Math.min(1, (0.95 - yRaw) / 0.40));
+        const thighShare = Math.abs(sinP) * follow * 0.62;
+        if (thighShare > 0.03) {
+          vb0 = P; vw0 = 1 - thighShare;
+          vb1 = sinP > 0 ? BONE_IDX.THIGH_L : BONE_IDX.THIGH_R;
+          vw1 = thighShare;
+        }
+      }
+      ring.push(mb.addVertex(sinP * rxBase * ws * bulk, yRaw * hs, zOff + cosP * rz, uFrac, vTex, vb0, vw0, vb1, vw1));
     }
     mb.seamPairs.push([ring[0], ring[segsTorso]]);
     tunicRings.push(ring);
@@ -805,6 +845,7 @@ export function buildGarmentGeometry(female = false, rawOutfit = "villager", kin
     const bShin = isLeft ? BONE_IDX.SHIN_L : BONE_IDX.SHIN_R;
     const bFoot = isLeft ? BONE_IDX.FOOT_L : BONE_IDX.FOOT_R;
     const bThigh = isLeft ? BONE_IDX.THIGH_L : BONE_IDX.THIGH_R;
+    const bToe  = isLeft ? BONE_IDX.TOE_L : BONE_IDX.TOE_R;
 
     const hy = m.hipY - 0.03 * hs;
     const kx = sign * (m.hipX * 0.94);
@@ -844,7 +885,14 @@ export function buildGarmentGeometry(female = false, rawOutfit = "villager", kin
         /* Носок обуви вытянут вперёд, пятка короче */
         const isFootRow = cy3d < 0.09;
         const zStretch = isFootRow ? (cosP >= 0 ? rz * 1.12 : rz * 0.68) : rz;
-        ring.push(mb.addVertex(cx + Math.sin(phi) * rx, cy3d, cz + cosP * zStretch, uFrac, vTex, b0, w0, b1, w1));
+        const vz = cz + cosP * zStretch;
+        /* Передок обуви переходит на кость носка — башмак перекатывается вместе со стопой */
+        let vb0 = b0, vw0 = w0, vb1 = b1, vw1 = w1;
+        if (isFootRow && b0 === bFoot) {
+          const toeW = Math.max(0, Math.min(1, (vz - 0.052) / 0.055));
+          if (toeW > 0.01) { vb0 = bFoot; vw0 = 1 - toeW; vb1 = bToe; vw1 = toeW; }
+        }
+        ring.push(mb.addVertex(cx + Math.sin(phi) * rx, cy3d, vz, uFrac, vTex, vb0, vw0, vb1, vw1));
       }
       mb.seamPairs.push([ring[0], ring[segsFoot]]);
       rings.push(ring);
@@ -894,14 +942,16 @@ export function buildSculptedHeadGeometry(female = false, hasBeard = false, king
       const templeFlatten = Math.pow(Math.abs(sinP), 2.2) * Math.exp(-Math.pow((vFrac - 0.56) / 0.25, 2));
       rx *= (1 - (female ? 0.06 : 0.09) * templeFlatten);
 
+      /* ПОРОДА: у златодворцев высокие точёные скулы с лёгкой подскуловой тенью,
+         у северян кость шире и грубее без аристократической лепки */
       const cheekBone = Math.exp(-Math.pow((Math.abs(phi) - 0.65) / 0.28, 2)) * Math.exp(-Math.pow((vFrac - 0.46) / 0.07, 2));
       const cheekHollow = Math.exp(-Math.pow((Math.abs(phi) - 0.68) / 0.30, 2)) * Math.exp(-Math.pow((vFrac - 0.33) / 0.08, 2));
-      rx += cheekBone * (female ? 0.003 : 0.004) - cheekHollow * (female ? 0.002 : 0.004);
+      rx += cheekBone * (female ? 0.003 : (isEden ? 0.006 : 0.004)) - cheekHollow * (female ? 0.002 : (isEden ? 0.005 : 0.003));
 
-      /* Челюсть: у мужчин волевая, у женщин мягкая аккуратная */
+      /* Челюсть: у северян тяжёлая и широкая, у златодворцев узкая аристократическая */
       if (vFrac < 0.48) {
         const jawT = Math.max(0, (0.48 - vFrac) / 0.48);
-        rx *= lerp(1.0, female ? 0.78 : (isEden ? 0.86 : 0.92), jawT * 0.62);
+        rx *= lerp(1.0, female ? 0.78 : (isEden ? 0.84 : 0.95), jawT * 0.62);
 
         if (cosP > 0) {
           const chinMask = Math.exp(-Math.pow(phi / (female ? 0.40 : 0.58), 2)) * Math.exp(-Math.pow((vFrac - 0.17) / 0.12, 2));
@@ -915,10 +965,10 @@ export function buildSculptedHeadGeometry(female = false, hasBeard = false, king
         }
       }
 
-      /* Мягкий надбровный рельеф */
+      /* Надбровный рельеф: у северян ТЯЖЁЛАЯ нависающая дуга, у златодворцев лёгкая */
       if (cosP > 0.2 && vFrac > 0.50 && vFrac < 0.78) {
         const browRidge = Math.exp(-Math.pow(phi / 0.86, 2)) * Math.exp(-Math.pow((vFrac - 0.555) / 0.046, 2));
-        rz += browRidge * (female ? 0.004 : (isEden ? 0.007 : 0.010));
+        rz += browRidge * (female ? 0.004 : (isEden ? 0.006 : 0.013));
       }
 
       let x = sinP * rx;
@@ -931,9 +981,10 @@ export function buildSculptedHeadGeometry(female = false, hasBeard = false, king
         z -= socket * (female ? 0.0035 : 0.006);
       }
 
-      /* Анатомичный прямой нос */
-      if (Math.abs(phi) < 0.19 && vFrac > 0.385 && vFrac < 0.525) {
-        const noseW = Math.cos((phi / 0.19) * Math.PI * 0.5);
+      /* Анатомичный прямой нос: у златодворцев тонкий изящный, у северян шире в переносице */
+      const noseHalf = female ? 0.19 : (isEden ? 0.165 : 0.215);
+      if (Math.abs(phi) < noseHalf && vFrac > 0.385 && vFrac < 0.525) {
+        const noseW = Math.cos((phi / noseHalf) * Math.PI * 0.5);
         let noseProfile = 0;
         if (vFrac >= 0.415) {
           const tBridge = (vFrac - 0.415) / 0.110;
@@ -941,7 +992,7 @@ export function buildSculptedHeadGeometry(female = false, hasBeard = false, king
         } else {
           noseProfile = Math.max(0, (vFrac - 0.385) / 0.030);
         }
-        z += noseW * noseProfile * (female ? 0.014 : 0.019);
+        z += noseW * noseProfile * (female ? 0.014 : (isEden ? 0.018 : 0.020));
       }
 
       /* Компактные уши */
@@ -972,7 +1023,7 @@ export function buildHairGeometry(female = false, styleKey = "classic", kingdom 
   const mb = new MeshBuilder(false);
   const segsU = 22;
 
-  function buildSolidCap(apexY, apexZ, profileRows) {
+  function buildSolidCap(apexY, apexZ, profileRows, sideSweep = 0) {
     const capRings = [];
     for (let r = 0; r < profileRows.length; r++) {
       const [vTex, baseY, frontLiftY, rx, rzF, rzB, zShift] = profileRows[r];
@@ -983,7 +1034,8 @@ export function buildHairGeometry(female = false, styleKey = "classic", kingdom 
         const sinP = Math.sin(phi);
         const cosP = Math.cos(phi);
         const faceArch = Math.pow(Math.max(0, cosP), 1.35);
-        const y = baseY + faceArch * frontLiftY;
+        /* sideSweep: диагональная чёлка причёсанных на косой пробор волос */
+        const y = baseY + faceArch * (frontLiftY + sinP * sideSweep);
         const rz = cosP >= 0 ? rzF : rzB;
         ring.push(mb.addVertex(sinP * rx * wMul, y, zShift + cosP * rz, uFrac, vTex));
       }
@@ -1106,16 +1158,17 @@ export function buildHairGeometry(female = false, styleKey = "classic", kingdom 
     /* У северянки низкий рабочий пучок, у златодворки — высокая благородная причёска */
     addBackBun(isEden ? 0.120 : 0.084, -0.110, 0.046, 0.045, 0.040);
   } else if (isEden) {
-    /* Златодворец: аккуратные русые волосы, зачёсанные назад с открытым лбом,
-       и чуть удлинённый затылок (пажеская стрижка двора) */
-    buildSolidCap(0.226, -0.006, [
-      [0.94, 0.216, 0.002, 0.043, 0.049, 0.053, -0.004],
-      [0.76, 0.190, 0.004, 0.088, 0.100, 0.110, -0.005],
-      [0.50, 0.138, 0.052, 0.091, 0.092, 0.113, -0.010],
-      [0.22, 0.084, 0.116, 0.086, 0.068, 0.108, -0.018],
-      [0.06, 0.038, 0.150, 0.072, 0.056, 0.092, -0.020],
-      [0.01, 0.048, 0.142, 0.056, 0.048, 0.070, -0.016]
-    ]);
+    /* Златодворец: КОРОТКАЯ аккуратная придворная стрижка с косым пробором —
+       открытый лоб, диагональная чёлка набок, подбритый короткий затылок
+       (никакого «пажеского горшка»!) */
+    buildSolidCap(0.224, -0.006, [
+      [0.94, 0.214, 0.002, 0.043, 0.049, 0.052, -0.004],
+      [0.76, 0.188, 0.004, 0.087, 0.098, 0.104, -0.005],
+      [0.50, 0.140, 0.054, 0.089, 0.088, 0.106, -0.009],
+      [0.22, 0.094, 0.112, 0.084, 0.064, 0.100, -0.014],
+      [0.06, 0.062, 0.138, 0.070, 0.052, 0.084, -0.015],
+      [0.01, 0.072, 0.130, 0.054, 0.044, 0.064, -0.012]
+    ], 0.016);
   } else {
     /* Северянин: грубая лохматая копна до ушей с тяжёлым длинным затылком —
        совсем другой силуэт, чем ухоженный зачёс Златодвора */
@@ -1206,6 +1259,8 @@ export function createBowCharacter3D(opts = {}) {
     bodyMesh,
     headMesh,
     hairMesh,
+    contactShadow,
+    limbRanges: bodyGeo.userData.limbRanges, // задел под механику отсечения конечностей
     garmentMesh: null,
     textures: { bodyCv, headCv, hairCv, bodyTex, headTex, hairTex },
 
@@ -1345,6 +1400,45 @@ export function poseBowCharacter(rig, mode = "idle", timeSec = 0, opts = {}) {
       (-(b[BONE_IDX.THIGH_L].rotation.x + b[BONE_IDX.SHIN_L].rotation.x) + pushL) * stanceL - swingL * 0.10;
     b[BONE_IDX.FOOT_R].rotation.x =
       (-(b[BONE_IDX.THIGH_R].rotation.x + b[BONE_IDX.SHIN_R].rotation.x) + pushR) * stanceR - swingR * 0.10;
+
+    /* ПЕРЕКАТ ПЯТКА -> ПАЛЬЦЫ: на опоре пальцы прижаты к полу даже когда пятка
+       уже оторвалась толчком (носок гнётся в суставе плюсны), на переносе — лёгкий провис */
+    b[BONE_IDX.TOE_L].rotation.x =
+      -(b[BONE_IDX.THIGH_L].rotation.x + b[BONE_IDX.SHIN_L].rotation.x + b[BONE_IDX.FOOT_L].rotation.x) * stanceL +
+      swingL * 0.06;
+    b[BONE_IDX.TOE_R].rotation.x =
+      -(b[BONE_IDX.THIGH_R].rotation.x + b[BONE_IDX.SHIN_R].rotation.x + b[BONE_IDX.FOOT_R].rotation.x) * stanceR +
+      swingR * 0.06;
+  } else if (mode === "ride") {
+    /* ПОСАДКА В СЕДЛЕ: бёдра подняты вперёд и разведены, колени согнуты,
+       стопы в стременах пятками вниз, корпус держит мягкий такт хода лошади */
+    const sway = Math.sin(timeSec * 1.9);
+    const bob = Math.sin(timeSec * 3.8);
+    b[BONE_IDX.PELVIS].position.y = m.hipY - 0.012 + bob * 0.006;
+    b[BONE_IDX.PELVIS].rotation.x = -0.10;
+    b[BONE_IDX.SPINE].rotation.x = 0.08 + bob * 0.012;
+    b[BONE_IDX.CHEST].rotation.x = 0.07;
+    b[BONE_IDX.CHEST].rotation.y = sway * 0.015;
+    b[BONE_IDX.HEAD].rotation.x = -0.10;
+    b[BONE_IDX.HEAD].rotation.y = sway * 0.03;
+
+    b[BONE_IDX.THIGH_L].rotation.set(-1.08, 0.10, 0.46);
+    b[BONE_IDX.THIGH_R].rotation.set(-1.08, -0.10, -0.46);
+    b[BONE_IDX.SHIN_L].rotation.x = 1.30;
+    b[BONE_IDX.SHIN_R].rotation.x = 1.30;
+    b[BONE_IDX.FOOT_L].rotation.x = -(b[BONE_IDX.THIGH_L].rotation.x + b[BONE_IDX.SHIN_L].rotation.x) - 0.14;
+    b[BONE_IDX.FOOT_R].rotation.x = -(b[BONE_IDX.THIGH_R].rotation.x + b[BONE_IDX.SHIN_R].rotation.x) - 0.14;
+
+    /* Левая рука всегда держит повод; правая — повод или поднятый клинок (opts.swordArm) */
+    b[BONE_IDX.UPPER_ARM_L].rotation.set(-0.40, -0.20, 0.14);
+    b[BONE_IDX.FOREARM_L].rotation.x = -0.80;
+    if (opts.swordArm) {
+      b[BONE_IDX.UPPER_ARM_R].rotation.set(-1.72, 0.30, -0.34);
+      b[BONE_IDX.FOREARM_R].rotation.x = -0.42 + bob * 0.02;
+    } else {
+      b[BONE_IDX.UPPER_ARM_R].rotation.set(-0.40, 0.20, -0.14);
+      b[BONE_IDX.FOREARM_R].rotation.x = -0.80;
+    }
   } else if (mode === "combat") {
     const br = Math.sin(timeSec * 2.6);
     b[BONE_IDX.PELVIS].position.y = m.hipY - 0.03 + br * 0.005;
@@ -1365,6 +1459,9 @@ export function poseBowCharacter(rig, mode = "idle", timeSec = 0, opts = {}) {
     b[BONE_IDX.THIGH_R].rotation.set(0.15, -0.04, -0.02);
     b[BONE_IDX.SHIN_R].rotation.x = 0.18;
     b[BONE_IDX.FOOT_R].rotation.x = -0.31; // подошва задней ноги прижата к земле
+    /* Пальцы обеих ног плотно прижаты к полу */
+    b[BONE_IDX.TOE_L].rotation.x = -(b[BONE_IDX.THIGH_L].rotation.x + b[BONE_IDX.SHIN_L].rotation.x + b[BONE_IDX.FOOT_L].rotation.x);
+    b[BONE_IDX.TOE_R].rotation.x = -(b[BONE_IDX.THIGH_R].rotation.x + b[BONE_IDX.SHIN_R].rotation.x + b[BONE_IDX.FOOT_R].rotation.x);
   } else {
     /* idle: спокойная живая стойка, обе подошвы плашмя на полу */
     const breath = Math.sin(timeSec * 1.7);
@@ -1389,10 +1486,10 @@ export function poseBowCharacter(rig, mode = "idle", timeSec = 0, opts = {}) {
     b[BONE_IDX.FOOT_R].rotation.x = 0;
   }
 
-  /* Естественный лёгкий разворот носков наружу с левой/правой асимметрией —
-     стопы наконец выглядят как настоящая пара (левая + правая)! */
-  b[BONE_IDX.FOOT_L].rotation.y += 0.09;
-  b[BONE_IDX.FOOT_R].rotation.y -= 0.07;
+  /* Едва заметный естественный разворот носков наружу. Больше НИКАКИХ сильных yaw:
+     при вытянутом носке стопы даже ±0.09 «выметало» носок вбок и стопа казалась скошенной */
+  b[BONE_IDX.FOOT_L].rotation.y += 0.022;
+  b[BONE_IDX.FOOT_R].rotation.y -= 0.018;
 
   if (lookYaw) {
     b[BONE_IDX.HEAD].rotation.y += lookYaw;
