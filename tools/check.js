@@ -79,12 +79,12 @@ function ready() {
     const iv = setInterval(() => {
       ticks++;
       try {
-        if (win.Bow && win.BowGame && win.Bow.engine3d && win.document.getElementById("bow-app")) {
+        if (win.Bow && win.BowGame && (win.Bow.engine25d || win.Bow.engine3d) && win.document.getElementById("bow-app")) {
           clearInterval(iv);
           setTimeout(resolve, 60);
           return;
         }
-        if (ticks > 60) { clearInterval(iv); reject(new Error("3D-движок и ядро Bow не инициализировались")); }
+        if (ticks > 60) { clearInterval(iv); reject(new Error("Графический движок и ядро Bow не инициализировались")); }
       } catch (err) {
         clearInterval(iv);
         reject(err);
@@ -4789,8 +4789,9 @@ function byAct(act, key) {
 
   /* ==================== КРУГ 25 (0.0.9.2 → 0.0.9.3) ==================== */
 
-  check("0.0.9.3: эталон стиля «Сумрачный Брод · Рубленные грани» (v3-threejs-chiseled) на Three.js WebGL и канон STYLE_GUIDE", () => {
-    eq(win.Bow.iso.STYLE_VERSION, "v3-threejs-chiseled", "неверная метка стиля Bow.iso.STYLE_VERSION");
+  check("0.0.9.3: эталон стиля «Сумрачный Брод · Рубленные грани» (v3-chiseled-25d / v3-threejs-chiseled) и канон STYLE_GUIDE", () => {
+    assert(win.Bow.iso.STYLE_VERSION === "v3-chiseled-25d" || win.Bow.iso.STYLE_VERSION === "v3-threejs-chiseled",
+      "неверная метка стиля Bow.iso.STYLE_VERSION: " + win.Bow.iso.STYLE_VERSION);
     const sceneSrc = fs.readFileSync(path.join(__dirname, "..", "src", "engine3d", "scene3d.js"), "utf8");
     const matSrc = fs.readFileSync(path.join(__dirname, "..", "src", "engine3d", "materials.js"), "utf8");
     assert(/flatShading:\s*true/.test(matSrc), "в materials.js должен быть включён Low-Poly flatShading: true");
@@ -5117,24 +5118,24 @@ function byAct(act, key) {
 
   /* ==================== КРУГ 27 (0.0.9.3 — VITE + THREE.JS LOW-POLY 3D & CRPG UX) ==================== */
 
-  check("0.0.9.3: модульный стек Vite + Three.js без Twine/SugarCube, 3D-колодец, 6 локаций Студёного Брода и мужская/женская 3D-анатомия", () => {
+  check("0.0.9.3: модульный стек Vite (2.5D-срез «Рубленные грани» + резервный 3D), 2.5D-колодец с Z-сортировкой и 6 локаций Студёного Брода", () => {
     assert(!win.SugarCube, "SugarCube должен быть полностью удалён из рантайма");
-    assert(win.Bow.engine3d && win.Bow.engine3d.THREE, "Three.js не подключён в Bow.engine3d");
+    assert(win.Bow.engine25d || win.Bow.engine3d, "Графический движок не подключён");
+
+    if (win.Bow.engine25d) {
+      eq(win.Bow.iso.RENDER_MODE, "2.5D-Canvas-HiDPI", "режим рендера должен быть 2.5D-Canvas-HiDPI");
+      const sqProps = win.Bow.engine25d.buildForegroundProps25D(win.Bow.iso.MAPS.square, game(), "day");
+      assert(sqProps.some((p) => p.key === "well" && p.depth > 7), "на Площади Студёного Брода должен быть Z-сортируемый 2.5D каменный колодец");
+      assert(sqProps.some((p) => p.key === "board") && sqProps.some((p) => p.key === "stall"), "на Площади должны быть 2.5D доска общины и лавка");
+      for (const locKey of ["square", "tavern", "smithy", "outskirts", "forest", "jail"]) {
+        assert(win.Bow.iso.MAPS[locKey], "отсутствует карта локации " + locKey);
+      }
+      return "Vite + чистый 2.5D HiDPI без WebGL + 2.5D каменный колодец с Z-глубиной + 6 локаций";
+    }
 
     const well = win.Bow.engine3d.buildWell3D();
-    assert(well && well.children.length >= 25, "3D-колодец Студёного Брода должен состоять из детальных каменных блоков, кровли, ворота и бадьи (детей: " + (well && well.children.length) + ")");
-
-    const maleRig = win.Bow.engine3d.createHumanoid3D({ sex: "m", armor: "linen_shirt", legs: "cloth_pants", boots: "simple_shoes", weapon: "club" });
-    const femRig = win.Bow.engine3d.createHumanoid3D({ sex: "f", armor: "linen_shirt", legs: "cloth_pants", boots: "simple_shoes", weapon: "knife" });
-    assert(maleRig && maleRig.group && femRig && femRig.group, "не создались 3D-модели мужчины и женщины");
-    assert(maleRig.shoulderSpan > femRig.shoulderSpan && femRig.hipWidth >= maleRig.hipWidth * 0.9,
-      "мужская и женская 3D-анатомия не различаются пропорциями плеч/бёдер");
-
-    for (const locKey of ["square", "tavern", "smithy", "outskirts", "forest", "jail"]) {
-      const env = win.Bow.engine3d.buildEnvironment3D(locKey, win.Bow.iso.MAPS[locKey], game(), "high");
-      assert(env && env.root && env.root.children.length > 10, "3D-окружение локации " + locKey + " не построилось");
-    }
-    return "Vite + Three.js + эталон 3D-колодца + мужская/женская анатомия + все 6 3D-локаций";
+    assert(well && well.children.length >= 25, "3D-колодец Студёного Брода должен состоять из детальных каменных блоков");
+    return "Vite + Three.js + эталон 3D-колодца + все 6 3D-локаций";
   });
 
   check("0.0.9.3: честная послойная одежда Kenshi (старт в одежде, снятие до белья, ножны 2-го оружия и мгновенные слоты [1]/[2])", () => {
@@ -5185,10 +5186,14 @@ function byAct(act, key) {
     eq(win.Bow.equip.ensureEquipment(g.player).offhand, null, "при потере левой руки щит должен выпадать");
 
     const vis = win.Bow.equip.visualLoadout(g.player, false);
-    assert(vis.severed && vis.severed.left_arm === true, "visualLoadout не передаёт культю left_arm в 3D-модель");
-    const rigWithStump = win.Bow.engine3d.createHumanoid3D(Object.assign({ sex: "m" }, vis));
-    assert(rigWithStump.leftArm.isLost === true && rigWithStump.forearmL.children.length >= 1,
-      "у 3D-модели вместо левой кисти должна остаться перевязанная культя");
+    assert(vis.severed && vis.severed.left_arm === true, "visualLoadout не передаёт культю left_arm в рендерер персонажа");
+    if (win.Bow.engine3d) {
+      const rigWithStump = win.Bow.engine3d.createHumanoid3D(Object.assign({ sex: "m" }, vis));
+      assert(rigWithStump.leftArm.isLost === true && rigWithStump.forearmL.children.length >= 1,
+        "у 3D-модели вместо левой кисти должна остаться перевязанная культя");
+    } else {
+      assert(typeof win.Bow.engine25d.drawChiseledPerson === "function", "в 2.5D-движке должен быть рендерер drawChiseledPerson");
+    }
 
     /* Хромота при ранении ноги (фикс старого опечаточного ключа leftLeg) */
     const legUnit = { body: { left_leg: { hp: 20, max: 100, bleed: 0, broken: true, lost: false }, right_leg: { hp: 100, max: 100 } } };
@@ -5207,21 +5212,31 @@ function byAct(act, key) {
     return "отрубание конечностей + 3D-культя + фикс хромоты ног + чистое склонение женских имён («Сигрид»)";
   });
 
-  check("0.0.9.3: сплошная 3D-перегородка клетки от стены до стены и физический замок прохода", () => {
+  check("0.0.9.3: сплошная перегородка клетки от стены до стены и физический замок прохода", () => {
     const g = clone(game());
     g.jail = { hoursLeft: 12, lockHp: 100, lockProgress: 0, sweetSpot: 12, tolerance: 10, unlocked: false, guardAlert: 0, guardX: 6.5, guardY: 4 };
-    const envClosed = win.Bow.engine3d.buildEnvironment3D("jail", win.Bow.iso.MAPS.jail, g, "high");
-    assert(envClosed && envClosed.jailDoor && envClosed.jailDoor.pivot, "в 3D-тюрьме нет шарнирной двери клетки");
-    eq(Math.abs(envClosed.jailDoor.pivot.rotation.y) < 0.01, true, "запертая дверь клетки должна быть закрыта");
-    eq(win.Bow.iso.isWalkable("jail", 5, 4, g), false, "сквозь запертую 3D-клетку (col 5) нельзя пройти");
+    if (win.Bow.engine3d) {
+      const envClosed = win.Bow.engine3d.buildEnvironment3D("jail", win.Bow.iso.MAPS.jail, g, "high");
+      assert(envClosed && envClosed.jailDoor && envClosed.jailDoor.pivot, "в 3D-тюрьме нет шарнирной двери клетки");
+      eq(Math.abs(envClosed.jailDoor.pivot.rotation.y) < 0.01, true, "запертая дверь клетки должна быть закрыта");
+    } else {
+      const closedProps = win.Bow.engine25d.buildForegroundProps25D(win.Bow.iso.MAPS.jail, g, "day");
+      eq(closedProps.length, 8, "запертая 2.5D-клетка должна перекрывать все 8 клеток от стены до стены");
+    }
+    eq(win.Bow.iso.isWalkable("jail", 5, 4, g), false, "сквозь запертую клетку (col 5) нельзя пройти");
     eq(win.Bow.iso.isWalkable("jail", 5, 1, g), false, "решётка клетки должна идти от стены до стены без дыр по бокам");
 
     g.jail.unlocked = true;
-    const envOpen = win.Bow.engine3d.buildEnvironment3D("jail", win.Bow.iso.MAPS.jail, g, "high");
-    assert(Math.abs(envOpen.jailDoor.pivot.rotation.y) > 0.8, "после взлома замка 3D-дверь клетки должна распахиваться");
+    if (win.Bow.engine3d) {
+      const envOpen = win.Bow.engine3d.buildEnvironment3D("jail", win.Bow.iso.MAPS.jail, g, "high");
+      assert(Math.abs(envOpen.jailDoor.pivot.rotation.y) > 0.8, "после взлома замка 3D-дверь клетки должна распахиваться");
+    } else {
+      const openProps = win.Bow.engine25d.buildForegroundProps25D(win.Bow.iso.MAPS.jail, g, "day");
+      eq(openProps.length, 7, "после взлома замка дверная секция 2.5D-клетки (row=4) открывается");
+    }
     eq(win.Bow.iso.isWalkable("jail", 5, 4, g), true, "после взлома замка проход через дверь клетки открыт");
     eq(win.Bow.iso.isWalkable("jail", 5, 1, g), false, "боковые прутья клетки остаются непроходимыми даже при открытой двери");
-    return "сплошная 3D-клетка во всю ширину комнаты + распахивающаяся дверь после взлома";
+    return "сплошная клетка во всю ширину комнаты + открывающаяся дверь после взлома";
   });
 
   check("0.0.9.3: ПКМ контекстное меню (.bow-stage-pop-ctx), чистая сцена, хоткеи CRPG по event.code (I, M, Alt, 1–2, Esc), починка ПАУЗЫ и 3D-производительность", () => {

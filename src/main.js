@@ -27,8 +27,10 @@ import "./core/070-events.js";
 import "./core/080-save.js";
 import "./core/100-adapter.js";
 
-/* 2. 3D-движок на Three.js (Low-Poly «Рубленные грани», рейкастинг, свет суток, кукла 360°) */
-import "./engine3d/boot3d.js";
+/* 2. Изометрический 2.5D-движок «Рубленные грани» (HiDPI Canvas 2D, 0 мс WebGL-потерь, эталон image-49)
+      Резервный 3D-движок сохранён в ./engine3d/boot3d.js на случай возврата к Three.js. */
+import "./engine25d/boot25d.js";
+// import "./engine3d/boot3d.js";
 
 /* 3. Процедурный северный оркестрово-хоровой саундтрек и звуки боя */
 import "./audio/108-audio.js";

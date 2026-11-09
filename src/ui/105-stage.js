@@ -246,9 +246,13 @@
   ];
 
   function weatherOverlayHtml(state, locKey, forBattle) {
-    var indoor = (locKey === "tavern" || locKey === "smithy") && !forBattle;
+    var indoor = (locKey === "tavern" || locKey === "smithy" || locKey === "jail") && !forBattle;
     if (indoor) { return ""; }
     var pal = skyOf(state);
+    if (!forBattle && Bow.engine25d && pal.weatherKind === "snow") {
+      /* В 2.5D-движке весь 3-слойный снегопад и позёмка идут прямо на HiDPI-холсте без DOM-лагов */
+      return '<div class="bow-stage-weather bow-stage-snow" aria-hidden="true"></div>';
+    }
     if (pal.weatherKind === "rain") {
       return '<div class="bow-stage-weather bow-stage-rain" aria-hidden="true">' +
         RAIN_DROPS.map(function (d) {
