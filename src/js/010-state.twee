@@ -486,6 +486,27 @@
       if (!("skirmish" in state)) { state.skirmish = null; }
       state.version = "0.0.9.1";
       return state;
+    },
+
+    /* 0.0.9.1 → 0.0.9.2: честная глобальная пауза с отложенными приказами, выбор ПК/Телефон, гранёный стиль Zomboid без контура и кукла снаряжения из 8 слотов. */
+    "0.0.9.1": function (state) {
+      if (state.player) {
+        if (!Bow.util.isPlainObject(state.player.slots)) {
+          state.player.slots = {
+            head: null, armor: null, hands: null, legs: null,
+            boots: null, weapon: null, weapon2: null, offhand: null
+          };
+        }
+        if (!Bow.util.isPlainObject(state.player.slotsLocked)) {
+          state.player.slotsLocked = {};
+        }
+        if (state.player.activeWeaponSet !== 1 && state.player.activeWeaponSet !== 2) {
+          state.player.activeWeaponSet = 1;
+        }
+      }
+      if (!("pendingOrder" in state)) { state.pendingOrder = null; }
+      state.version = "0.0.9.2";
+      return state;
     }
   };
 
@@ -524,6 +545,12 @@
         autoEat: true,
         money: data.player.money,
         inventory: Bow.util.clone(data.player.inventory),
+        slots: {
+          head: null, armor: null, hands: null, legs: null,
+          boots: null, weapon: null, weapon2: null, offhand: null
+        },
+        slotsLocked: {},
+        activeWeaponSet: 1,
         conditions: [],
         /* Статус жизни явный: бой и события проверяют его напрямую,
            и «поля нет» не должно означать «мёртв». */
@@ -554,6 +581,8 @@
       fight: null,
       /* Живая бесклеточная схватка в локации (Kenshi-режим с тактической паузой): { active, paused, mode, location, units[], guardTimer, ... } */
       skirmish: null,
+      /* Назначенный приказ мира/паузы: { kind, tone, wx, wy, loc, personId, corpseId, act, label } */
+      pendingOrder: null,
       /* Тюрьма: { hoursLeft, reason, since } — пока не null, игрок в клетке. */
       jail: null,
       /* Стража на улице: { phase, squad[], heatAt } */

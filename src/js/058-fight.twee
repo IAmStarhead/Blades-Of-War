@@ -148,35 +148,201 @@
     return "Схватка";
   }
 
-  /* ---------- Снаряжение ----------
-     Лучшее оружие и лучшая броня берутся сами: игрок не должен
-     помнить про «слоты». Купил топор — он и в руке. */
-  function itemValue(def) {
-    if (!def) { return 0; }
-    return (def.attack || 0) + (def.defense || 0);
+  /* ---------- Кукла снаряжения из 8 слотов и статы предметов (0.0.9.2) ---------- */
+  var EQUIP_SLOT_DEFS = [
+    { key: "head",    label: "Шлем",     short: "Голова" },
+    { key: "armor",   label: "Доспех",   short: "Корпус" },
+    { key: "hands",   label: "Перчатки", short: "Руки" },
+    { key: "legs",    label: "Штаны",    short: "Ноги" },
+    { key: "boots",   label: "Сапоги",   short: "Обувь" },
+    { key: "weapon",  label: "Оружие 1", short: "Оружие 1" },
+    { key: "weapon2", label: "Оружие 2", short: "Оружие 2" },
+    { key: "offhand", label: "Доп. рука",short: "Щит / Снаряды" }
+  ];
+
+  function slotOfItem(def) {
+    if (!def) { return null; }
+    return def.slot || def.equip || null;
   }
 
-  function bestEquip(person, slot) {
+  function itemValue(def) {
+    if (!def) { return 0; }
+    return (def.attack || 0) * 1.4 + (def.defense || 0) * 1.3 + (def.block || 0) * 0.12 + (def.attackBonus || 0) + (def.warmth || 0) * 0.2;
+  }
+
+  function hasBagItem(person, itemId) {
+    if (!person || !Array.isArray(person.inventory) || !itemId) { return false; }
+    for (var i = 0; i < person.inventory.length; i++) {
+      if (person.inventory[i].itemId === itemId && person.inventory[i].qty > 0) { return true; }
+    }
+    return false;
+  }
+
+  function ensureSlots(person) {
+    if (!person) { return; }
+    if (!Bow.util.isPlainObject(person.slots)) {
+      person.slots = { head: null, armor: null, hands: null, legs: null, boots: null, weapon: null, weapon2: null, offhand: null };
+    }
+    if (!Bow.util.isPlainObject(person.slotsLocked)) {
+      person.slotsLocked = {};
+    }
+    if (person.activeWeaponSet !== 1 && person.activeWeaponSet !== 2) {
+      person.activeWeaponSet = 1;
+    }
+  }
+
+  function bestEquipForSlot(person, slot, activeWeaponDef) {
     var best = null;
     (person.inventory || []).forEach(function (entry) {
+      if (!entry || entry.qty <= 0) { return; }
       var def = Bow.economy.findItemDef(entry.itemId);
-      if (!def || def.equip !== slot) { return; }
+      if (!def) { return; }
+      var itemSlot = slotOfItem(def);
+      if (slot === "weapon") {
+        if (itemSlot !== "weapon" && def.equip !== "weapon") { return; }
+      } else if (slot === "armor") {
+        if (itemSlot !== "armor" && def.equip !== "armor") { return; }
+      } else if (slot === "offhand") {
+        if (itemSlot !== "offhand") { return; }
+        if (activeWeaponDef && activeWeaponDef.handsReq === 2 && def.offhandKind === "shield") { return; }
+        if (def.offhandKind === "quiver" && (!activeWeaponDef || activeWeaponDef.ammoType !== def.ammoFor)) { return; }
+      } else {
+        if (itemSlot !== slot) { return; }
+      }
       if (!best || itemValue(def) > itemValue(best)) { best = def; }
     });
     return best;
   }
 
+  function bestEquip(person, slot) {
+    return bestEquipForSlot(person, slot, null);
+  }
+
+  function equippedIn(person, slot) {
+    if (!person || !person.inventory) { return null; }
+    ensureSlots(person);
+    if (person.slotsLocked[slot]) {
+      var chosenId = person.slots[slot];
+      if (!chosenId) { return null; }
+      if (hasBagItem(person, chosenId)) {
+        return Bow.economy.findItemDef(chosenId);
+      }
+      person.slots[slot] = null;
+      person.slotsLocked[slot] = false;
+    }
+    if (slot === "weapon2") {
+      var w2Id = person.slots.weapon2;
+      if (w2Id && hasBagItem(person, w2Id)) { return Bow.economy.findItemDef(w2Id); }
+      return null;
+    }
+    if (slot === "offhand") {
+      var actSlot = person.activeWeaponSet === 2 ? "weapon2" : "weapon";
+      var actWep = equippedIn(person, actSlot);
+      return bestEquipForSlot(person, "offhand", actWep);
+    }
+    return bestEquipForSlot(person, slot, null);
+  }
+
+  function setEquipSlot(person, slot, itemId) {
+    if (!person || !person.inventory) { return { ok: false, message: "Нет инвентаря." }; }
+    ensureSlots(person);
+    if (!itemId) {
+      person.slots[slot] = null;
+      person.slotsLocked[slot] = true;
+      return { ok: true, slot: slot, itemId: null };
+    }
+    if (!hasBagItem(person, itemId)) {
+      return { ok: false, message: "Этого предмета нет в сумке." };
+    }
+    var def = Bow.economy.findItemDef(itemId);
+    if (!def) { return { ok: false, message: "Неизвестный предмет." }; }
+    var naturalSlot = slotOfItem(def);
+    var targetSlot = slot || naturalSlot;
+    if ((targetSlot === "weapon" || targetSlot === "weapon2") && naturalSlot === "weapon") {
+      /* Если этот же единственный экземпляр лежал в соседнем оружейном слоте, освободим дубль */
+      var otherSlot = targetSlot === "weapon" ? "weapon2" : "weapon";
+      var bagEntry = person.inventory.filter(function (e) { return e.itemId === itemId; })[0];
+      if (bagEntry && bagEntry.qty < 2 && person.slots[otherSlot] === itemId) {
+        person.slots[otherSlot] = null;
+        person.slotsLocked[otherSlot] = true;
+      }
+    } else if (targetSlot !== naturalSlot) {
+      return { ok: false, message: "Этот предмет нельзя надеть в выбранный слот." };
+    }
+
+    /* Правило двуручного оружия и щита */
+    var activeSlot = person.activeWeaponSet === 2 ? "weapon2" : "weapon";
+    if (targetSlot === activeSlot && def.handsReq === 2) {
+      var curOff = equippedIn(person, "offhand");
+      if (curOff && curOff.offhandKind === "shield") {
+        person.slots.offhand = null;
+        person.slotsLocked.offhand = true;
+      }
+    }
+    if (targetSlot === "offhand" && def.offhandKind === "shield") {
+      var curW = equippedIn(person, activeSlot);
+      if (curW && curW.handsReq === 2) {
+        return { ok: false, message: "Нельзя взять щит: обе руки заняты двуручным оружием (" + curW.name + ")." };
+      }
+    }
+
+    person.slots[targetSlot] = itemId;
+    person.slotsLocked[targetSlot] = true;
+    return { ok: true, slot: targetSlot, itemId: itemId, name: def.name };
+  }
+
+  function swapWeaponSet(person) {
+    if (!person) { return 1; }
+    ensureSlots(person);
+    person.activeWeaponSet = person.activeWeaponSet === 2 ? 1 : 2;
+    var actW = equippedIn(person, person.activeWeaponSet === 2 ? "weapon2" : "weapon");
+    var off = equippedIn(person, "offhand");
+    if (actW && actW.handsReq === 2 && off && off.offhandKind === "shield") {
+      person.slots.offhand = null;
+      person.slotsLocked.offhand = true;
+    }
+    return person.activeWeaponSet;
+  }
+
+  function totalGearStats(person) {
+    var res = { defense: 0, warmth: 0, mobility: 0, block: 0, attackBonus: 0, armorPenBonus: 0 };
+    if (!person) { return res; }
+    if (!person.inventory) {
+      var npcArm = person.armor ? Bow.economy.findItemDef(person.armor) : null;
+      if (npcArm) { res.defense += npcArm.defense || 0; }
+      return res;
+    }
+    var actW = weaponOf(person);
+    ["head", "armor", "hands", "legs", "boots", "offhand"].forEach(function (sl) {
+      var def = equippedIn(person, sl);
+      if (!def) { return; }
+      if (sl === "offhand" && def.offhandKind === "shield" && actW && actW.handsReq === 2) { return; }
+      res.defense += def.defense || 0;
+      res.warmth += def.warmth || 0;
+      res.mobility += def.mobility || 0;
+      res.block += def.block || 0;
+      if (sl === "offhand" && def.offhandKind === "quiver" && actW && actW.ammoType === def.ammoFor) {
+        res.attackBonus += def.attackBonus || 0;
+        res.armorPenBonus += def.armorPenBonus || 0;
+      }
+    });
+    return res;
+  }
+
   function weaponOf(person) {
-    /* Обезоруженный не бьёт тем, что уронил. Флаг ставится на фишке
-       и живёт до конца боя: поднять оружие в этом прототипе нельзя. */
-    if (person.disarmed) { return null; }
-    if (person.inventory) { return bestEquip(person, "weapon"); }
+    if (!person || person.disarmed) { return null; }
+    if (person.inventory) {
+      ensureSlots(person);
+      var actSlot = person.activeWeaponSet === 2 ? "weapon2" : "weapon";
+      return equippedIn(person, actSlot);
+    }
     if (person.weapon) { return Bow.economy.findItemDef(person.weapon); }
     return null;
   }
 
   function armorOf(person) {
-    if (person.inventory) { return bestEquip(person, "armor"); }
+    if (!person) { return null; }
+    if (person.inventory) { return equippedIn(person, "armor"); }
     if (person.armor) { return Bow.economy.findItemDef(person.armor); }
     return null;
   }
@@ -260,25 +426,29 @@
 
   function attackPower(person, mode) {
     var weapon = mode === "spar" ? null : weaponOf(person);
+    var gear = mode === "spar" ? { attackBonus: 0 } : totalGearStats(person);
     var skill = (person.skills && person.skills.combat) || 0;
     var wSkill = weaponSkillOf(person, weapon);
     var str = (Bow.state && Bow.state.effectiveAttr && person.attrs)
       ? Bow.state.effectiveAttr(person, "strength")
       : 14;
-    var raw = 12 + skill / 5.5 + wSkill / 22 + (str - 14) * 0.18 + (weapon ? (weapon.attack || 0) * 1.6 : 0);
+    var wepAtk = weapon ? ((weapon.attack || 0) + (gear.attackBonus || 0)) : 0;
+    var raw = 12 + skill / 5.5 + wSkill / 22 + (str - 14) * 0.18 + wepAtk * 1.6;
     return Math.max(3, raw * (1 - injuryPenalty(person, "power")));
   }
 
   function defenseOf(person, mode) {
     var armor = mode === "spar" ? null : armorOf(person);
+    var gear = mode === "spar" ? { defense: 0, block: 0 } : totalGearStats(person);
+    var totalDefVal = person && person.inventory ? gear.defense : (armor ? (armor.defense || 0) : 0);
     var skill = (person.skills && person.skills.combat) || 0;
-    var defSkill = armor
+    var defSkill = (armor || totalDefVal > 0)
       ? ((person.skills && person.skills.melee_defense) || 0)
       : ((person.skills && person.skills.dodge) || 0);
     var tough = (Bow.state && Bow.state.effectiveAttr && person.attrs)
       ? Bow.state.effectiveAttr(person, "toughness")
       : 12;
-    return skill / 28 + defSkill / 65 + Math.max(0, (tough - 12) * 0.08) + (armor ? (armor.defense || 0) * 1.1 : 0);
+    return skill / 28 + defSkill / 65 + Math.max(0, (tough - 12) * 0.08) + totalDefVal * 1.1 + (gear.block || 0) * 0.06;
   }
 
   function aimDef(key) {
@@ -2140,6 +2310,29 @@
     hasInjury: hasInjury,
     injuryPenalty: injuryPenalty,
     injuryWord: injuryWord
+  };
+
+  Bow.equip = {
+    SLOTS: EQUIP_SLOT_DEFS,
+    slotOfItem: slotOfItem,
+    ensureSlots: ensureSlots,
+    equippedIn: equippedIn,
+    setSlot: setEquipSlot,
+    equipItem: function (personOrState, itemId, slot) {
+      var p = (personOrState && personOrState.player) ? personOrState.player : personOrState;
+      return setEquipSlot(p, slot || null, itemId);
+    },
+    unequipSlot: function (personOrState, slot) {
+      var p = (personOrState && personOrState.player) ? personOrState.player : personOrState;
+      return setEquipSlot(p, slot, null);
+    },
+    swapWeaponSet: function (personOrState) {
+      var p = (personOrState && personOrState.player) ? personOrState.player : personOrState;
+      return swapWeaponSet(p);
+    },
+    totalStats: totalGearStats,
+    weaponOf: weaponOf,
+    armorOf: armorOf
   };
 
 })(typeof window !== "undefined" ? window : this);

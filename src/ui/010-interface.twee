@@ -2,7 +2,7 @@
 <div id="bow-app" class="bow-app bow-fullscreen-app">
 
   <!-- ============================================================
-       ВЕРХНЯЯ ТОНКАЯ ПОЛОСА ХРОНИКИ МИРА (0.0.9.1 — полный экран)
+       ВЕРХНЯЯ ТОНКАЯ ПОЛОСА ХРОНИКИ МИРА (0.0.9.2 — полный экран)
        ============================================================ -->
   <header class="bow-topbar">
     <button class="bow-logo-btn" id="bow-logo-btn" aria-label="Меню игры" aria-expanded="false" title="Меню игры — продолжить, настройки, сохранения">
@@ -80,8 +80,18 @@
     <main class="bow-main">
 
       <section class="bow-stage" id="bow-stage" aria-label="Окно локации">
+        <!-- Заметный индикатор ГЛОБАЛЬНОЙ ПАУЗЫ и отложенного приказа (0.0.9.2) -->
+        <div id="bow-pause-banner" class="bow-pause-banner" aria-live="polite"></div>
+
         <!-- Всплывающий гербовый клилич при начале живой схватки в локации -->
         <div id="bow-clash-banner" class="bow-clash-banner" aria-live="assertive"></div>
+
+        <!-- Компактные кнопки управления свободной камерой (приближение / отдаление / на героя) -->
+        <div id="bow-cam-controls" class="bow-cam-controls" role="group" aria-label="Камера">
+          <button type="button" class="bow-cam-btn" data-act="cam-zoom" data-dir="in" title="Приблизить камеру">+</button>
+          <button type="button" class="bow-cam-btn" data-act="cam-zoom" data-dir="out" title="Отдалить камеру">−</button>
+          <button type="button" class="bow-cam-btn" data-act="cam-center" title="Навести камеру на героя">⌖</button>
+        </div>
 
         <!-- Живой изометрический мир от края до края -->
         <div id="bow-stage-canvas" class="bow-stage-canvas"></div>
@@ -291,8 +301,29 @@
 
   <div id="bow-sheet" class="bow-sheet" aria-hidden="true"></div>
 
+  <!-- Модальное окно выбора режима управления при запуске (ПК / Телефон, 0.0.9.2) -->
+  <div id="bow-device-modal" class="bow-device-modal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="bow-device-title">
+    <div class="bow-device-card">
+      <p class="bow-device-kicker">СТУДЁНЫЙ БРОД · ХЛАДНЫЕ ВЕТРА</p>
+      <h2 id="bow-device-title" class="bow-device-title">Выберите режим управления</h2>
+      <p class="bow-device-sub">Режим можно в любой момент переключить в меню настроек (☰).</p>
+      <div class="bow-device-choices">
+        <button type="button" class="bow-device-choice" data-act="device-pick" data-device="pc">
+          <span class="bow-device-icon" aria-hidden="true">🖥</span>
+          <b>Компьютер (ПК)</b>
+          <i>Полноразмерный интерфейс CRPG, наведение мышью, клавиши Пробел / Tab / Esc и зум колесом.</i>
+        </button>
+        <button type="button" class="bow-device-choice" data-act="device-pick" data-device="mobile">
+          <span class="bow-device-icon" aria-hidden="true">📱</span>
+          <b>Телефон / Сенсор</b>
+          <i>Компактный мобильный интерфейс, свободная камера пальцем, зум щипком и точные касания по силуэту.</i>
+        </button>
+      </div>
+    </div>
+  </div>
+
   <footer class="bow-footer bow-sr-only" aria-hidden="true">
-    <span>Blades Of War · прототип 0.0.9.1 · Хладные Ветра · Студёный Брод</span>
+    <span>Blades Of War · прототип 0.0.9.2 · Хладные Ветра · Студёный Брод</span>
   </footer>
 
 </div>

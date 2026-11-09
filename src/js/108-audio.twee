@@ -294,6 +294,7 @@
 
   var state = {
     enabled: false,
+    userMuted: false,
     volume: 0.45,
     streetBeat: true,     // Мягкий меланхоличный бит в стиле Enigma «Sadeness» на улице
     mode: "auto",         // "auto" | "manual"
@@ -385,6 +386,9 @@
       if (parsed && typeof parsed.enabled === "boolean") {
         state.enabled = parsed.enabled;
       }
+      if (parsed && typeof parsed.userMuted === "boolean") {
+        state.userMuted = parsed.userMuted;
+      }
       if (parsed && typeof parsed.streetBeat === "boolean") {
         state.streetBeat = parsed.streetBeat;
       }
@@ -402,6 +406,7 @@
       if (global.localStorage) {
         global.localStorage.setItem(STORAGE_KEY, JSON.stringify({
           enabled: state.enabled,
+          userMuted: state.userMuted,
           volume: state.volume,
           streetBeat: state.streetBeat,
           mode: state.mode,
@@ -1894,38 +1899,60 @@
     }, waitMs);
   }
 
+  function startLiveBridge() {
+    if (schedulerTimer || !ctx || !state.enabled) { return; }
+    updateRealmCrossfade();
+    nextSubTime = ctx.currentTime + 0.04;
+    schedulerTick();
+    schedulerTimer = global.setInterval(schedulerTick, 140);
+  }
+
   function syncPlayback() {
     if (!state.enabled || !ctx) { return; }
+    if (ctx.state === "suspended" && typeof ctx.resume === "function") {
+      try { ctx.resume(); } catch (e) {}
+    }
     if (!hasOfflineAudio()) {
       updateRealmCrossfade();
       startScheduler();
       return;
     }
-    stopScheduler();
     var track = trackById(state.trackId);
     var wantedKey = trackBakeKey(track);
     if (activeLoopSource && activeBakedKey === wantedKey) {
+      stopScheduler();
       scheduleAutoVariationTimer(track);
       return;
+    }
+
+    /* На телефоне оффлайн-запекание трека занимает 0.8–2 с: чтобы боевая тема звучала
+       МГНОВЕННО в момент удара, сразу включаем живой синтез до готовности буфера! */
+    if (!bakedBuffers[wantedKey]) {
+      stopBakedPlayback(0.20);
+      startLiveBridge();
+    } else {
+      stopScheduler();
     }
 
     var mySeq = ++bakeReqSeq;
     bakeTrackAsync(track.id).then(function (buf) {
       if (mySeq !== bakeReqSeq || !state.enabled || !ctx) { return; }
       if (!buf) {
-        /* Если браузер вдруг отклонил OfflineAudioContext — мягко падаем обратно на живой планировщик */
-        updateRealmCrossfade();
-        startScheduler();
+        startLiveBridge();
         return;
       }
-      stopBakedPlayback(0.38);
+      stopScheduler();
+      stopBakedPlayback(0.32);
+      if (ctx.state === "suspended" && typeof ctx.resume === "function") {
+        try { ctx.resume(); } catch (e) {}
+      }
       var now = ctx.currentTime;
       var src = ctx.createBufferSource();
       var gNode = ctx.createGain();
       src.buffer = buf;
       src.loop = true;
       gNode.gain.setValueAtTime(0.0001, now);
-      gNode.gain.linearRampToValueAtTime(1.0, now + 0.36);
+      gNode.gain.linearRampToValueAtTime(1.0, now + 0.32);
       src.connect(gNode);
       gNode.connect(masterGain);
       src.start(now + 0.01);
@@ -1935,7 +1962,7 @@
       activeBakedKey = wantedKey;
       scheduleAutoVariationTimer(track);
 
-      /* Тихо предзапекаем соседнюю вариацию этого же режима наперёд, чтобы ротация была мгновенной */
+      /* Предзапекаем соседнюю вариацию и боевой трек в фоне для нулевой задержки */
       var pool = tracksByRealm(track.realm);
       if (pool.length > 1) {
         for (var i = 0; i < pool.length; i++) {
@@ -1945,6 +1972,9 @@
             break;
           }
         }
+      }
+      if (track.realm !== "combat") {
+        global.setTimeout(function () { bakeTrackAsync("tooth_and_claw"); }, 900);
       }
     });
   }
@@ -1965,6 +1995,15 @@
     if (schedulerTimer) {
       global.clearInterval(schedulerTimer);
       schedulerTimer = null;
+      if (ctx && hasOfflineAudio() && indoorBus && outdoorBus && combatBus) {
+        var now = ctx.currentTime;
+        indoorBus.gain.cancelScheduledValues(now);
+        outdoorBus.gain.cancelScheduledValues(now);
+        combatBus.gain.cancelScheduledValues(now);
+        indoorBus.gain.setValueAtTime(1.0, now);
+        outdoorBus.gain.setValueAtTime(1.0, now);
+        combatBus.gain.setValueAtTime(0.92, now);
+      }
     }
   }
 
@@ -2028,10 +2067,11 @@
 
   function start() {
     state.enabled = true;
+    state.userMuted = false;
     savePrefs();
     if (!ensureContext()) { return true; }
     if (ctx.state === "suspended" && typeof ctx.resume === "function") {
-      ctx.resume();
+      try { ctx.resume(); } catch (e) {}
     }
     applyMasterGain();
     if (hasOfflineAudio()) {
@@ -2045,6 +2085,7 @@
 
   function stop() {
     state.enabled = false;
+    state.userMuted = true;
     bakeReqSeq += 1;
     savePrefs();
     stopScheduler();
@@ -2079,9 +2120,18 @@
     );
 
     if (inActiveCombat) {
+      /* На реальном устройстве (телефоне/ПК) при вступлении в бой автоматически включаем боевую музыку,
+         если игрок сам её не заглушил! В JSDOM hasWebAudio() === false, поэтому холодный старт тестов не затронут. */
+      if (!state.enabled && !state.userMuted && hasWebAudio()) {
+        state.enabled = true;
+        ensureContext();
+        applyMasterGain();
+      }
       state.mood = "combat";
-      if (state.realm !== "combat") {
-        state.preCombatTrackId = state.trackId;
+      if (state.realm !== "combat" || forcePick) {
+        if (state.realm !== "combat") {
+          state.preCombatTrackId = state.trackId;
+        }
         var cbMode = (gameState.fight && gameState.fight.mode) || (gameState.skirmish && gameState.skirmish.mode) || "crime";
         var cbId = preferredCombatTrack(cbMode);
         state.realm = "combat";
@@ -2093,8 +2143,9 @@
           if (hasOfflineAudio()) {
             syncPlayback();
           } else {
-            nextSubTime = ctx.currentTime + 0.12;
+            nextSubTime = ctx.currentTime + 0.06;
             updateRealmCrossfade();
+            startScheduler();
           }
         }
       }
@@ -2147,20 +2198,51 @@
     }
   }
 
-  function wakeOnGesture() {
-    if (!state.enabled) { return; }
-    if (!ctx) {
+  /* Разблокировка Web Audio синхронно внутри пользовательского тапа/клика (iOS Safari / Android Chrome) */
+  function unlockGesture(autoStartIfUnmuted) {
+    if (!hasWebAudio()) { return false; }
+    var audioCtx = ensureContext();
+    if (!audioCtx) { return false; }
+    if (audioCtx.state === "suspended" && typeof audioCtx.resume === "function") {
+      try { audioCtx.resume(); } catch (e) {}
+    }
+    try {
+      var sil = audioCtx.createBuffer(1, 1, audioCtx.sampleRate || 22050);
+      var sNode = audioCtx.createBufferSource();
+      sNode.buffer = sil;
+      sNode.connect(audioCtx.destination);
+      sNode.start(0);
+    } catch (e2) {}
+
+    if (autoStartIfUnmuted && !state.userMuted && !state.enabled) {
       start();
-    } else {
-      if (ctx.state === "suspended" && typeof ctx.resume === "function") {
-        ctx.resume();
-      }
+    } else if (state.enabled) {
+      applyMasterGain();
       if (hasOfflineAudio()) {
-        if (!activeLoopSource) { syncPlayback(); }
+        if (!activeLoopSource && !schedulerTimer) { syncPlayback(); }
       } else if (!schedulerTimer) {
         startScheduler();
       }
     }
+    if (hasOfflineAudio()) {
+      global.setTimeout(function () { bakeTrackAsync("tooth_and_claw"); }, 120);
+    }
+    return true;
+  }
+
+  function ensureCombatMusic(gameState) {
+    if (!hasWebAudio() || state.userMuted) { return false; }
+    unlockGesture(true);
+    playBattleIntro();
+    if (gameState) {
+      syncMood(gameState, true);
+    }
+    return true;
+  }
+
+  function wakeOnGesture() {
+    if (!state.enabled) { return; }
+    unlockGesture(false);
   }
 
   function currentTrack() {
@@ -2188,6 +2270,8 @@
     setVolume: setVolume,
     syncMood: syncMood,
     wakeOnGesture: wakeOnGesture,
+    unlockGesture: unlockGesture,
+    ensureCombatMusic: ensureCombatMusic,
     playBattleIntro: playBattleIntro,
     playMgsAlert: playMgsAlert,
     playLockSound: playLockSound,

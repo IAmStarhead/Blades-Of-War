@@ -808,7 +808,7 @@ function byAct(act, key) {
 
     const back = win.Bow.save.deserialize(win.Bow.save.serialize(g, 1));
     assert(back.ok, "старое сохранение не загрузилось: " + back.reason);
-    eq(back.state.version, "0.0.9.1", "версия после миграции");
+    eq(back.state.version, "0.0.9.2", "версия после миграции");
     assert(back.state.fight === null, "после миграции нет пустого слота боя");
     assert(back.state.people["person:tarn"].weapon, "кузнец остался без топора");
     return "0.0.5 → " + back.state.version + ", топор кузнеца на месте";
@@ -1009,7 +1009,7 @@ function byAct(act, key) {
     delete g.flags.huntedHeat;
 
     const back = win.Bow.save.deserialize(win.Bow.save.serialize(g, 1));
-    eq(back.state.version, "0.0.9.1", "версия после миграции");
+    eq(back.state.version, "0.0.9.2", "версия после миграции");
     assert(back.state.guard && back.state.guard.arrived === true,
       "стража из старого сохранения осталась «непришедшей» — из неё не выбраться");
     eq(back.state.flags.huntedUntil, null, "поле срока розыска");
@@ -1777,7 +1777,7 @@ function byAct(act, key) {
 
     const back = win.Bow.save.deserialize(win.Bow.save.serialize(g, 1));
     assert(back.ok, "сохранение 0.0.6.2 не загрузилось: " + back.reason);
-    eq(back.state.version, "0.0.9.1", "версия после миграции");
+    eq(back.state.version, "0.0.9.2", "версия после миграции");
     assert(back.state.steal && typeof back.state.steal === "object", "нет слота подготовки кражи");
     eq(back.state.player.lastTreat, null, "lastTreat после миграции");
     assert(typeof back.state.player.skills.medicine === "number", "навык лечения не восстановлен");
@@ -1981,9 +1981,9 @@ function byAct(act, key) {
     };
     const back = win.Bow.save.deserialize(win.Bow.save.serialize(g, 1));
     assert(back.ok, "сохранение 0.0.6.3 не загрузилось: " + back.reason);
-    eq(back.state.version, "0.0.9.1", "версия после миграции");
+    eq(back.state.version, "0.0.9.2", "версия после миграции");
     assert(back.state.fight.orders && back.state.fight.orders.aim === "body", "приказы боя созданы при миграции");
-    return "0.0.6.3 → 0.0.9.1, приказы боя созданы";
+    return "0.0.6.3 → 0.0.9.2, приказы боя созданы";
   });
 
   /* 8н. Круг 13 (0.0.7.1): фикс зависания в клетке, честная дистанция боя, логотип и Меню игры */
@@ -3905,10 +3905,10 @@ function byAct(act, key) {
     }
   });
 
-  check("0.0.9.1: миграция состояний доводит версию игры до 0.0.9.1", () => {
-    assert(win.Bow.data.meta.version === "0.0.9.1", "версия в Bow.data.meta не 0.0.9.1");
-    assert(game().version === "0.0.9.1", "версия активного состояния не 0.0.9.1");
-    return "версия 0.0.9.1 подтверждена";
+  check("0.0.9.2: миграция состояний доводит версию игры до 0.0.9.2", () => {
+    assert(win.Bow.data.meta.version === "0.0.9.2", "версия в Bow.data.meta не 0.0.9.2");
+    assert(game().version === "0.0.9.2", "версия активного состояния не 0.0.9.2");
+    return "версия 0.0.9.2 подтверждена";
   });
 
   check("0.0.7.7: щипковые удары по струнам полностью вырезаны из саундтрека", () => {
@@ -4631,6 +4631,8 @@ function byAct(act, key) {
       g.jail = null;
       g.guard = null;
       g.encounter = null;
+      g.time.scale = "1x";
+      g.pendingOrder = null;
       g.player.location = "square";
       g.player.needs.health = 100;
       g.player.needs.fatigue = 90;
@@ -4706,6 +4708,7 @@ function byAct(act, key) {
     /* Прокручиваем живое время боя: если затянуть стычку или сдерживать удар в глухой защите, через ~9 с вбегают 3 стражника! */
     const gGuardTest = clone(g);
     win.Bow.skirmish.setOrder(gGuardTest, "stance", "guard");
+    win.Bow.skirmish.orderMove(gGuardTest, 1.2, 6.4);
     gGuardTest.people["person:liva"].needs.health = 450;
     gGuardTest.skirmish.units[1].hp = 450;
     gGuardTest.skirmish.units[1].maxHp = 450;
@@ -4738,6 +4741,8 @@ function byAct(act, key) {
       g.fight = null;
       g.skirmish = null;
       g.jail = null;
+      g.time.scale = "1x";
+      g.pendingOrder = null;
       g.player.location = "square";
       win.BowGame.refresh(true);
 
@@ -4780,6 +4785,207 @@ function byAct(act, key) {
       }
     }
     return "BPM " + minBpm + "–" + maxBpm + " + многоголосный хор + ровное Поле брани 7×5";
+  });
+
+  /* ==================== КРУГ 25 (0.0.9.2) ==================== */
+
+  check("0.0.9.2: эталон стиля «Сумрачный Брод · Рубленные грани» (v2-chiseled-matte): без глаз/обводки, колодец 2:1 и канон STYLE_GUIDE", () => {
+    eq(win.Bow.iso.STYLE_VERSION, "v2-chiseled-matte", "неверная метка стиля Bow.iso.STYLE_VERSION");
+    const isoSrc = fs.readFileSync(path.join(__dirname, "..", "src", "js", "104-iso.twee"), "utf8");
+    assert(!/addBlackOutline|strokeHumanoid|#000000/.test(isoSrc), "в 104-iso.twee не должно быть чёрной мультяшной обводки");
+    assert(/blitWithOutline/.test(isoSrc) && /#9cd6ff/.test(isoSrc) && /#ee4246/.test(isoSrc),
+      "в 104-iso.twee нет контурных подсветок blitWithOutline (#9cd6ff / #ee4246)");
+    assert(typeof win.Bow.iso.paintPaperdollCanvas === "function", "нет функции отрисовки куклы paintPaperdollCanvas");
+
+    const guide = fs.readFileSync(path.join(__dirname, "..", "docs", "STYLE_GUIDE.md"), "utf8");
+    assert(/0\.0\.9\.2/.test(guide) && /1:7\.3/.test(guide) && /2:1/.test(guide),
+      "docs/STYLE_GUIDE.md не обновлён под канон 0.0.9.2");
+    return "v2-chiseled-matte + 0px чёрного контура + #9cd6ff/#ee4246 + STYLE_GUIDE 0.0.9.2";
+  });
+
+  check("0.0.9.2: честные пропорции 1280×680 (#bow-stage-world), свободная камера (pan/zoom/center) и узкие хитбоксы фигурок", () => {
+    const g = game();
+    win.BowGame.refresh(true);
+    const worldEl = doc().querySelector("#bow-stage-canvas #bow-stage-world.bow-stage-world");
+    assert(worldEl, "сцена не обёрнута в #bow-stage-world.bow-stage-world (защита от сплющивания на телефоне)");
+    assert(worldEl.querySelector("canvas.bow-iso-canvas") && worldEl.querySelector(".bow-stage-layer"),
+      "холст и слой актёров должны лежать внутри единого #bow-stage-world");
+
+    const camBtns = doc().querySelectorAll("#bow-cam-controls .bow-cam-btn");
+    eq(camBtns.length, 3, "должны быть 3 кнопки свободной камеры (+, −, Центрировать)");
+
+    const cssSrc = fs.readFileSync(path.join(__dirname, "..", "src", "ui", "900-styles.twee"), "utf8");
+    assert(/\.bow-actor\.bow-iso-actor\s*\{[\s\S]*?width:\s*34px/.test(cssSrc),
+      "хитбокс .bow-iso-actor не сужен по силуэту до 34px");
+    assert(/\.bow-actor\.bow-iso-actor\s+\.bow-actor-tag[\s\S]*?pointer-events:\s*none/.test(cssSrc),
+      "табличка имени .bow-actor-tag должна иметь pointer-events: none, чтобы не красть клики вокруг персонажа");
+
+    const cam0 = win.Bow.iso.getCamera();
+    assert(typeof cam0.zoom === "number" && typeof win.Bow.iso.clientToStage === "function", "API камеры не готово");
+    win.Bow.iso.setCameraZoom(1.4, null, g);
+    assert(Math.abs(win.Bow.iso.getCamera().zoom - 1.4) < 0.05, "setCameraZoom не изменил масштаб камеры");
+    win.Bow.iso.centerCameraOnPlayer(g, null, true);
+    return "#bow-stage-world 1280×680 + свободная камера + точный хитбокс 34×78px";
+  });
+
+  check("0.0.9.2: глобальная тактическая пауза БЕЗ автоснятия: очередь приказов (земля, дверь, атака) и исполнение при снятии паузы", () => {
+    const g = game();
+    const snap = clone(g);
+    try {
+      g.fight = null;
+      g.skirmish = null;
+      g.jail = null;
+      g.guard = null;
+      g.encounter = null;
+      g.player.location = "square";
+      g.player.needs.health = 100;
+      g.player.needs.fatigue = 90;
+      g.people["person:liva"].alive = true;
+      g.people["person:liva"].location = "square";
+      g.people["person:liva"].needs.health = 100;
+      win.Bow.skirmish.setAggressive(false);
+
+      /* 1. Включаем глобальную паузу */
+      win.BowGame.applyGlobalScale(g, "paused");
+      eq(g.time.scale, "paused", "глобальная пауза не включилась");
+      const pauseBanner = doc().getElementById("bow-pause-banner");
+      assert(pauseBanner && pauseBanner.classList.contains("bow-pause-banner-on"),
+        "при паузе не загорелся верхний баннер #bow-pause-banner");
+
+      /* 2. На паузе клик по земле ставит маршрут в очередь и НЕ снимает паузу! */
+      const posBefore = Object.assign({}, win.Bow.iso.getPlayerPos(g));
+      win.BowGame.stageClickWorld(g, 3.0, 5.0);
+      eq(g.time.scale, "paused", "клик по земле самовольно снял паузу!");
+      assert(g.pendingOrder && g.pendingOrder.kind === "walk", "клик по земле на паузе не поставил приказ шага");
+      eq(win.Bow.iso.getPlayerPos(g).col, posBefore.col, "на паузе персонаж не должен сдвигаться с места");
+
+      /* 3. На паузе клик по двери трактира на сцене ставит приказ входа БЕЗ перехода до снятия паузы! */
+      const tavernDoor = doc().querySelector('#bow-stage-canvas .bow-door-hotspot[data-loc="tavern"]');
+      tavernDoor.click();
+      eq(g.time.scale, "paused", "клик по двери самовольно снял паузу!");
+      eq(g.player.location, "square", "на паузе переход в дверь не должен происходить мгновенно");
+      assert(g.pendingOrder && g.pendingOrder.kind === "exit" && g.pendingOrder.exitTo === "tavern",
+        "клик по двери на паузе не поставил приказ входа в трактир");
+      assert(tavernDoor.classList.contains("bow-order-peace") || doc().querySelector('.bow-door-hotspot[data-loc="tavern"].bow-order-peace'),
+        "выбранная на паузе дверь не получила бело-голубую подсветку .bow-order-peace");
+
+      /* 4. В боевом режиме (⚔ К бою) клик по цели на паузе ставит враждебный приказ (красная подсветка) и НЕ начинает бой пока пауза не снята! */
+      win.Bow.skirmish.setAggressive(true);
+      win.BowGame.refresh(true);
+      const livaBtn = doc().querySelector('#bow-stage-canvas .bow-stage-layer [data-act="stage-select"][data-person="person:liva"]');
+      livaBtn.click();
+      eq(g.time.scale, "paused", "клик по цели в боевом режиме самовольно снял паузу!");
+      assert(!g.skirmish, "бой не должен начинаться до снятия глобальной паузы");
+      assert(g.pendingOrder && g.pendingOrder.kind === "attack" && g.pendingOrder.personId === "person:liva",
+        "враждебный приказ атаки не встал в очередь на паузе");
+      assert(doc().querySelector('#bow-stage-canvas .bow-stage-layer [data-person="person:liva"].bow-order-hostile'),
+        "цель атаки на паузе не получила багровую подсветку .bow-order-hostile");
+
+      /* 5. Снимаем паузу (▶ 1x) — отложенный боевой приказ немедленно исполняется! */
+      win.BowGame.applyGlobalScale(g, "1x");
+      eq(g.time.scale, "1x", "пауза не снялась при переходе на 1x");
+      assert(g.skirmish && g.skirmish.active === true, "после снятия паузы отложенный приказ атаки не запустил схватку");
+      assert(g.pendingOrder === null, "исполненный приказ не очистился из очереди");
+
+      /* 6. Ставим паузу прямо посреди живой схватки — глобальная пауза синхронно замораживает и бой! */
+      win.BowGame.applyGlobalScale(g, "paused");
+      assert(g.skirmish.paused === true, "глобальная пауза не заморозила живую схватку");
+      return "пауза не слетает от кликов + очередь шага/двери/атаки + автоисполнение при ▶ 1×";
+    } finally {
+      win.Bow.skirmish.setAggressive(false);
+      Object.assign(g, snap);
+      win.BowGame.refresh(true);
+    }
+  });
+
+  check("0.0.9.2: средневековая кукла снаряжения из 8 слотов, блок щита при двуручном оружии, комплекты I/II и дельта статов", () => {
+    const g = clone(game());
+    assert(win.Bow.equip && win.Bow.equip.SLOTS.length === 8, "должно быть ровно 8 слотов куклы в Bow.equip.SLOTS");
+
+    const def0 = win.Bow.fight.defenseOf(g.player);
+    const gearDef0 = win.Bow.equip.totalStats(g.player).defense;
+
+    /* Добавляем предметы всех новых категорий в сумку героя */
+    g.player.inventory.push(
+      { itemId: "item:iron_helm", qty: 1 },
+      { itemId: "item:chainmail", qty: 1 },
+      { itemId: "item:splint_bracers", qty: 1 },
+      { itemId: "item:greaves", qty: 1 },
+      { itemId: "item:iron_boots", qty: 1 },
+      { itemId: "item:heater_shield", qty: 1 },
+      { itemId: "item:spear", qty: 1 },
+      { itemId: "item:crossbow", qty: 1 },
+      { itemId: "item:bolts", qty: 1 }
+    );
+
+    assert(win.Bow.equip.equipItem(g, "item:knife", "weapon").ok, "нож не наделся");
+    assert(win.Bow.equip.equipItem(g, "item:iron_helm").ok, "шлем не наделся");
+    assert(win.Bow.equip.equipItem(g, "item:chainmail").ok, "кольчуга не наделась");
+    assert(win.Bow.equip.equipItem(g, "item:splint_bracers").ok, "наручи не наделись");
+    assert(win.Bow.equip.equipItem(g, "item:greaves").ok, "поножи не наделись");
+    assert(win.Bow.equip.equipItem(g, "item:iron_boots").ok, "сапоги не наделись");
+    assert(win.Bow.equip.equipItem(g, "item:heater_shield").ok, "щит не наделся при одноручном ноже");
+    const defFull = win.Bow.fight.defenseOf(g.player);
+    const gearDefFull = win.Bow.equip.totalStats(g.player).defense;
+    assert(gearDefFull >= gearDef0 + 18 && defFull >= def0 + 18,
+      "суммарная броня от 5 доспешных слотов и щита не выросла (" + def0 + " -> " + defFull + ")");
+
+    /* Надеваем двуручное копьё — щит автоматически освобождает левую руку! */
+    const spRes = win.Bow.equip.equipItem(g, "item:spear", "weapon");
+    assert(spRes.ok && g.player.slots.offhand === null, "двуручное копьё не сняло щит из левой руки");
+    const tryShield = win.Bow.equip.equipItem(g, "item:heater_shield", "offhand");
+    assert(tryShield.ok === false, "щит не должен надеваться поверх двуручного копья");
+
+    /* А колчан болтов с двуручным арбалетом разрешён! */
+    assert(win.Bow.equip.equipItem(g, "item:crossbow", "weapon2").ok, "арбалет не лёг во второй комплект оружия");
+    win.Bow.equip.swapWeaponSet(g);
+    eq(g.player.activeWeaponSet, 2, "комплект оружия не переключился на II");
+    eq(win.Bow.fight.weaponOf(g.player).id, "item:crossbow", "активным оружием не стал арбалет из II комплекта");
+    assert(win.Bow.equip.equipItem(g, "item:bolts", "offhand").ok, "колчан болтов должен сочетаться с двуручным арбалетом");
+
+    /* Проверяем DOM рендера Сумки: кукла, 8 слотов и пилюли сравнения статов */
+    const live = game();
+    const snap = clone(live);
+    try {
+      Object.assign(live, g);
+      win.BowGame.refresh(true);
+      win.Bow.ui.openModal("inv");
+      const invRoot = doc().getElementById("bow-inventory");
+      assert(invRoot && invRoot.querySelector("canvas.bow-paperdoll-canvas"), "в Сумке нет холста куклы .bow-paperdoll-canvas");
+      eq(invRoot.querySelectorAll(".bow-pd-slot").length, 8, "в Сумке должно отображаться ровно 8 слотов куклы");
+      assert(invRoot.querySelector(".bow-stat-delta"), "в списке вещей нет наглядного сравнения характеристик (.bow-stat-delta)");
+      win.Bow.ui.setDrawer(false);
+    } finally {
+      Object.assign(live, snap);
+      win.BowGame.refresh(true);
+    }
+    return "8 слотов куклы + двуручное/щит/колчан + смена комплектов I/II + дельты статов";
+  });
+
+  check("0.0.9.2: стартовый выбор устройства Компьютер / Телефон (#bow-device-modal) и мобильный профиль интерфейса", () => {
+    assert(doc().getElementById("bow-device-modal"), "в разметке нет #bow-device-modal");
+    assert(typeof win.Bow.ui.setDeviceMode === "function" && typeof win.Bow.ui.getDeviceMode === "function",
+      "нет API выбора устройства setDeviceMode/getDeviceMode");
+
+    win.Bow.ui.setDeviceMode("mobile");
+    eq(win.Bow.ui.getDeviceMode(), "mobile", "режим устройства не переключился на mobile");
+    assert(doc().getElementById("bow-app").classList.contains("bow-device-mobile"),
+      "на #bow-app не проставился класс .bow-device-mobile");
+
+    win.Bow.ui.setDeviceMode("pc");
+    eq(win.Bow.ui.getDeviceMode(), "pc", "режим устройства не вернулся на pc");
+    assert(doc().getElementById("bow-app").classList.contains("bow-device-pc"),
+      "на #bow-app не проставился класс .bow-device-pc");
+    return "выбор ПК / Телефон при старте и в Настройках + компактный профиль .bow-device-mobile";
+  });
+
+  check("0.0.9.2: мобильная разблокировка Web Audio (unlockGesture) и гарантированная музыка боя ensureCombatMusic", () => {
+    assert(typeof win.Bow.audio.unlockGesture === "function", "нет функции мобильной разблокировки звука Bow.audio.unlockGesture");
+    assert(typeof win.Bow.audio.ensureCombatMusic === "function", "нет функции гарантированной боевой музыки Bow.audio.ensureCombatMusic");
+    const audioSrc = fs.readFileSync(path.join(__dirname, "..", "src", "js", "108-audio.twee"), "utf8");
+    assert(/startLiveBridge/.test(audioSrc) && /tooth_and_claw/.test(audioSrc),
+      "в 108-audio.twee нет мгновенного боевого моста startLiveBridge до запекания буфера");
+    return "unlockGesture + startLiveBridge + ensureCombatMusic";
   });
 
   /* ---------- Итоги ---------- */

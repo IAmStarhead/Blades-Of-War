@@ -16,7 +16,7 @@
   Bow.data = {
 
     meta: {
-      version: "0.0.9.1",
+      version: "0.0.9.2",
       title: "Blades Of War",
       worldName: "Эдем · Королевство Хладных Ветров",
       regionShort: "Хладные Ветра",
@@ -113,7 +113,7 @@
             desc: "Постоять за прилавок, пока хозяин ушёл. Надо считать и не путать сдачу.",
             hours: 4, pay: [6, 12], fatigue: 6, hunger: 5, rep: 2, minRep: 0 }
         ],
-        trades: ["bread", "salt", "fur", "rope", "berries", "firewood", "raw_meat"],
+        trades: ["bread", "salt", "fur", "rope", "berries", "firewood", "raw_meat", "hood", "leather_gloves", "wool_trousers", "travel_boots", "arrows", "bolts"],
         people: ["sigi", "liva"]
       },
       tavern: {
@@ -174,7 +174,7 @@
             desc: "Работа для тех, кто уже понимает, где у клинка край.",
             hours: 3, pay: [7, 14], fatigue: 10, hunger: 6, rep: 2, minRep: 25 }
         ],
-        trades: ["knife", "club", "spear", "axe", "sword", "bow", "padded", "rope", "tool", "iron_ore"],
+        trades: ["knife", "club", "spear", "axe", "sword", "bow", "crossbow", "padded", "brigandine", "chainmail", "iron_helm", "splint_bracers", "greaves", "iron_boots", "wood_shield", "heater_shield", "rope", "tool", "iron_ore"],
         people: ["tarn"]
       },
       outskirts: {
@@ -236,7 +236,7 @@
       }
     },
 
-    /* ---------- Товары, оружие и добыча ---------- */
+    /* ---------- Товары, оружие и добыча (средневековый арсенал 0.0.9.2, 8 слотов) ---------- */
     items: {
       bread:    { id: "item:bread",    name: "Хлеб",             weight: 0.5, food: 18, base: 3,  desc: "Ржаной, тёмный, чёрствый по краям." },
       berries:  { id: "item:berries",  name: "Таёжная ягода",    weight: 0.3, food: 12, base: 3,  desc: "Мёрзлая брусника и коренья из-под снега. Утоляет голод в дороге." },
@@ -248,14 +248,43 @@
       firewood: { id: "item:firewood", name: "Смолистые дрова",  weight: 1.4, base: 4,  desc: "Сухая таёжная вязанка — берут и на площади, и в домах." },
       iron_ore: { id: "item:iron_ore", name: "Болотная руда",    weight: 1.8, base: 8,  desc: "Бурые комья железняка для кузнечного горна Тарна." },
       rope:     { id: "item:rope",     name: "Верёвка",          weight: 1.2, base: 5,  desc: "Пеньковая, сажени три." },
-      knife:    { id: "item:knife",    name: "Нож",              weight: 0.3, equip: "weapon", weaponClass: "blades",   sharp: true,  attack: 4,  base: 15, desc: "Простой кованый нож в деревянных ножнах." },
-      club:     { id: "item:club",     name: "Окованная дубина", weight: 1.7, equip: "weapon", weaponClass: "blunt",    sharp: false, attack: 6,  base: 18, desc: "Тяжёлое берёзовое корье с железным обручем. Оглушает, но не режет." },
-      spear:    { id: "item:spear",    name: "Рогатина",         weight: 2.3, equip: "weapon", weaponClass: "polearms", sharp: true,  attack: 8,  base: 26, desc: "Северное древковое копьё с перекладиной на зверя и человека." },
-      axe:      { id: "item:axe",      name: "Топор",            weight: 2.4, equip: "weapon", weaponClass: "axes",     sharp: true,  attack: 10, base: 34, desc: "Плотницкий топор с коротким топорищем. Тяжёлый, зато не подводит." },
-      sword:    { id: "item:sword",    name: "Северный тесак",   weight: 1.9, equip: "weapon", weaponClass: "blades",   sharp: true,  attack: 12, base: 48, desc: "Широкий однолезвийный клинок хладцев — режет стёганку и кость." },
-      bow:      { id: "item:bow",      name: "Охотничий лук",    weight: 1.4, equip: "weapon", weaponClass: "bows",     sharp: true,  attack: 9,  base: 38, desc: "Клееный таёжный лук из ели и берёзы с костяными накладками." },
-      padded:   { id: "item:padded",   name: "Стёганка",         weight: 2.2, equip: "armor",  defense: 4, base: 26, desc: "Прошитая в несколько слоёв куртка. От ножа держит, от топора — не очень." },
-      tool:     { id: "item:tool",     name: "Инструмент",       weight: 1.8, base: 22, desc: "Клещи и молоток кузнечной работы." }
+      tool:     { id: "item:tool",     name: "Инструмент",       weight: 1.8, base: 22, desc: "Клещи и молоток кузнечной работы." },
+
+      /* Оружие (слоты weapon / weapon2) */
+      knife:    { id: "item:knife",    name: "Нож",              weight: 0.3, equip: "weapon", slot: "weapon", weaponClass: "blades",   sharp: true,  attack: 4,  dmgType: "режущий",    speed: 1.35, reach: 0.80, armorPen: 10, handsReq: 1, base: 15, desc: "Простой кованый нож в деревянных ножнах." },
+      club:     { id: "item:club",     name: "Окованная дубина", weight: 1.7, equip: "weapon", slot: "weapon", weaponClass: "blunt",    sharp: false, attack: 6,  dmgType: "дробящий",   speed: 1.00, reach: 0.95, armorPen: 25, handsReq: 1, base: 18, desc: "Тяжёлое берёзовое корье с железным обручем. Оглушает, но не режет." },
+      spear:    { id: "item:spear",    name: "Рогатина",         weight: 2.3, equip: "weapon", slot: "weapon", weaponClass: "polearms", sharp: true,  attack: 8,  dmgType: "колющий",    speed: 0.92, reach: 1.55, armorPen: 22, handsReq: 2, base: 26, desc: "Северное древковое копьё с перекладиной на зверя и человека." },
+      axe:      { id: "item:axe",      name: "Топор",            weight: 2.4, equip: "weapon", slot: "weapon", weaponClass: "axes",     sharp: true,  attack: 10, dmgType: "рубящий",    speed: 0.95, reach: 1.05, armorPen: 30, handsReq: 1, base: 34, desc: "Плотницкий топор с коротким топорищем. Тяжёлый, зато не подводит." },
+      sword:    { id: "item:sword",    name: "Северный тесак",   weight: 1.9, equip: "weapon", slot: "weapon", weaponClass: "blades",   sharp: true,  attack: 12, dmgType: "режущий",    speed: 1.12, reach: 1.15, armorPen: 20, handsReq: 1, base: 48, desc: "Широкий клинок хладцев с долом — режет стёганку и кость." },
+      bow:      { id: "item:bow",      name: "Охотничий лук",    weight: 1.4, equip: "weapon", slot: "weapon", weaponClass: "bows",     sharp: true,  attack: 9,  dmgType: "стрелковый", speed: 0.85, reach: 5.80, armorPen: 18, handsReq: 2, ammoType: "arrows", base: 38, desc: "Клееный таёжный лук из ели и берёзы с костяными накладками." },
+      crossbow: { id: "item:crossbow", name: "Осадный самострел",weight: 3.1, equip: "weapon", slot: "weapon", weaponClass: "bows",     sharp: true,  attack: 14, dmgType: "стрелковый", speed: 0.58, reach: 6.40, armorPen: 42, handsReq: 2, ammoType: "bolts",  base: 64, desc: "Тяжёлый стальной лук на ореховом ложе. Прошивает бригантину с тридцати шагов." },
+
+      /* Голова (слот head) */
+      hood:      { id: "item:hood",      name: "Суконный куколь",     weight: 0.4, slot: "head", defense: 1, warmth: 3, mobility: 0,  base: 11, desc: "Плотный серый капюшон с оплечьем от ветра и мокрого снега." },
+      iron_helm: { id: "item:iron_helm", name: "Шишак с наносником",  weight: 1.6, slot: "head", defense: 3, warmth: 1, mobility: -2, base: 36, desc: "Клёпаный железный шлем с прямой пластиной поверх переносицы." },
+
+      /* Доспех / корпус (слот armor, сохраняет equip: 'armor' для обратной совместимости) */
+      padded:     { id: "item:padded",     name: "Стёганка",          weight: 2.2, equip: "armor", slot: "armor", armorVisual: "padded",     defense: 4, warmth: 4, mobility: -2, base: 26, desc: "Прошитая в несколько слоёв льняная куртка на пакле." },
+      brigandine: { id: "item:brigandine", name: "Клёпаная бригантина",weight: 3.8, equip: "armor", slot: "armor", armorVisual: "brigandine",defense: 7, warmth: 3, mobility: -5, base: 58, desc: "Толстая бурая кожа с наклёпанными изнутри стальными полосами." },
+      chainmail:  { id: "item:chainmail",  name: "Кольчужная рубаха", weight: 5.4, equip: "armor", slot: "armor", armorVisual: "chainmail", defense: 9, warmth: 1, mobility: -8, base: 84, desc: "Сведённые и клёпаные железные кольца поверх поддоспешника." },
+
+      /* Перчатки и наручи (слот hands) */
+      leather_gloves: { id: "item:leather_gloves", name: "Кожаные краги",  weight: 0.4, slot: "hands", defense: 1, warmth: 2, mobility: 0,  base: 12, desc: "Грубые рукавицы с раструбами — не натрёшь ладонь древком." },
+      splint_bracers: { id: "item:splint_bracers", name: "Шинные наручи",  weight: 1.1, slot: "hands", defense: 2, warmth: 1, mobility: -1, base: 28, desc: "Кожаные обхваты предплечий со стальными полосами." },
+
+      /* Штаны и поножи (слот legs) */
+      wool_trousers: { id: "item:wool_trousers", name: "Суконные портки", weight: 0.7, slot: "legs", defense: 1, warmth: 3, mobility: 0,  base: 13, desc: "Плотные домотканые штаны с обмотками у колен." },
+      greaves:       { id: "item:greaves",       name: "Кованые поножи",  weight: 1.9, slot: "legs", defense: 3, warmth: 1, mobility: -3, base: 34, desc: "Выгнутые по голени стальные пластины на ремнях." },
+
+      /* Сапоги (слот boots) */
+      travel_boots: { id: "item:travel_boots", name: "Ходовые сапоги",     weight: 0.9, slot: "boots", defense: 1, warmth: 3, mobility: 2,  base: 16, desc: "Промасленная юфть с высоким голенищем и твёрдым каблуком." },
+      iron_boots:   { id: "item:iron_boots",   name: "Подкованные сапоги", weight: 1.5, slot: "boots", defense: 2, warmth: 2, mobility: -1, base: 30, desc: "Тяжёлые ратные сапоги с железными набойками и накладкой на подъёме." },
+
+      /* Доп. рука: щиты и колчаны со снарядами (слот offhand) */
+      wood_shield:   { id: "item:wood_shield",   name: "Щит из дуба",    weight: 2.4, slot: "offhand", offhandKind: "shield", defense: 2, block: 22, mobility: -3, base: 24, desc: "Сбитый из дубовых досок щит с железным умбоном." },
+      heater_shield: { id: "item:heater_shield", name: "Окованный щит",  weight: 3.2, slot: "offhand", offhandKind: "shield", defense: 4, block: 34, mobility: -5, base: 46, desc: "Треугольный кавалерийский щит со стальной оковкой по кромке." },
+      arrows:        { id: "item:arrows",        name: "Колчан стрел",   weight: 0.8, slot: "offhand", offhandKind: "quiver", ammoFor: "arrows", attackBonus: 2, armorPenBonus: 8,  base: 14, desc: "Два десятка гранёных охотничьих стрел с гусиным оперением." },
+      bolts:         { id: "item:bolts",         name: "Колчан болтов",  weight: 1.1, slot: "offhand", offhandKind: "quiver", ammoFor: "bolts",  attackBonus: 3, armorPenBonus: 15, base: 19, desc: "Короткие тяжёлые гранёные болты для самострела." }
     },
 
     /* ---------- Персонажи ----------

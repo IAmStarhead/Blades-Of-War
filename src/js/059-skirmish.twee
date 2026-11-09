@@ -28,8 +28,11 @@
   /* Дальность оружия в мировых метрах (тайлах) локации */
   function reachOfWeaponKind(wepKind, mode) {
     if (mode === "spar") { return 0.88; }
+    if (wepKind === "crossbow") { return 6.10; }
+    if (wepKind === "bow") { return 5.50; }
     if (wepKind === "spear") { return 1.58; }
     if (wepKind === "axe" || wepKind === "sword") { return 1.16; }
+    if (wepKind === "club") { return 0.98; }
     if (wepKind === "knife") { return 0.94; }
     return 0.88;
   }
@@ -147,7 +150,7 @@
       poseTtl: 0,
       weapon: playerWep,
       armor: (Bow.fight && Bow.fight.armorOf && Bow.fight.armorOf(p)) ? Bow.fight.armorOf(p).id : "",
-      shield: false,
+      shield: !forceUnarmed && !!(Bow.equip && Bow.equip.equippedIn && Bow.equip.equippedIn(p, "offhand") && Bow.equip.equippedIn(p, "offhand").offhandKind === "shield"),
       hp: Math.round(p.needs.health),
       maxHp: 100,
       cd: 0.25,
@@ -353,6 +356,10 @@
       fx: [],
       log: []
     };
+
+    if (Bow.audio && Bow.audio.ensureCombatMusic) {
+      Bow.audio.ensureCombatMusic(state);
+    }
 
     return {
       ok: true,
@@ -761,13 +768,13 @@
 
     dt = clamp(dt || 0.05, 0.01, 0.5);
 
-    /* Визуальные всплывающие удары затухают плавно */
+    if (!sk.active || sk.paused) { return { status: "paused", guardsArrived: false, clash: false, ended: false }; }
+
+    /* Визуальные всплывающие удары затухают плавно (на паузе стоят неподвижно!) */
     for (var fi = sk.fx.length - 1; fi >= 0; fi--) {
       sk.fx[fi].ttl -= dt;
       if (sk.fx[fi].ttl <= 0) { sk.fx.splice(fi, 1); }
     }
-
-    if (!sk.active || sk.paused) { return { status: "paused", guardsArrived: false, clash: false, ended: false }; }
 
     sk.elapsed += dt;
     var guardsArrived = false;

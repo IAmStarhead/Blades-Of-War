@@ -90,6 +90,7 @@
       var w = Bow.fight.weaponOf(personOrUnit);
       if (w) { wid = String(w.id); }
     }
+    if (/crossbow/.test(wid)) { return "crossbow"; }
     if (/axe/.test(wid)) { return "axe"; }
     if (/sword/.test(wid)) { return "sword"; }
     if (/spear/.test(wid)) { return "spear"; }
@@ -171,6 +172,12 @@
       weaponSvg = '<g class="bow-fig-weapon">' +
         '<path d="M48 22 Q59 42 48 62" fill="none" stroke="#c3a476" stroke-width="2.1"/>' +
         '<line x1="48" y1="22" x2="48" y2="62" stroke="#8ea0b2" stroke-width="0.9"/>' +
+      '</g>';
+    } else if (weapon === "crossbow") {
+      weaponSvg = '<g class="bow-fig-weapon">' +
+        '<line x1="43" y1="46" x2="60" y2="41" stroke="#8b6844" stroke-width="2.8" stroke-linecap="round"/>' +
+        '<path d="M55 31 Q62 41 55 51" fill="none" stroke="#cfd6dd" stroke-width="2.1"/>' +
+        '<line x1="55" y1="31" x2="55" y2="51" stroke="#8ea0b2" stroke-width="0.9"/>' +
       '</g>';
     } else if (weapon === "knife") {
       weaponSvg = '<g class="bow-fig-weapon">' +
@@ -714,18 +721,20 @@
     var vh = (Bow.iso && Bow.iso.VIEW_H) ? Bow.iso.VIEW_H : 680;
 
     /* 2А. Все реальные двери, крыльцо и дорожные выходы локации */
+    var pendOrd = state && state.pendingOrder ? state.pendingOrder : null;
     if (map && Array.isArray(map.exits) && !inSkirmish) {
       map.exits.forEach(function (ex) {
         var mins = Bow.actions.travelMinutes ? Bow.actions.travelMinutes(state, ex.to) : 10;
         var subDur = Bow.actions.formatDuration ? Bow.actions.formatDuration(mins) : "переход";
         var ep = isoPct(ex.col, ex.row);
         var exY = Math.min(86, Math.max(14, ep.y - 3));
+        var exitQueued = !!(pendOrd && pendOrd.kind === "exit" && pendOrd.exitTo === ex.to);
         html.push(
-          '<button type="button" class="bow-spot bow-iso-spot bow-spot-exit bow-door-hotspot" style="left:' + ep.x + '%;top:' + exY + '%" ' +
-            'data-act="move" data-loc="' + esc(ex.to) + '" data-iso-col="' + ex.col + '" data-iso-row="' + ex.row + '" data-x="' + ep.x + '" ' +
+          '<button type="button" class="bow-spot bow-iso-spot bow-spot-exit bow-door-hotspot' + (exitQueued ? ' bow-spot-on bow-order-peace' : '') + '" style="left:' + ep.x + '%;top:' + exY + '%" ' +
+            'data-act="move" data-from-stage="1" data-loc="' + esc(ex.to) + '" data-iso-col="' + ex.col + '" data-iso-row="' + ex.row + '" data-x="' + ep.x + '" ' +
             'title="Подойти и войти: ' + esc(ex.label) + ' (' + esc(subDur) + ')">' +
             '<span class="bow-door-hit" aria-hidden="true"></span>' +
-            '<span class="bow-spot-txt"><b>🚪 ' + esc(ex.label) + '</b><i>' + esc(subDur) + '</i></span>' +
+            '<span class="bow-spot-txt"><b>🚪 ' + esc(ex.label) + '</b><i>' + esc(exitQueued ? 'приказ отдан' : subDur) + '</i></span>' +
           '</button>'
         );
       });
@@ -799,11 +808,11 @@
       }
 
       if (ent.type === "skirmish_foe") {
-        var isTarget = !!(state.skirmish && state.skirmish.targetKey === ent.unitKey);
+        var isTarget = !!(state.skirmish && state.skirmish.targetKey === ent.unitKey) || !!(pendOrd && pendOrd.targetId === ent.unitKey);
         html.push(
-          '<button type="button" class="bow-actor bow-iso-actor bow-actor-enemy' + (isTarget ? " bow-actor-on" : "") + '" ' +
+          '<button type="button" class="bow-actor bow-iso-actor bow-actor-enemy' + (isTarget ? " bow-actor-on bow-order-hostile" : "") + '" ' +
             'style="left:' + xPct + '%;top:' + yPct + '%" ' +
-            'data-act="skirmish-target" data-unit="' + esc(ent.unitKey) + '" data-x="' + xPct + '" ' +
+            'data-act="skirmish-target" data-entity-id="' + esc(ent.unitKey) + '" data-unit="' + esc(ent.unitKey) + '" data-x="' + xPct + '" ' +
             'title="Цель в бою: ' + esc(ent.name) + '">' +
             '<span class="bow-iso-hit"></span>' +
             '<span class="bow-actor-tag bow-actor-tag-threat"><b>⚔ ' + esc(ent.name) + '</b><i class="bow-tone bow-cold">' + (ent.down ? 'сбит с ног' : (Math.max(0, Math.round(ent.hp)) + ' зд.')) + '</i></span>' +
@@ -814,9 +823,9 @@
 
       if (ent.type === "ally") {
         html.push(
-          '<button type="button" class="bow-actor bow-iso-actor bow-actor-npc" ' +
+          '<button type="button" class="bow-actor bow-iso-actor bow-actor-npc bow-order-peace" ' +
             'style="left:' + xPct + '%;top:' + yPct + '%" ' +
-            'data-act="skirmish-ally" data-unit="' + esc(ent.unitKey) + '" data-x="' + xPct + '" ' +
+            'data-act="skirmish-ally" data-entity-id="' + esc(ent.unitKey) + '" data-unit="' + esc(ent.unitKey) + '" data-x="' + xPct + '" ' +
             'title="Спутник в строю: ' + esc(ent.name) + '">' +
             '<span class="bow-iso-hit"></span>' +
             '<span class="bow-actor-tag"><b>🛡 ' + esc(ent.name) + '</b><i class="bow-tone bow-warm">' + Math.max(0, Math.round(ent.hp)) + ' зд.</i></span>' +
@@ -826,11 +835,11 @@
       }
 
       if (ent.type === "guard") {
-        var gSel = selected && selected.kind === "guard";
+        var gSel = (selected && selected.kind === "guard") || !!(pendOrd && pendOrd.targetId === ent.id);
         html.push(
-          '<button type="button" class="bow-actor bow-iso-actor bow-actor-enemy bow-actor-guard' + (gSel ? " bow-actor-on" : "") + '" ' +
+          '<button type="button" class="bow-actor bow-iso-actor bow-actor-enemy bow-actor-guard' + (gSel ? " bow-actor-on bow-order-hostile" : "") + '" ' +
             'style="left:' + xPct + '%;top:' + yPct + '%" ' +
-            'data-act="stage-select" data-kind="guard" data-iso-col="' + ent.col + '" data-iso-row="' + ent.row + '" data-x="' + xPct + '" ' +
+            'data-act="stage-select" data-entity-id="' + esc(ent.id) + '" data-kind="guard" data-iso-col="' + ent.col + '" data-iso-row="' + ent.row + '" data-x="' + xPct + '" ' +
             'title="Стража Брода — ' + esc(ent.name) + '">' +
             '<span class="bow-iso-hit"></span>' +
             '<span class="bow-actor-tag bow-actor-tag-threat"><b>⛨ ' + esc(ent.name) + '</b><i class="bow-tone bow-cold">стража</i></span>' +
@@ -841,11 +850,11 @@
 
       if (ent.type === "robber") {
         var rb = state.encounter && state.encounter.robber;
-        var rSel = selected && selected.kind === "robber";
+        var rSel = (selected && selected.kind === "robber") || !!(pendOrd && pendOrd.targetId === "robber");
         html.push(
-          '<button type="button" class="bow-actor bow-iso-actor bow-actor-enemy bow-actor-robber' + (rSel ? " bow-actor-on" : "") + '" ' +
+          '<button type="button" class="bow-actor bow-iso-actor bow-actor-enemy bow-actor-robber' + (rSel ? " bow-actor-on bow-order-hostile" : "") + '" ' +
             'style="left:' + xPct + '%;top:' + yPct + '%" ' +
-            'data-act="stage-select" data-kind="robber" data-iso-col="' + ent.col + '" data-iso-row="' + ent.row + '" data-x="' + xPct + '" ' +
+            'data-act="stage-select" data-entity-id="robber" data-kind="robber" data-iso-col="' + ent.col + '" data-iso-row="' + ent.row + '" data-x="' + xPct + '" ' +
             'title="' + esc(ent.name) + (rb ? (' — требует ' + rb.demand + ' м.') : '') + '">' +
             '<span class="bow-iso-hit"></span>' +
             '<span class="bow-actor-tag bow-actor-tag-threat"><b>⚔ ' + esc(ent.name) + '</b>' + (rb ? '<i class="bow-tone bow-cold">' + rb.demand + ' м.</i>' : '') + '</span>' +
@@ -861,9 +870,9 @@
         var stg = (Bow.actions && Bow.actions.corpseStage) ? Bow.actions.corpseStage(state, c) : { key: "fresh", label: "свежее тело" };
         var subLabel = hasLoot ? ("обыскать · " + stg.label) : stg.label;
         html.push(
-          '<button type="button" class="bow-actor bow-iso-actor bow-actor-corpse bow-corpse-' + stg.key + (cSel ? " bow-actor-on" : "") + (hasLoot ? " bow-actor-corpse-loot" : "") + '" ' +
+          '<button type="button" class="bow-actor bow-iso-actor bow-actor-corpse bow-corpse-' + stg.key + (cSel ? " bow-actor-on bow-order-peace" : "") + (hasLoot ? " bow-actor-corpse-loot" : "") + '" ' +
             'style="left:' + xPct + '%;top:' + yPct + '%" ' +
-            'data-act="stage-select" data-kind="corpse" data-corpse="' + esc(c.id) + '" data-iso-col="' + ent.col + '" data-iso-row="' + ent.row + '" data-x="' + xPct + '" ' +
+            'data-act="stage-select" data-entity-id="' + esc(c.id) + '" data-kind="corpse" data-corpse="' + esc(c.id) + '" data-iso-col="' + ent.col + '" data-iso-row="' + ent.row + '" data-x="' + xPct + '" ' +
             'title="' + esc("Труп: " + c.name + " (" + stg.label + ")") + '">' +
             '<span class="bow-iso-hit"></span>' +
             '<span class="bow-actor-tag bow-actor-tag-corpse"><b>☠ ' + esc(c.name) + '</b><i class="bow-dim">' + esc(subLabel) + '</i></span>' +
@@ -874,19 +883,22 @@
 
       if (ent.type === "npc" && ent.person) {
         var p = ent.person;
-        var isSel = selected && selected.kind === "person" && selected.personId === p.id;
+        var isPendTarget = !!(pendOrd && pendOrd.targetId === p.id);
+        var isHostileOrd = isPendTarget && pendOrd.kind === "attack";
+        var isSel = (selected && selected.kind === "person" && selected.personId === p.id) || isPendTarget;
+        var ordCls = isHostileOrd ? " bow-order-hostile" : (isSel ? " bow-order-peace" : "");
         var tone = p.attitude >= 20 ? "warm" : p.attitude <= -20 ? "cold" : "neutral";
         var hp = Math.round((p.needs && p.needs.health) || 100);
         var sign = p.attitude > 0 ? "+" : "";
         var aggroTitle = isAggro ? ("⚔ Атаковать: " + p.name) : (p.name + " — " + p.role);
         html.push(
-          '<button type="button" class="bow-actor bow-iso-actor bow-actor-npc' + (isSel ? " bow-actor-on" : "") + (isAggro ? " bow-actor-aggro-hover" : "") + '" ' +
+          '<button type="button" class="bow-actor bow-iso-actor bow-actor-npc' + (isSel ? " bow-actor-on" : "") + ordCls + (isAggro ? " bow-actor-aggro-hover" : "") + '" ' +
             'style="left:' + xPct + '%;top:' + yPct + '%" ' +
-            'data-act="stage-select" data-kind="person" data-person="' + esc(p.id) + '" data-iso-col="' + ent.col + '" data-iso-row="' + ent.row + '" data-x="' + xPct + '" ' +
+            'data-act="stage-select" data-entity-id="' + esc(p.id) + '" data-kind="person" data-person="' + esc(p.id) + '" data-iso-col="' + ent.col + '" data-iso-row="' + ent.row + '" data-x="' + xPct + '" ' +
             'title="' + esc(aggroTitle) + '">' +
             (hp < 100 ? '<span class="bow-actor-hp"><i style="width:' + hp + '%"></i></span>' : '') +
             '<span class="bow-iso-hit"></span>' +
-            '<span class="bow-actor-tag"><b>' + (isAggro ? '⚔ ' : '') + esc(p.name) + '</b><i class="bow-tone bow-' + tone + '">' + sign + Math.round(p.attitude) + '</i></span>' +
+            '<span class="bow-actor-tag"><b>' + ((isAggro || isHostileOrd) ? '⚔ ' : '') + esc(p.name) + '</b><i class="bow-tone bow-' + tone + '">' + sign + Math.round(p.attitude) + '</i></span>' +
           '</button>'
         );
       }

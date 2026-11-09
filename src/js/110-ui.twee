@@ -401,50 +401,258 @@
         Bow.needs.healRate(state.player).toFixed(1) + ' здор. в час.</div>';
   }
 
+  var DMG_TYPE_LABEL = {
+    slash: "рубящий",
+    pierce: "колющий",
+    blunt: "дробящий"
+  };
+
+  function formatDeltaBadge(diff, unitLabel) {
+    if (!diff || Math.abs(diff) < 0.05) { return ""; }
+    var rounded = Math.round(diff * 10) / 10;
+    var sign = rounded > 0 ? "+" : "";
+    var cls = rounded > 0 ? "bow-stat-up" : "bow-stat-down";
+    return '<span class="bow-stat-delta ' + cls + '">' + sign + rounded + ' ' + esc(unitLabel) + '</span>';
+  }
+
+  function itemStatsPillsHtml(def, equippedDef) {
+    if (!def) { return ""; }
+    var pills = [];
+    var deltas = [];
+    if (typeof def.attack === "number") {
+      pills.push('<span class="bow-stat-pill">⚔ Урон <b>+' + def.attack + '</b></span>');
+      var eqAtk = (equippedDef && typeof equippedDef.attack === "number") ? equippedDef.attack : 0;
+      if (!equippedDef || equippedDef.id !== def.id) {
+        var dA = formatDeltaBadge(def.attack - eqAtk, "урон");
+        if (dA) { deltas.push(dA); }
+      }
+    }
+    if (def.dmgType) {
+      var dLbl = DMG_TYPE_LABEL[def.dmgType] || def.dmgType;
+      pills.push('<span class="bow-stat-pill' + (def.handsReq === 2 ? ' bow-stat-pill-2h' : '') + '">' + esc(dLbl) + (def.handsReq === 2 ? ' · двуручн.' : '') + '</span>');
+    }
+    if (typeof def.reach === "number") {
+      pills.push('<span class="bow-stat-pill">Дальн. <b>' + def.reach + ' м</b></span>');
+    }
+    if (typeof def.speed === "number") {
+      pills.push('<span class="bow-stat-pill">Скор. <b>' + def.speed + '×</b></span>');
+    }
+    if (typeof def.armorPen === "number" && def.armorPen > 0) {
+      var penPct = def.armorPen <= 1 ? Math.round(def.armorPen * 100) : Math.round(def.armorPen);
+      pills.push('<span class="bow-stat-pill">Пробит. <b>' + penPct + '%</b></span>');
+    }
+    if (typeof def.defense === "number" && def.defense !== 0) {
+      pills.push('<span class="bow-stat-pill">🛡 Защ. <b>+' + def.defense + '</b></span>');
+      var eqDef = (equippedDef && typeof equippedDef.defense === "number") ? equippedDef.defense : 0;
+      if (!equippedDef || equippedDef.id !== def.id) {
+        var dD = formatDeltaBadge(def.defense - eqDef, "защ.");
+        if (dD) { deltas.push(dD); }
+      }
+    }
+    if (typeof def.block === "number" && def.block > 0) {
+      var blkPct = def.block <= 1 ? Math.round(def.block * 100) : Math.round(def.block);
+      pills.push('<span class="bow-stat-pill">⛨ Блок <b>' + blkPct + '%</b></span>');
+      var eqBlkRaw = (equippedDef && typeof equippedDef.block === "number") ? equippedDef.block : 0;
+      var eqBlk = eqBlkRaw <= 1 ? Math.round(eqBlkRaw * 100) : Math.round(eqBlkRaw);
+      if (!equippedDef || equippedDef.id !== def.id) {
+        var dB = formatDeltaBadge(blkPct - eqBlk, "% блок");
+        if (dB) { deltas.push(dB); }
+      }
+    }
+    if (typeof def.attackBonus === "number" && def.attackBonus > 0) {
+      pills.push('<span class="bow-stat-pill">➶ Снаряды <b>+' + def.attackBonus + ' урон</b></span>');
+    }
+    if (typeof def.warmth === "number" && def.warmth !== 0) {
+      pills.push('<span class="bow-stat-pill">❄ Тепло <b>+' + def.warmth + '</b></span>');
+      var eqW = (equippedDef && typeof equippedDef.warmth === "number") ? equippedDef.warmth : 0;
+      if (!equippedDef || equippedDef.id !== def.id) {
+        var dW = formatDeltaBadge(def.warmth - eqW, "тепло");
+        if (dW) { deltas.push(dW); }
+      }
+    }
+    if (typeof def.mobility === "number" && def.mobility !== 0) {
+      pills.push('<span class="bow-stat-pill">Подвижн. <b>' + (def.mobility > 0 ? "+" : "") + def.mobility + '</b></span>');
+    }
+    if (typeof def.food === "number" && def.food > 0) {
+      pills.push('<span class="bow-stat-pill">🍞 Сытость <b>+' + def.food + '</b></span>');
+    }
+    if (typeof def.mood === "number" && def.mood > 0) {
+      pills.push('<span class="bow-stat-pill">🍺 Дух <b>+' + def.mood + '</b></span>');
+    }
+    if (!pills.length && !deltas.length) { return ""; }
+    return '<div class="bow-item-stats">' + pills.join("") + deltas.join("") + '</div>';
+  }
+
+  function renderSlotBoxHtml(person, slotKey, slotLabel, slotIcon, isActiveWep) {
+    var eq = Bow.equip;
+    var itemDef = (eq && eq.equippedIn) ? eq.equippedIn(person, slotKey) : null;
+    var rawSlotId = (person && person.slots) ? person.slots[slotKey] : null;
+    if (slotKey === "weapon2" && rawSlotId && Bow.economy && Bow.economy.countItem(person, rawSlotId) > 0) {
+      itemDef = Bow.economy.findItemDef(rawSlotId);
+    } else if (slotKey === "weapon" && rawSlotId && Bow.economy && Bow.economy.countItem(person, rawSlotId) > 0) {
+      itemDef = Bow.economy.findItemDef(rawSlotId);
+    }
+    var subStat = "пусто";
+    if (itemDef) {
+      var parts = [];
+      if (typeof itemDef.attack === "number") { parts.push("+" + itemDef.attack + " ур."); }
+      if (typeof itemDef.defense === "number" && itemDef.defense > 0) { parts.push("+" + itemDef.defense + " защ."); }
+      if (typeof itemDef.block === "number" && itemDef.block > 0) { parts.push((itemDef.block <= 1 ? Math.round(itemDef.block * 100) : Math.round(itemDef.block)) + "% бл."); }
+      if (typeof itemDef.attackBonus === "number" && itemDef.attackBonus > 0) { parts.push("+" + itemDef.attackBonus + " ур."); }
+      if (typeof itemDef.warmth === "number" && itemDef.warmth > 0 && !parts.length) { parts.push("+" + itemDef.warmth + " тепл."); }
+      subStat = parts.join(" · ") || "надето";
+    }
+
+    return '<div class="bow-pd-slot' + (itemDef ? " bow-pd-slot-filled" : "") + (isActiveWep ? " bow-pd-slot-active" : "") + '" data-slot-box="' + esc(slotKey) + '">' +
+      '<div class="bow-pd-slot-head">' +
+        '<span class="bow-pd-slot-lbl">' + slotIcon + ' ' + esc(slotLabel) + '</span>' +
+        (itemDef
+          ? '<button type="button" class="bow-pd-unequip" data-act="unequip-slot" data-slot="' + esc(slotKey) + '" title="Снять в сумку">✕</button>'
+          : '') +
+      '</div>' +
+      '<b class="bow-pd-slot-name">' + esc(itemDef ? itemDef.name : "— не надето —") + '</b>' +
+      '<i class="bow-pd-slot-meta">' + esc(subStat) + '</i>' +
+    '</div>';
+  }
+
   function renderInventory(state) {
     var box = $("bow-inventory");
     if (!box) { return; }
 
-    var curW = Bow.util.round1(Bow.economy.totalWeight(state.player));
-    var maxW = Bow.economy.maxWeight ? Bow.economy.maxWeight(state.player) : 30;
+    var p = state.player;
+    if (Bow.equip && Bow.equip.ensureSlots) { Bow.equip.ensureSlots(p); }
+    var curW = Bow.util.round1(Bow.economy.totalWeight(p));
+    var maxW = Bow.economy.maxWeight ? Bow.economy.maxWeight(p) : 30;
     var overloaded = curW > maxW;
 
-    if (state.player.inventory.length === 0) {
-      box.innerHTML = '<div class="bow-empty">Пусто. Всё, что есть, — за спиной.</div>' +
-        '<div class="bow-inv-total">Вес: 0 / ' + maxW + ' кг</div>';
+    var eq = Bow.equip;
+    var gearTotals = (eq && eq.totalStats) ? eq.totalStats(p) : { defense: 0, warmth: 0, mobility: 0, block: 0, armorPen: 0 };
+    var atkPow = (Bow.fight && Bow.fight.attackPower) ? Math.round(Bow.fight.attackPower(p)) : 10;
+    var defPow = (Bow.fight && Bow.fight.defenseOf) ? Math.round(Bow.fight.defenseOf(p)) : 0;
+    var activeSet = p.activeWeaponSet === 2 ? 2 : 1;
+
+    var leftSlotsHtml =
+      renderSlotBoxHtml(p, "head", "Шлем", "🪖", false) +
+      renderSlotBoxHtml(p, "armor", "Доспехи", "🛡", false) +
+      renderSlotBoxHtml(p, "hands", "Перчатки", "🧤", false) +
+      renderSlotBoxHtml(p, "legs", "Штаны", "👖", false);
+
+    var rightSlotsHtml =
+      renderSlotBoxHtml(p, "boots", "Сапоги", "🥾", false) +
+      renderSlotBoxHtml(p, "weapon", "Оружие I", "⚔", activeSet === 1) +
+      renderSlotBoxHtml(p, "weapon2", "Оружие II", "🗡", activeSet === 2) +
+      renderSlotBoxHtml(p, "offhand", "Щит / Снаряды", "⛨", false);
+
+    var paperdollHtml =
+      '<div class="bow-paperdoll-wrap">' +
+        '<div class="bow-paperdoll-grid">' +
+          '<div class="bow-pd-col bow-pd-col-l">' + leftSlotsHtml + '</div>' +
+          '<div class="bow-pd-figure">' +
+            '<canvas class="bow-paperdoll-canvas" width="160" height="200" aria-label="Фигура снаряжения героя"></canvas>' +
+            '<button type="button" class="bow-btn bow-btn-sm bow-wep-swap-btn" data-act="swap-wep-set" title="Сменить активное оружие в руках (Комплект I / II)">' +
+              '⇄ Активно: Оружие ' + (activeSet === 2 ? 'II' : 'I') +
+            '</button>' +
+          '</div>' +
+          '<div class="bow-pd-col bow-pd-col-r">' + rightSlotsHtml + '</div>' +
+        '</div>' +
+        '<div class="bow-gear-summary">' +
+          '<span>⚔ Удар: <b>' + atkPow + '</b></span>' +
+          '<span>🛡 Защита: <b>' + defPow + '</b></span>' +
+          '<span>⛨ Блок: <b>' + ((gearTotals.block || 0) <= 1 ? Math.round((gearTotals.block || 0) * 100) : Math.round(gearTotals.block || 0)) + '%</b></span>' +
+          '<span>⌖ Пробитие: <b>+' + Math.round(gearTotals.armorPenBonus || 0) + '%</b></span>' +
+          '<span>❄ Тепло: <b>+' + Math.round(gearTotals.warmth || 0) + '</b></span>' +
+          '<span>👣 Подвижн.: <b>' + ((gearTotals.mobility || 0) > 0 ? "+" : "") + Math.round(gearTotals.mobility || 0) + '</b></span>' +
+        '</div>' +
+      '</div>';
+
+    var weapon = Bow.fight.weaponOf(p);
+    var armor = Bow.fight.armorOf(p);
+
+    if (p.inventory.length === 0) {
+      box.innerHTML = paperdollHtml +
+        '<div class="bow-empty">Пусто. Всё, что есть, — за спиной.</div>' +
+        '<div class="bow-inv-total">Вес: 0 / ' + maxW + ' кг</div>' +
+        '<div class="bow-loadout">' +
+          '<span>В руке: <b>пусто</b></span>' +
+          '<span>На себе: <b>пусто</b></span>' +
+        '</div>';
+      var pdCvEmpty = box.querySelector("canvas.bow-paperdoll-canvas");
+      if (pdCvEmpty && Bow.iso && Bow.iso.paintPaperdollCanvas) {
+        Bow.iso.paintPaperdollCanvas(pdCvEmpty, state);
+      }
       return;
     }
 
-    var html = state.player.inventory.map(function (entry) {
+    var cardsHtml = p.inventory.map(function (entry) {
       var def = Bow.economy.findItemDef(entry.itemId);
       var name = def ? def.name : entry.itemId;
       var weight = def ? Bow.util.round1(def.weight * entry.qty) : 0;
-      var equip = "";
-      if (def && def.equip) {
-        var chosen = def.equip === "weapon"
-          ? Bow.fight.weaponOf(state.player)
-          : Bow.fight.armorOf(state.player);
-        var inHand = chosen && chosen.id === def.id;
-        equip = '<span class="bow-equip-tag">' + (inHand ? "в руке" : "в запасе") + '</span>';
+      var slotType = (def && eq && eq.slotOfItem) ? eq.slotOfItem(def) : null;
+      var eqDefInSlot = (slotType && eq && eq.equippedIn) ? eq.equippedIn(p, slotType === "weapon" ? (activeSet === 2 ? "weapon2" : "weapon") : slotType) : null;
+
+      var wornWhere = "";
+      if (def && p.slots) {
+        if (weapon && weapon.id === def.id) { wornWhere = "в руке"; }
+        else if (p.slots.weapon2 === def.id) { wornWhere = "слот II"; }
+        else if (slotType && eq && eq.equippedIn(p, slotType) && eq.equippedIn(p, slotType).id === def.id) { wornWhere = "надето"; }
+        else if (slotType) { wornWhere = "в запасе"; }
       }
-      return '<div class="bow-inv-row">' +
-        '<span>' + esc(name) + equip + '</span>' +
-        '<span class="bow-dim">×' + entry.qty + ' · ' + weight + ' кг</span>' +
+      var equipBadge = wornWhere ? ('<span class="bow-equip-tag' + (wornWhere !== "в запасе" ? ' bow-equip-tag-on' : '') + '">' + esc(wornWhere) + '</span>') : "";
+
+      var actBtns = [];
+      if (def && slotType === "weapon") {
+        var inW1 = (p.slots && p.slots.weapon === def.id) || (!p.slotsLocked.weapon && activeSet === 1 && weapon && weapon.id === def.id);
+        var inW2 = p.slots && p.slots.weapon2 === def.id;
+        if (inW1) {
+          actBtns.push('<button type="button" class="bow-trade-btn" data-act="unequip-slot" data-slot="weapon">Снять I</button>');
+        } else {
+          actBtns.push('<button type="button" class="bow-trade-btn" data-act="equip-slot" data-slot="weapon" data-item="' + esc(def.id) + '">В слот I</button>');
+        }
+        if (inW2) {
+          actBtns.push('<button type="button" class="bow-trade-btn" data-act="unequip-slot" data-slot="weapon2">Снять II</button>');
+        } else {
+          actBtns.push('<button type="button" class="bow-trade-btn" data-act="equip-slot" data-slot="weapon2" data-item="' + esc(def.id) + '">В слот II</button>');
+        }
+      } else if (def && slotType) {
+        var curS = eq && eq.equippedIn ? eq.equippedIn(p, slotType) : null;
+        if (curS && curS.id === def.id) {
+          actBtns.push('<button type="button" class="bow-trade-btn" data-act="unequip-slot" data-slot="' + esc(slotType) + '">Снять</button>');
+        } else {
+          actBtns.push('<button type="button" class="bow-trade-btn" data-act="equip-slot" data-slot="' + esc(slotType) + '" data-item="' + esc(def.id) + '">Надеть</button>');
+        }
+      } else if (def && (def.food || def.mood)) {
+        var iKey = Bow.economy.keyOf(def);
+        actBtns.push('<button type="button" class="bow-trade-btn" data-act="' + (def.food ? "eat" : "drink") + '" data-item="' + esc(iKey) + '">' + (def.food ? "Съесть" : "Выпить") + '</button>');
+      }
+
+      return '<div class="bow-inv-row bow-inv-card">' +
+        '<div class="bow-inv-card-top">' +
+          '<span class="bow-inv-title"><b>' + esc(name) + '</b> ' + equipBadge + '</span>' +
+          '<span class="bow-dim">×' + entry.qty + ' · ' + weight + ' кг</span>' +
+        '</div>' +
+        itemStatsPillsHtml(def, eqDefInSlot) +
+        (def && def.desc ? '<div class="bow-inv-desc bow-dim">' + esc(def.desc) + '</div>' : '') +
+        (actBtns.length ? '<div class="bow-inv-acts">' + actBtns.join("") + '</div>' : '') +
       '</div>';
     }).join("");
 
-    var weapon = Bow.fight.weaponOf(state.player);
-    var armor = Bow.fight.armorOf(state.player);
-    html += '<div class="bow-inv-total' + (overloaded ? " bow-warn" : "") + '">Вес: <b>' + curW + ' / ' + maxW + ' кг</b>' +
-      (overloaded ? ' · перегруз (замедляет шаг, тренирует Силу)' : '') + '</div>';
-    html += '<div class="bow-loadout">' +
-      '<span>В руке: <b>' + esc(weapon ? weapon.name : "пусто") + '</b></span>' +
-      '<span>На себе: <b>' + esc(armor ? armor.name : "пусто") + '</b></span>' +
-      '</div>';
-    html += '<div class="bow-treat-note">Авто-еда (' + (state.player.autoEat !== false ? "включена" : "выключена") +
-      '): проголодавшись, герой сам съест хлеб, похлёбку, дичь или ягоды из сумки.</div>';
+    var html = paperdollHtml +
+      '<div class="bow-inv-list-head">Предметы в сумке и сравнение характеристик</div>' +
+      '<div class="bow-inv-cards">' + cardsHtml + '</div>' +
+      '<div class="bow-inv-total' + (overloaded ? " bow-warn" : "") + '">Вес: <b>' + curW + ' / ' + maxW + ' кг</b>' +
+        (overloaded ? ' · перегруз (замедляет шаг, тренирует Силу)' : '') + '</div>' +
+      '<div class="bow-loadout">' +
+        '<span>В руке: <b>' + esc(weapon ? weapon.name : "пусто") + '</b></span>' +
+        '<span>На себе: <b>' + esc(armor ? armor.name : "пусто") + '</b></span>' +
+      '</div>' +
+      '<div class="bow-treat-note">Авто-еда (' + (p.autoEat !== false ? "включена" : "выключена") +
+        '): проголодавшись, герой сам съест хлеб, похлёбку, дичь или ягоды из сумки.</div>';
 
     box.innerHTML = html;
+    var pdCv = box.querySelector("canvas.bow-paperdoll-canvas");
+    if (pdCv && Bow.iso && Bow.iso.paintPaperdollCanvas) {
+      Bow.iso.paintPaperdollCanvas(pdCv, state);
+    }
   }
 
   function renderPeople(state) {
@@ -1144,6 +1352,7 @@
     var pal = Bow.stage.skyOf(state);
     var wKey = locKey + "|" + pal.weatherKind;
 
+    var worldWrap = canvas.querySelector("#bow-stage-world");
     var bgWrap = canvas.querySelector(".bow-stage-bg-wrap");
     var wWrap = canvas.querySelector(".bow-stage-weather-wrap");
     var layer = canvas.querySelector(".bow-stage-layer");
@@ -1151,21 +1360,28 @@
     var vw = (Bow.iso && Bow.iso.VIEW_W) ? Bow.iso.VIEW_W : 1280;
     var vh = (Bow.iso && Bow.iso.VIEW_H) ? Bow.iso.VIEW_H : 680;
 
-    if (!bgWrap || !wWrap || !layer) {
+    if (!worldWrap || !bgWrap || !wWrap || !layer) {
       canvas.innerHTML =
-        '<div class="bow-stage-bg-wrap"><canvas class="bow-iso-canvas" width="' + vw + '" height="' + vh + '"></canvas></div>' +
-        '<div class="bow-stage-weather-wrap"></div>' +
-        '<div class="bow-stage-layer"></div>';
+        '<div id="bow-stage-world" class="bow-stage-world">' +
+          '<div class="bow-stage-bg-wrap"><canvas class="bow-iso-canvas" width="' + vw + '" height="' + vh + '"></canvas></div>' +
+          '<div class="bow-stage-weather-wrap"></div>' +
+          '<div class="bow-stage-layer"></div>' +
+        '</div>';
+      worldWrap = canvas.querySelector("#bow-stage-world");
       bgWrap = canvas.querySelector(".bow-stage-bg-wrap");
       wWrap = canvas.querySelector(".bow-stage-weather-wrap");
       layer = canvas.querySelector(".bow-stage-layer");
     }
 
+    var prevLocAttr = bgWrap.getAttribute("data-loc");
     bgWrap.setAttribute("data-loc", locKey);
     var isoCv = bgWrap.querySelector("canvas.bow-iso-canvas");
     if (!isoCv) {
       bgWrap.innerHTML = '<canvas class="bow-iso-canvas" width="' + vw + '" height="' + vh + '"></canvas>';
       isoCv = bgWrap.querySelector("canvas.bow-iso-canvas");
+    }
+    if (prevLocAttr !== locKey && Bow.iso && Bow.iso.centerCameraOnPlayer) {
+      Bow.iso.centerCameraOnPlayer(state, canvas, false);
     }
     if (Bow.iso && Bow.iso.paintStageCanvas) {
       Bow.iso.paintStageCanvas(isoCv, state, stageSelection);
@@ -1438,7 +1654,9 @@
       void el.offsetWidth;
       el.classList.add("bow-battle-intro-play");
     }
-    if (Bow.audio && Bow.audio.playBattleIntro) {
+    if (Bow.audio && Bow.audio.ensureCombatMusic) {
+      Bow.audio.ensureCombatMusic(global.BowGame && global.BowGame.getState ? global.BowGame.getState() : null);
+    } else if (Bow.audio && Bow.audio.playBattleIntro) {
       Bow.audio.playBattleIntro();
     }
   }
@@ -2385,6 +2603,46 @@
     app.appendChild(el);
   }
 
+  function renderPauseBanner(state) {
+    var banner = $("bow-pause-banner");
+    var app = $("bow-app");
+    var isPaused = !!(state && ((state.time && state.time.scale === "paused") || (state.skirmish && state.skirmish.active && state.skirmish.paused)));
+    if (app) { app.classList.toggle("bow-is-paused", isPaused); }
+    if (!banner) { return; }
+
+    if (!isPaused || (state && state.fight)) {
+      if (banner._lastHtml !== "") {
+        banner._lastHtml = "";
+        banner.innerHTML = "";
+        banner.classList.remove("bow-pause-banner-on");
+      }
+      return;
+    }
+
+    var pend = state && state.pendingOrder ? state.pendingOrder : null;
+    var orderLine = "";
+    if (pend) {
+      var ordTone = pend.kind === "attack" ? "bow-pause-order-hostile" : "bow-pause-order-peace";
+      orderLine =
+        '<div class="bow-pause-order ' + ordTone + '">' +
+          '<span>' + (pend.kind === "attack" ? '⚔ ' : '◈ ') + 'Приказ на паузе: <b>' + esc(pend.label || "Действие") + '</b></span>' +
+          '<button type="button" class="bow-pause-cancel" data-act="clear-order" title="Отменить приказ">✕</button>' +
+        '</div>';
+    }
+
+    var html =
+      '<div class="bow-pause-badge">' +
+        '<span class="bow-pause-main">⏸ ПАУЗА</span>' +
+        '<span class="bow-pause-sub">Мир и бой замерли · отдайте приказ или нажмите ▶ / Пробел</span>' +
+      '</div>' + orderLine;
+
+    if (banner._lastHtml !== html) {
+      banner._lastHtml = html;
+      banner.innerHTML = html;
+    }
+    banner.classList.add("bow-pause-banner-on");
+  }
+
   function renderSkirmishHud(state) {
     var isAggro = !!(Bow.skirmish && Bow.skirmish.isAggressive && Bow.skirmish.isAggressive());
     var app = $("bow-app");
@@ -2429,6 +2687,7 @@
         '</div>' +
       '</div>';
     } else {
+      var pausedNow = !!(sk.paused || (state.time && state.time.scale === "paused"));
       var guardWarn = (!sk.guardsCalled && typeof sk.guardTimer === "number" && sk.guardTimer > 0)
         ? ('<span class="bow-sk-guard-warn">⛨ Караул Брода сбегается: ' + Math.ceil(sk.guardTimer) + ' с</span>')
         : (sk.guardsCalled ? '<span class="bow-sk-guard-warn">⛨ Стража Брода в бою!</span>' : '');
@@ -2446,8 +2705,8 @@
       ];
       html = '<div class="bow-sk-card">' +
         '<div class="bow-sk-top">' +
-          '<button type="button" class="bow-btn bow-btn-sm' + (sk.paused ? ' bow-order-on' : '') + '" data-act="skirmish-pause" title="Тактическая пауза [Пробел]">' +
-            (sk.paused ? '▶ В бой [Пробел]' : '⏸ Пауза [Пробел]') +
+          '<button type="button" class="bow-btn bow-btn-sm' + (pausedNow ? ' bow-order-on' : '') + '" data-act="skirmish-pause" title="Тактическая пауза [Пробел]">' +
+            (pausedNow ? '▶ В бой [Пробел]' : '⏸ Пауза [Пробел]') +
           '</button>' +
           guardWarn +
           '<span class="bow-sk-log">' + esc(lastLog) + '</span>' +
@@ -2501,6 +2760,7 @@
     if (sceneChanged) { stageSelection = null; }
     renderAllPeople(state);
     renderScene(state, animate && (sceneChanged || (options && options.forceFade)));
+    renderPauseBanner(state);
     renderSkirmishHud(state);
     renderDialog(state);
     var app2 = $("bow-app");
@@ -2555,8 +2815,14 @@
         if (!item) { return; }
         var price = Bow.economy.buyPrice(key, state, state.player.location);
         var short = money < price;
-        html.push('<div class="bow-trade-row">' +
-          '<span class="bow-trade-name">' + esc(item.name) + '</span>' +
+        var sType = (Bow.equip && Bow.equip.slotOfItem) ? Bow.equip.slotOfItem(item) : null;
+        var eqCmp = (sType && Bow.equip && Bow.equip.equippedIn) ? Bow.equip.equippedIn(state.player, sType === "weapon" && state.player.activeWeaponSet === 2 ? "weapon2" : sType) : null;
+        var stLine = itemStatsPillsHtml(item, eqCmp);
+        html.push('<div class="bow-trade-row bow-trade-row-rich">' +
+          '<div class="bow-trade-info">' +
+            '<span class="bow-trade-name">' + esc(item.name) + '</span>' +
+            stLine +
+          '</div>' +
           '<span class="bow-trade-price' + (short ? " bow-trade-short" : "") + '">' + price + ' м.</span>' +
           '<button class="bow-trade-btn" data-act="buy" data-key="' + esc(key) + '"' +
             (short ? " disabled" : "") + '>Взять</button>' +
@@ -2618,19 +2884,23 @@
     box.innerHTML = '<div class="bow-trade">' + html.join("") + '</div>';
   }
 
-  /* ---------- Настройки игры и Меню (0.0.7.1) ---------- */
+  /* ---------- Настройки игры, выбор ПК / Телефон и Меню (0.0.9.2) ---------- */
   var SETTINGS_KEY = "bow-settings-v1";
   var DEFAULT_SETTINGS = {
     fightStart: "paused",
     font: "normal",
-    motion: "full"
+    motion: "full",
+    device: "pc",
+    deviceChosen: false
   };
 
   function getSettings() {
     var out = {
       fightStart: "paused",
       font: DEFAULT_SETTINGS.font,
-      motion: DEFAULT_SETTINGS.motion
+      motion: DEFAULT_SETTINGS.motion,
+      device: DEFAULT_SETTINGS.device,
+      deviceChosen: false
     };
     try {
       var raw = global.localStorage && global.localStorage.getItem(SETTINGS_KEY);
@@ -2638,6 +2908,8 @@
         var parsed = JSON.parse(raw);
         if (parsed && ["normal", "large"].indexOf(parsed.font) !== -1) { out.font = parsed.font; }
         if (parsed && ["full", "calm"].indexOf(parsed.motion) !== -1) { out.motion = parsed.motion; }
+        if (parsed && ["pc", "mobile"].indexOf(parsed.device) !== -1) { out.device = parsed.device; }
+        if (parsed && typeof parsed.deviceChosen === "boolean") { out.deviceChosen = parsed.deviceChosen; }
       }
     } catch (err) { /* ignore */ }
     return out;
@@ -2646,9 +2918,20 @@
   function applySettings(cfg) {
     var s = cfg || getSettings();
     var root = document.documentElement;
+    var app = $("bow-app");
+    var isMob = s.device === "mobile";
     if (root) {
       root.classList.toggle("bow-font-lg", s.font === "large");
       root.classList.toggle("bow-motion-calm", s.motion === "calm");
+      root.classList.toggle("bow-device-mobile", isMob);
+      root.classList.toggle("bow-device-pc", !isMob);
+    }
+    if (app) {
+      app.classList.toggle("bow-device-mobile", isMob);
+      app.classList.toggle("bow-device-pc", !isMob);
+    }
+    if (Bow.iso && Bow.iso.applyCameraToDom) {
+      Bow.iso.applyCameraToDom(null, global.BowGame && global.BowGame.getState ? global.BowGame.getState() : null);
     }
     return s;
   }
@@ -2657,14 +2940,62 @@
     var cur = getSettings();
     if (key === "font" && ["normal", "large"].indexOf(val) !== -1) { cur.font = val; }
     else if (key === "motion" && ["full", "calm"].indexOf(val) !== -1) { cur.motion = val; }
+    else if (key === "device" && ["pc", "mobile"].indexOf(val) !== -1) {
+      cur.device = val;
+      cur.deviceChosen = true;
+    }
     else { return { ok: false, message: "Неизвестная настройка." }; }
 
     try {
       if (global.localStorage) { global.localStorage.setItem(SETTINGS_KEY, JSON.stringify(cur)); }
     } catch (err) { /* ignore */ }
     applySettings(cur);
+    if (key === "device" && Bow.iso && Bow.iso.centerCameraOnPlayer && global.BowGame && global.BowGame.getState) {
+      Bow.iso.centerCameraOnPlayer(global.BowGame.getState(), null, true);
+    }
     renderSettings();
-    return { ok: true, settings: cur, message: "Настройки сохранены." };
+    return {
+      ok: true,
+      settings: cur,
+      message: key === "device"
+        ? (val === "mobile" ? "📱 Включён компактный интерфейс для телефона." : "🖥 Включён полноразмерный интерфейс для ПК.")
+        : "Настройки сохранены."
+    };
+  }
+
+  function getDeviceMode() {
+    return getSettings().device || "pc";
+  }
+
+  function setDeviceMode(mode) {
+    var res = setSetting("device", mode === "mobile" ? "mobile" : "pc");
+    closeDeviceModal();
+    return res;
+  }
+
+  function openDeviceModal() {
+    var m = $("bow-device-modal");
+    if (!m) { return; }
+    m.classList.add("bow-device-modal-open");
+    m.setAttribute("aria-hidden", "false");
+  }
+
+  function closeDeviceModal() {
+    var m = $("bow-device-modal");
+    if (!m) { return; }
+    m.classList.remove("bow-device-modal-open");
+    m.setAttribute("aria-hidden", "true");
+  }
+
+  function showDeviceModalIfNeeded() {
+    var s = getSettings();
+    if (s.deviceChosen) { return false; }
+    /* В безголовых JSDOM-тестах rect.width === 0, поэтому автодиалог не мешает тестам */
+    var stEl = $("bow-stage-canvas") || $("bow-app");
+    var r = (stEl && stEl.getBoundingClientRect) ? stEl.getBoundingClientRect() : null;
+    if (!r || r.width <= 0) { return false; }
+    openDeviceModal();
+    return true;
   }
 
   function renderSettings() {
@@ -2672,6 +3003,13 @@
     if (!box) { return; }
     var s = getSettings();
     box.innerHTML =
+      '<div class="bow-setting-row">' +
+        '<div class="bow-setting-label"><b>Устройство и интерфейс</b><span class="bow-dim">Полноэкранный CRPG для ПК или компактный сенсорный режим для телефона</span></div>' +
+        '<div class="bow-setting-opts">' +
+          '<button type="button" class="bow-btn bow-btn-sm' + (s.device !== "mobile" ? " bow-order-on" : "") + '" data-act="setting" data-key="device" data-val="pc">🖥 Компьютер (ПК)</button>' +
+          '<button type="button" class="bow-btn bow-btn-sm' + (s.device === "mobile" ? " bow-order-on" : "") + '" data-act="setting" data-key="device" data-val="mobile">📱 Телефон</button>' +
+        '</div>' +
+      '</div>' +
       '<div class="bow-setting-row">' +
         '<div class="bow-setting-label"><b>Режим схватки</b><span class="bow-dim">Пошаговый бой (мировое время стоит)</span></div>' +
         '<div class="bow-setting-opts">' +
@@ -2767,7 +3105,7 @@
     }
 
     if (!drawer) { return; }
-    drawer.classList.toggle("bow-modal-wide", modalSection === "skills" || modalSection === "state");
+    drawer.classList.toggle("bow-modal-wide", modalSection === "skills" || modalSection === "state" || modalSection === "inv");
     var panels = drawer.querySelectorAll(".bow-dpanel");
     for (var i = 0; i < panels.length; i++) {
       var sec = panels[i].getAttribute("data-section");
@@ -2821,6 +3159,7 @@
     toggleWorldPanel: toggleWorldPanel,
     isWorldPanelOpen: isWorldPanelOpen,
     flashClashBanner: flashClashBanner,
+    renderPauseBanner: renderPauseBanner,
     renderSkirmishHud: renderSkirmishHud,
     setTab: setTab,
     setMapMode: setMapMode,
@@ -2831,6 +3170,11 @@
     setSetting: setSetting,
     applySettings: applySettings,
     renderSettings: renderSettings,
+    getDeviceMode: getDeviceMode,
+    setDeviceMode: setDeviceMode,
+    openDeviceModal: openDeviceModal,
+    closeDeviceModal: closeDeviceModal,
+    showDeviceModalIfNeeded: showDeviceModalIfNeeded,
     renderPersonSheet: renderPersonSheet,
     openLockpickModal: openLockpickModal,
     closeLockpickModal: closeLockpickModal,

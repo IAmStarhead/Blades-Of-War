@@ -68,43 +68,154 @@
     refresh();
   }
 
+  function isWorldPaused(state) {
+    return !!(state && state.time && state.time.scale === "paused");
+  }
+
+  /* Запись тактического/мирного приказа во время ГЛОБАЛЬНОЙ ПАУЗЫ (0.0.9.2):
+     приказ сохраняется и подсвечивается на сцене (#9cd6ff или #ee4246),
+     но сама пауза НЕ снимается автоматически до нажатия ▶ / Пробел! */
+  function queueOrderOnPause(state, order) {
+    if (!state) { return { ok: false, message: "" }; }
+    state.pendingOrder = order;
+    if (Bow.iso && Bow.iso.previewOrderPath && typeof order.wx === "number" && typeof order.wy === "number") {
+      Bow.iso.previewOrderPath(state, order.wx, order.wy);
+    }
+    return {
+      ok: true,
+      message: "⏸ Приказ отдан на паузе: «" + (order.label || "Действие") + "». Нажмите ▶ или Пробел для исполнения."
+    };
+  }
+
+  function performDoorExitMove(state, targetLoc) {
+    if (Bow.iso && Bow.iso.walkToExitAndMove && targetLoc && targetLoc !== state.player.location) {
+      var modeRes = "instant";
+      var syncRes = null;
+      modeRes = Bow.iso.walkToExitAndMove(state, targetLoc, function () {
+        syncRes = Bow.adapter.act.move(state, targetLoc);
+        scheduleAutosave(true, true);
+        if (modeRes === "walking") { say(syncRes); }
+      }, function () {
+        if (Bow.ui.repaintIsoStage) { Bow.ui.repaintIsoStage(state); }
+      });
+      if (modeRes === "walking") {
+        return { ok: true, message: "Идёте к выходу…" };
+      }
+      return syncRes || { ok: true, message: "" };
+    }
+    var res = Bow.adapter.act.move(state, targetLoc);
+    scheduleAutosave(true, true);
+    return res;
+  }
+
+  function executePendingOrder(state) {
+    if (!state || !state.pendingOrder || isWorldPaused(state)) { return null; }
+    var ord = state.pendingOrder;
+    state.pendingOrder = null;
+
+    if (ord.kind === "attack") {
+      return launchLocationSkirmish(state, ord.personId || null, { mode: ord.attackMode || "crime" });
+    }
+    if (ord.kind === "exit" && ord.exitTo) {
+      return performDoorExitMove(state, ord.exitTo);
+    }
+    if (ord.kind === "spot" && ord.spot && Bow.iso && Bow.iso.walkAdjacentAndAct) {
+      Bow.iso.walkAdjacentAndAct(state, ord.spot.col, ord.spot.row, function () {
+        var ptScr = Bow.iso.tileToScreen(ord.spot.col, ord.spot.row);
+        Bow.ui.setStageSelection({
+          kind: "prop",
+          spot: ord.spot,
+          x: Math.round((ptScr.x / Bow.iso.VIEW_W) * 100)
+        });
+        refresh(true);
+      }, function () {
+        if (Bow.ui.repaintIsoStage) { Bow.ui.repaintIsoStage(state); }
+      });
+      return { ok: true, message: "Идёте к объекту: " + (ord.spot.title || "") + "…" };
+    }
+    if (ord.kind === "approach" && typeof ord.wx === "number" && typeof ord.wy === "number" && Bow.iso && Bow.iso.walkAdjacentAndAct) {
+      Bow.iso.walkAdjacentAndAct(state, ord.wx, ord.wy, function () {
+        if (ord.selection) { Bow.ui.setStageSelection(ord.selection); }
+        refresh(true);
+      }, function () {
+        if (Bow.ui.repaintIsoStage) { Bow.ui.repaintIsoStage(state); }
+      });
+      return { ok: true, message: "Подходите к цели…" };
+    }
+    if (ord.kind === "walk" && typeof ord.wx === "number" && typeof ord.wy === "number" && Bow.iso && Bow.iso.walkTo) {
+      Bow.iso.walkTo(state, ord.wx, ord.wy, function () {
+        refresh(true);
+      }, function () {
+        if (Bow.ui.repaintIsoStage) { Bow.ui.repaintIsoStage(state); }
+      });
+      return { ok: true, message: "Продолжаете путь…" };
+    }
+    return null;
+  }
+
+  function applyGlobalScale(state, scale) {
+    Bow.time.setScale(state, scale);
+    if (scale === "paused") {
+      if (state.skirmish && state.skirmish.active) {
+        state.skirmish.paused = true;
+      }
+      stopClock();
+      stopJailClock();
+      refresh(true);
+      return { ok: true, message: "⏸ Пауза: все процессы в мире остановлены. Камера и раздача приказов доступны." };
+    }
+
+    if (state.skirmish && state.skirmish.active) {
+      state.skirmish.paused = false;
+      startSkirmishLoop();
+    }
+    startClock();
+    if (state.jail) { startJailClock(); }
+
+    var ordRes = executePendingOrder(state);
+    refresh(true);
+    if (ordRes && ordRes.message) {
+      return ordRes;
+    }
+    return {
+      ok: true,
+      message: scale === "1x" ? "▶ Время идёт (1 мин. = 2 сек.)." : "⏩ Время идёт вчетверо быстрее."
+    };
+  }
+
   /* ---------- Обработчики ---------- */
 
   var handlers = {
     move: function (el) {
       var state = getState();
       var targetLoc = el.getAttribute("data-loc");
-      /* Смена сцены закрывает разговор и окно персонажа.
-         Посреди боя уйти нельзя: это было бы бесплатным побегом. */
+      var fromStageDoor = el.getAttribute("data-from-stage") === "1";
       if (state.fight || (state.skirmish && state.skirmish.active)) {
         return { ok: false, message: "Сначала закончите схватку." };
       }
+
+      /* Если игрок нажал на дверь сцены во время глобальной паузы — ставим приказ в очередь БЕЗ автоснятия паузы! */
+      if (fromStageDoor && isWorldPaused(state) && targetLoc && targetLoc !== state.player.location) {
+        var exCol = parseFloat(el.getAttribute("data-iso-col"));
+        var exRow = parseFloat(el.getAttribute("data-iso-row"));
+        var locDef = Bow.data && Bow.data.locations ? Bow.data.locations[targetLoc] : null;
+        return queueOrderOnPause(state, {
+          kind: "exit",
+          exitTo: targetLoc,
+          wx: isNaN(exCol) ? 6 : exCol,
+          wy: isNaN(exRow) ? 4 : exRow,
+          label: "Войти — " + (locDef ? locDef.name : targetLoc)
+        });
+      }
+
       if (Bow.ui.setWorldPanel) { Bow.ui.setWorldPanel(false); }
       if (Bow.iso && Bow.iso.stopWalkLoop) { Bow.iso.stopWalkLoop(); }
+      state.pendingOrder = null;
       if (state.dialog) { Bow.dialog.close(state); }
       state.flags.lastDialogSummary = null;
       openSheet(null);
 
-      /* Настоящий подход ногами к двери/воротам, открытие створки со скрипом и переход (0.0.9.1)! */
-      if (Bow.iso && Bow.iso.walkToExitAndMove && targetLoc && targetLoc !== state.player.location) {
-        var modeRes = "instant";
-        var syncRes = null;
-        modeRes = Bow.iso.walkToExitAndMove(state, targetLoc, function () {
-          syncRes = Bow.adapter.act.move(state, targetLoc);
-          scheduleAutosave(true, true);
-          if (modeRes === "walking") { say(syncRes); }
-        }, function () {
-          if (Bow.ui.repaintIsoStage) { Bow.ui.repaintIsoStage(state); }
-        });
-        if (modeRes === "walking") {
-          return { ok: true, message: "Идёте к выходу…" };
-        }
-        return syncRes || { ok: true, message: "" };
-      }
-
-      var res = Bow.adapter.act.move(state, targetLoc);
-      scheduleAutosave(true, true);
-      return res;
+      return performDoorExitMove(state, targetLoc);
     },
     talk: function (el) {
       Bow.ui.setDrawer(false);
@@ -117,10 +228,76 @@
     clock: function (el) {
       var state = getState();
       var scale = el.getAttribute("data-scale");
-      Bow.time.setScale(state, scale);
-      startClock();
-      return { ok: true, message: scale === "paused" ? "Время остановлено." :
-        scale === "1x" ? "Время идёт (1 мин. = 2 сек.)." : "Время идёт вчетверо быстрее." };
+      return applyGlobalScale(state, scale);
+    },
+    "clear-order": function () {
+      var state = getState();
+      state.pendingOrder = null;
+      if (Bow.iso && Bow.iso.cancelPlannedWalk) { Bow.iso.cancelPlannedWalk(); }
+      return { ok: true, message: "Отложенный приказ отменён." };
+    },
+    "equip-slot": function (el) {
+      var state = getState();
+      var slot = el.getAttribute("data-slot");
+      var itemId = el.getAttribute("data-item");
+      if (!Bow.equip || !Bow.equip.setSlot) { return { ok: false, message: "Слоты снаряжения недоступны." }; }
+      var eqRes = Bow.equip.setSlot(state.player, slot, itemId);
+      if (!eqRes || eqRes.ok === false) {
+        return { ok: false, message: (eqRes && eqRes.message) || "Этот предмет нельзя надеть в выбранный слот." };
+      }
+      var def = Bow.economy.findItemDef(itemId);
+      return { ok: true, message: "Снаряжено: " + (def ? def.name : itemId) + "." };
+    },
+    "unequip-slot": function (el) {
+      var state = getState();
+      var slot = el.getAttribute("data-slot");
+      if (!Bow.equip || !Bow.equip.unequipSlot) { return { ok: false, message: "" }; }
+      Bow.equip.unequipSlot(state.player, slot);
+      return { ok: true, message: "Предмет снят и убран в сумку." };
+    },
+    "swap-wep-set": function () {
+      var state = getState();
+      if (!Bow.equip || !Bow.equip.swapWeaponSet) { return { ok: false, message: "" }; }
+      var nextSet = Bow.equip.swapWeaponSet(state.player);
+      var w = Bow.fight.weaponOf(state.player);
+      return {
+        ok: true,
+        message: "В руках комплект " + (nextSet === 2 ? "II" : "I") + ": " + (w ? w.name : "безоружный") + "."
+      };
+    },
+    "device-pick": function (el) {
+      var state = getState();
+      var dev = el.getAttribute("data-device") === "mobile" ? "mobile" : "pc";
+      if (Bow.audio && Bow.audio.unlockGesture) { Bow.audio.unlockGesture(true); }
+      var setRes = Bow.ui.setDeviceMode ? Bow.ui.setDeviceMode(dev) : { ok: true };
+      if (state && state.time && state.time.scale === "paused" && !state.pendingOrder) {
+        applyGlobalScale(state, "1x");
+      }
+      if (Bow.iso && Bow.iso.centerCameraOnPlayer) {
+        Bow.iso.centerCameraOnPlayer(state, null, true);
+      }
+      return {
+        ok: true,
+        message: dev === "mobile"
+          ? "📱 Мобильный режим активен: водите пальцем для обзора, сводите два пальца для зума."
+          : (setRes.message || "🖥 Режим ПК активен.")
+      };
+    },
+    "cam-zoom": function (el) {
+      var state = getState();
+      var dir = el.getAttribute("data-dir");
+      if (Bow.iso && Bow.iso.getCamera && Bow.iso.setCameraZoom) {
+        var curZ = Bow.iso.getCamera().zoom || 1;
+        Bow.iso.setCameraZoom(curZ + (dir === "in" ? 0.24 : -0.24), null, state);
+      }
+      return { ok: true, message: "" };
+    },
+    "cam-center": function () {
+      var state = getState();
+      if (Bow.iso && Bow.iso.centerCameraOnPlayer) {
+        Bow.iso.centerCameraOnPlayer(state, null, false);
+      }
+      return { ok: true, message: "" };
     },
     "loot-corpse": function (el) {
       var res = Bow.adapter.act.lootCorpse(getState(), el.getAttribute("data-corpse"));
@@ -169,9 +346,10 @@
     "skirmish-pause": function () {
       var state = getState();
       if (!Bow.skirmish || !state.skirmish) { return { ok: true, message: "" }; }
-      var paused = Bow.skirmish.togglePause(state);
-      startSkirmishLoop();
-      return { ok: true, message: paused ? "⏸ Тактическая пауза." : "▶ Бой продолжается!" };
+      var currentlyPaused = isWorldPaused(state) || !!state.skirmish.paused;
+      var nextScale = currentlyPaused ? "1x" : "paused";
+      applyGlobalScale(state, nextScale);
+      return { ok: true, message: !currentlyPaused ? "⏸ Тактическая пауза." : "▶ Бой продолжается!" };
     },
     "skirmish-order": function (el) {
       var state = getState();
@@ -517,26 +695,60 @@
       var isoCol = parseFloat(el.getAttribute("data-iso-col"));
       var isoRow = parseFloat(el.getAttribute("data-iso-row"));
 
-      /* Агрессивный режим (0.0.9.1): клик по человеку / страже / грабителю СРАЗУ бьёт клинками и начинает бой Kenshi! */
       var isAggro = !!(Bow.skirmish && Bow.skirmish.isAggressive && Bow.skirmish.isAggressive());
       if (isAggro && !state.jail && (kind === "person" || kind === "guard" || kind === "robber")) {
+        var atkMode = kind === "guard" ? "guard" : (kind === "robber" ? "robber" : "crime");
+        /* Если мир на ГЛОБАЛЬНОЙ ПАУЗЕ — ставим враждебный приказ с багровой подсветкой БЕЗ автоснятия паузы! */
+        if (isWorldPaused(state)) {
+          var targetName = kind === "guard" ? "Стражник" : (kind === "robber" ? "Грабитель" : ((state.people[personId] && state.people[personId].name) || "Цель"));
+          return queueOrderOnPause(state, {
+            kind: "attack",
+            targetId: kind === "person" ? personId : (el.getAttribute("data-entity-id") || kind),
+            personId: kind === "person" ? personId : null,
+            attackMode: atkMode,
+            wx: isNaN(isoCol) ? 6 : isoCol,
+            wy: isNaN(isoRow) ? 4 : isoRow,
+            label: "Атаковать — " + targetName
+          });
+        }
         if (kind === "guard") { return launchLocationSkirmish(state, null, { mode: "guard" }); }
         if (kind === "robber") { return launchLocationSkirmish(state, null, { mode: "robber" }); }
         return launchLocationSkirmish(state, personId, { mode: "crime" });
       }
 
+      var selObj = {
+        kind: kind,
+        personId: personId,
+        corpseId: corpseId,
+        x: isNaN(xVal) ? null : xVal
+      };
+
       var applySelect = function () {
-        Bow.ui.setStageSelection({
-          kind: kind,
-          personId: personId,
-          corpseId: corpseId,
-          x: isNaN(xVal) ? null : xVal
-        });
+        Bow.ui.setStageSelection(selObj);
         if (kind === "jobs" || kind === "trade") { Bow.ui.setTab(kind); }
       };
 
-      /* Point-and-Click (Fallout / Kenshi / Divinity): если цель на другой клетке,
-         герой сначала подходит к ней ногами по маршруту A*, поворачивается и открывает меню! */
+      /* На паузе карточка осмотра открывается сразу (интерфейс активен!), а если цель далеко —
+         прокладывается мирный маршрут подхода, который исполнится при снятии паузы! */
+      if (isWorldPaused(state)) {
+        applySelect();
+        if (kind !== "self" && !isNaN(isoCol) && !isNaN(isoRow) && Bow.iso && Bow.iso.getPlayerPos) {
+          var pOnPause = Bow.iso.getPlayerPos(state);
+          if (Math.hypot(isoCol - pOnPause.col, isoRow - pOnPause.row) > 1.55) {
+            var pTitle = (personId && state.people[personId]) ? state.people[personId].name : "Осмотр";
+            queueOrderOnPause(state, {
+              kind: "approach",
+              targetId: personId || corpseId || kind,
+              wx: isoCol,
+              wy: isoRow,
+              selection: selObj,
+              label: "Подойти — " + pTitle
+            });
+          }
+        }
+        return { ok: true, message: "" };
+      }
+
       var isComa = !!(Bow.state && Bow.state.isComatose && Bow.state.isComatose(state.player));
       if (!isComa && kind !== "self" && !isNaN(isoCol) && !isNaN(isoRow) && Bow.iso && Bow.iso.walkAdjacentAndAct) {
         var curP = Bow.iso.getPlayerPos(state);
@@ -638,6 +850,13 @@
     "skirmish-target": true,
     "skirmish-ally": true,
     "skirmish-decide": true,
+    "equip-slot": true,
+    "unequip-slot": true,
+    "swap-wep-set": true,
+    "device-pick": true,
+    "cam-zoom": true,
+    "cam-center": true,
+    "clear-order": true,
     "map-mode": true,
     "stage-select": true,
     "close-panel": true,
@@ -653,12 +872,20 @@
   };
 
   var DURING_SKIRMISH_ALLOWED = {
+    "clock": true,
     "skirmish-pause": true,
     "skirmish-order": true,
     "skirmish-target": true,
     "skirmish-ally": true,
     "skirmish-decide": true,
     "toggle-aggro": true,
+    "equip-slot": true,
+    "unequip-slot": true,
+    "swap-wep-set": true,
+    "cam-zoom": true,
+    "cam-center": true,
+    "device-pick": true,
+    "clear-order": true,
     "panel": true,
     "close-panel": true,
     "close-world-panel": true,
@@ -745,6 +972,11 @@
         return;
       }
       if (!skirmishLastTs) { skirmishLastTs = ts; }
+      if (isWorldPaused(cur) || cur.skirmish.paused) {
+        skirmishLastTs = ts;
+        skirmishRaf = global.requestAnimationFrame(stepFrame);
+        return;
+      }
       var dt = Math.min(0.08, Math.max(0.012, (ts - skirmishLastTs) / 1000));
       skirmishLastTs = ts;
 
@@ -815,90 +1047,147 @@
     return null;
   }
 
+  var suppressStageClickUntil = 0;
+
+  function stageClickWorld(st, wx, wy) {
+    if (!st || st.fight || !Bow.iso) { return false; }
+    var isComaNow = !!(Bow.state && Bow.state.isComatose && Bow.state.isComatose(st.player));
+    if (isComaNow) { return false; }
+
+    var tile = { col: Math.round(wx), row: Math.round(wy) };
+    var map = Bow.iso.mapOf(st);
+
+    /* В живом бою Kenshi клик по земле задаёт манёвр / отход (работает и на паузе!) */
+    if (st.skirmish && st.skirmish.active && Bow.skirmish) {
+      Bow.skirmish.orderMove(st, wx, wy);
+      if (isWorldPaused(st)) {
+        Bow.ui.setMessage("⏸ Приказ манёвра принят. Нажмите ▶ или Пробел для продолжения боя.");
+      }
+      refresh(true);
+      return true;
+    }
+
+    if (tile.col < 0 || tile.col >= Bow.iso.COLS || tile.row < 0 || tile.row >= Bow.iso.ROWS) {
+      return false;
+    }
+
+    /* 1. Клик по двери / дорожным воротам */
+    var hitExit = null;
+    if (!st.jail && !st.guard && !st.encounter && map.exits) {
+      for (var ei = 0; ei < map.exits.length; ei++) {
+        if (Math.hypot(wx - map.exits[ei].col, wy - map.exits[ei].row) < 1.05) {
+          hitExit = map.exits[ei];
+          break;
+        }
+      }
+    }
+    if (hitExit) {
+      if (isWorldPaused(st)) {
+        var qDoor = queueOrderOnPause(st, {
+          kind: "exit",
+          exitTo: hitExit.to,
+          wx: hitExit.col,
+          wy: hitExit.row,
+          label: "Войти — " + (hitExit.label || hitExit.to)
+        });
+        Bow.ui.setMessage(qDoor.message);
+        refresh(true);
+        return true;
+      }
+      performDoorExitMove(st, hitExit.to);
+      refresh(true);
+      return true;
+    }
+
+    /* 2. Клик по интерактивному объекту мира (колодец, очаг, горн, костёр) */
+    var hitSpot = null;
+    if (!st.jail && map.spots) {
+      for (var si = 0; si < map.spots.length; si++) {
+        if (map.spots[si].col === tile.col && map.spots[si].row === tile.row) {
+          hitSpot = map.spots[si];
+          break;
+        }
+      }
+    }
+    if (hitSpot) {
+      if (isWorldPaused(st)) {
+        var ptS = Bow.iso.tileToScreen(hitSpot.col, hitSpot.row);
+        Bow.ui.setStageSelection({
+          kind: "prop",
+          propKey: hitSpot.key,
+          spot: hitSpot,
+          x: Math.round((ptS.x / Bow.iso.VIEW_W) * 100)
+        });
+        var qSpot = queueOrderOnPause(st, {
+          kind: "spot",
+          spot: hitSpot,
+          wx: hitSpot.col,
+          wy: hitSpot.row,
+          label: "Подойти — " + (hitSpot.title || "Объект")
+        });
+        Bow.ui.setMessage(qSpot.message);
+        refresh(true);
+        return true;
+      }
+      Bow.iso.walkAdjacentAndAct(st, hitSpot.col, hitSpot.row, function () {
+        var ptScr = Bow.iso.tileToScreen(hitSpot.col, hitSpot.row);
+        Bow.ui.setStageSelection({
+          kind: "prop",
+          propKey: hitSpot.key,
+          spot: hitSpot,
+          x: Math.round((ptScr.x / Bow.iso.VIEW_W) * 100)
+        });
+        refresh(true);
+      }, function () {
+        if (Bow.ui.repaintIsoStage) { Bow.ui.repaintIsoStage(st); }
+      });
+      refresh(true);
+      return true;
+    }
+
+    /* 3. Плавный бесклеточный шаг Point-and-Click в точку (wx, wy) */
+    if (isWorldPaused(st)) {
+      var qWalk = queueOrderOnPause(st, {
+        kind: "walk",
+        wx: wx,
+        wy: wy,
+        label: "Идти в выбранную точку"
+      });
+      Bow.ui.setMessage(qWalk.message);
+      refresh(true);
+      return true;
+    }
+
+    st.pendingOrder = null;
+    Bow.iso.walkTo(st, wx, wy, function () {
+      refresh(true);
+    }, function () {
+      if (Bow.ui.repaintIsoStage) { Bow.ui.repaintIsoStage(st); }
+    });
+    if (Bow.ui.repaintIsoStage) { Bow.ui.repaintIsoStage(st); }
+    return true;
+  }
+
   function onClick(event) {
+    if (Date.now() < suppressStageClickUntil && event.target && event.target.closest && event.target.closest("#bow-stage")) {
+      event.preventDefault();
+      return;
+    }
     if (Bow.audio && Bow.audio.wakeOnGesture) { Bow.audio.wakeOnGesture(); }
     var el = event.target.closest("[data-act]");
     if (!el) {
-      /* Point-and-Click на изометрической сцене (0.0.9.1):
-         свободное бесклеточное позиционирование (включая живой бой Kenshi!) и честный обход A*! */
       var stageWrap = event.target.closest && event.target.closest("#bow-stage-canvas");
       if (stageWrap && !event.target.closest("#bow-stage-pop") && !event.target.closest("#bow-skirmish-hud")) {
         Bow.ui.setStageSelection(null);
         var st = getState();
         var isoCv = stageWrap.querySelector("canvas.bow-iso-canvas");
         var rect = isoCv && isoCv.getBoundingClientRect ? isoCv.getBoundingClientRect() : null;
-        var isComaNow = !!(Bow.state && Bow.state.isComatose && Bow.state.isComatose(st.player));
-
-        if (rect && rect.width > 40 && rect.height > 40 && !isComaNow && !st.fight && Bow.iso) {
-          var sx = ((event.clientX - rect.left) / rect.width) * Bow.iso.VIEW_W;
-          var sy = ((event.clientY - rect.top) / rect.height) * Bow.iso.VIEW_H;
-          var wPt = Bow.iso.screenToWorld ? Bow.iso.screenToWorld(sx, sy) : null;
-          var tile = Bow.iso.screenToTile(sx, sy);
-          var map = Bow.iso.mapOf(st);
-
-          /* В живом бою Kenshi клик по земле задаёт манёвр / отход / обход с фланга! */
-          if (st.skirmish && st.skirmish.active && wPt && Bow.skirmish) {
-            Bow.skirmish.orderMove(st, wPt.wx, wPt.wy);
-            if (Bow.ui.repaintIsoStage) { Bow.ui.repaintIsoStage(st); }
-            return;
-          }
-
-          if (tile.col >= 0 && tile.col < Bow.iso.COLS && tile.row >= 0 && tile.row < Bow.iso.ROWS) {
-            /* 1. Клик по двери / дорожным воротам — подход ногами, открытие створки и переход! */
-            var hitExit = null;
-            if (!st.jail && !st.guard && !st.encounter && map.exits) {
-              for (var ei = 0; ei < map.exits.length; ei++) {
-                if (Math.hypot((wPt ? wPt.wx : tile.col) - map.exits[ei].col, (wPt ? wPt.wy : tile.row) - map.exits[ei].row) < 1.05) {
-                  hitExit = map.exits[ei];
-                  break;
-                }
-              }
-            }
-            if (hitExit && Bow.iso.walkToExitAndMove) {
-              Bow.iso.walkToExitAndMove(st, hitExit.to, function () {
-                var mv = Bow.adapter.act.move(st, hitExit.to);
-                scheduleAutosave(true, true);
-                say(mv);
-              }, function () {
-                if (Bow.ui.repaintIsoStage) { Bow.ui.repaintIsoStage(st); }
-              });
-              refresh(true);
-              return;
-            }
-
-            /* 2. Клик по интерактивному объекту мира (колодец, очаг, горн, костёр) */
-            var hitSpot = null;
-            if (!st.jail && map.spots) {
-              for (var si = 0; si < map.spots.length; si++) {
-                if (map.spots[si].col === tile.col && map.spots[si].row === tile.row) {
-                  hitSpot = map.spots[si];
-                  break;
-                }
-              }
-            }
-            if (hitSpot) {
-              Bow.iso.walkAdjacentAndAct(st, hitSpot.col, hitSpot.row, function () {
-                var ptScr = Bow.iso.tileToScreen(hitSpot.col, hitSpot.row);
-                Bow.ui.setStageSelection({
-                  kind: "prop",
-                  spot: hitSpot,
-                  x: Math.round((ptScr.x / Bow.iso.VIEW_W) * 100)
-                });
-                refresh(true);
-              }, function () {
-                if (Bow.ui.repaintIsoStage) { Bow.ui.repaintIsoStage(st); }
-              });
-              refresh(true);
-              return;
-            }
-
-            /* 3. Плавный бесклеточный шаг Point-and-Click в точную точку (wx, wy) */
-            Bow.iso.walkTo(st, wPt ? wPt.wx : tile.col, wPt ? wPt.wy : tile.row, function () {
-              refresh(true);
-            }, function () {
-              if (Bow.ui.repaintIsoStage) { Bow.ui.repaintIsoStage(st); }
-            });
-            if (Bow.ui.repaintIsoStage) { Bow.ui.repaintIsoStage(st); }
+        if (rect && rect.width > 40 && rect.height > 40 && Bow.iso) {
+          var stgPt = Bow.iso.clientToStage
+            ? Bow.iso.clientToStage(event.clientX, event.clientY, stageWrap)
+            : { sx: ((event.clientX - rect.left) / rect.width) * Bow.iso.VIEW_W, sy: ((event.clientY - rect.top) / rect.height) * Bow.iso.VIEW_H };
+          var wPt = Bow.iso.screenToWorld ? Bow.iso.screenToWorld(stgPt.sx, stgPt.sy) : null;
+          if (wPt && stageClickWorld(st, wPt.wx, wPt.wy)) {
             return;
           }
         }
@@ -1030,6 +1319,9 @@
       var st = getState();
       if (!st || !st.jail || st.dead) {
         stopJailClock();
+        return;
+      }
+      if (isWorldPaused(st)) {
         return;
       }
       var lpOpen = !!(Bow.ui.getLockpickModalState && Bow.ui.getLockpickModalState().open);
@@ -1215,6 +1507,10 @@
   var api = {
     getState: getState,
     refresh: refresh,
+    isWorldPaused: isWorldPaused,
+    applyGlobalScale: applyGlobalScale,
+    queueOrderOnPause: queueOrderOnPause,
+    stageClickWorld: stageClickWorld,
     clockShouldRun: clockShouldRun,
     fightShouldRun: fightShouldRun,
     startClock: startClock,
@@ -1241,28 +1537,50 @@
   function boot() {
     if (!document.getElementById("bow-app")) { return; }
 
-    document.getElementById("bow-app").addEventListener("click", onClick);
-    document.getElementById("bow-app").addEventListener("pointermove", function (event) {
+    var appEl = document.getElementById("bow-app");
+
+    /* Разблокировка Web Audio синхронно на первом жесте игрока (критично для iOS/Android) */
+    var unlockAudioOnce = function () {
+      if (Bow.audio && Bow.audio.unlockGesture) { Bow.audio.unlockGesture(false); }
+    };
+    appEl.addEventListener("pointerdown", unlockAudioOnce, { passive: true });
+    appEl.addEventListener("touchstart", unlockAudioOnce, { passive: true });
+
+    appEl.addEventListener("click", onClick);
+    appEl.addEventListener("pointermove", function (event) {
       var st = getState();
       if (st && st.jail) {
         jailUserWakeUntil = Date.now() + 45000;
         if (!jailTimer) { startJailClock(); }
       }
-      var isoCvMove = event.target && event.target.closest && event.target.closest("canvas.bow-iso-canvas");
-      if (isoCvMove && Bow.iso && Bow.iso.setHoverScreen && (!st || !st.fight)) {
-        var cRect = isoCvMove.getBoundingClientRect();
+      var entBtn = event.target && event.target.closest && event.target.closest("[data-entity-id]");
+      var nextEntId = entBtn ? entBtn.getAttribute("data-entity-id") : null;
+      var prevEntId = Bow.iso && Bow.iso.getHoverEntity ? Bow.iso.getHoverEntity() : null;
+      var entChanged = false;
+      if (Bow.iso && Bow.iso.setHoverEntity && nextEntId !== prevEntId) {
+        Bow.iso.setHoverEntity(nextEntId);
+        entChanged = true;
+      }
+
+      var stageWrapMove = event.target && event.target.closest && event.target.closest("#bow-stage-canvas");
+      if (stageWrapMove && Bow.iso && Bow.iso.setHoverScreen && (!st || !st.fight)) {
+        var cRect = stageWrapMove.getBoundingClientRect();
         if (cRect && cRect.width > 40) {
-          var hsx = ((event.clientX - cRect.left) / cRect.width) * Bow.iso.VIEW_W;
-          var hsy = ((event.clientY - cRect.top) / cRect.height) * Bow.iso.VIEW_H;
+          var stPt = Bow.iso.clientToStage
+            ? Bow.iso.clientToStage(event.clientX, event.clientY, stageWrapMove)
+            : { sx: ((event.clientX - cRect.left) / cRect.width) * Bow.iso.VIEW_W, sy: ((event.clientY - cRect.top) / cRect.height) * Bow.iso.VIEW_H };
           var prevH = Bow.iso._lastHoverKey || "";
-          var curH = Bow.iso.setHoverScreen(hsx, hsy);
+          var curH = Bow.iso.setHoverScreen(stPt.sx, stPt.sy);
           var nextH = curH ? (curH.col + "," + curH.row) : "";
-          if (nextH !== prevH) {
+          if (nextH !== prevH || entChanged) {
             Bow.iso._lastHoverKey = nextH;
             if (Bow.ui.repaintIsoStage) { Bow.ui.repaintIsoStage(st); }
           }
         }
+      } else if (entChanged && Bow.ui.repaintIsoStage) {
+        Bow.ui.repaintIsoStage(st);
       }
+
       var lpStage = event.target && event.target.closest && event.target.closest("#bow-lp-stage");
       if (lpStage && Bow.ui.getLockpickModalState && Bow.ui.getLockpickModalState().open) {
         var rect = lpStage.getBoundingClientRect();
@@ -1273,7 +1591,96 @@
         }
       }
     });
-    document.getElementById("bow-app").addEventListener("input", function (event) {
+
+    /* Свободная камера на сцене (0.0.9.2): колёсико мыши, перетаскивание 1 пальцем и pinch-zoom 2 пальцами */
+    var stageRoot = document.getElementById("bow-stage");
+    if (stageRoot) {
+      stageRoot.addEventListener("wheel", function (ev) {
+        var vp = document.getElementById("bow-stage-canvas");
+        if (!vp || !Bow.iso || !Bow.iso.setCameraZoom || !ev.target.closest("#bow-stage-canvas")) { return; }
+        if (ev.target.closest("#bow-stage-pop")) { return; }
+        ev.preventDefault();
+        var cam = Bow.iso.getCamera();
+        var delta = ev.deltaY < 0 ? 0.14 : -0.14;
+        Bow.iso.setCameraZoom(cam.zoom + delta, vp, getState());
+      }, { passive: false });
+
+      var camDrag = { active: false, moved: false, startX: 0, startY: 0, lastX: 0, lastY: 0, pinchDist: 0, pinchStartZoom: 1 };
+
+      stageRoot.addEventListener("mousedown", function (ev) {
+        if ((ev.button === 1 || (ev.button === 0 && ev.shiftKey)) && ev.target.closest("#bow-stage-canvas")) {
+          ev.preventDefault();
+          camDrag.active = true;
+          camDrag.moved = false;
+          camDrag.startX = ev.clientX;
+          camDrag.startY = ev.clientY;
+          camDrag.lastX = ev.clientX;
+          camDrag.lastY = ev.clientY;
+        }
+      });
+      global.addEventListener("mousemove", function (ev) {
+        if (!camDrag.active) { return; }
+        var dx = ev.clientX - camDrag.lastX;
+        var dy = ev.clientY - camDrag.lastY;
+        camDrag.lastX = ev.clientX;
+        camDrag.lastY = ev.clientY;
+        if (Math.hypot(ev.clientX - camDrag.startX, ev.clientY - camDrag.startY) > 6) {
+          camDrag.moved = true;
+        }
+        var vp = document.getElementById("bow-stage-canvas");
+        if (vp && Bow.iso && Bow.iso.panCameraBy) {
+          Bow.iso.panCameraBy(dx, dy, vp, getState());
+        }
+      });
+      global.addEventListener("mouseup", function () {
+        if (camDrag.active && camDrag.moved) { suppressStageClickUntil = Date.now() + 220; }
+        camDrag.active = false;
+      });
+
+      stageRoot.addEventListener("touchstart", function (ev) {
+        if (!ev.target.closest("#bow-stage-canvas") || ev.target.closest("#bow-stage-pop") || ev.target.closest("#bow-skirmish-hud")) { return; }
+        if (ev.touches.length === 2 && Bow.iso && Bow.iso.getCamera) {
+          var d0 = Math.hypot(ev.touches[0].clientX - ev.touches[1].clientX, ev.touches[0].clientY - ev.touches[1].clientY);
+          camDrag.pinchDist = Math.max(12, d0);
+          camDrag.pinchStartZoom = Bow.iso.getCamera().zoom;
+          camDrag.moved = true;
+          suppressStageClickUntil = Date.now() + 350;
+        } else if (ev.touches.length === 1) {
+          camDrag.startX = ev.touches[0].clientX;
+          camDrag.startY = ev.touches[0].clientY;
+          camDrag.lastX = ev.touches[0].clientX;
+          camDrag.lastY = ev.touches[0].clientY;
+          camDrag.moved = false;
+          camDrag.pinchDist = 0;
+        }
+      }, { passive: true });
+
+      stageRoot.addEventListener("touchmove", function (ev) {
+        var vp = document.getElementById("bow-stage-canvas");
+        if (!vp || !Bow.iso || !ev.target.closest("#bow-stage-canvas") || ev.target.closest("#bow-stage-pop")) { return; }
+        if (ev.touches.length === 2 && camDrag.pinchDist > 0) {
+          ev.preventDefault();
+          var d1 = Math.hypot(ev.touches[0].clientX - ev.touches[1].clientX, ev.touches[0].clientY - ev.touches[1].clientY);
+          var ratioZ = d1 / camDrag.pinchDist;
+          Bow.iso.setCameraZoom(camDrag.pinchStartZoom * ratioZ, vp, getState());
+          suppressStageClickUntil = Date.now() + 350;
+        } else if (ev.touches.length === 1) {
+          var tx = ev.touches[0].clientX;
+          var ty = ev.touches[0].clientY;
+          var totalMove = Math.hypot(tx - camDrag.startX, ty - camDrag.startY);
+          if (totalMove > 9) {
+            ev.preventDefault();
+            camDrag.moved = true;
+            Bow.iso.panCameraBy(tx - camDrag.lastX, ty - camDrag.lastY, vp, getState());
+            suppressStageClickUntil = Date.now() + 280;
+          }
+          camDrag.lastX = tx;
+          camDrag.lastY = ty;
+        }
+      }, { passive: false });
+    }
+
+    appEl.addEventListener("input", function (event) {
       var target = event.target;
       if (target && target.getAttribute && target.getAttribute("data-act") === "audio-vol" && Bow.audio) {
         Bow.audio.setVolume(parseFloat(target.value) / 100);
@@ -1291,8 +1698,11 @@
       });
     }
 
-    /* Escape закрывает модальное окно или карточку сцены; Пробел и стрелки управляют взломом замка или паузой боя. */
+    /* Escape закрывает модальное окно или карточку сцены; Пробел — ЕДИНАЯ глобальная пауза (вне боя и в бою!). */
     document.addEventListener("keydown", function (event) {
+      var tag = event.target && event.target.tagName ? event.target.tagName.toLowerCase() : "";
+      if (tag === "input" || tag === "textarea" || tag === "select") { return; }
+
       var lp = Bow.ui.getLockpickModalState ? Bow.ui.getLockpickModalState() : null;
       if (lp && lp.open) {
         if (event.key === "Escape") {
@@ -1329,13 +1739,8 @@
       }
       if (event.key === " " || event.code === "Space") {
         var st = getState();
-        if (st && st.skirmish && st.skirmish.active && !Bow.ui.isDrawerOpen()) {
-          event.preventDefault();
-          var skRes = handlers["skirmish-pause"]();
-          say(skRes);
-          return;
-        }
-        if (st && st.fight && st.fight.phase === "exchange" && !Bow.ui.isDrawerOpen()) {
+        if (!st || Bow.ui.isDrawerOpen()) { return; }
+        if (st.fight && st.fight.phase === "exchange") {
           event.preventDefault();
           var ord = Bow.fight.ensureOrders(st.fight);
           Bow.fight.setOrder(st, "speed", ord.speed === "auto" ? "paused" : "auto");
@@ -1343,6 +1748,11 @@
           refresh(true);
           return;
         }
+        event.preventDefault();
+        var nextGlobalScale = isWorldPaused(st) ? "1x" : "paused";
+        var spMsg = applyGlobalScale(st, nextGlobalScale);
+        Bow.ui.setMessage(spMsg || (nextGlobalScale === "paused" ? "⏸ Тактическая пауза." : "▶ Время идёт."));
+        return;
       }
       if (event.key !== "Escape") { return; }
       if (Bow.ui.isWorldPanelOpen && Bow.ui.isWorldPanelOpen()) { Bow.ui.setWorldPanel(false); return; }
@@ -1401,6 +1811,7 @@
     Bow.ui.setMessage("Осмотритесь. Здесь пока немного людей, но они настоящие.");
     refresh(true, true);
     startClock();
+    if (Bow.ui.showDeviceModalIfNeeded) { Bow.ui.showDeviceModalIfNeeded(); }
   }
 
   if (document.readyState === "loading") {
