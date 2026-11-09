@@ -1,0 +1,96 @@
+/* ============================================================
+   BOW SAVE — сериализация, проверка и миграция сохранений.
+   Формат: { app, version, savedAt, checksum, state }.
+   Битое сохранение отклоняется ДО применения: состояние игрока
+   не портится. Это исправление ошибки прототипа, где半валидный
+   JSON ломал getPlayer().
+   ============================================================ */
+(function (global) {
+  "use strict";
+
+  var Bow = global.Bow = global.Bow || {};
+
+  var APP = "bow";
+  var SAVE_VERSION = 1;
+
+  /* Простая контрольная сумма: ловит обрезанный или испорченный файл.
+     Криптостойкость здесь не нужна. */
+  function checksum(str) {
+    var h = 5381;
+    for (var i = 0; i < str.length; i++) {
+      h = ((h << 5) + h + str.charCodeAt(i)) | 0;
+    }
+    return (h >>> 0).toString(16);
+  }
+
+  function serialize(state, nowMs) {
+    var payload = JSON.stringify(state);
+    return JSON.stringify({
+      app: APP,
+      saveVersion: SAVE_VERSION,
+      gameVersion: state.version,
+      savedAt: nowMs || 0,
+      checksum: checksum(payload),
+      state: state
+    });
+  }
+
+  /* Возвращает { ok, state?, reason?, mode? }
+     mode: "load" — загружено как есть; "migrated" — пришлось обновить версию. */
+  function deserialize(text) {
+    var parsed;
+    try {
+      parsed = JSON.parse(text);
+    } catch (err) {
+      return { ok: false, reason: "Файл повреждён: это не JSON." };
+    }
+
+    if (!Bow.util.isPlainObject(parsed)) {
+      return { ok: false, reason: "Файл не является сохранением." };
+    }
+    if (parsed.app !== APP) {
+      return { ok: false, reason: "Это сохранение другого проекта." };
+    }
+    if (!Bow.util.isPlainObject(parsed.state)) {
+      return { ok: false, reason: "В файле нет состояния игры." };
+    }
+    if (typeof parsed.checksum !== "string" ||
+        checksum(JSON.stringify(parsed.state)) !== parsed.checksum) {
+      return { ok: false, reason: "Сохранение повреждено (не сходится контрольная сумма)." };
+    }
+
+    /* Структурная проверка ДО применения. */
+    var check = Bow.state.validate(parsed.state);
+    if (!check.ok) {
+      return { ok: false, reason: "Сохранение не прошло проверку: " + check.errors.slice(0, 3).join("; ") };
+    }
+
+    var migration = Bow.state.migrate(parsed.state);
+    var state = migration.state;
+
+    if (!Bow.state.isCurrentVersion(state)) {
+      return {
+        ok: false,
+        reason: "Сохранение версии " + state.version +
+          " несовместимо с текущей " + Bow.data.meta.version +
+          "; перенести его автоматически не удалось."
+      };
+    }
+
+    return {
+      ok: true,
+      state: state,
+      mode: migration.applied.length > 0 ? "migrated" : "load",
+      migratedFrom: migration.applied.length > 0 ? migration.applied[0] : null
+    };
+  }
+
+  Bow.save = {
+    serialize: serialize,
+    deserialize: deserialize,
+    checksum: checksum,
+    APP: APP,
+    SAVE_VERSION: SAVE_VERSION
+  };
+
+})(typeof window !== "undefined" ? window : this);

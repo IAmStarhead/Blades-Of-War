@@ -1,86 +1,47 @@
 #!/usr/bin/env bash
 # ============================================================
-# Сборка Blades Of War: .twee-модули → один самодостаточный HTML
-#
-# Порядок сборки важен: сначала ядро и данные, затем интерфейс,
-# затем пассажи. StoryData и Start должны идти после виджетов,
-# поэтому 100-start.twee подключается последним.
+# Сборка Blades Of War 0.0.9.3 (Vite + Three.js Low-Poly 3D)
+# Собирает модульный 3D-движок и симуляцию в автономный файл
+# dist/BladesOfWar.html (без внешних запросов, работает из file:// и HTTP).
 # ============================================================
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
-BUILD_DIR=".build"
-COMBINED="$BUILD_DIR/combined.twee"
-OUT="dist/BladesOfWar.html"
-FORMAT="vendor/format.js"
+npx vite build
 
-mkdir -p "$BUILD_DIR" dist
+node - <<'EOF'
+const fs = require("fs");
+const path = require("path");
 
-# --- Проверки окружения ---
-if [ ! -f "$FORMAT" ]; then
-  echo "ОШИБКА: нет $FORMAT (формат истории SugarCube 2.37.3)." >&2
-  echo "Скачать: https://github.com/tmedwards/sugarcube-2/releases/tag/v2.37.3" >&2
-  exit 1
-fi
+const distDir = path.join(process.cwd(), "dist");
+const cssPath = path.join(distDir, "bow-assets.css");
+const jsPath = path.join(distDir, "bow-bundle.js");
+const outPath = path.join(distDir, "BladesOfWar.html");
 
-if ! npx --no-install extwee --version >/dev/null 2>&1; then
-  echo "ОШИБКА: не найден extwee. Установка: npm i -D extwee" >&2
-  exit 1
-fi
+const css = fs.existsSync(cssPath) ? fs.readFileSync(cssPath, "utf8") : "";
+const js = fs.readFileSync(jsPath, "utf8").replace(/<\/script>/gi, "<\\/script>");
 
-# --- Склейка в правильном порядке ---
-: > "$COMBINED"
+const html = `<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#080b10" />
+  <title>Blades Of War — Студёный Брод (0.0.9.3 · Low-Poly 3D)</title>
+  <style>${css}</style>
+</head>
+<body>
+  <div id="bow-root"></div>
+  <script>${js}</script>
+</body>
+</html>
+`;
 
-echo "Склейка модулей…"
-for f in src/js/*.twee; do
-  cat "$f" >> "$COMBINED"
-  printf '\n\n' >> "$COMBINED"
-  echo "  + $f"
-done
-
-for f in src/ui/*.twee; do
-  cat "$f" >> "$COMBINED"
-  printf '\n\n' >> "$COMBINED"
-  echo "  + $f"
-done
-
-for f in src/passages/*.twee; do
-  cat "$f" >> "$COMBINED"
-  printf '\n\n' >> "$COMBINED"
-  echo "  + $f"
-done
-
-# --- Проверка дубликатов имён пассажей (частая ошибка при склейке) ---
-echo "Проверка имён пассажей…"
-DUPES=$(grep -o '^:: [^[]*' "$COMBINED" | sed 's/^:: //' | sed 's/[[:space:]]*$//' | sort | uniq -d)
-if [ -n "$DUPES" ]; then
-  echo "ОШИБКА: дублирующиеся пассажи:" >&2
-  echo "$DUPES" >&2
-  exit 1
-fi
-
-# --- Сборка ---
-echo "Сборка HTML…"
-npx --no-install extwee -c -i "$COMBINED" -o "$OUT" -s "$FORMAT"
-
-# --- Проверка результата ---
-if [ ! -f "$OUT" ]; then
-  echo "ОШИБКА: HTML не создан." >&2
-  exit 1
-fi
-
-# Внешние ссылки недопустимы: игра должна работать без интернета.
-EXTERNAL=$(grep -o 'src="https\?://[^"]*"\|href="https\?://[^"]*"' "$OUT" | grep -v 'motoslave.net\|twinery.org' | head -5 || true)
-if [ -n "$EXTERNAL" ]; then
-  echo "ВНИМАНИЕ: в HTML есть внешние ссылки:" >&2
-  echo "$EXTERNAL" >&2
-fi
-
-SIZE=$(du -h "$OUT" | cut -f1)
-COUNT=$(grep -o '<tw-passagedata' "$OUT" | wc -l)
-echo ""
-echo "Готово: $OUT"
-echo "  размер: $SIZE"
-echo "  пассажей: $COUNT"
+fs.writeFileSync(outPath, html, "utf8");
+fs.copyFileSync(outPath, path.join(distDir, "index.html"));
+if (fs.existsSync(cssPath)) fs.unlinkSync(cssPath);
+if (fs.existsSync(jsPath)) fs.unlinkSync(jsPath);
+console.log("✔ Собрано:", outPath, "(" + Math.round(Buffer.byteLength(html) / 1024) + " KB)");
+EOF

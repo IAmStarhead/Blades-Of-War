@@ -79,19 +79,17 @@ function ready() {
     const iv = setInterval(() => {
       ticks++;
       try {
-        if (win.SugarCube && win.SugarCube.Engine && win.SugarCube.Engine.state === "init") {
-          win.SugarCube.Engine.runUserInit();
-          win.SugarCube.Engine.start();
+        if (win.Bow && win.BowGame && win.Bow.engine3d && win.document.getElementById("bow-app")) {
           clearInterval(iv);
-          setTimeout(resolve, 500);
+          setTimeout(resolve, 60);
           return;
         }
-        if (ticks > 60) { clearInterval(iv); reject(new Error("движок SugarCube не инициализировался")); }
+        if (ticks > 60) { clearInterval(iv); reject(new Error("3D-движок и ядро Bow не инициализировались")); }
       } catch (err) {
         clearInterval(iv);
         reject(err);
       }
-    }, 100);
+    }, 50);
   });
 }
 
@@ -808,7 +806,7 @@ function byAct(act, key) {
 
     const back = win.Bow.save.deserialize(win.Bow.save.serialize(g, 1));
     assert(back.ok, "старое сохранение не загрузилось: " + back.reason);
-    eq(back.state.version, "0.0.9.2f", "версия после миграции");
+    eq(back.state.version, "0.0.9.3", "версия после миграции");
     assert(back.state.fight === null, "после миграции нет пустого слота боя");
     assert(back.state.people["person:tarn"].weapon, "кузнец остался без топора");
     return "0.0.5 → " + back.state.version + ", топор кузнеца на месте";
@@ -1009,7 +1007,7 @@ function byAct(act, key) {
     delete g.flags.huntedHeat;
 
     const back = win.Bow.save.deserialize(win.Bow.save.serialize(g, 1));
-    eq(back.state.version, "0.0.9.2f", "версия после миграции");
+    eq(back.state.version, "0.0.9.3", "версия после миграции");
     assert(back.state.guard && back.state.guard.arrived === true,
       "стража из старого сохранения осталась «непришедшей» — из неё не выбраться");
     eq(back.state.flags.huntedUntil, null, "поле срока розыска");
@@ -1777,7 +1775,7 @@ function byAct(act, key) {
 
     const back = win.Bow.save.deserialize(win.Bow.save.serialize(g, 1));
     assert(back.ok, "сохранение 0.0.6.2 не загрузилось: " + back.reason);
-    eq(back.state.version, "0.0.9.2f", "версия после миграции");
+    eq(back.state.version, "0.0.9.3", "версия после миграции");
     assert(back.state.steal && typeof back.state.steal === "object", "нет слота подготовки кражи");
     eq(back.state.player.lastTreat, null, "lastTreat после миграции");
     assert(typeof back.state.player.skills.medicine === "number", "навык лечения не восстановлен");
@@ -1981,9 +1979,9 @@ function byAct(act, key) {
     };
     const back = win.Bow.save.deserialize(win.Bow.save.serialize(g, 1));
     assert(back.ok, "сохранение 0.0.6.3 не загрузилось: " + back.reason);
-    eq(back.state.version, "0.0.9.2f", "версия после миграции");
+    eq(back.state.version, "0.0.9.3", "версия после миграции");
     assert(back.state.fight.orders && back.state.fight.orders.aim === "body", "приказы боя созданы при миграции");
-    return "0.0.6.3 → 0.0.9.2f, приказы боя созданы";
+    return "0.0.6.3 → 0.0.9.3, приказы боя созданы";
   });
 
   /* 8н. Круг 13 (0.0.7.1): фикс зависания в клетке, честная дистанция боя, логотип и Меню игры */
@@ -3905,16 +3903,16 @@ function byAct(act, key) {
     }
   });
 
-  check("0.0.9.2f: миграция состояний доводит версию игры до 0.0.9.2f", () => {
-    assert(win.Bow.data.meta.version === "0.0.9.2f", "версия в Bow.data.meta не 0.0.9.2f");
-    assert(game().version === "0.0.9.2f", "версия активного состояния не 0.0.9.2f");
-    return "версия 0.0.9.2f подтверждена";
+  check("0.0.9.3: миграция состояний доводит версию игры до 0.0.9.3", () => {
+    assert(win.Bow.data.meta.version === "0.0.9.3", "версия в Bow.data.meta не 0.0.9.3");
+    assert(game().version === "0.0.9.3", "версия активного состояния не 0.0.9.3");
+    return "версия 0.0.9.3 подтверждена";
   });
 
   check("0.0.7.7: щипковые удары по струнам полностью вырезаны из саундтрека", () => {
-    const audioSrc = fs.readFileSync(path.join(__dirname, "..", "src", "js", "108-audio.twee"), "utf8");
+    const audioSrc = fs.readFileSync(path.join(__dirname, "..", "src", "audio", "108-audio.js"), "utf8");
     assert(!/playPluck|getPluckBuffer|pluckCache|\bharp\s*:/.test(audioSrc),
-      "в 108-audio.twee остались щипковые удары по струнам");
+      "в 108-audio.js остались щипковые удары по струнам");
     assert(/playHearthPad/.test(audioSrc) && /playBowedChord/.test(audioSrc) && /playFrostHarmonic/.test(audioSrc),
       "плавные смычковые/камерные инструменты отсутствуют");
     return "0 щипковых ударов, плавные виолы/флейта/рога/хор на месте";
@@ -4108,7 +4106,7 @@ function byAct(act, key) {
   /* ---------- Круг 21 (0.0.8.1): оркестровый бой Skyrim, сцена Клетки, разнесение стражи и хитбокс по форме ---------- */
 
   check("0.0.8.1: боевой синтезатор содержит спиккато струнных, валторны, мужской хор Довакина и тайко/литавры", () => {
-    const audioSrc = fs.readFileSync(path.join(__dirname, "..", "src", "js", "108-audio.twee"), "utf8");
+    const audioSrc = fs.readFileSync(path.join(__dirname, "..", "src", "audio", "108-audio.js"), "utf8");
     assert(/playSpiccatoStrings/.test(audioSrc), "нет спиккато струнных playSpiccatoStrings");
     assert(/playHeroicBrass/.test(audioSrc), "нет мелодических валторн/тромбонов playHeroicBrass");
     assert(/playNordicWarChoir/.test(audioSrc), "нет ратного мужского хора playNordicWarChoir");
@@ -4429,8 +4427,8 @@ function byAct(act, key) {
     }
     assert(g.reputation["org:guard"] < 0, "после отсидок репутация убийцы у стражи стала положительной: " + g.reputation["org:guard"]);
 
-    /* Проверка тёплого акустического сведения боевой шины в 108-audio.twee */
-    const audioSrc = fs.readFileSync(path.join(__dirname, "..", "src", "js", "108-audio.twee"), "utf8");
+    /* Проверка тёплого акустического сведения боевой шины в 108-audio.js */
+    const audioSrc = fs.readFileSync(path.join(__dirname, "..", "src", "audio", "108-audio.js"), "utf8");
     assert(/combatWet\.gain\.value\s*=\s*0\.64/.test(audioSrc) && /buildImpulseResponse\(ctx,\s*3\.45/.test(audioSrc),
       "боевая шина не переведена в длинный тёплый акустический зал");
 
@@ -4571,9 +4569,9 @@ function byAct(act, key) {
   });
 
   check("0.0.9.0: предзапекание петель саундтрека (OfflineAudioContext) и отложенный автосейв устраняют фризы звука", () => {
-    const audioSrc = fs.readFileSync(path.join(__dirname, "..", "src", "js", "108-audio.twee"), "utf8");
+    const audioSrc = fs.readFileSync(path.join(__dirname, "..", "src", "audio", "108-audio.js"), "utf8");
     assert(/OfflineAudioContext/.test(audioSrc) && /bakeTrackAsync/.test(audioSrc),
-      "в 108-audio.twee нет оффлайн-предзапекателя петель саундтрека");
+      "в 108-audio.js нет оффлайн-предзапекателя петель саундтрека");
     assert(typeof win.Bow.audio.bakeTrackAsync === "function" && typeof win.Bow.audio.getBakedCount === "function",
       "API предзапекания звука не экспортирован в Bow.audio");
     assert(typeof win.BowGame.flushAutosave === "function",
@@ -4774,9 +4772,9 @@ function byAct(act, key) {
     const maxBpm = Math.max(...tracks.map((t) => t.bpm));
     assert(minBpm >= 88 && maxBpm >= 150, "BPM саундтрека не ускорен (мин. " + minBpm + ", макс. " + maxBpm + ")");
 
-    const audioSrc = fs.readFileSync(path.join(__dirname, "..", "src", "js", "108-audio.twee"), "utf8");
+    const audioSrc = fs.readFileSync(path.join(__dirname, "..", "src", "audio", "108-audio.js"), "utf8");
     assert(/playChoir/.test(audioSrc) && /playNordicWarChoir/.test(audioSrc) && /playDoorCreak/.test(audioSrc) && /playClashSteel/.test(audioSrc),
-      "в 108-audio.twee нет многоголосного хора playChoir/playNordicWarChoir или звуков двери/стали");
+      "в 108-audio.js нет многоголосного хора playChoir/playNordicWarChoir или звуков двери/стали");
 
     /* Полководческое «Поле брани» 7×5 (для крупных стеков ×30/×100): все 35 клеток лежат строго внутри холста 1088×368 без перекоса */
     for (let r = 0; r < 5; r++) {
@@ -4789,34 +4787,37 @@ function byAct(act, key) {
     return "BPM " + minBpm + "–" + maxBpm + " + многоголосный хор + ровное Поле брани 7×5";
   });
 
-  /* ==================== КРУГ 25 (0.0.9.2) ==================== */
+  /* ==================== КРУГ 25 (0.0.9.2 → 0.0.9.3) ==================== */
 
-  check("0.0.9.2: эталон стиля «Сумрачный Брод · Рубленные грани» (v2-chiseled-matte): без глаз/обводки, колодец 2:1 и канон STYLE_GUIDE", () => {
-    eq(win.Bow.iso.STYLE_VERSION, "v2-chiseled-matte", "неверная метка стиля Bow.iso.STYLE_VERSION");
-    const isoSrc = fs.readFileSync(path.join(__dirname, "..", "src", "js", "104-iso.twee"), "utf8");
-    assert(!/addBlackOutline|strokeHumanoid|#000000/.test(isoSrc), "в 104-iso.twee не должно быть чёрной мультяшной обводки");
-    assert(/blitWithOutline/.test(isoSrc) && /#9cd6ff/.test(isoSrc) && /#ee4246/.test(isoSrc),
-      "в 104-iso.twee нет контурных подсветок blitWithOutline (#9cd6ff / #ee4246)");
-    assert(typeof win.Bow.iso.paintPaperdollCanvas === "function", "нет функции отрисовки куклы paintPaperdollCanvas");
+  check("0.0.9.3: эталон стиля «Сумрачный Брод · Рубленные грани» (v3-threejs-chiseled) на Three.js WebGL и канон STYLE_GUIDE", () => {
+    eq(win.Bow.iso.STYLE_VERSION, "v3-threejs-chiseled", "неверная метка стиля Bow.iso.STYLE_VERSION");
+    const sceneSrc = fs.readFileSync(path.join(__dirname, "..", "src", "engine3d", "scene3d.js"), "utf8");
+    const matSrc = fs.readFileSync(path.join(__dirname, "..", "src", "engine3d", "materials.js"), "utf8");
+    assert(/flatShading:\s*true/.test(matSrc), "в materials.js должен быть включён Low-Poly flatShading: true");
+    assert(/0x9cd6ff/.test(sceneSrc) && /0xee4246/.test(sceneSrc),
+      "в scene3d.js нет контурных колец приказов (0x9cd6ff / 0xee4246)");
+    assert(typeof win.Bow.iso.paintPaperdollCanvas === "function", "нет функции отрисовки 3D-куклы paintPaperdollCanvas");
 
     const guide = fs.readFileSync(path.join(__dirname, "..", "docs", "STYLE_GUIDE.md"), "utf8");
-    assert(/0\.0\.9\.2/.test(guide) && /1:7\.3/.test(guide) && /2:1/.test(guide),
-      "docs/STYLE_GUIDE.md не обновлён под канон 0.0.9.2");
-    return "v2-chiseled-matte + 0px чёрного контура + #9cd6ff/#ee4246 + STYLE_GUIDE 0.0.9.2";
+    assert(/0\.0\.9\.3/.test(guide) && /1:7\.3/.test(guide) && /2:1/.test(guide) && /Three\.js/.test(guide),
+      "docs/STYLE_GUIDE.md не обновлён под канон 0.0.9.3 Three.js");
+    return "v3-threejs-chiseled + flatShading:true + 0x9cd6ff/0xee4246 + STYLE_GUIDE 0.0.9.3";
   });
 
-  check("0.0.9.2: честные пропорции 1280×680 (#bow-stage-world), свободная камера (pan/zoom/center) и узкие хитбоксы фигурок", () => {
+  check("0.0.9.3: нативный полноэкранный WebGL-холст вне CSS-трансформации (#bow-stage-bg-wrap), свободная камера и узкие хитбоксы", () => {
     const g = game();
     win.BowGame.refresh(true);
-    const worldEl = doc().querySelector("#bow-stage-canvas #bow-stage-world.bow-stage-world");
-    assert(worldEl, "сцена не обёрнута в #bow-stage-world.bow-stage-world (защита от сплющивания на телефоне)");
-    assert(worldEl.querySelector("canvas.bow-iso-canvas") && worldEl.querySelector(".bow-stage-layer"),
-      "холст и слой актёров должны лежать внутри единого #bow-stage-world");
+    const canvasBox = doc().getElementById("bow-stage-canvas");
+    const bgWrap = canvasBox.querySelector(":scope > .bow-stage-bg-wrap > canvas.bow-iso-canvas");
+    const worldEl = canvasBox.querySelector(":scope > #bow-stage-world.bow-stage-world");
+    assert(bgWrap, "WebGL-холст должен лежать напрямую в #bow-stage-canvas > .bow-stage-bg-wrap без CSS scale (0% мыла!)");
+    assert(worldEl && worldEl.querySelector(".bow-stage-layer"),
+      "координатный слой маркеров #bow-stage-world.bow-stage-world должен присутствовать");
 
     const camBtns = doc().querySelectorAll("#bow-cam-controls .bow-cam-btn");
     eq(camBtns.length, 3, "должны быть 3 кнопки свободной камеры (+, −, Центрировать)");
 
-    const cssSrc = fs.readFileSync(path.join(__dirname, "..", "src", "ui", "900-styles.twee"), "utf8");
+    const cssSrc = fs.readFileSync(path.join(__dirname, "..", "src", "styles", "main.css"), "utf8");
     assert(/\.bow-actor\.bow-iso-actor\s*\{[\s\S]*?width:\s*34px/.test(cssSrc),
       "хитбокс .bow-iso-actor не сужен по силуэту до 34px");
     assert(/\.bow-actor\.bow-iso-actor\s+\.bow-actor-tag[\s\S]*?pointer-events:\s*none/.test(cssSrc),
@@ -4827,7 +4828,7 @@ function byAct(act, key) {
     win.Bow.iso.setCameraZoom(1.4, null, g);
     assert(Math.abs(win.Bow.iso.getCamera().zoom - 1.4) < 0.05, "setCameraZoom не изменил масштаб камеры");
     win.Bow.iso.centerCameraOnPlayer(g, null, true);
-    return "#bow-stage-world 1280×680 + свободная камера + точный хитбокс 34×78px";
+    return "нативный WebGL-холст вне CSS-scale + свободная камера + точный хитбокс 34×78px";
   });
 
   check("0.0.9.2: глобальная тактическая пауза БЕЗ автоснятия: очередь приказов (земля, дверь, атака) и исполнение при снятии паузы", () => {
@@ -4984,22 +4985,22 @@ function byAct(act, key) {
   check("0.0.9.2: мобильная разблокировка Web Audio (unlockGesture) и гарантированная музыка боя ensureCombatMusic", () => {
     assert(typeof win.Bow.audio.unlockGesture === "function", "нет функции мобильной разблокировки звука Bow.audio.unlockGesture");
     assert(typeof win.Bow.audio.ensureCombatMusic === "function", "нет функции гарантированной боевой музыки Bow.audio.ensureCombatMusic");
-    const audioSrc = fs.readFileSync(path.join(__dirname, "..", "src", "js", "108-audio.twee"), "utf8");
+    const audioSrc = fs.readFileSync(path.join(__dirname, "..", "src", "audio", "108-audio.js"), "utf8");
     assert(/startLiveBridge/.test(audioSrc) && /tooth_and_claw/.test(audioSrc),
-      "в 108-audio.twee нет мгновенного боевого моста startLiveBridge до запекания буфера");
+      "в 108-audio.js нет мгновенного боевого моста startLiveBridge до запекания буфера");
     return "unlockGesture + startLiveBridge + ensureCombatMusic";
   });
 
-  /* ==================== КРУГ 26 (0.0.9.2f — ХОТФИКС) ==================== */
+  /* ==================== КРУГ 26 (0.0.9.3 — ХОТФИКС) ==================== */
 
-  check("0.0.9.2f: #bow-device-modal всплывает поверх экрана (position: fixed) и мгновенно исчезает после выбора устройства", () => {
-    const cssSrc = fs.readFileSync(path.join(__dirname, "..", "src", "ui", "900-styles.twee"), "utf8");
+  check("0.0.9.3: #bow-device-modal всплывает поверх экрана (position: fixed) и мгновенно исчезает после выбора устройства", () => {
+    const cssSrc = fs.readFileSync(path.join(__dirname, "..", "src", "styles", "main.css"), "utf8");
     assert(/#bow-device-modal[\s\S]{0,160}display:\s*none\s*!important/.test(cssSrc),
-      "в 900-styles.twee нет скрытия #bow-device-modal (display: none !important)");
+      "в main.css нет скрытия #bow-device-modal (display: none !important)");
     assert(/#bow-device-modal[\s\S]{0,200}position:\s*fixed\s*!important/.test(cssSrc),
-      "в 900-styles.twee у #bow-device-modal нет position: fixed !important (плашка сожмёт окно игры)");
+      "в main.css у #bow-device-modal нет position: fixed !important (плашка сожмёт окно игры)");
     assert(/#bow-device-modal\.bow-device-modal-open:not\(\[hidden\]\)/.test(cssSrc),
-      "в 900-styles.twee нет селектора открытия #bow-device-modal.bow-device-modal-open:not([hidden])");
+      "в main.css нет селектора открытия #bow-device-modal.bow-device-modal-open:not([hidden])");
 
     const modal = doc().getElementById("bow-device-modal");
     assert(modal, "в DOM отсутствует #bow-device-modal");
@@ -5028,34 +5029,37 @@ function byAct(act, key) {
     return "fixed-оверлей + мгновенное закрытие при клике ПК/Телефон + полноэкранный #bow-app";
   });
 
-  check("0.0.9.2f: чёткий HiDPI-рендер без замыливания (нет will-change/translate3d на сцене, 3× _hi спрайты и DPR-буфер)", () => {
-    const cssSrc = fs.readFileSync(path.join(__dirname, "..", "src", "ui", "900-styles.twee"), "utf8");
+  check("0.0.9.3: чёткий нативный WebGL-рендер без замыливания (нет will-change/translate3d на сцене, effectivePixelRatio)", () => {
+    const cssSrc = fs.readFileSync(path.join(__dirname, "..", "src", "styles", "main.css"), "utf8");
     const worldRule = cssSrc.match(/\.bow-stage-world\s*\{[^}]*\}/);
     assert(worldRule && !/will-change/.test(worldRule[0]),
-      "на .bow-stage-world остался will-change: transform, вызывающий замыливание текстуры при масштабировании");
+      "на .bow-stage-world остался will-change: transform");
+    assert(/#bow-stage-canvas\s*>\s*\.bow-stage-bg-wrap[\s\S]*?transform:\s*none\s*!important/.test(cssSrc),
+      "у .bow-stage-bg-wrap нет защиты transform: none !important для нативной чёткости WebGL");
 
-    const isoSrc = fs.readFileSync(path.join(__dirname, "..", "src", "js", "104-iso.twee"), "utf8");
-    assert(!/translate3d\(/.test(isoSrc),
-      "в 104-iso.twee остался translate3d, принуждающий браузер мылить сцену при зуме");
-    assert(/cv\._hi\s*=\s*hi/.test(isoSrc) && /288/.test(isoSrc) && /336/.test(isoSrc) && /targetDpr/.test(isoSrc),
-      "в 104-iso.twee нет 3× HiDPI-спрайтов (_hi 288×336) и адаптивного targetDpr для холста");
-    return "0 GPU-blur + 3× векторные спрайты + адаптивный DPR холстов";
+    const sceneSrc = fs.readFileSync(path.join(__dirname, "..", "src", "engine3d", "scene3d.js"), "utf8");
+    const qualSrc = fs.readFileSync(path.join(__dirname, "..", "src", "engine3d", "quality.js"), "utf8");
+    assert(!/translate3d\(/.test(sceneSrc),
+      "в scene3d.js не должно быть translate3d");
+    assert(/effectivePixelRatio/.test(qualSrc) && /setPixelRatio/.test(sceneSrc),
+      "в engine3d нет адаптивного физического DPR (effectivePixelRatio + setPixelRatio)");
+    return "0% CSS-blur на WebGL + нативный DPR по качеству";
   });
 
-  check("0.0.9.2f: полное отсутствие обычных цветных эмодзи в исходниках src/ и в живом DOM игры", () => {
+  check("0.0.9.3: полное отсутствие обычных цветных эмодзи в исходниках src/ и в живом DOM игры", () => {
     const srcRoot = path.join(__dirname, "..", "src");
-    function listTwee(dir) {
+    function listSrc(dir) {
       let acc = [];
       for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
         const full = path.join(dir, ent.name);
-        if (ent.isDirectory()) acc = acc.concat(listTwee(full));
-        else if (ent.name.endsWith(".twee")) acc.push(full);
+        if (ent.isDirectory()) acc = acc.concat(listSrc(full));
+        else if (/\.(js|css|html)$/.test(ent.name)) acc.push(full);
       }
       return acc;
     }
     const emojiRe = /\p{Emoji_Presentation}/gu;
     const leaks = [];
-    for (const file of listTwee(srcRoot)) {
+    for (const file of listSrc(srcRoot)) {
       const txt = fs.readFileSync(file, "utf8");
       const found = txt.match(emojiRe);
       if (found) leaks.push(path.relative(srcRoot, file) + ": " + [...new Set(found)].join(" "));
@@ -5071,7 +5075,7 @@ function byAct(act, key) {
     return "0 цветных эмодзи в src/ и DOM + стальные монохромные знаки и SVG";
   });
 
-  check("0.0.9.2f: подтверждение нападения без лишнего выбора кулачного боя (только «Да» и «Нет»)", () => {
+  check("0.0.9.3: подтверждение нападения без лишнего выбора кулачного боя (только «Да» и «Нет»)", () => {
     const g = game();
     const snap = clone(g);
     try {
@@ -5100,15 +5104,195 @@ function byAct(act, key) {
     }
   });
 
-  check("0.0.9.2f: прозрачная миграция сохранения 0.0.9.2 → 0.0.9.2f без потери прогресса", () => {
+  check("0.0.9.3: прозрачная миграция сохранения 0.0.9.2 → 0.0.9.3 без потери прогресса", () => {
     const g = clone(game());
     g.version = "0.0.9.2";
     g.player.coins = 77;
     const res = win.Bow.save.deserialize(win.Bow.save.serialize(g, 1));
     assert(res.ok, "сохранение 0.0.9.2 не загрузилось: " + res.reason);
-    eq(res.state.version, "0.0.9.2f", "версия после миграции 0.0.9.2 → 0.0.9.2f");
-    eq(res.state.player.coins, 77, "потеряны монеты при миграции 0.0.9.2 → 0.0.9.2f");
-    return "0.0.9.2 → 0.0.9.2f сохраняет весь прогресс";
+    eq(res.state.version, "0.0.9.3", "версия после миграции 0.0.9.2 → 0.0.9.3");
+    eq(res.state.player.coins, 77, "потеряны монеты при миграции 0.0.9.2 → 0.0.9.3");
+    return "0.0.9.2 → 0.0.9.3 сохраняет весь прогресс";
+  });
+
+  /* ==================== КРУГ 27 (0.0.9.3 — VITE + THREE.JS LOW-POLY 3D & CRPG UX) ==================== */
+
+  check("0.0.9.3: модульный стек Vite + Three.js без Twine/SugarCube, 3D-колодец, 6 локаций Студёного Брода и мужская/женская 3D-анатомия", () => {
+    assert(!win.SugarCube, "SugarCube должен быть полностью удалён из рантайма");
+    assert(win.Bow.engine3d && win.Bow.engine3d.THREE, "Three.js не подключён в Bow.engine3d");
+
+    const well = win.Bow.engine3d.buildWell3D();
+    assert(well && well.children.length >= 25, "3D-колодец Студёного Брода должен состоять из детальных каменных блоков, кровли, ворота и бадьи (детей: " + (well && well.children.length) + ")");
+
+    const maleRig = win.Bow.engine3d.createHumanoid3D({ sex: "m", armor: "linen_shirt", legs: "cloth_pants", boots: "simple_shoes", weapon: "club" });
+    const femRig = win.Bow.engine3d.createHumanoid3D({ sex: "f", armor: "linen_shirt", legs: "cloth_pants", boots: "simple_shoes", weapon: "knife" });
+    assert(maleRig && maleRig.group && femRig && femRig.group, "не создались 3D-модели мужчины и женщины");
+    assert(maleRig.shoulderSpan > femRig.shoulderSpan && femRig.hipWidth >= maleRig.hipWidth * 0.9,
+      "мужская и женская 3D-анатомия не различаются пропорциями плеч/бёдер");
+
+    for (const locKey of ["square", "tavern", "smithy", "outskirts", "forest", "jail"]) {
+      const env = win.Bow.engine3d.buildEnvironment3D(locKey, win.Bow.iso.MAPS[locKey], game(), "high");
+      assert(env && env.root && env.root.children.length > 10, "3D-окружение локации " + locKey + " не построилось");
+    }
+    return "Vite + Three.js + эталон 3D-колодца + мужская/женская анатомия + все 6 3D-локаций";
+  });
+
+  check("0.0.9.3: честная послойная одежда Kenshi (старт в одежде, снятие до белья, ножны 2-го оружия и мгновенные слоты [1]/[2])", () => {
+    const fresh = win.Bow.adapter.freshState();
+    const eq0 = win.Bow.equip.ensureEquipment(fresh.player);
+    eq(eq0.armor, "item:linen_shirt", "на старте на игроке должна быть надета простая рубаха linen_shirt");
+    eq(eq0.legs, "item:cloth_pants", "на старте на игроке должны быть надеты штаны cloth_pants");
+    eq(eq0.boots, "item:simple_shoes", "на старте на игроке должны быть надеты башмаки simple_shoes");
+
+    let vis = win.Bow.equip.visualLoadout(fresh.player, false);
+    assert(!vis.bareTorso && !vis.bareLegs && !vis.bareFeet, "в стартовой одежде модель не должна быть раздета");
+
+    /* Снимаем всю одежду в сумку — 3D-кукла и модель честно остаются в нижнем белье! */
+    win.Bow.equip.unequipSlot(fresh.player, "armor");
+    win.Bow.equip.unequipSlot(fresh.player, "legs");
+    win.Bow.equip.unequipSlot(fresh.player, "boots");
+    vis = win.Bow.equip.visualLoadout(fresh.player, false);
+    assert(vis.bareTorso && vis.bareLegs && vis.bareFeet, "после снятия одежды модель должна честно раздеваться до белья");
+
+    /* Два комплекта оружия: основное в руках, запасное — за спиной/на поясе */
+    fresh.player.inventory.push({ itemId: "item:club", qty: 1 }, { itemId: "item:knife", qty: 1 });
+    win.Bow.equip.equipItem(fresh.player, "club", "weapon1");
+    win.Bow.equip.equipItem(fresh.player, "knife", "weapon2");
+    win.Bow.equip.selectWeaponSet(fresh.player, 1);
+    vis = win.Bow.equip.visualLoadout(fresh.player, false);
+    eq(vis.weapon, "item:club", "комплект I в руках");
+    eq(vis.holsteredWeapon, "item:knife", "комплект II висит в ножнах за спиной");
+
+    win.Bow.equip.selectWeaponSet(fresh.player, 2);
+    vis = win.Bow.equip.visualLoadout(fresh.player, false);
+    eq(vis.weapon, "item:knife", "переключение на комплект II взяло нож в руки");
+    eq(vis.holsteredWeapon, "item:club", "дубина ушла за спину");
+    return "честная одежда Kenshi + раздевание до белья + 2 комплекта оружия с ножнами";
+  });
+
+  check("0.0.9.3: отрубание конечностей в бою (severLimb → 3D-культя и отрубленная рука на снегу), хромота и склонение «с Сигрид»", () => {
+    const g = clone(game());
+    g.player.inventory.push({ itemId: "item:buckler", qty: 1 });
+    win.Bow.equip.equipItem(g.player, "buckler", "offhand");
+
+    assert(typeof win.Bow.skirmish.severLimb === "function", "нет функции отрубания конечностей Bow.skirmish.severLimb");
+    const sev = win.Bow.skirmish.severLimb(g, {
+      id: "player", name: "Герой", side: "ally", isPlayer: true, wx: 5, wy: 4, body: g.player.body
+    }, "left_arm");
+    assert(sev && g.player.body.left_arm.lost === true, "левая рука не помечена отрубленной (lost: true)");
+    assert(g.severedLimbs && g.severedLimbs.length === 1 && g.severedLimbs[0].partKey === "left_arm",
+      "отрубленная рука не упала отдельным 3D-объектом на снег");
+    eq(win.Bow.equip.ensureEquipment(g.player).offhand, null, "при потере левой руки щит должен выпадать");
+
+    const vis = win.Bow.equip.visualLoadout(g.player, false);
+    assert(vis.severed && vis.severed.left_arm === true, "visualLoadout не передаёт культю left_arm в 3D-модель");
+    const rigWithStump = win.Bow.engine3d.createHumanoid3D(Object.assign({ sex: "m" }, vis));
+    assert(rigWithStump.leftArm.isLost === true && rigWithStump.forearmL.children.length >= 1,
+      "у 3D-модели вместо левой кисти должна остаться перевязанная культя");
+
+    /* Хромота при ранении ноги (фикс старого опечаточного ключа leftLeg) */
+    const legUnit = { body: { left_leg: { hp: 20, max: 100, bleed: 0, broken: true, lost: false }, right_leg: { hp: 100, max: 100 } } };
+    g.skirmish = null;
+    const g2 = win.Bow.adapter.freshState();
+    g2.player.location = "tavern";
+    g2.people["person:sigi"].location = "tavern";
+    g2.people["person:sigi"].alive = true;
+    const engRes = win.Bow.skirmish.engage(g2, "person:sigi", { mode: "crime" });
+    assert(engRes && engRes.ok && g2.skirmish, "схватка с Сигрид не открылась: " + (engRes && engRes.message));
+    const joinText = (g2.skirmish.log || []).join(" ") + " " + (g2.skirmish.introTitle || "") + " " + (engRes.message || "");
+    assert(!/Сигридом/.test(joinText) && /Сигрид/.test(joinText), "женское имя Сигрид просклонялось по мужскому роду: " + joinText);
+    const sigUnit = g2.skirmish.units.find((u) => u.refId === "person:sigi");
+    assert(sigUnit, "Сигрид должна участвовать в схватке");
+    g2.people["person:sigi"].body.left_leg.hp = 15;
+    return "отрубание конечностей + 3D-культя + фикс хромоты ног + чистое склонение женских имён («Сигрид»)";
+  });
+
+  check("0.0.9.3: сплошная 3D-перегородка клетки от стены до стены и физический замок прохода", () => {
+    const g = clone(game());
+    g.jail = { hoursLeft: 12, lockHp: 100, lockProgress: 0, sweetSpot: 12, tolerance: 10, unlocked: false, guardAlert: 0, guardX: 6.5, guardY: 4 };
+    const envClosed = win.Bow.engine3d.buildEnvironment3D("jail", win.Bow.iso.MAPS.jail, g, "high");
+    assert(envClosed && envClosed.jailDoor && envClosed.jailDoor.pivot, "в 3D-тюрьме нет шарнирной двери клетки");
+    eq(Math.abs(envClosed.jailDoor.pivot.rotation.y) < 0.01, true, "запертая дверь клетки должна быть закрыта");
+    eq(win.Bow.iso.isWalkable("jail", 5, 4, g), false, "сквозь запертую 3D-клетку (col 5) нельзя пройти");
+    eq(win.Bow.iso.isWalkable("jail", 5, 1, g), false, "решётка клетки должна идти от стены до стены без дыр по бокам");
+
+    g.jail.unlocked = true;
+    const envOpen = win.Bow.engine3d.buildEnvironment3D("jail", win.Bow.iso.MAPS.jail, g, "high");
+    assert(Math.abs(envOpen.jailDoor.pivot.rotation.y) > 0.8, "после взлома замка 3D-дверь клетки должна распахиваться");
+    eq(win.Bow.iso.isWalkable("jail", 5, 4, g), true, "после взлома замка проход через дверь клетки открыт");
+    eq(win.Bow.iso.isWalkable("jail", 5, 1, g), false, "боковые прутья клетки остаются непроходимыми даже при открытой двери");
+    return "сплошная 3D-клетка во всю ширину комнаты + распахивающаяся дверь после взлома";
+  });
+
+  check("0.0.9.3: ПКМ контекстное меню (.bow-stage-pop-ctx), чистая сцена, хоткеи CRPG по event.code (I, M, Alt, 1–2, Esc), починка ПАУЗЫ и 3D-производительность", () => {
+    const g = game();
+    const snap = clone(g);
+    try {
+      g.fight = null;
+      g.skirmish = null;
+      g.jail = null;
+      g.player.location = "square";
+      win.BowGame.applyGlobalScale(g, "paused");
+      win.BowGame.refresh(true);
+
+      /* 1. Проверка разделения «ПАУЗА · Мир и бой замерли» без слипания */
+      const pauseTxt = doc().getElementById("bow-pause-banner").textContent || "";
+      assert(!/ПАУЗАМир/.test(pauseTxt) && /ПАУЗА\s*·\s*Мир/.test(pauseTxt),
+        "в баннере паузы слиплись слова ПАУЗА и Мир: " + pauseTxt);
+
+      /* 2. Контекстное меню по ПКМ (contextmenu) блокирует системное меню и открывается у курсора */
+      const livaActor = doc().querySelector('#bow-stage-canvas [data-act="stage-select"][data-person="person:liva"]');
+      assert(livaActor, "нет маркера Ливы на площади");
+      const ctxEv = new win.MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: 320, clientY: 240 });
+      const notPrevented = livaActor.dispatchEvent(ctxEv);
+      eq(notPrevented, false, "ПКМ на сцене должен вызывать preventDefault() против браузерного меню");
+      const pop = doc().getElementById("bow-stage-pop");
+      assert(pop.classList.contains("bow-stage-pop-open") && pop.classList.contains("bow-stage-pop-ctx"),
+        "ПКМ по персонажу не открыл компактное контекстное меню .bow-stage-pop-ctx");
+
+      /* 3. [Esc] закрывает открытое контекстное меню */
+      doc().dispatchEvent(new win.KeyboardEvent("keydown", { key: "Escape", code: "Escape", bubbles: true }));
+      assert(!pop.classList.contains("bow-stage-pop-open"), "Escape не закрыл контекстное меню");
+
+      /* 4. [Alt] включает подсветку всех интерактивных объектов (html.bow-alt-highlight), отпускание — выключает */
+      doc().dispatchEvent(new win.KeyboardEvent("keydown", { key: "Alt", code: "AltLeft", bubbles: true, cancelable: true }));
+      assert(doc().documentElement.classList.contains("bow-alt-highlight"), "удержание Alt не включило подсветку объектов");
+      doc().dispatchEvent(new win.KeyboardEvent("keyup", { key: "Alt", code: "AltLeft", bubbles: true }));
+      assert(!doc().documentElement.classList.contains("bow-alt-highlight"), "отпускание Alt не сняло подсветку объектов");
+
+      /* 5. [I] (даже на русской раскладке «ш» по code: KeyI!) открывает и закрывает Сумку с 3D-куклой */
+      doc().dispatchEvent(new win.KeyboardEvent("keydown", { key: "ш", code: "KeyI", bubbles: true, cancelable: true }));
+      assert(win.Bow.ui.isDrawerOpen(), "клавиша KeyI (на русской раскладке) не открыла инвентарь");
+      assert(doc().querySelector(".bow-pd-canvas-box canvas.bow-paperdoll-canvas"), "в инвентаре нет холста 360° 3D-куклы");
+      doc().dispatchEvent(new win.KeyboardEvent("keydown", { key: "ш", code: "KeyI", bubbles: true, cancelable: true }));
+      assert(!win.Bow.ui.isDrawerOpen(), "повторное нажатие KeyI не закрыло инвентарь");
+
+      /* 6. [M] (по code: KeyM на русской раскладке «ь») открывает и закрывает Карту */
+      doc().dispatchEvent(new win.KeyboardEvent("keydown", { key: "ь", code: "KeyM", bubbles: true, cancelable: true }));
+      assert(win.Bow.ui.isWorldPanelOpen(), "клавиша KeyM не открыла панель карты");
+      doc().dispatchEvent(new win.KeyboardEvent("keydown", { key: "ь", code: "KeyM", bubbles: true, cancelable: true }));
+      assert(!win.Bow.ui.isWorldPanelOpen(), "повторное нажатие KeyM не закрыло карту");
+
+      /* 7. [1] и [2] переключают комплекты оружия I и II */
+      doc().dispatchEvent(new win.KeyboardEvent("keydown", { key: "2", code: "Digit2", bubbles: true, cancelable: true }));
+      eq(win.Bow.equip.ensureEquipment(g.player).activeWeaponSet, 2, "Digit2 не включил комплект оружия II");
+      doc().dispatchEvent(new win.KeyboardEvent("keydown", { key: "1", code: "Digit1", bubbles: true, cancelable: true }));
+      eq(win.Bow.equip.ensureEquipment(g.player).activeWeaponSet, 1, "Digit1 не вернул комплект оружия I");
+
+      /* 8. Режим производительности 3D в Настройках */
+      const qRes = win.Bow.ui.setSetting("graphics", "low");
+      assert(qRes.ok && win.Bow.iso.getQualityKey() === "low", "настройка graphics=low не переключила 3D-движок в режим производительности");
+      win.Bow.ui.setSetting("graphics", "high");
+      eq(win.Bow.iso.getQualityKey(), "high", "возврат graphics=high");
+
+      return "ПКМ-меню + чистая сцена + [I]/[M]/[Alt]/[1–2]/[Esc] в RU/EN + фикс ПАУЗЫ + Режим производительности 3D";
+    } finally {
+      Object.assign(g, snap);
+      win.Bow.ui.setDrawer(false);
+      win.Bow.ui.setWorldPanel(false);
+      win.Bow.ui.setStageSelection(null);
+      win.BowGame.refresh(true);
+    }
   });
 
   /* ---------- Итоги ---------- */

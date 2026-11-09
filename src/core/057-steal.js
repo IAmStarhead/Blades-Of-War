@@ -1,0 +1,450 @@
+/* ============================================================
+   BOW STEAL — кражи, свидетели и розыск.
+
+   Зачем: по ТЗ у мира должны быть законы и последствия поступков.
+   Кража — самый простой честный пример: она опирается на уже
+   работающие навыки и репутацию и сразу меняет поведение людей.
+
+   Как устроено:
+     • цель — кошель конкретного жителя с реальными деньгами
+       (взяли у него — у него стало меньше, это не «выдача из воздуха»);
+     • исход зависит от навыка скрытности, усталости и времени суток;
+     • есть свидетели: если рядом есть люди, они могут заметить;
+     • заметили — репутация общины вниз, розыск, а при повторных
+       случаях жители перестают давать работу;
+     • розыск спадает со временем, если игрок ведёт себя тихо.
+
+   Модуль чистый: не знает ни про SugarCube, ни про DOM.
+   ============================================================ */
+(function (global) {
+  "use strict";
+
+  var Bow = global.Bow = global.Bow || {};
+
+  var HEAT_LIMIT = 100;
+
+  function cfg() { return Bow.data.fightRules.steal || {}; }
+
+  function personById(state, id) {
+    return state.people[id] || null;
+  }
+
+  /* ---------- Розыск ----------
+     heat[orgId] — насколько община хочет найти виновника.
+     Это отдельная шкала от отношения: одно дело «не любят»,
+     другое — «ищут, чтобы наказать». */
+  function heatOf(state, orgId) {
+    if (!state.heat) { return 0; }
+    var v = state.heat[orgId];
+    return typeof v === "number" ? v : 0;
+  }
+
+  function addHeat(state, orgId, delta) {
+    if (!state.heat || !orgId) { return 0; }
+    var before = heatOf(state, orgId);
+    state.heat[orgId] = Bow.util.clamp(before + delta, 0, HEAT_LIMIT);
+    return state.heat[orgId] - before;
+  }
+
+  function heatWord(value) {
+    if (value <= 0) { return "чист"; }
+    if (value < 20) { return "не вспоминают"; }
+    if (value < 45) { return "подозревают"; }
+    if (value < 70) { return "ищут"; }
+    return "за голову взялись всерьёз";
+  }
+
+  /* Сколько людей сейчас рядом и могут увидеть кражу.
+     Свидетели — честная часть механики, а не декорация. */
+  function witnessesAt(state, locationId) {
+    return Object.keys(state.people)
+      .map(function (id) { return state.people[id]; })
+      .filter(function (p) {
+        return p.alive && p.location === locationId && p.id !== state.player.id;
+      });
+  }
+
+  function nightBonus(state) {
+    return Bow.time.isNight(state) ? 0.16 : 0;
+  }
+
+  function witnessPenalty(state, person) {
+    /* Наблюдательный человек замечает лучше. Скрытность цели тоже
+       играет роль: у осторожного охотника срезать кошель труднее. */
+    var watch = (person.skills && person.skills.stealth) || 10;
+    return 0.10 + watch / 400;
+  }
+
+  function successChance(state, person) {
+    var skill = state.player.skills.stealth || 0;
+    var chance = 0.22 + skill / 130 + nightBonus(state);
+
+    var n = state.player.needs;
+    if (n.fatigue < 30) { chance -= 0.12; }
+    if (n.health < 40) { chance -= 0.08; }
+
+    /* Рядом стоит человек — риск выше. Считаем по всем, кроме цели. */
+    var seen = witnessesAt(state, state.player.location).filter(function (p) {
+      return p.id !== person.id;
+    }).length;
+    chance -= seen * 0.12;
+
+    /* Розыск делает людей внимательнее. */
+    var org = person.org;
+    if (org) { chance -= heatOf(state, org) / 400; }
+
+    /* Подготовка: присмотреться и отвлечь. */
+    chance += prepBonus(state, person.id);
+
+    return Bow.util.clamp(chance, 0.03, 0.94);
+  }
+
+  /* ---------- Подготовка (0.0.6.3) ----------
+     До этого кража была одним броском: нажал — узнал. Теперь есть
+     две ступени перед ней, и обе стоят времени:
+       • присмотреться — увидеть, где кошель и как его носят;
+       • отвлечь — толкнуть, заговорить, уронить, чтобы руки
+         перестали следить за сумкой.
+     Каждая ступень делает следующий бросок легче, но и делает
+     улицу внимательнее. Больше двух приёмов подряд не помогают:
+     бесконечно готовиться нельзя. */
+  function prep(state, personId) {
+    if (!state.steal) { state.steal = {}; }
+    var entry = state.steal[personId];
+    if (!entry) { entry = state.steal[personId] = { study: 0, distract: 0 }; }
+    return entry;
+  }
+
+  function prepBonus(state, personId) {
+    var e = state.steal && state.steal[personId];
+    if (!e) { return 0; }
+    var c = cfg();
+    return e.study * (c.studyBonus || 0.18) + e.distract * (c.distractBonus || 0.14);
+  }
+
+  function prepCount(state, personId) {
+    var e = state.steal && state.steal[personId];
+    if (!e) { return 0; }
+    return e.study + e.distract;
+  }
+
+  function studyCost() {
+    return { hours: cfg().studyHours || 1, fatigue: cfg().studyFatigue || 2 };
+  }
+
+  function study(state, personId) {
+    var person = personById(state, personId);
+    if (!person || !person.alive) { return { ok: false, message: "Здесь никого нет." }; }
+    if (person.location !== state.player.location) {
+      return { ok: false, message: person.name + " не здесь." };
+    }
+    if (prepCount(state, personId) >= (cfg().maxPrep || 2)) {
+      return { ok: false, message: "Больше смотреть некуда — вы и так всё видели." };
+    }
+
+    var e = prep(state, personId);
+    var cost = studyCost();
+    Bow.time.advance(state, cost.hours);
+    Bow.needs.applyChange(state.player, "fatigue", -cost.fatigue);
+    e.study += 1;
+
+    var now = Math.round(successChance(state, person) * 100);
+    return {
+      ok: true,
+      chance: now,
+      message: "Вы пригляделись: кошель на правом боку, завязка слабая. Шанс " + now + "%."
+    };
+  }
+
+  function distract(state, personId, rng) {
+    var person = personById(state, personId);
+    if (!person || !person.alive) { return { ok: false, message: "Здесь никого нет." }; }
+    if (person.location !== state.player.location) {
+      return { ok: false, message: person.name + " не здесь." };
+    }
+    if (prepCount(state, personId) >= (cfg().maxPrep || 2)) {
+      return { ok: false, message: "Ещё одно движение, и это заметят." };
+    }
+
+    /* Кто отвлекает: ваш Торг или Власть — что выше. Власть работает
+       на людях, торг — на тех, кто считает монету. */
+    var trade = state.player.skills.trade || 0;
+    var lead = state.player.skills.leadership || 0;
+    var skill = Math.max(trade, lead);
+    var odds = Bow.util.clamp(0.45 + skill / 200, 0.2, 0.92);
+
+    var e = prep(state, personId);
+    var c = cfg();
+    Bow.time.advance(state, c.distractHours || 1);
+    Bow.needs.applyChange(state.player, "fatigue", -(c.distractFatigue || 4));
+
+    if ((rng || Math.random)() >= odds) {
+      /* Отвлечь не вышло — и это заметили. */
+      var heat = addHeat(state, person.org, 8);
+      person.attitude = Bow.util.clamp(person.attitude - 4, -100, 100);
+      return {
+        ok: true,
+        distracted: false,
+        heat: heat,
+        message: "Вы начали разговор не с того, и " + person.name + " насторожился."
+      };
+    }
+
+    e.distract += 1;
+    var now = Math.round(successChance(state, person) * 100);
+    return {
+      ok: true,
+      distracted: true,
+      chance: now,
+      message: person.name + " отвернулся. Руки свободны. Шанс " + now + "%."
+    };
+  }
+
+  /* Кого можно обокрасть здесь и сейчас. */
+  function targetsAt(state) {
+    return witnessesAt(state, state.player.location).map(function (p) {
+      return {
+        id: p.id,
+        name: p.name,
+        role: p.role,
+        money: typeof p.money === "number" ? p.money : 0,
+        chance: successChance(state, p),
+        watch: (p.skills && p.skills.stealth) || 10,
+        prep: prepCount(state, p.id),
+        prepMax: cfg().maxPrep || 2
+      };
+    }).filter(function (t) { return t.money > 0; });
+  }
+
+  /* ---------- Сама кража ----------
+     Возвращает report: удалось ли, сколько взяли, кто заметил. */
+  function attempt(state, personId, rng) {
+    var person = personById(state, personId);
+    if (!person || !person.alive) { return { ok: false, message: "Здесь никого нет." }; }
+    if (person.location !== state.player.location) {
+      return { ok: false, message: person.name + " не здесь." };
+    }
+    if (!(person.money > 0)) {
+      return { ok: false, message: "У " + person.name + " пусто в кошеле." };
+    }
+
+    var n = state.player.needs;
+    if (n.fatigue < 12) {
+      return { ok: false, message: "Руки дрожат от усталости. Не сейчас." };
+    }
+
+    var chance = successChance(state, person);
+    var roll = (rng || Math.random)();
+    var success = roll < chance;
+
+    /* Подготовка расходуется на саму попытку: второй раз на том же
+       наблюдении не выедешь. */
+    if (state.steal) { delete state.steal[personId]; }
+
+    /* Время: подход и отход — дело не мгновенное. */
+    Bow.time.advance(state, 1);
+
+    var taken = 0;
+    var caughtBy = null;
+
+    if (success) {
+      /* Берём часть кошеля, а не весь: полный кошель заметят сразу. */
+      var share = (rng || Math.random)();
+      taken = Math.max(1, Math.round(person.money * (0.35 + share * 0.4)));
+      person.money -= taken;
+      state.player.money += taken;
+      state.stats.stealsMade = (state.stats.stealsMade || 0) + 1;
+      state.stats.moneyStolen = (state.stats.moneyStolen || 0) + taken;
+
+      /* Навык растёт от практики. */
+      var before = state.player.skills.stealth || 0;
+      state.player.skills.stealth = Math.min(100, Math.round((before + 1.2) * 10) / 10);
+      if (Bow.work && Bow.work.growSkill) {
+        Bow.work.growSkill(state.player, "thievery_pick", 1.2);
+      }
+
+      /* Тот, у кого срезали кошель, замечает пропажу позже —
+         но запоминает это навсегда. */
+      person.memory.push({
+        kind: "stolen",
+        text: "Из кошеля пропало, пока рядом крутился " + state.player.name + ".",
+        weight: 6,
+        totalHours: state.time.totalHours
+      });
+      Bow.util.trim(person.memory, 40);
+      person.attitude = Bow.util.clamp(person.attitude - 12, -100, 100);
+    } else {
+      /* Провал: кто-то увидел. Цель — тоже свидетель, но в списке
+         свидетелей она уже есть: без проверки она попадала туда
+         дважды, и «заметил» выбирался с двойным весом. */
+      var seen = witnessesAt(state, state.player.location);
+      if (seen.indexOf(person) === -1) { seen = [person].concat(seen); }
+      caughtBy = seen[Math.floor((rng ? rng() : Math.random()) * seen.length) % seen.length];
+    }
+
+    if (caughtBy) {
+      var org = caughtBy.org || (Bow.data.locations[state.player.location] || {}).org;
+      var heat = addHeat(state, org, 22);
+      var rep = Bow.work ? Bow.work.addReputation(state, org, -10) : 0;
+      if (org !== "org:guard") {
+        addHeat(state, "org:guard", 10);
+        if (Bow.work) { Bow.work.addReputation(state, "org:guard", -6); }
+      }
+
+      caughtBy.memory.push({
+        kind: "witness",
+        text: "Видел, как " + state.player.name + " лез в чужой кошель.",
+        weight: 9,
+        totalHours: state.time.totalHours
+      });
+      Bow.util.trim(caughtBy.memory, 40);
+      caughtBy.attitude = Bow.util.clamp(caughtBy.attitude - 20, -100, 100);
+
+      Bow.journal.add(state,
+        "Кража сорвалась: " + caughtBy.name + " заметил. Община " +
+        (Bow.work ? Bow.work.orgName(state, org) : "") + " знает.", "crime");
+
+      return {
+        ok: true,
+        success: false,
+        caught: true,
+        caughtBy: caughtBy.name,
+        heat: heat,
+        reputation: rep,
+        message: "Не вышло: " + caughtBy.name + " заметил. Теперь вас ищут."
+      };
+    }
+
+    if (success) {
+      Bow.journal.add(state, "Кража удалась: " + taken + " м. из кошеля " + person.name + ".", "crime");
+      return {
+        ok: true,
+        success: true,
+        caught: false,
+        taken: taken,
+        personName: person.name,
+        message: "Удалось: " + taken + " м."
+      };
+    }
+
+    Bow.journal.add(state, "Кража не удалась, но никто не видел.", "crime");
+    return {
+      ok: true,
+      success: false,
+      caught: false,
+      message: "Не вышло — но никто не заметил."
+    };
+  }
+
+  /* ---------- Карманы (0.0.6.3) ----------
+     Не каждый кошель стоит резать. Мелочь из кармана — платок,
+     огниво, медяк — берут иначе: без разреза и почти без риска,
+     но и взять там нечего. Это второй способ, а не тот же самый. */
+  function pocketChance(state, person) {
+    var skill = state.player.skills.stealth || 0;
+    var chance = 0.35 + skill / 200;
+    if (Bow.time.isNight(state)) { chance += 0.10; }
+    var seen = witnessesAt(state, state.player.location).filter(function (p) {
+      return p.id !== person.id;
+    }).length;
+    chance -= seen * 0.08;
+    return Bow.util.clamp(chance, 0.05, 0.92);
+  }
+
+  function pockets(state, personId, rng) {
+    var person = personById(state, personId);
+    if (!person || !person.alive) { return { ok: false, message: "Здесь никого нет." }; }
+    if (person.location !== state.player.location) {
+      return { ok: false, message: person.name + " не здесь." };
+    }
+
+    var roll = (rng || Math.random)();
+    Bow.time.advance(state, 1);
+    Bow.needs.applyChange(state.player, "fatigue", -1);
+
+    if (roll < pocketChance(state, person)) {
+      var c = cfg();
+      var small = Math.min(person.money, 1 + Math.round((rng ? rng() : Math.random()) * 3));
+      person.money = Math.max(0, person.money - small);
+      state.player.money += small;
+
+      /* Иногда попадается не монета, а вещь. */
+      var loot = null;
+      if ((rng ? rng() : Math.random()) < (c.pocketChance || 0.5)) {
+        loot = ["tool", "rope", "fur"][Math.floor((rng ? rng() : Math.random()) * 3) % 3];
+        Bow.economy.addItem(state.player, loot, 1);
+      }
+
+      state.stats.pocketsPicked = (state.stats.pocketsPicked || 0) + 1;
+      var before = state.player.skills.stealth || 0;
+      state.player.skills.stealth = Math.min(100, Math.round((before + 0.4) * 10) / 10);
+
+      Bow.journal.add(state, "Карман " + person.name + ": " + small + " м." +
+        (loot ? " и " + Bow.economy.findItemDef(loot).name : "") + ".", "crime");
+
+      return {
+        ok: true,
+        success: true,
+        taken: small,
+        item: loot,
+        message: "В кармане нашлось " + small + " м." +
+          (loot ? " и " + Bow.economy.findItemDef(loot).name : "") + "."
+      };
+    }
+
+    /* Провал кармана тише, чем провал кошеля: заметили, но не поймали
+       за руку — отношение падает, розыск растёт меньше. */
+    var heat = addHeat(state, person.org, Math.round((cfg().caughtHeat || 22) / 2));
+    person.attitude = Bow.util.clamp(person.attitude - 8, -100, 100);
+    person.memory.push({
+      kind: "stolen",
+      text: "Крутился рядом и лез в карман.",
+      weight: 5,
+      totalHours: state.time.totalHours
+    });
+    Bow.util.trim(person.memory, 40);
+    return { ok: true, success: false, heat: heat, message: "Пусто. И он это заметил." };
+  }
+
+  /* ---------- Мир ----------
+     Розыск спадает, если человек ведёт себя тихо. Но не забывается
+     до конца: серьёзный след остаётся. */
+  function cooldown(state) {
+    if (!state.heat) { return; }
+    Object.keys(state.heat).forEach(function (orgId) {
+      if (state.heat[orgId] > 0) {
+        state.heat[orgId] = Math.max(0, Math.round(state.heat[orgId] - 3));
+      }
+    });
+  }
+
+  /* Видит ли игрок предупреждение: «за вами следят». */
+  function isWanted(state) {
+    if (!state.heat) { return false; }
+    return Object.keys(state.heat).some(function (id) { return state.heat[id] >= 45; });
+  }
+
+  Bow.steal = {
+    attempt: attempt,
+    study: study,
+    distract: distract,
+    pockets: pockets,
+    pocketChance: pocketChance,
+    prepCount: prepCount,
+    prepBonus: prepBonus,
+    targetsAt: targetsAt,
+    successChance: successChance,
+    witnessesAt: witnessesAt,
+    heatOf: heatOf,
+    addHeat: addHeat,
+    heatWord: heatWord,
+    isWanted: isWanted,
+    HEAT_LIMIT: HEAT_LIMIT
+  };
+
+  /* Розыск спадает раз в сутки — не каждый час. */
+  Bow.bus.on("tick:day", function (state) {
+    cooldown(state);
+  });
+
+})(typeof window !== "undefined" ? window : this);

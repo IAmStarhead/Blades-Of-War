@@ -1,5 +1,0 @@
-:: StoryInit
-/* Только данные и восстановление автосохранения.
-   Ничего не рисуем: интерфейс живёт в StoryInterface. */
-<<set $game to null>>
-<<run window.BowGame && window.BowGame.loadAutosaveSilent()>>

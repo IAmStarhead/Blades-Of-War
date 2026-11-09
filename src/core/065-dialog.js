@@ -1,0 +1,231 @@
+/* ============================================================
+   BOW DIALOG — разговор как лента реплик.
+
+   Почему так: в 0.0.3 диалог показывал только реплику собеседника,
+   и было непонятно, что вообще говорит игрок. Теперь ведётся
+   стенограмма: каждая выбранная фраза игрока остаётся в ленте,
+   а ответ собеседника идёт следом.
+
+   Состояние разговора хранится в state.dialog и переживает
+   перерисовку экрана и переход по панелям.
+   ============================================================ */
+(function (global) {
+  "use strict";
+
+  var Bow = global.Bow = global.Bow || {};
+
+  /* Представление персонажа для ленты: имя и пол в одном месте. */
+  function who(person) {
+    return {
+      id: person.id,
+      name: person.name,
+      pron: person.pron,
+      role: person.role,
+      attitude: person.attitude
+    };
+  }
+
+  function node(person, nodeId) {
+    if (!person || !person.dialog) { return null; }
+    return person.dialog[nodeId] || null;
+  }
+
+  /* ---------- Начать разговор ---------- */
+  function start(state, personId) {
+    var person = state.people[personId];
+    if (!person || !person.alive) { return { ok: false, message: "Здесь никого нет." }; }
+    if (person.location !== state.player.location) {
+      return { ok: false, message: person.name + " сейчас в другом месте." };
+    }
+    if (!person.dialog) {
+      return { ok: false, message: person.name + " не расположен к разговору." };
+    }
+
+    var root = node(person, "root");
+    if (!root) { return { ok: false, message: "Не о чем говорить." }; }
+
+    /* Стенограмма: первая запись — вступительная реплика собеседника. */
+    state.dialog = {
+      personId: personId,
+      nodeId: "root",
+      visited: ["root"],
+      startedAt: state.time.totalHours,
+      log: [
+        /* Ремарка — это описание действия, а не речь. В ленте она
+           идёт отдельной строкой без подписи, чтобы не приписывать
+           собеседнику слова, которых он не говорил. */
+        { who: "narr", text: person.greet },
+        { who: "npc", text: root.text }
+      ]
+    };
+
+    person.memory.push({
+      kind: "talk",
+      text: "Разговаривал(а) с " + state.player.name + " (" + Bow.time.format(state) + ").",
+      weight: 1,
+      totalHours: state.time.totalHours
+    });
+    Bow.util.trim(person.memory, 40);
+    person.talkedToday += 1;
+    state.stats.talksMade += 1;
+    state.stats.actionsTaken += 1;
+
+    Bow.journal.add(state, "Разговор с " + person.name + ".", "talk");
+
+    return {
+      ok: true,
+      personId: personId,
+      name: person.name,
+      who: who(person),
+      message: ""
+    };
+  }
+
+  /* ---------- Выбрать вариант ответа ---------- */
+  function choose(state, choiceIndex) {
+    var d = state.dialog;
+    if (!d) { return { ok: false, message: "Разговор не начат." }; }
+
+    var person = state.people[d.personId];
+    if (!person) { return { ok: false, message: "Собеседник исчез." }; }
+
+    var current = node(person, d.nodeId);
+    if (!current || !current.choices) { return { ok: false, message: "Ответить нечего." }; }
+
+    var choice = current.choices[choiceIndex];
+    if (!choice) { return { ok: false, message: "Такого варианта нет." }; }
+
+    /* 1. Фраза игрока попадает в ленту — теперь видно, что говорит ГГ.
+       В ленту идёт живая реплика (say), а не подпись кнопки (text):
+       «Спросить про дорогу» — это действие, «Что слышно на трактовой
+       дороге?» — это то, что персонаж действительно произносит. */
+    var spoken = choice.say || choice.text;
+    d.log.push({ who: "player", text: spoken });
+    Bow.util.trim(d.log, 40);
+
+    /* 2. Отношение меняется сразу: выбор — поступок, а не текст. */
+    var attitudeBefore = person.attitude;
+    if (typeof choice.attitude === "number" && choice.attitude !== 0) {
+      person.attitude = Bow.util.clamp(person.attitude + choice.attitude, -100, 100);
+      person.memory.push({
+        kind: "dialog",
+        text: (choice.attitude > 0 ? "Остался доволен разговором: " : "Остался недоволен разговором: ") +
+              (choice.journal || choice.text),
+        weight: Math.abs(choice.attitude),
+        totalHours: state.time.totalHours
+      });
+      Bow.util.trim(person.memory, 40);
+    }
+
+    /* 3. Значимая реплика идёт в журнал. */
+    if (choice.journal) {
+      Bow.journal.add(state, person.name + ": " + choice.journal, "talk");
+    }
+
+
+    var attitudeChanged = person.attitude !== attitudeBefore;
+
+    /* 3а. Молва: о разговоре узнают в общине собеседника.
+       Слух расходится, только если разговор того стоил: вежливая
+       беседа на ходу ничего не меняет, а ссора или услуга — да.
+       Это честное правило, а не «+1 за каждый клик». */
+    function spreadWord(delta) {
+      if (!person.org || !delta) { return 0; }
+      return Bow.work ? Bow.work.addReputation(state, person.org, delta) : 0;
+    }
+
+    /* 4. Закрытие разговора. */
+    if (choice.close) {
+      /* Прощальная реплика собеседника, чтобы лента не обрывалась. */
+      d.log.push({ who: "narr", text: closingLine(person, choice) });
+
+      var summary = {
+        personId: d.personId,
+        name: person.name,
+        attitude: person.attitude,
+        attitudeChanged: attitudeChanged,
+        delta: person.attitude - attitudeBefore,
+        log: d.log.slice()
+      };
+
+      state.dialog = null;
+      /* Молва о беседе: сильная симпатия или обида доходит до общины. */
+      if (summary.delta >= 2) { spreadWord(1); }
+      else if (summary.delta <= -2) { spreadWord(-1); }
+      Bow.time.advance(state, 1);
+
+      return { ok: true, closed: true, summary: summary, message: "" };
+    }
+
+    /* 5. Переход к следующему узлу. */
+    var next = node(person, choice.goto);
+    if (!next) {
+      d.log.push({ who: "narr", text: "Собеседник молчит, и разговор сам собой сходит на нет." });
+      var sum2 = {
+        personId: d.personId, name: person.name, attitude: person.attitude,
+        attitudeChanged: attitudeChanged, delta: person.attitude - attitudeBefore, log: d.log.slice()
+      };
+      state.dialog = null;
+      Bow.time.advance(state, 1);
+      return { ok: true, closed: true, summary: sum2, message: "" };
+    }
+
+    d.log.push({ who: "npc", text: next.text });
+    Bow.util.trim(d.log, 40);
+
+    d.nodeId = choice.goto;
+    if (d.visited.indexOf(choice.goto) === -1) { d.visited.push(choice.goto); }
+
+    return {
+      ok: true,
+      personId: d.personId,
+      name: person.name,
+      attitudeChanged: attitudeChanged,
+      delta: person.attitude - attitudeBefore,
+      message: ""
+    };
+  }
+
+  /* Прощальная фраза: зависит от того, как закончился разговор.
+     Это не отдельные данные, а честная реакция на последний выбор. */
+  function closingLine(person, choice) {
+    if (choice.attitude < 0) {
+      return person.pron === "f" ? "Она отворачивается." : "Он отворачивается.";
+    }
+    if (choice.attitude > 0) {
+      return person.pron === "f" ? "Она кивает вам вслед." : "Он кивает вам вслед.";
+    }
+    return person.pron === "f" ? "Она возвращается к своему делу." : "Он возвращается к своему делу.";
+  }
+
+  function close(state) {
+    var d = state.dialog;
+    if (!d) { return { ok: true, closed: true, message: "" }; }
+    state.dialog = null;
+    return { ok: true, closed: true, message: "" };
+  }
+
+  function currentNode(state) {
+    var d = state.dialog;
+    if (!d) { return null; }
+    var person = state.people[d.personId];
+    var n = node(person, d.nodeId);
+    if (!n) { return null; }
+    return {
+      node: n,
+      personId: d.personId,
+      name: person.name,
+      person: person,
+      who: who(person),
+      log: d.log || []
+    };
+  }
+
+  Bow.dialog = {
+    start: start,
+    choose: choose,
+    close: close,
+    currentNode: currentNode
+  };
+
+})(typeof window !== "undefined" ? window : this);

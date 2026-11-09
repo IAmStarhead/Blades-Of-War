@@ -1,0 +1,846 @@
+/* ============================================================
+   BOW STATE — создание, проверка и миграция состояния.
+   Модуль чистый: не знает ни про SugarCube, ни про DOM.
+   Принимает объект данных и возвращает новое состояние.
+   ============================================================ */
+(function (global) {
+  "use strict";
+
+  var Bow = global.Bow = global.Bow || {};
+
+  function freshBody() {
+    var b = {};
+    (Bow.data.bodyParts || [
+      { key: "head" }, { key: "chest" }, { key: "stomach" },
+      { key: "left_arm" }, { key: "right_arm" }, { key: "left_leg" }, { key: "right_leg" }
+    ]).forEach(function (part) {
+      b[part.key] = { hp: 100, max: 100, bandaged: false, lost: false };
+    });
+    return b;
+  }
+
+  function freshOrgans() {
+    var o = {};
+    (Bow.data.organs || [
+      { key: "left_eye" }, { key: "right_eye" }, { key: "left_ear" }, { key: "right_ear" }
+    ]).forEach(function (org) {
+      o[org.key] = true;
+    });
+    return o;
+  }
+
+  function ensureAnatomy(person, defAttrs, defSkills) {
+    if (!person) { return person; }
+    if (!Bow.util.isPlainObject(person.attrs)) {
+      person.attrs = Bow.util.clone(defAttrs || { strength: 12, toughness: 12, dexterity: 12, perception: 14 });
+    } else {
+      var baseA = defAttrs || { strength: 12, toughness: 12, dexterity: 12, perception: 14 };
+      ["strength", "toughness", "dexterity", "perception"].forEach(function (k) {
+        if (typeof person.attrs[k] !== "number") { person.attrs[k] = baseA[k] || 12; }
+      });
+    }
+    if (!Bow.util.isPlainObject(person.skills)) { person.skills = {}; }
+    var baseS = defSkills || (Bow.data.player && Bow.data.player.skills) || {};
+    Object.keys(baseS).forEach(function (sk) {
+      if (typeof person.skills[sk] !== "number") {
+        person.skills[sk] = baseS[sk];
+      }
+    });
+    if (!Bow.util.isPlainObject(person.body)) {
+      person.body = freshBody();
+    } else {
+      var fb = freshBody();
+      Object.keys(fb).forEach(function (bk) {
+        if (!Bow.util.isPlainObject(person.body[bk])) { person.body[bk] = fb[bk]; }
+      });
+    }
+    if (!Bow.util.isPlainObject(person.organs)) {
+      person.organs = freshOrgans();
+    } else {
+      var fo = freshOrgans();
+      Object.keys(fo).forEach(function (ok) {
+        if (typeof person.organs[ok] !== "boolean") { person.organs[ok] = true; }
+      });
+    }
+    /* Синхронизируем постоянные травмы с конечностями и органами. */
+    (person.injuries || []).forEach(function (inj) {
+      if (inj.key === "eye") { person.organs.left_eye = false; }
+      if (inj.key === "ear") { person.organs.left_ear = false; }
+      if (inj.key === "arm_lost" && person.body.left_arm) {
+        person.body.left_arm.lost = true;
+        person.body.left_arm.hp = 0;
+      }
+      if (inj.key === "leg_lost" && person.body.left_leg) {
+        person.body.left_leg.lost = true;
+        person.body.left_leg.hp = 0;
+      }
+    });
+    return person;
+  }
+
+  /* Эффективное значение характеристики с учётом ран конечностей и утраты органов (как в Kenshi). */
+  function effectiveAttr(person, key) {
+    if (!person) { return 10; }
+    ensureAnatomy(person);
+    var base = (person.attrs && typeof person.attrs[key] === "number") ? person.attrs[key] : 12;
+    var pen = 0;
+    var b = person.body || {};
+    var o = person.organs || {};
+    if (key === "strength") {
+      if (b.left_arm && b.left_arm.lost) { pen += base * 0.35 + 4; }
+      else if (b.left_arm && b.left_arm.hp < 60) { pen += (60 - b.left_arm.hp) * 0.08; }
+      if (b.right_arm && b.right_arm.lost) { pen += base * 0.40 + 5; }
+      else if (b.right_arm && b.right_arm.hp < 60) { pen += (60 - b.right_arm.hp) * 0.09; }
+      if (b.chest && b.chest.hp < 55) { pen += (55 - b.chest.hp) * 0.08; }
+    } else if (key === "dexterity") {
+      if (b.right_arm && b.right_arm.lost) { pen += base * 0.45 + 6; }
+      else if (b.right_arm && b.right_arm.hp < 65) { pen += (65 - b.right_arm.hp) * 0.10; }
+      if (b.left_arm && b.left_arm.lost) { pen += base * 0.25 + 3; }
+      else if (b.left_arm && b.left_arm.hp < 65) { pen += (65 - b.left_arm.hp) * 0.07; }
+    } else if (key === "perception") {
+      if (o.left_eye === false) { pen += 16; }
+      if (o.right_eye === false) { pen += 18; }
+      if (o.left_ear === false) { pen += 7; }
+      if (o.right_ear === false) { pen += 7; }
+      if (b.head && b.head.hp < 60) { pen += (60 - b.head.hp) * 0.12; }
+    } else if (key === "toughness") {
+      if (b.stomach && b.stomach.hp < 45) { pen += (45 - b.stomach.hp) * 0.06; }
+    }
+    return Math.max(1, Math.round((base - pen) * 10) / 10);
+  }
+
+  /* Эффективный навык с учётом травм конечностей и органов (для UI в стиле Kenshi и расчётов). */
+  function effectiveSkill(person, key) {
+    if (!person || !person.skills) { return 0; }
+    ensureAnatomy(person);
+    var base = typeof person.skills[key] === "number" ? person.skills[key] : 0;
+    var b = person.body || {};
+    var o = person.organs || {};
+    var mult = 1;
+    var flat = 0;
+
+    var armHurt = (b.right_arm && b.right_arm.lost) || (b.left_arm && b.left_arm.lost);
+    var legHurt = (b.right_leg && b.right_leg.lost) || (b.left_leg && b.left_leg.lost);
+    var eyeLost = (o.left_eye === false ? 1 : 0) + (o.right_eye === false ? 1 : 0);
+    var earLost = (o.left_ear === false ? 1 : 0) + (o.right_ear === false ? 1 : 0);
+
+    if (["blades", "axes", "blunt", "polearms", "heavy_weapons", "combat", "melee_defense", "weaponsmith", "armorsmith"].indexOf(key) !== -1) {
+      if (b.right_arm && b.right_arm.lost) { mult *= 0.55; }
+      else if (b.right_arm && b.right_arm.hp < 60) { mult *= (0.72 + (Math.max(0, b.right_arm.hp) / 60) * 0.28); }
+      if (b.left_arm && b.left_arm.lost) { mult *= (key === "heavy_weapons" || key === "polearms" ? 0.35 : 0.78); }
+    }
+    if (["bows", "precision"].indexOf(key) !== -1) {
+      if (armHurt) { mult *= 0.35; }
+      if (eyeLost === 1) { mult *= 0.68; }
+      if (eyeLost >= 2) { mult *= 0.15; }
+    }
+    if (["athletics", "dodge", "swimming", "stealth"].indexOf(key) !== -1) {
+      if (legHurt) { mult *= 0.42; }
+      else {
+        var minLeg = Math.min((b.left_leg ? b.left_leg.hp : 100), (b.right_leg ? b.right_leg.hp : 100));
+        if (minLeg < 65) { mult *= (0.65 + (Math.max(0, minLeg) / 65) * 0.35); }
+      }
+      if (earLost > 0 && key === "dodge") { flat += earLost * 3; }
+    }
+    if (["thievery_pick", "lockpicking", "medicine", "cooking", "engineering"].indexOf(key) !== -1) {
+      if (b.right_arm && b.right_arm.lost) { mult *= 0.52; }
+    }
+    return Math.max(0, Math.round((base * mult - flat) * 10) / 10);
+  }
+
+  /* Переносимый вес зависит от Силы (как в Kenshi). */
+  function maxCarryWeight(person) {
+    var str = effectiveAttr(person, "strength");
+    return Math.round((16 + str * 0.55) * 10) / 10;
+  }
+  var MIGRATIONS = {
+    /* 0.0.2 → 0.0.3: добавлены диалоги, визиты, погода.
+       Старые сохранения продолжают работать: недостающие поля
+       создаются, а не приводят к отказу загрузки. */
+    "0.0.2": function (state) {
+      if (!("dialog" in state)) { state.dialog = null; }
+      if (!Bow.util.isPlainObject(state.visits)) { state.visits = {}; }
+      if (!Bow.util.isPlainObject(state.flags)) { state.flags = {}; }
+      if (!("weather" in state.flags)) { state.flags.weather = null; }
+
+      /* Добавляем новые поля персонажам из данных, не теряя память. */
+      var fresh = Bow.state.create(Bow.data, state.seed || 1);
+      Object.keys(state.people || {}).forEach(function (id) {
+        var p = state.people[id];
+        var f = fresh.people[id];
+        if (!f) { return; }
+        if (!p.appearance) { p.appearance = f.appearance; }
+        if (!p.dialog) { p.dialog = f.dialog; }
+        if (!p.traits) { p.traits = f.traits; }
+        if (!p.lines) { p.lines = f.lines; }
+      });
+
+      state.version = "0.0.3";
+      return state;
+    },
+
+    /* 0.0.3 → 0.0.4: труд, навыки и отношение общин.
+       Старое сохранение получает нейтральную репутацию: игрок ещё
+       ничего не сделал, и общины его не знают. Это не потеря
+       прогресса, а честный старт новой системы. */
+    "0.0.3": function (state) {
+      if (!Bow.util.isPlainObject(state.reputation)) { state.reputation = {}; }
+      Object.keys(state.orgs || {}).forEach(function (id) {
+        if (typeof state.reputation[id] !== "number") { state.reputation[id] = 0; }
+        var org = state.orgs[id];
+        if (org && typeof org.wealth !== "number") { org.wealth = 50; }
+        if (org && typeof org.unrest !== "number") { org.unrest = 20; }
+      });
+
+      if (!Bow.util.isPlainObject(state.stats)) { state.stats = {}; }
+      if (typeof state.stats.jobsMade !== "number") { state.stats.jobsMade = 0; }
+      if (typeof state.stats.moneyEarned !== "number") { state.stats.moneyEarned = 0; }
+
+      state.version = "0.0.4";
+      return state;
+    },
+
+    /* 0.0.4 → 0.0.5: кражи, свидетели, розыск и кошели жителей.
+       Старое сохранение получает чистый розыск: игрок ещё ничего
+       не совершил в терминах новой системы. */
+    "0.0.4": function (state) {
+      if (!Bow.util.isPlainObject(state.heat)) { state.heat = {}; }
+      Object.keys(state.orgs || {}).forEach(function (id) {
+        if (typeof state.heat[id] !== "number") { state.heat[id] = 0; }
+      });
+
+      var fresh = Bow.state.create(Bow.data, state.seed || 1);
+      Object.keys(state.people || {}).forEach(function (id) {
+        var p = state.people[id];
+        var f = fresh.people[id];
+        if (typeof p.money !== "number") { p.money = f ? f.money : 0; }
+        if (!p.skills) { p.skills = {}; }
+        if (typeof p.skills.stealth !== "number") {
+          p.skills.stealth = f && f.skills ? f.skills.stealth : 10;
+        }
+      });
+      if (state.player && state.player.skills && typeof state.player.skills.stealth !== "number") {
+        state.player.skills.stealth = fresh.player.skills.stealth;
+      }
+
+      if (!Bow.util.isPlainObject(state.stats)) { state.stats = {}; }
+      if (typeof state.stats.stealsMade !== "number") { state.stats.stealsMade = 0; }
+      if (typeof state.stats.moneyStolen !== "number") { state.stats.moneyStolen = 0; }
+
+      state.version = "0.0.5";
+      return state;
+    },
+
+    /* 0.0.5 → 0.0.6: бой, оружие и снаряжение жителей.
+       Старое сохранение получает пустой слот боя и снаряжение из
+       данных: оружие — часть мира, а не награда за новую игру. */
+    "0.0.5": function (state) {
+      if (!("fight" in state)) { state.fight = null; }
+      if (!Bow.util.isPlainObject(state.flags)) { state.flags = {}; }
+      if (!("lastFight" in state.flags)) { state.flags.lastFight = null; }
+      if (!Array.isArray(state.player.conditions)) { state.player.conditions = []; }
+
+      var fresh = Bow.state.create(Bow.data, state.seed || 1);
+      Object.keys(state.people || {}).forEach(function (id) {
+        var p = state.people[id];
+        var f = fresh.people[id];
+        if (!p.skills) { p.skills = {}; }
+        if (typeof p.skills.combat !== "number") {
+          p.skills.combat = f && f.skills ? f.skills.combat : 10;
+        }
+        if (!("weapon" in p)) { p.weapon = f ? f.weapon : null; }
+        if (!("armor" in p)) { p.armor = f ? f.armor : null; }
+      });
+
+      if (!Bow.util.isPlainObject(state.stats)) { state.stats = {}; }
+      if (typeof state.stats.fightsWon !== "number") { state.stats.fightsWon = 0; }
+      if (typeof state.stats.fightsLost !== "number") { state.stats.fightsLost = 0; }
+      if (typeof state.stats.sparsMade !== "number") { state.stats.sparsMade = 0; }
+
+      state.version = "0.0.6";
+      return state;
+    },
+
+    /* 0.0.6 → 0.0.6.1: поле боя, стража, клетка, уличные встречи
+       и постоянные травмы. Старое сохранение не теряет ничего:
+       недостающие поля создаются пустыми. */
+    "0.0.6": function (state) {
+      if (!("jail" in state)) { state.jail = null; }
+      if (!("guard" in state)) { state.guard = null; }
+      if (!("encounter" in state)) { state.encounter = null; }
+      if (!("dead" in state)) { state.dead = null; }
+      if (!Bow.util.isPlainObject(state.flags)) { state.flags = {}; }
+      if (!("guardAt" in state.flags)) { state.flags.guardAt = null; }
+      if (!("hunted" in state.flags)) { state.flags.hunted = false; }
+
+      if (!Array.isArray(state.player.injuries)) { state.player.injuries = []; }
+      Object.keys(state.people || {}).forEach(function (id) {
+        var p = state.people[id];
+        if (!Array.isArray(p.injuries)) { p.injuries = []; }
+      });
+
+      if (!Bow.util.isPlainObject(state.heat)) { state.heat = {}; }
+      if (typeof state.heat["org:guard"] !== "number") { state.heat["org:guard"] = 0; }
+      if (!Bow.util.isPlainObject(state.orgs) || !state.orgs["org:guard"]) {
+        var fresh = Bow.state.create(Bow.data, state.seed || 1);
+        state.orgs["org:guard"] = fresh.orgs["org:guard"];
+        state.reputation["org:guard"] = 0;
+      }
+      if (!Bow.util.isPlainObject(state.reputation)) { state.reputation = {}; }
+      if (typeof state.reputation["org:guard"] !== "number") { state.reputation["org:guard"] = 0; }
+
+      state.version = "0.0.6.1";
+      return state;
+    },
+
+    /* 0.0.6.1 → 0.0.6.2: цель удара, розыск с опознанием, увечья
+       от тяжёлых ударов. Новых обязательных полей нет — только
+       флаги, которые читаются как «не задано». */
+    "0.0.6.1": function (state) {
+      if (!Bow.util.isPlainObject(state.flags)) { state.flags = {}; }
+      if (!("huntedUntil" in state.flags)) { state.flags.huntedUntil = null; }
+      if (!("huntedHeat" in state.flags)) { state.flags.huntedHeat = null; }
+
+      /* Стражу, заставшую игрока по старому сохранению, считаем
+         пришедшей: иначе после обновления нельзя ни сдаться, ни
+         откупиться, и сохранение застревает в тупике. */
+      if (state.guard && state.guard.phase === "demand" && !state.guard.arrived) {
+        state.guard.arrived = true;
+      }
+
+      state.version = "0.0.6.2";
+      return state;
+    },
+
+    /* 0.0.6.2 → 0.0.6.3: подготовка кражи, карманы, перевязка ран,
+       доверие отряда и все шесть навыков в расчётах. Старые сейвы
+       получают чистую подготовку и доступную перевязку. */
+    "0.0.6.2": function (state) {
+      if (!Bow.util.isPlainObject(state.steal)) { state.steal = {}; }
+      if (state.player && !("lastTreat" in state.player)) { state.player.lastTreat = null; }
+
+      var skillKeys = ["combat", "survival", "stealth", "leadership", "trade", "medicine"];
+      var fresh = Bow.state.create(Bow.data, state.seed || 1);
+      if (state.player) {
+        if (!Bow.util.isPlainObject(state.player.skills)) { state.player.skills = {}; }
+        skillKeys.forEach(function (k) {
+          if (typeof state.player.skills[k] !== "number") {
+            state.player.skills[k] = fresh.player.skills[k] || 10;
+          }
+        });
+      }
+      Object.keys(state.people || {}).forEach(function (id) {
+        var p = state.people[id];
+        var f = fresh.people[id];
+        if (!Bow.util.isPlainObject(p.skills)) { p.skills = {}; }
+        skillKeys.forEach(function (k) {
+          if (typeof p.skills[k] !== "number") {
+            p.skills[k] = (f && f.skills && typeof f.skills[k] === "number") ? f.skills[k] : 10;
+          }
+        });
+      });
+
+      if (!Bow.util.isPlainObject(state.stats)) { state.stats = {}; }
+      if (typeof state.stats.pocketsPicked !== "number") { state.stats.pocketsPicked = 0; }
+      if (typeof state.stats.treats !== "number") { state.stats.treats = 0; }
+
+      state.version = "0.0.6.3";
+      return state;
+    },
+
+    /* 0.0.6.3 → 0.0.7: главное графическое окно сцены и полуручной
+       бой в духе Kenshi (тактические приказы герою и отряду + пауза). */
+    "0.0.6.3": function (state) {
+      if (state.fight && !Bow.util.isPlainObject(state.fight.orders)) {
+        state.fight.orders = {
+          stance: "press",
+          aim: "body",
+          squad: "focus",
+          speed: "paused"
+        };
+      }
+      state.version = "0.0.7";
+      return state;
+    },
+
+    /* 0.0.7 → 0.0.7.1: дистанция и сближение на поле боя, удержание
+       позиции отрядом и исправление выхода в клетку после поражения страже. */
+    "0.0.7": function (state) {
+      if (state.fight && state.fight.orders && state.fight.orders.squad === "guard") {
+        state.fight.orders.squad = "hold";
+      }
+      state.version = "0.0.7.1";
+      return state;
+    },
+
+    /* 0.0.7.1 → 0.0.7.2: плавная погода 60 FPS, разведённые хитбоксы сцены и выравнивание окон. */
+    "0.0.7.1": function (state) {
+      state.version = "0.0.7.2";
+      return state;
+    },
+
+    /* 0.0.7.2 → 0.0.7.3: минутное время, чисто пошаговый бой, лутаемые трупы и канон Хладных Ветров. */
+    "0.0.7.2": function (state) {
+      if (state.time && typeof state.time.minute !== "number") { state.time.minute = 0; }
+      if (!Array.isArray(state.corpses)) { state.corpses = []; }
+      if (state.fight && state.fight.orders) { state.fight.orders.speed = "paused"; }
+      if (state.orgs && state.orgs["org:coldwind"]) {
+        state.orgs["org:coldwind"].short = "Хладные Ветра";
+      }
+      state.version = "0.0.7.3";
+      return state;
+    },
+
+    /* 0.0.7.3 → 0.0.7.4: характеристики и древо навыков в духе Kenshi, конечности и органы,
+       автономные постоянные задачи, авто-еда и спокойный автобой. */
+    "0.0.7.3": function (state) {
+      if (state.player) {
+        ensureAnatomy(state.player, Bow.data.player.attrs, Bow.data.player.skills);
+        if (typeof state.player.autoEat !== "boolean") { state.player.autoEat = true; }
+      }
+      if (!("task" in state)) { state.task = null; }
+      var fresh = Bow.state.create(Bow.data, state.seed || 1);
+      Object.keys(state.people || {}).forEach(function (id) {
+        var p = state.people[id];
+        var f = fresh.people[id];
+        ensureAnatomy(p, f ? f.attrs : null, f ? f.skills : null);
+        if (!Array.isArray(p.pouch)) { p.pouch = f && Array.isArray(f.pouch) ? f.pouch.slice() : []; }
+      });
+      if (state.fight && state.fight.orders && state.fight.orders.speed === "paused") {
+        state.fight.orders.speed = "auto";
+      }
+      state.version = "0.0.7.4";
+      return state;
+    },
+
+    /* 0.0.7.4 → 0.0.7.5: отрицательное здоровье частей тела и кома как в Kenshi,
+       гниение и исчезновение трупов со временем, единая непрерывная работа. */
+    "0.0.7.4": function (state) {
+      if (!("coma" in state)) { state.coma = null; }
+      if (Array.isArray(state.corpses)) {
+        var nowH = (state.time && typeof state.time.totalHours === "number") ? state.time.totalHours : 0;
+        state.corpses.forEach(function (c) {
+          if (typeof c.createdAtHours !== "number") { c.createdAtHours = nowH; }
+        });
+      }
+      state.version = "0.0.7.5";
+      return state;
+    },
+
+    /* 0.0.7.5 → 0.0.7.6: 8 авторских северных композиций (помещения vs улица). */
+    "0.0.7.5": function (state) {
+      state.version = "0.0.7.6";
+      return state;
+    },
+
+    /* 0.0.7.6 → 0.0.7.7: саундтрек без щипковых ударов по струнам + полное отображение времени в шапке. */
+    "0.0.7.6": function (state) {
+      state.version = "0.0.7.7";
+      return state;
+    },
+
+    /* 0.0.7.7 → 0.0.8.0: уличный грув Enigma, боевая музыка Skyrim, сетка 7×4, стеки отрядов и заставка боя. */
+    "0.0.7.7": function (state) {
+      state.version = "0.0.8.0";
+      return state;
+    },
+
+    /* 0.0.8.0 → 0.0.8.1: 3 оркестровые темы боя Skyrim, гексы 7×5 (King's Bounty / Heroes III), хитбокс по силуэту и живая клетка. */
+    "0.0.8.0": function (state) {
+      if (state.jail && typeof state.jail.minutesLeft !== "number") {
+        state.jail.minutesLeft = Math.max(0, Math.round((state.jail.hoursLeft || 1) * 60));
+        state.jail._syncedHours = state.jail.hoursLeft;
+      }
+      state.version = "0.0.8.1";
+      return state;
+    },
+
+    "0.0.8.1": function (state) {
+      if (state.player && state.player.skills && typeof state.player.skills.lockpicking !== "number") {
+        state.player.skills.lockpicking = 5;
+      }
+      if (state.jail) {
+        if (typeof state.jail.lockTier !== "number") { state.jail.lockTier = 1; }
+        if (typeof state.jail.lockProgress !== "number") { state.jail.lockProgress = 0; }
+        if (typeof state.jail.picking !== "boolean") { state.jail.picking = false; }
+        if (!state.jail.guardPhase) { state.jail.guardPhase = "watching"; }
+        if (typeof state.jail.sweetSpot !== "number") { state.jail.sweetSpot = 28; }
+        if (typeof state.jail.pinHp !== "number") { state.jail.pinHp = 100; }
+      }
+      state.version = "0.0.8.2";
+      return state;
+    },
+
+    /* 0.0.8.2 → 0.0.9.0: изометрический стиль «Сумрачный Брод», Point-and-Click, пошаговый бой по умолчанию и запекание звука. */
+    "0.0.8.2": function (state) {
+      if (state.fight && state.fight.orders && state.fight.orders.speed === "auto") {
+        state.fight.orders.speed = "paused";
+      }
+      state.version = "0.0.9.0";
+      return state;
+    },
+
+    /* 0.0.9.0 → 0.0.9.1: полный экран 100vw×100vh, бесклеточная изометрия с дверями, бой Kenshi в локации (режим агрессии), спрайты 96×112 и динамичный саундтрек. */
+    "0.0.9.0": function (state) {
+      if (!("skirmish" in state)) { state.skirmish = null; }
+      state.version = "0.0.9.1";
+      return state;
+    },
+
+    /* 0.0.9.1 → 0.0.9.2: честная глобальная пауза с отложенными приказами, выбор ПК/Телефон, гранёный стиль Zomboid без контура и кукла снаряжения из 8 слотов. */
+    "0.0.9.1": function (state) {
+      if (state.player) {
+        if (!Bow.util.isPlainObject(state.player.slots)) {
+          state.player.slots = {
+            head: null, armor: null, hands: null, legs: null,
+            boots: null, weapon: null, weapon2: null, offhand: null
+          };
+        }
+        if (!Bow.util.isPlainObject(state.player.slotsLocked)) {
+          state.player.slotsLocked = {};
+        }
+        if (state.player.activeWeaponSet !== 1 && state.player.activeWeaponSet !== 2) {
+          state.player.activeWeaponSet = 1;
+        }
+      }
+      if (!("pendingOrder" in state)) { state.pendingOrder = null; }
+      state.version = "0.0.9.2";
+      return state;
+    },
+
+    /* 0.0.9.2 → 0.0.9.2f: исправление модального окна выбора устройства, HiDPI-чёткость без размытия и чистая средневековая типографика без цветных эмодзи. */
+    "0.0.9.2": function (state) {
+      state.version = "0.0.9.2f";
+      return state;
+    },
+
+    /* 0.0.9.2f → 0.0.9.3: переезд Студёного Брода на 3D-движок Vite + Three.js, честная одежда Kenshi в слотах и отрубаемые конечности на сцене. */
+    "0.0.9.2f": function (state) {
+      if (!Array.isArray(state.severedLimbs)) { state.severedLimbs = []; }
+      if (state.player && Array.isArray(state.player.inventory)) {
+        var baseGear = ["item:linen_shirt", "item:cloth_pants", "item:simple_shoes"];
+        baseGear.forEach(function (gid) {
+          var exists = state.player.inventory.some(function (e) { return e && e.itemId === gid; });
+          if (!exists) { state.player.inventory.push({ itemId: gid, qty: 1 }); }
+        });
+      }
+      state.version = "0.0.9.3";
+      return state;
+    }
+  };
+
+  function create(data, seed) {
+    var cal = data.calendar;
+    var rng = Bow.rng.make(seed);
+
+    var state = {
+      version: data.meta.version,
+      seed: seed,
+      createdAt: null, // заполняется адаптером: Date.now() запрещён в чистом ядре
+
+      time: {
+        year: cal.startYear,
+        month: cal.startMonth,
+        day: cal.startDay,
+        hour: cal.startHour,
+        minute: 0,
+        totalHours: 0,
+        scale: "paused"   // paused | 1x | 4x
+      },
+
+      player: {
+        id: data.player.id,
+        name: data.player.name,
+        age: data.player.age,
+        pron: data.player.pron,
+        role: data.player.role,
+        status: data.player.status,
+        location: data.meta.startLocation,
+        attrs: Bow.util.clone(data.player.attrs || { strength: 14, toughness: 12, dexterity: 15, perception: 16 }),
+        skills: Bow.util.clone(data.player.skills),
+        needs: Bow.util.clone(data.player.needs),
+        body: freshBody(),
+        organs: freshOrgans(),
+        autoEat: true,
+        money: data.player.money,
+        inventory: Bow.util.clone(data.player.inventory),
+        slots: {
+          head: null,
+          armor: "item:linen_shirt",
+          hands: null,
+          legs: "item:cloth_pants",
+          boots: "item:simple_shoes",
+          weapon: "item:knife",
+          weapon2: null,
+          offhand: null
+        },
+        slotsLocked: {},
+        activeWeaponSet: 1,
+        conditions: [],
+        /* Статус жизни явный: бой и события проверяют его напрямую,
+           и «поля нет» не должно означать «мёртв». */
+        alive: true,
+        /* Постоянные травмы: [{ key, at }]. Навсегда, с последствиями. */
+        injuries: [],
+        /* Час последней перевязки (null — ещё ни разу не лечили). */
+        lastTreat: null,
+        memory: []
+      },
+
+      people: {},
+      orgs: Bow.util.clone(data.orgs),
+      /* Отношение каждой общины к игроку: { "org:brod": 0 }. */
+      reputation: {},
+      /* Розыск по общинам: насколько ищут виновника. */
+      heat: {},
+      /* Подготовка к краже по целям: { "person:liva": { study, distract } }. */
+      steal: {},
+      journal: [],
+      events: [],
+      flags: {},
+      /* Текущая автономная задача (как в Kenshi): { key, location, elapsedMin, cycles, itemsGained, moneyGained } */
+      task: null,
+      /* Текущий разговор: { personId, nodeId, visited[], startedAt } */
+      dialog: null,
+      /* Текущий полководческий бой отрядов/стеков: { personId, mode, phase, round, log[], witnesses[], units[] } */
+      fight: null,
+      /* Живая бесклеточная схватка в локации (Kenshi-режим с тактической паузой): { active, paused, mode, location, units[], guardTimer, ... } */
+      skirmish: null,
+      /* Назначенный приказ мира/паузы: { kind, tone, wx, wy, loc, personId, corpseId, act, label } */
+      pendingOrder: null,
+      /* Тюрьма: { hoursLeft, reason, since } — пока не null, игрок в клетке. */
+      jail: null,
+      /* Стража на улице: { phase, squad[], heatAt } */
+      guard: null,
+      /* Уличная встреча: { kind, robber, phase } */
+      encounter: null,
+      /* Трупы на локациях: [{ id, personId, roleKey, name, role, location, money, items[], looted, killedAt }] */
+      corpses: [],
+      /* Отрубленные в бою конечности на локациях (0.0.9.3): [{ id, location, wx, wy, partKey, female, sleeveColor, bootColor, angle }] */
+      severedLimbs: [],
+      /* Бессознательное состояние при минусовом здоровье головы/груди/живота (как в Kenshi):
+         { partKey, partLabel, sinceHours } — сам не встанет, пока кто-нибудь не перевяжет. */
+      coma: null,
+      /* Смерть: { cause, text, hours }. Игра после неё не продолжается. */
+      dead: null,
+      /* Счётчик визитов в локации — для сюжетных условий */
+      visits: {},
+
+      stats: {
+        hoursPlayed: 0,
+        actionsTaken: 0,
+        tradesMade: 0,
+        talksMade: 0,
+        fightsWon: 0,
+        fightsLost: 0,
+        sparsMade: 0,
+        pocketsPicked: 0,
+        treats: 0
+      }
+    };
+
+    /* Персонажи копируются в состояние: дальше мир живёт своей жизнью. */
+    data.people.forEach(function (p) {
+      state.people[p.id] = {
+        id: p.id,
+        key: p.key,
+        name: p.name,
+        age: p.age,
+        pron: p.pron,
+        role: p.role,
+        location: p.location,
+        org: p.org,
+        skills: Bow.util.clone(p.skills),
+        needs: Bow.util.clone(p.needs),
+        traits: p.traits.slice(),
+        about: p.about,
+        appearance: Bow.util.clone(p.appearance || {}),
+        dialog: Bow.util.clone(p.dialog || null),
+        greet: p.greet,
+        lines: p.lines.slice(),
+        alive: true,
+        /* Память о значимых поступках игрока: { text, kind, weight, day } */
+        memory: [],
+        /* Личное отношение к игроку, -100..100 */
+        attitude: 0,
+        /* Постоянные травмы жителя: тоже навсегда. */
+        injuries: [],
+        /* Кошель: из него платят и его же можно лишиться. */
+        money: typeof p.money === "number" ? p.money : 0,
+        /* Оружие и броня берутся из данных и остаются на нём:
+           отобрали топор — он и в бою стал слабее. */
+        weapon: (p.gear && p.gear.weapon) || null,
+        armor: (p.gear && p.gear.armor) || null,
+        pouch: Array.isArray(p.pouch) ? p.pouch.slice() : [],
+        attrs: {
+          strength: Math.max(8, Math.round(10 + (p.skills.combat || 10) * 0.35)),
+          toughness: Math.max(8, Math.round(10 + (p.skills.combat || 10) * 0.3 + (p.skills.survival || 10) * 0.15)),
+          dexterity: Math.max(8, Math.round(10 + (p.skills.stealth || 10) * 0.3 + (p.skills.combat || 10) * 0.2)),
+          perception: Math.max(8, Math.round(10 + (p.skills.survival || 10) * 0.35))
+        },
+        body: freshBody(),
+        organs: freshOrgans(),
+        talkedToday: 0
+      };
+      ensureAnatomy(state.people[p.id]);
+    });
+
+    /* Все общины начинают с нейтрального отношения, розыска нет. */
+    Object.keys(state.orgs).forEach(function (id) {
+      state.reputation[id] = 0;
+      state.heat[id] = 0;
+    });
+
+    /* Отмечаем, что игрок уже здесь (для затухания и условий). */
+    state.visits[data.meta.startLocation] = 1;
+    /* Погода и атмосфера первой сцены. Считаются здесь, а не в UI:
+       это часть состояния и должна попадать в сохранение. */
+    var seedRng = Bow.rng.make(seed + 7);
+    state.flags.weather = Bow.events.weatherOf(state, seedRng);
+    state.flags.ambience = Bow.events.ambience(state, seedRng);
+
+    /* Стартовая запись журнала — часть состояния, а не UI. */
+    state.journal.push({
+      totalHours: 0,
+      day: state.time.day,
+      month: state.time.month,
+      year: state.time.year,
+      hour: state.time.hour,
+      kind: "system",
+      text: "Вы прибыли в " + data.meta.settlementName + ". Ветер с севера, дорога за спиной, в кармане " + state.player.money + " монет."
+    });
+
+    return state;
+  }
+
+  /* ---------- Валидация ----------
+     Проверяет структуру ДО применения. Возвращает {ok, errors[]}. */
+  function validate(state) {
+    var errors = [];
+
+    function need(cond, msg) { if (!cond) { errors.push(msg); } }
+
+    need(Bow.util.isPlainObject(state), "состояние не является объектом");
+    if (!Bow.util.isPlainObject(state)) { return { ok: false, errors: errors }; }
+
+    need(typeof state.version === "string", "нет строки version");
+    need(Bow.util.isPlainObject(state.time), "нет блока time");
+    need(Bow.util.isPlainObject(state.player), "нет блока player");
+    need(Bow.util.isPlainObject(state.people), "нет блока people");
+    need(Bow.util.isPlainObject(state.orgs), "нет блока orgs");
+
+    if (Bow.util.isPlainObject(state.time)) {
+      need(typeof state.time.hour === "number" && state.time.hour >= 0 && state.time.hour <= 23, "time.hour вне диапазона");
+      need(typeof state.time.day === "number" && state.time.day >= 1 && state.time.day <= 30, "time.day вне диапазона");
+      need(typeof state.time.month === "number" && state.time.month >= 1 && state.time.month <= 12, "time.month вне диапазона");
+    }
+
+    if (Bow.util.isPlainObject(state.player)) {
+      var p = state.player;
+      need(typeof p.name === "string" && p.name.length > 0, "player.name пустое");
+      need(typeof p.location === "string", "player.location не указан");
+      need(Array.isArray(p.inventory), "player.inventory не массив");
+      need(typeof p.money === "number" && p.money >= 0, "player.money отрицательное или не число");
+      need(Bow.util.isPlainObject(p.needs), "player.needs не объект");
+      if (Bow.util.isPlainObject(p.needs)) {
+        ["health", "hunger", "fatigue", "mood"].forEach(function (k) {
+          var v = p.needs[k];
+          need(typeof v === "number" && v >= 0 && v <= 100, "player.needs." + k + " вне 0..100");
+        });
+      }
+      need(Array.isArray(p.memory), "player.memory не массив");
+      need(Array.isArray(state.journal), "journal не массив");
+    }
+
+    need(state.dialog === null || Bow.util.isPlainObject(state.dialog), "поле dialog повреждено");
+    need(state.fight === null || state.fight === undefined || Bow.util.isPlainObject(state.fight),
+      "поле fight повреждено");
+    need(state.jail === null || state.jail === undefined || Bow.util.isPlainObject(state.jail),
+      "поле jail повреждено");
+    need(Array.isArray(state.player.injuries), "player.injuries не массив");
+    need(Bow.util.isPlainObject(state.reputation || {}), "поле reputation не объект");
+    if (Bow.util.isPlainObject(state.reputation)) {
+      Object.keys(state.reputation).forEach(function (id) {
+        var v = state.reputation[id];
+        need(typeof v === "number" && v >= -100 && v <= 100,
+          "репутация у " + id + " вне -100..100");
+      });
+    }
+    need(Bow.util.isPlainObject(state.visits), "поле visits не объект");
+
+    if (Bow.util.isPlainObject(state.people)) {
+      Object.keys(state.people).forEach(function (id) {
+        var n = state.people[id];
+        need(Bow.util.isPlainObject(n), "персонаж " + id + " не объект");
+        if (Bow.util.isPlainObject(n)) {
+          need(typeof n.name === "string", "у персонажа " + id + " нет имени");
+          need(n.pron === "m" || n.pron === "f", "у персонажа " + id + " некорректный pron");
+          need(typeof n.attitude === "number", "у персонажа " + id + " нет attitude");
+          need(n.appearance === null || Bow.util.isPlainObject(n.appearance),
+            "внешность персонажа " + id + " повреждена");
+          need(n.dialog === null || Bow.util.isPlainObject(n.dialog),
+            "диалог персонажа " + id + " повреждён");
+        }
+      });
+    }
+
+    return { ok: errors.length === 0, errors: errors };
+  }
+
+  /* ---------- Миграции ----------
+     Применяются последовательно по цепочке версий. */
+  function migrate(state) {
+    var guard = 0;
+    var applied = [];
+
+    while (state.version !== Bow.data.meta.version && guard < 40) {
+      var fn = MIGRATIONS[state.version];
+      if (!fn) { break; }
+      state = fn(state);
+      applied.push(state.version);
+      guard++;
+    }
+
+    return { state: state, applied: applied };
+  }
+
+  var VITAL_LABELS = { head: "Голова", chest: "Грудь", stomach: "Живот" };
+
+  /* Жизненно важная область (голова / грудь / живот), ушедшая в минус (< 0).
+     В духе Kenshi: если такая область в минусе и ещё никем не перевязана,
+     персонаж лежит без сознания и не может подняться самостоятельно. */
+  function criticalVitalOf(person) {
+    if (!person || !person.body) { return null; }
+    var worst = null;
+    ["head", "chest", "stomach"].forEach(function (k) {
+      var l = person.body[k];
+      if (l && l.hp < 0) {
+        if (!worst || l.hp < worst.hp) {
+          worst = { key: k, label: l.name || VITAL_LABELS[k] || k, hp: l.hp, bandaged: !!l.bandaged };
+        }
+      }
+    });
+    return worst;
+  }
+
+  function isComatose(person) {
+    var crit = criticalVitalOf(person);
+    return !!(crit && crit.hp < 0 && !crit.bandaged);
+  }
+
+  Bow.state = {
+    create: create,
+    validate: validate,
+    migrate: migrate,
+    ensureAnatomy: ensureAnatomy,
+    effectiveAttr: effectiveAttr,
+    effectiveSkill: effectiveSkill,
+    maxCarryWeight: maxCarryWeight,
+    criticalVitalOf: criticalVitalOf,
+    isComatose: isComatose,
+    isCurrentVersion: function (state) {
+      return state && state.version === Bow.data.meta.version;
+    }
+  };
+
+})(typeof window !== "undefined" ? window : this);

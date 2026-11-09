@@ -1,0 +1,60 @@
+/* ============================================================
+   BOW JOURNAL — журнал игрока и лента событий.
+   Журнал ограничен по размеру: память не растёт бесконечно.
+   ============================================================ */
+(function (global) {
+  "use strict";
+
+  var Bow = global.Bow = global.Bow || {};
+
+  var JOURNAL_LIMIT = 120;
+  var EVENT_LIMIT = 200;
+
+  function add(state, text, kind) {
+    var entry = {
+      totalHours: state.time.totalHours,
+      day: state.time.day,
+      month: state.time.month,
+      year: state.time.year,
+      hour: state.time.hour,
+      minute: state.time.minute || 0,
+      kind: kind || "info",
+      text: text
+    };
+    state.journal.push(entry);
+    Bow.util.trim(state.journal, JOURNAL_LIMIT);
+    Bow.bus.emit("journal:add", entry);
+    return entry;
+  }
+
+  /* Событие — это факт в мире. В прототипе он же дублируется в журнал,
+     так как игрок о нём знает (он участник или свидетель). */
+  function event(state, text, kind, meta) {
+    var raw = {
+      totalHours: state.time.totalHours,
+      day: state.time.day,
+      month: state.time.month,
+      year: state.time.year,
+      hour: state.time.hour,
+      minute: state.time.minute || 0,
+      kind: kind || "info",
+      text: text,
+      meta: meta || null
+    };
+    state.events.push(raw);
+    Bow.util.trim(state.events, EVENT_LIMIT);
+    return raw;
+  }
+
+  function recent(state, count) {
+    return state.journal.slice(-count).reverse();
+  }
+
+  Bow.journal = {
+    add: add,
+    event: event,
+    recent: recent,
+    LIMIT: JOURNAL_LIMIT
+  };
+
+})(typeof window !== "undefined" ? window : this);
