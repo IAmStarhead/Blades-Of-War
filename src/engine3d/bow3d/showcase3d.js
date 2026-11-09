@@ -298,8 +298,7 @@ export function mountBowShowcase(rootEl) {
       female: true,
       kingdom: "north",
       outfit,
-      hairStyle: state.hairStyle,
-      hairColor: "#4c3222"
+      hairStyle: state.hairStyle
     });
     state.northFemale.group.position.set(-1.66, 0, 0.16);
     state.northFemale.group.rotation.y = 0.18;
@@ -309,9 +308,7 @@ export function mountBowShowcase(rootEl) {
       female: false,
       kingdom: "north",
       outfit,
-      hairStyle: state.hairStyle,
-      hairColor: "#4a2e1b",
-      beard: true
+      hairStyle: state.hairStyle
     });
     state.northMale.group.position.set(-0.98, 0, 0.24);
     state.northMale.group.rotation.y = 0.08;
@@ -322,8 +319,7 @@ export function mountBowShowcase(rootEl) {
       female: true,
       kingdom: "eden",
       outfit,
-      hairStyle: state.hairStyle,
-      hairColor: "#302018"
+      hairStyle: state.hairStyle
     });
     state.edenFemale.group.position.set(0.98, 0, 0.24);
     state.edenFemale.group.rotation.y = -0.08;
@@ -333,9 +329,7 @@ export function mountBowShowcase(rootEl) {
       female: false,
       kingdom: "eden",
       outfit,
-      hairStyle: state.hairStyle,
-      hairColor: "#281b14",
-      beard: true
+      hairStyle: state.hairStyle
     });
     state.edenMale.group.position.set(1.66, 0, 0.16);
     state.edenMale.group.rotation.y = -0.18;

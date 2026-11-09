@@ -264,10 +264,10 @@ export function buildHeadTextureCanvas(opts = {}, canvasFactory = null) {
     ctx.ellipse(W * 0.5, mouthY + 2.2, 10.5, 1.6, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    /* Фактура прядей бороды */
-    ctx.fillStyle = pal.hairLight;
-    for (let bx = W * 0.40; bx <= W * 0.60; bx += 10) {
-      ctx.fillRect(bx, mouthY + 9, 2, 34);
+    /* Едва заметная фактура прядей бороды (деликатные полупрозрачные штрихи, не «зубья») */
+    ctx.fillStyle = "rgba(122, 86, 56, 0.20)";
+    for (let bx = W * 0.36; bx <= W * 0.64; bx += 13) {
+      ctx.fillRect(bx, mouthY + 12, 2, 26);
     }
   } else if (fem) {
     /* Женственные мягкие губы:
@@ -313,18 +313,6 @@ export function buildHeadTextureCanvas(opts = {}, canvasFactory = null) {
     ctx.fillRect(W * 0.5 - 17, mouthY + 0.5, 34, 1.7);
     /* Лёгкая благородная ямочка/тень под нижней губой */
     softRadial(ctx, W * 0.5, mouthY + 11, 9, "rgba(116, 74, 52, 0.22)", "rgba(116, 74, 52, 0)");
-  }
-
-  /* Небольшой боевой шрам у виска/брови северного мужчины */
-  if (!fem && !isEden) {
-    ctx.fillStyle = "rgba(156, 102, 92, 0.40)";
-    ctx.beginPath();
-    ctx.moveTo(W * 0.5 + eyeDX + 7, eyeY - 15);
-    ctx.lineTo(W * 0.5 + eyeDX + 9.5, eyeY - 15);
-    ctx.lineTo(W * 0.5 + eyeDX + 5.5, eyeY + 6);
-    ctx.lineTo(W * 0.5 + eyeDX + 3, eyeY + 6);
-    ctx.closePath();
-    ctx.fill();
   }
 
   /* Подложка волос по темени и за ушами (в цвет причёски народа!) */

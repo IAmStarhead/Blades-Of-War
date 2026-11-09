@@ -472,12 +472,14 @@ export function buildBaseBodyGeometry(female = false, metrics) {
       rings.push(ring);
     }
 
-    /* Настоящая БОСАЯ стопа: низкий подъём, пятка и сужающийся носок (не форма ботинка!) */
-    const footScale = (female ? 0.86 : 0.98) * ws;
+    /* Настоящая БОСАЯ стопа: плавный спуск от щиколотки, низкий подъём,
+       вытянутый вперёд носок и округлая пятка — человеческая ступня, а не обрубок! */
+    const footScale = (female ? 0.88 : 1.00) * ws;
     const footSpecs = [
-      [210, ax, 0.044 * hs, 0.016, 0.038 * footScale, 0.058 * footScale],
-      [220, ax, 0.022 * hs, 0.040, 0.041 * footScale, 0.090 * footScale],
-      [228, ax, 0.004 * hs, 0.040, 0.039 * footScale, 0.088 * footScale]
+      [208, ax, 0.048 * hs, 0.008, 0.035 * footScale, 0.046 * footScale],
+      [214, ax, 0.030 * hs, 0.024, 0.038 * footScale, 0.068 * footScale],
+      [222, ax, 0.014 * hs, 0.042, 0.040 * footScale, 0.096 * footScale],
+      [228, ax, 0.004 * hs, 0.044, 0.037 * footScale, 0.092 * footScale]
     ];
     for (let f = 0; f < footSpecs.length; f++) {
       const [cyTex, fx, fy, fz, frx, frz] = footSpecs[f];
@@ -487,7 +489,7 @@ export function buildBaseBodyGeometry(female = false, metrics) {
         const uFrac = s / segsLeg;
         const phi = (uFrac - 0.5) * Math.PI * 2;
         const cosP = Math.cos(phi);
-        const zStretch = cosP >= 0 ? frz * 1.15 : frz * 0.70;
+        const zStretch = cosP >= 0 ? frz * 1.28 : frz * 0.66;
         ring.push(mb.addVertex(fx + Math.sin(phi) * frx, fy, fz + cosP * zStretch, uFrac, vTex, bFoot, 1.0, bShin, 0.0));
       }
       mb.seamPairs.push([ring[0], ring[segsLeg]]);
@@ -495,7 +497,7 @@ export function buildBaseBodyGeometry(female = false, metrics) {
     }
 
     mb.connectRings(rings, false);
-    const soleCenter = mb.addVertex(ax, 0.002, 0.038, 0.5, cyToV(230), bFoot, 1, 0, 0);
+    const soleCenter = mb.addVertex(ax, 0.002, 0.050, 0.5, cyToV(230), bFoot, 1, 0, 0);
     mb.capRing(rings[rings.length - 1], soleCenter, false);
   }
 
@@ -607,40 +609,44 @@ export function buildGarmentGeometry(female = false, rawOutfit = "villager", kin
   const dress = female && !isWarrior; /* женское котарди Златодвора/Севера — юбка-клёш до середины бедра */
   const hemY = dress ? 0.620 : (female ? 0.740 : 0.760);
 
+  /* Запас одежды над телом везде >= 6-12 мм (никакого z-fighting и «рваных» дыр!),
+     на выпуклой груди — частые кольца, чтобы хорда одежды не резала дугу тела. */
   const torsoRows = female
     ? [
         dress
-          ? [164, hemY, 0.168, 0.150, 0.150, -0.004, P, 1.00, S, 0.00]
-          : [164, hemY, 0.164, 0.120, 0.132, -0.006, P, 1.00, S, 0.00],
-        [150, dress ? 0.760 : 0.820, 0.160, dress ? 0.120 : 0.098, dress ? 0.130 : 0.122, -0.006, P, 1.00, S, 0.00],
-        [138, 0.875, 0.162, 0.092, 0.120, -0.008, P, 0.85, S, 0.15],
-        [128, 0.950, 0.166, 0.090, 0.122, -0.007, P, 0.80, S, 0.20],
+          ? [164, hemY, 0.176, 0.152, 0.152, -0.004, P, 1.00, S, 0.00]
+          : [164, hemY, 0.170, 0.124, 0.136, -0.006, P, 1.00, S, 0.00],
+        [150, dress ? 0.760 : 0.820, 0.168, dress ? 0.124 : 0.102, dress ? 0.134 : 0.126, -0.006, P, 1.00, S, 0.00],
+        [138, 0.875, 0.172, 0.096, 0.126, -0.008, P, 0.85, S, 0.15],
+        [128, 0.950, 0.174, 0.094, 0.126, -0.007, P, 0.80, S, 0.20],
         /* Пояс (парные кольца на границах полосы Б) */
-        [122, 1.004, 0.140, 0.086, 0.104, -0.005, P, 0.60, S, 0.40],
-        [212, 1.004, 0.140, 0.086, 0.104, -0.005, P, 0.60, S, 0.40],
-        [180, 1.048, 0.134, 0.084, 0.100, -0.004, P, 0.45, S, 0.55],
-        [116, 1.052, 0.133, 0.084, 0.099, -0.004, S, 0.60, P, 0.40],
-        /* Приталенный лиф */
-        [104, 1.082, 0.112, 0.079, 0.088,  0.002, S, 0.85, C, 0.15],
-        [ 84, 1.145, 0.122, 0.088, 0.094,  0.004, S, 0.40, C, 0.60],
-        [ 64, 1.215, 0.140, 0.106, 0.100,  0.004, C, 1.00, S, 0.00],
-        [ 40, 1.300, 0.140, 0.092, 0.095, -0.002, C, 0.95, N, 0.05],
-        [ 22, 1.355, 0.140, 0.082, 0.088, -0.005, C, 0.85, N, 0.15],
-        [  8, 1.390, 0.102, 0.066, 0.072, -0.005, N, 0.55, C, 0.45]
+        [122, 1.004, 0.146, 0.090, 0.108, -0.005, P, 0.60, S, 0.40],
+        [212, 1.004, 0.146, 0.090, 0.108, -0.005, P, 0.60, S, 0.40],
+        [180, 1.048, 0.140, 0.088, 0.104, -0.004, P, 0.45, S, 0.55],
+        [116, 1.052, 0.139, 0.088, 0.103, -0.004, S, 0.60, P, 0.40],
+        /* Приталенный лиф с плотной сеткой колец по дуге груди */
+        [104, 1.082, 0.116, 0.081, 0.090,  0.002, S, 0.85, C, 0.15],
+        [ 88, 1.140, 0.126, 0.091, 0.096,  0.004, S, 0.45, C, 0.55],
+        [ 76, 1.180, 0.134, 0.099, 0.098,  0.004, C, 0.80, S, 0.20],
+        [ 64, 1.225, 0.144, 0.108, 0.100,  0.004, C, 1.00, S, 0.00],
+        [ 52, 1.268, 0.144, 0.104, 0.099,  0.002, C, 1.00, N, 0.00],
+        [ 40, 1.302, 0.144, 0.094, 0.097, -0.002, C, 0.95, N, 0.05],
+        [ 22, 1.355, 0.144, 0.084, 0.090, -0.005, C, 0.85, N, 0.15],
+        [  8, 1.390, 0.104, 0.068, 0.074, -0.005, N, 0.55, C, 0.45]
       ]
     : [
-        [164, hemY, 0.162, 0.112, 0.128, -0.006, P, 1.00, S, 0.00],
-        [150, 0.870, 0.156, 0.095, 0.118, -0.006, P, 0.85, S, 0.15],
-        [140, 0.975, 0.156, 0.096, 0.118, -0.006, P, 0.80, S, 0.20],
-        [130, 1.016, 0.154, 0.097, 0.113, -0.004, P, 0.55, S, 0.45],
-        [212, 1.016, 0.154, 0.097, 0.113, -0.004, P, 0.55, S, 0.45],
-        [180, 1.058, 0.152, 0.098, 0.111, -0.002, P, 0.40, S, 0.60],
-        [116, 1.062, 0.152, 0.098, 0.110, -0.002, S, 0.65, P, 0.35],
-        [104, 1.115, 0.154, 0.104, 0.111,  0.002, S, 0.80, C, 0.20],
-        [ 76, 1.215, 0.170, 0.118, 0.119,  0.004, S, 0.30, C, 0.70],
-        [ 44, 1.325, 0.186, 0.122, 0.121,  0.000, C, 1.00, N, 0.00],
-        [ 24, 1.420, 0.188, 0.100, 0.106, -0.005, C, 0.88, N, 0.12],
-        [  8, 1.462, 0.132, 0.082, 0.088, -0.006, N, 0.50, C, 0.50]
+        [164, hemY, 0.166, 0.118, 0.132, -0.006, P, 1.00, S, 0.00],
+        [150, 0.870, 0.160, 0.102, 0.124, -0.006, P, 0.85, S, 0.15],
+        [140, 0.975, 0.160, 0.103, 0.124, -0.006, P, 0.80, S, 0.20],
+        [130, 1.016, 0.158, 0.103, 0.119, -0.004, P, 0.55, S, 0.45],
+        [212, 1.016, 0.158, 0.103, 0.119, -0.004, P, 0.55, S, 0.45],
+        [180, 1.058, 0.156, 0.104, 0.117, -0.002, P, 0.40, S, 0.60],
+        [116, 1.062, 0.156, 0.104, 0.116, -0.002, S, 0.65, P, 0.35],
+        [104, 1.115, 0.158, 0.110, 0.117,  0.002, S, 0.80, C, 0.20],
+        [ 76, 1.215, 0.174, 0.124, 0.125,  0.004, S, 0.30, C, 0.70],
+        [ 44, 1.325, 0.190, 0.128, 0.127,  0.000, C, 1.00, N, 0.00],
+        [ 24, 1.420, 0.192, 0.106, 0.112, -0.005, C, 0.88, N, 0.12],
+        [  8, 1.462, 0.136, 0.086, 0.092, -0.006, N, 0.50, C, 0.50]
       ];
 
   const segsTorso = 20;
@@ -655,11 +661,12 @@ export function buildGarmentGeometry(female = false, rawOutfit = "villager", kin
       const sinP = Math.sin(phi);
       const cosP = Math.cos(phi);
       let rz = (cosP >= 0 ? rzFBase : rzBBase) * bulk;
-      if (female && cosP > 0.1 && yRaw > 1.150 && yRaw < 1.310) {
-        const tB = (yRaw - 1.150) / 0.160;
+      /* Купол груди одежды шире и выше купола тела (0.040 против 0.030) — ткань лежит НАД телом */
+      if (female && cosP > 0.1 && yRaw > 1.125 && yRaw < 1.315) {
+        const tB = (yRaw - 1.125) / 0.190;
         const breastW = Math.sin(tB * Math.PI);
         const twinCup = Math.pow(Math.sin(Math.min(1, Math.abs(sinP) * 1.9) * Math.PI), 1.2);
-        rz += 0.034 * breastW * twinCup * Math.max(0, cosP);
+        rz += 0.040 * breastW * twinCup * Math.max(0, cosP);
       }
       ring.push(mb.addVertex(sinP * rxBase * ws * bulk, yRaw * hs, zOff + cosP * rz, uFrac, vTex, b0, w0, b1, w1));
     }
@@ -687,10 +694,12 @@ export function buildGarmentGeometry(female = false, rawOutfit = "villager", kin
 
     const sc = (female ? 0.86 : 1.06) * ws * (isWarrior ? 1.05 : 1.0);
 
+    /* Высокий округлый кат плеча: купол рукава поднят НАД дельтой тела (без прорех на плечах) */
     const rows = [
-      [230, sx - sign * 0.012, sy + 0.018 * hs, -0.005, 0.058 * sc, 0.060 * sc, C, 0.60, bUpper, 0.40],
-      [246, sx + sign * 0.004, sy - 0.038 * hs, -0.005, 0.054 * sc, 0.056 * sc, C, 0.15, bUpper, 0.85],
-      [272, lerp(sx, ex, 0.54), lerp(sy, ey, 0.54), -0.004, 0.048 * sc, 0.050 * sc, bUpper, 1.0, bFore, 0.0],
+      [228, sx - sign * 0.034, sy + 0.034 * hs, -0.005, 0.036 * sc, 0.042 * sc, C, 0.75, bUpper, 0.25],
+      [238, sx - sign * 0.006, sy + 0.010 * hs, -0.005, 0.058 * sc, 0.060 * sc, C, 0.50, bUpper, 0.50],
+      [252, sx + sign * 0.004, sy - 0.040 * hs, -0.005, 0.054 * sc, 0.056 * sc, C, 0.15, bUpper, 0.85],
+      [274, lerp(sx, ex, 0.54), lerp(sy, ey, 0.54), -0.004, 0.048 * sc, 0.050 * sc, bUpper, 1.0, bFore, 0.0],
       [298, ex, ey, -0.007, 0.043 * sc, 0.045 * sc, bUpper, 0.50, bFore, 0.50]
     ];
 
@@ -724,7 +733,7 @@ export function buildGarmentGeometry(female = false, rawOutfit = "villager", kin
       rings.push(ring);
     }
 
-    const capTop = mb.addVertex(sx - sign * 0.020, sy + 0.030 * hs, -0.005, 0.5, cyToV(228), C, 0.70, bUpper, 0.30);
+    const capTop = mb.addVertex(sx - sign * 0.042, sy + 0.042 * hs, -0.005, 0.5, cyToV(226), C, 0.85, bUpper, 0.15);
     mb.capRing(rings[0], capTop, true);
     mb.connectRings(rings, false);
   }
@@ -732,8 +741,11 @@ export function buildGarmentGeometry(female = false, rawOutfit = "villager", kin
   buildSleeve(true);
   buildSleeve(false);
 
-  /* === Д. ШТАНЫ / ШОССЫ (две штанины сверху вниз; верх скрыт под подолом) === */
-  const pantsScale = (female ? 0.93 : 1.0) * ws;
+  /* === Д. ШТАНЫ / ШОССЫ (две штанины сверху вниз; верх скрыт под подолом) ===
+     Радиусы по X и Z масштабируются раздельно: глубина ноги тела НЕ зависит от ширины
+     кости народа, поэтому запас по Z обязан быть собственным (фикс «прогрызенных» штанин). */
+  const pantsSX = (female ? 0.97 : 1.0) * ws;
+  const pantsSZ = female ? 0.98 : 1.06;
 
   function buildPantLeg(isLeft) {
     const sign = isLeft ? 1 : -1;
@@ -749,17 +761,18 @@ export function buildGarmentGeometry(female = false, rawOutfit = "villager", kin
     const ay = ky - m.shinLen;
 
     const rows = [
-      [388, hx * 0.97, lerp(hy, ky, 0.08), 0.000, 0.081 * pantsScale, 0.087 * pantsScale, P, 0.25, bThigh, 0.75],
-      [402, lerp(hx, kx, 0.38), lerp(hy, ky, 0.38), 0.003, 0.074 * pantsScale, 0.079 * pantsScale, bThigh, 1.0, 0, 0],
-      [416, lerp(hx, kx, 0.72), lerp(hy, ky, 0.72), 0.001, 0.063 * pantsScale, 0.067 * pantsScale, bThigh, 0.80, bShin, 0.20],
-      [428, kx, ky, 0.002, 0.057 * pantsScale, 0.061 * pantsScale, bThigh, 0.50, bShin, 0.50]
+      [388, hx * 0.97, lerp(hy, ky, 0.08), 0.000, 0.080 * pantsSX, 0.091 * pantsSZ, P, 0.25, bThigh, 0.75],
+      [402, lerp(hx, kx, 0.38), lerp(hy, ky, 0.38), 0.003, 0.079 * pantsSX, 0.086 * pantsSZ, bThigh, 1.0, 0, 0],
+      [416, lerp(hx, kx, 0.72), lerp(hy, ky, 0.72), 0.001, 0.066 * pantsSX, 0.072 * pantsSZ, bThigh, 0.80, bShin, 0.20],
+      [428, kx, ky, 0.002, 0.060 * pantsSX, 0.065 * pantsSZ, bThigh, 0.50, bShin, 0.50]
     ];
     if (isWarrior) {
-      rows.push([440, lerp(kx, ax, 0.22), lerp(ky, ay, 0.22), -0.007, 0.054 * pantsScale, 0.058 * pantsScale, bShin, 0.95, bThigh, 0.05]);
+      /* Штанина заходит ГЛУБОКО в голенище сапога (широкая зона перекрытия, без рваного стыка) */
+      rows.push([440, lerp(kx, ax, 0.30), lerp(ky, ay, 0.30), -0.007, 0.056 * pantsSX, 0.061 * pantsSZ, bShin, 0.95, bThigh, 0.05]);
     } else {
       rows.push(
-        [436, lerp(kx, ax, 0.30), lerp(ky, ay, 0.30), -0.006, 0.052 * pantsScale, 0.056 * pantsScale, bShin, 1.0, 0, 0],
-        [444, ax, ay + 0.040 * hs, -0.002, 0.044 * pantsScale, 0.048 * pantsScale, bShin, 0.80, bFoot, 0.20]
+        [436, lerp(kx, ax, 0.34), lerp(ky, ay, 0.34), -0.006, 0.054 * pantsSX, 0.059 * pantsSZ, bShin, 1.0, 0, 0],
+        [444, ax, ay + 0.040 * hs, -0.002, 0.047 * pantsSX, 0.052 * pantsSZ, bShin, 0.80, bFoot, 0.20]
       );
     }
 
@@ -784,7 +797,8 @@ export function buildGarmentGeometry(female = false, rawOutfit = "villager", kin
   buildPantLeg(false);
 
   /* === Е. ОБУВЬ: туфли/башмаки мирных жителей ИЛИ высокие сапоги воинов === */
-  const footScale = (female ? 0.90 : 1.04) * ws;
+  const footSX = (female ? 0.97 : 1.08) * ws;
+  const footSZ = female ? 1.00 : 1.10;
 
   function buildFootwear(isLeft) {
     const sign = isLeft ? 1 : -1;
@@ -800,21 +814,21 @@ export function buildGarmentGeometry(female = false, rawOutfit = "villager", kin
 
     const rows = isWarrior
       ? [
-          /* Высокий сапог: голенище от-под колена */
-          [458, lerp(kx, ax, 0.24), lerp(ky, ay, 0.24), -0.008, 0.059 * footScale, 0.065 * footScale, bShin, 0.90, bThigh, 0.10],
-          [466, lerp(kx, ax, 0.55), lerp(ky, ay, 0.55), -0.008, 0.055 * footScale, 0.060 * footScale, bShin, 1.0, 0, 0],
-          [476, ax, ay + 0.030 * hs, -0.002, 0.048 * footScale, 0.052 * footScale, bShin, 0.50, bFoot, 0.50],
-          [488, ax, 0.052 * hs, 0.018, 0.050 * footScale, 0.077 * footScale, bFoot, 1.0, 0, 0],
-          [500, ax, 0.026 * hs, 0.044, 0.053 * footScale, 0.110 * footScale, bFoot, 1.0, 0, 0],
-          [508, ax, 0.006 * hs, 0.044, 0.051 * footScale, 0.108 * footScale, bFoot, 1.0, 0, 0]
+          /* Высокий сапог: голенище от-под колена, заведомо шире штанины внутри */
+          [458, lerp(kx, ax, 0.24), lerp(ky, ay, 0.24), -0.008, 0.063 * footSX, 0.066 * footSZ, bShin, 0.90, bThigh, 0.10],
+          [466, lerp(kx, ax, 0.55), lerp(ky, ay, 0.55), -0.008, 0.057 * footSX, 0.061 * footSZ, bShin, 1.0, 0, 0],
+          [476, ax, ay + 0.030 * hs, -0.002, 0.049 * footSX, 0.053 * footSZ, bShin, 0.50, bFoot, 0.50],
+          [488, ax, 0.052 * hs, 0.018, 0.051 * footSX, 0.078 * footSZ, bFoot, 1.0, 0, 0],
+          [500, ax, 0.026 * hs, 0.044, 0.054 * footSX, 0.110 * footSZ, bFoot, 1.0, 0, 0],
+          [508, ax, 0.006 * hs, 0.044, 0.052 * footSX, 0.108 * footSZ, bFoot, 1.0, 0, 0]
         ]
       : [
           /* Низкие кожаные башмаки */
-          [462, ax, ay + 0.052 * hs, 0.000, 0.047 * footScale, 0.051 * footScale, bShin, 0.50, bFoot, 0.50],
-          [474, ax, ay + 0.026 * hs, 0.004, 0.048 * footScale, 0.052 * footScale, bShin, 0.25, bFoot, 0.75],
-          [488, ax, 0.050 * hs, 0.018, 0.049 * footScale, 0.075 * footScale, bFoot, 1.0, 0, 0],
-          [500, ax, 0.024 * hs, 0.044, 0.052 * footScale, 0.108 * footScale, bFoot, 1.0, 0, 0],
-          [508, ax, 0.005 * hs, 0.044, 0.050 * footScale, 0.106 * footScale, bFoot, 1.0, 0, 0]
+          [462, ax, ay + 0.052 * hs, 0.000, 0.048 * footSX, 0.052 * footSZ, bShin, 0.50, bFoot, 0.50],
+          [474, ax, ay + 0.026 * hs, 0.004, 0.049 * footSX, 0.053 * footSZ, bShin, 0.25, bFoot, 0.75],
+          [488, ax, 0.050 * hs, 0.018, 0.050 * footSX, 0.076 * footSZ, bFoot, 1.0, 0, 0],
+          [500, ax, 0.024 * hs, 0.044, 0.053 * footSX, 0.108 * footSZ, bFoot, 1.0, 0, 0],
+          [508, ax, 0.005 * hs, 0.044, 0.051 * footSX, 0.106 * footSZ, bFoot, 1.0, 0, 0]
         ];
 
     const segsFoot = 12;
@@ -1103,14 +1117,15 @@ export function buildHairGeometry(female = false, styleKey = "classic", kingdom 
       [0.01, 0.048, 0.142, 0.056, 0.048, 0.070, -0.016]
     ]);
   } else {
-    /* Северянин: плотная грубоватая шапка волос с чёлкой на лоб */
-    buildSolidCap(0.224, -0.004, [
-      [0.94, 0.214, 0.002, 0.044, 0.050, 0.054, -0.004],
-      [0.76, 0.188, 0.005, 0.089, 0.104, 0.110, -0.005],
-      [0.50, 0.136, 0.028, 0.092, 0.098, 0.112, -0.008],
-      [0.22, 0.082, 0.080, 0.085, 0.076, 0.106, -0.014],
-      [0.04, 0.064, 0.096, 0.068, 0.060, 0.084, -0.014],
-      [0.01, 0.072, 0.090, 0.054, 0.050, 0.066, -0.012]
+    /* Северянин: грубая лохматая копна до ушей с тяжёлым длинным затылком —
+       совсем другой силуэт, чем ухоженный зачёс Златодвора */
+    buildSolidCap(0.226, -0.004, [
+      [0.94, 0.216, 0.002, 0.045, 0.051, 0.055, -0.004],
+      [0.76, 0.188, 0.004, 0.092, 0.106, 0.112, -0.005],
+      [0.50, 0.130, 0.020, 0.097, 0.100, 0.116, -0.009],
+      [0.24, 0.058, 0.064, 0.094, 0.082, 0.112, -0.016],
+      [0.06, 0.012, 0.086, 0.080, 0.064, 0.100, -0.020],
+      [0.01, 0.022, 0.080, 0.058, 0.050, 0.072, -0.016]
     ]);
   }
 
@@ -1213,7 +1228,14 @@ export function createBowCharacter3D(opts = {}) {
       if (nextOutfit !== "underwear") {
         const garmCv = buildGarmentTextureCanvas({ female, outfit: nextOutfit, kingdom }, canvasFactory);
         const garmTex = canvasToThreeTexture(garmCv);
-        const garmMat = new THREE.MeshLambertMaterial({ map: garmTex, side: THREE.DoubleSide });
+        const garmMat = new THREE.MeshLambertMaterial({
+          map: garmTex,
+          side: THREE.DoubleSide,
+          /* Одежда всегда выигрывает глубину у тела — ноль мерцающих «прорех» */
+          polygonOffset: true,
+          polygonOffsetFactor: -1.0,
+          polygonOffsetUnits: -1.0
+        });
         const garmGeo = buildGarmentGeometry(female, nextOutfit, kingdom, metrics);
         const garmMesh = new THREE.SkinnedMesh(garmGeo, garmMat);
         garmMesh.castShadow = true;
@@ -1270,19 +1292,25 @@ export function poseBowCharacter(rig, mode = "idle", timeSec = 0, opts = {}) {
   b[BONE_IDX.PELVIS].position.y = m.hipY;
 
   if (mode === "walk") {
-    const w = timeSec * 3.8; // спокойный уверенный шаг (~72 шага/мин)
+    const w = timeSec * 3.9; // спокойный уверенный шаг (~74 шага/мин)
     const s = Math.sin(w);
     const c = Math.cos(w);
-    const A = fem ? 0.30 : 0.36; // амплитуда бедра
+    const A = fem ? 0.32 : 0.38; // амплитуда бедра
 
-    const swingL = Math.max(0, c);  // левая нога в фазе переноса
-    const swingR = Math.max(0, -c); // правая нога в фазе переноса
+    /* Живой цикл шага: опора занимает ~62% цикла, перенос — короткий и быстрый.
+       Нога отрывается от пола только когда вторая уже плотно приняла вес! */
+    const swingPhase = (cv) => {
+      const t = Math.max(0, (cv - 0.25) / 0.75);
+      return t * t * (3 - 2 * t); // smoothstep
+    };
+    const swingL = swingPhase(c);  // левая нога в фазе переноса
+    const swingR = swingPhase(-c); // правая нога в фазе переноса
 
-    /* ЗАЗЕМЛЕНИЕ: опускаем таз ровно настолько, насколько «укоротилась» по вертикали
-       отведённая опорная нога — стопа прижата к полу, а не висит над ним! */
+    /* ЗАЗЕМЛЕНИЕ: таз опускается ровно настолько, насколько «укоротилась» по вертикали
+       отведённая опорная нога — подошва прижата к полу всем весом, а не висит над ним! */
     const Lleg = m.thighLen + m.shinLen;
-    const drop = Lleg * (1 - Math.cos(A * Math.abs(s))) * 0.85;
-    b[BONE_IDX.PELVIS].position.y = m.hipY - 0.006 - drop;
+    const drop = Lleg * (1 - Math.cos(A * Math.abs(s))) * 0.92;
+    b[BONE_IDX.PELVIS].position.y = m.hipY - 0.008 - drop;
 
     /* Спокойный корпус: лёгкий встречный разворот без танцевального виляния */
     b[BONE_IDX.PELVIS].rotation.y = -s * (fem ? 0.040 : 0.030);
@@ -1302,19 +1330,21 @@ export function poseBowCharacter(rig, mode = "idle", timeSec = 0, opts = {}) {
     b[BONE_IDX.FOREARM_R].rotation.x = -0.16 - Math.max(0, s) * 0.18;
 
     /* Ноги: колено сгибается только на переносе, опорная нога прямая и держит вес */
-    b[BONE_IDX.THIGH_L].rotation.x = -s * A + swingL * 0.08;
-    b[BONE_IDX.THIGH_R].rotation.x =  s * A + swingR * 0.08;
-    b[BONE_IDX.SHIN_L].rotation.x = swingL * 0.52 + 0.02;
-    b[BONE_IDX.SHIN_R].rotation.x = swingR * 0.52 + 0.02;
+    b[BONE_IDX.THIGH_L].rotation.x = -s * A + swingL * 0.10;
+    b[BONE_IDX.THIGH_R].rotation.x =  s * A + swingR * 0.10;
+    b[BONE_IDX.SHIN_L].rotation.x = swingL * 0.55 + 0.03;
+    b[BONE_IDX.SHIN_R].rotation.x = swingR * 0.55 + 0.03;
 
-    /* ГЛАВНЫЙ фикс стоп: на опоре подошва компенсирует углы бедра и колена
-       и лежит ПЛАШМЯ на полу; на переносе носок слегка взят на себя к пятке. */
+    /* Стопы: на опоре подошва лежит ПЛАШМЯ на полу (компенсация углов бедра и колена),
+       в конце опоры пятка отрывается ТОЛЧКОМ носка, на переносе носок взят на себя. */
     const stanceL = 1 - swingL;
     const stanceR = 1 - swingR;
+    const pushL = Math.pow(Math.max(0, -s), 2) * 0.28; // левая нога позади -> толчок
+    const pushR = Math.pow(Math.max(0,  s), 2) * 0.28; // правая нога позади -> толчок
     b[BONE_IDX.FOOT_L].rotation.x =
-      -(b[BONE_IDX.THIGH_L].rotation.x + b[BONE_IDX.SHIN_L].rotation.x) * stanceL - swingL * 0.08;
+      (-(b[BONE_IDX.THIGH_L].rotation.x + b[BONE_IDX.SHIN_L].rotation.x) + pushL) * stanceL - swingL * 0.10;
     b[BONE_IDX.FOOT_R].rotation.x =
-      -(b[BONE_IDX.THIGH_R].rotation.x + b[BONE_IDX.SHIN_R].rotation.x) * stanceR - swingR * 0.08;
+      (-(b[BONE_IDX.THIGH_R].rotation.x + b[BONE_IDX.SHIN_R].rotation.x) + pushR) * stanceR - swingR * 0.10;
   } else if (mode === "combat") {
     const br = Math.sin(timeSec * 2.6);
     b[BONE_IDX.PELVIS].position.y = m.hipY - 0.03 + br * 0.005;
