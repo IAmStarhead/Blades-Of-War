@@ -1,8 +1,10 @@
 /* ============================================================================
    BLADES OF WAR — ИНТЕРАКТИВНЫЙ 3D-СТЕНД ДИЗАЙНА (СТИЛЬ PROJECT ZOMBOID B41+)
-   Два бесшовных скелетных 3D-персонажа (мужчина и женщина) + средневековый
-   колодец Студёного Брода в едином рисованном low-poly стиле.
-   Стабильные 60+ FPS, вращение 360°, зум, смена одежды, поз и проверка сетки.
+   Контраст двух королевств Земли Эдема:
+     1) Королевство Хладных Ветров (Север, вождь Норвинг IV) — хладцы
+     2) Королевство Златодвор (Центр Эдема, король Родрик II) — златодворцы
+   + эталонный средневековый колодец с бочкой и щитом.
+   Стабильные 60+ FPS, вращение 360°, зум, смена одежды, уборов, поз и сетки.
    ============================================================================ */
 
 import * as THREE from "three";
@@ -31,11 +33,11 @@ function createCobblePlinth() {
   const atlasTex = canvasToThreeTexture(atlasCv);
 
   /* Верхний круг тёсаного камня (квадрант 0..0.5, 0.5..1.0) */
-  const topGeo = new THREE.CylinderGeometry(2.35, 2.46, 0.12, 32, 1);
+  const topGeo = new THREE.CylinderGeometry(2.85, 2.96, 0.12, 36, 1);
   const uv = topGeo.attributes.uv;
   for (let i = 0; i < uv.count; i++) {
-    const ux = uv.getX(i) * 3;
-    const vy = uv.getY(i) * 3;
+    const ux = uv.getX(i) * 3.5;
+    const vy = uv.getY(i) * 3.5;
     const ru = (ux > 0 && ux % 1 === 0) ? 1 : ((ux % 1) + 1) % 1;
     const rv = (vy > 0 && vy % 1 === 0) ? 1 : ((vy % 1) + 1) % 1;
     uv.setXY(i, ru * 0.48 + 0.01, 0.51 + rv * 0.48);
@@ -51,7 +53,7 @@ function createCobblePlinth() {
   group.add(plinthMesh);
 
   /* Тонкий деревянно-каменный бортик подиума */
-  const rimGeo = new THREE.TorusGeometry(2.37, 0.045, 8, 36);
+  const rimGeo = new THREE.TorusGeometry(2.87, 0.045, 8, 40);
   rimGeo.rotateX(Math.PI * 0.5);
   rimGeo.translate(0, -0.01, 0);
   const rimMat = new THREE.MeshLambertMaterial({ color: 0x454a52 });
@@ -60,7 +62,16 @@ function createCobblePlinth() {
   group.add(rim);
 
   group.visible = false; // по умолчанию чистый сланцевый фон #2d3034 как на эталоне Project Zomboid
-  return { group, dispose: () => { topGeo.dispose(); rimGeo.dispose(); stoneMat.dispose(); rimMat.dispose(); atlasTex.dispose(); } };
+  return {
+    group,
+    dispose: () => {
+      topGeo.dispose();
+      rimGeo.dispose();
+      stoneMat.dispose();
+      rimMat.dispose();
+      atlasTex.dispose();
+    }
+  };
 }
 
 /* ---------- УСТАНОВКА РЕЖИМА WIREFRAME НА ПЕРСОНАЖЕ И ОБЪЕКТЕ ---------- */
@@ -68,7 +79,6 @@ function applyWireframe(root, enabled) {
   if (!root) return;
   root.traverse((obj) => {
     if ((obj.isMesh || obj.isSkinnedMesh) && obj.material) {
-      /* Не включаем сетку на прозрачном круге контактной тени под ногами */
       if (obj.material.transparent && obj.material.opacity < 0.5) return;
       if (Array.isArray(obj.material)) {
         obj.material.forEach((m) => { m.wireframe = enabled; });
@@ -90,10 +100,10 @@ export function mountZomboidShowcase(rootEl) {
       <!-- Верхняя панель статуса и метрик производительности -->
       <header class="pz-topbar">
         <div class="pz-brand">
-          <span class="pz-badge">3D ПРОТОТИП ДИЗАЙНА</span>
+          <span class="pz-badge">3D ЭТАЛОН РЕВИЗИЯ 3</span>
           <div class="pz-titles">
-            <h1>Blades Of War · Стиль Project Zomboid 3D</h1>
-            <p>Бесшовные скелетные модели (мужчина и женщина) + средневековый объект</p>
+            <h1>Blades Of War · Земли Эдема: Хладные Ветра vs Златодвор</h1>
+            <p>Суровые лица Project Zomboid, цельная развилка таза, чёткие доспехи и контраст двух королевств</p>
           </div>
         </div>
         <div class="pz-stats" id="pz-stats">
@@ -108,35 +118,47 @@ export function mountZomboidShowcase(rootEl) {
 
       <!-- Подсказка управления мышью/тачем -->
       <div class="pz-hint">
-        <span><b>ЛКМ / палец</b> — крутить 360°</span>
-        <span><b>Колесо / щипок</b> — приблизить</span>
-        <span><b>ПКМ</b> — сдвиг камеры</span>
+        <span><b>Слева:</b> Хладные Ветра (Север)</span>
+        <span><b>Справа:</b> Златодвор (Центр Эдема)</span>
+        <span><b>ЛКМ</b> — крутить 360°</span>
+        <span><b>Колесо</b> — зум</span>
+        <span><b>ПКМ</b> — сдвиг</span>
       </div>
 
-      <!-- Нижняя панель переключения одежды, поз и ракурсов -->
+      <!-- Нижняя панель переключения королевств, одежды, поз и ракурсов -->
       <aside class="pz-dock">
         <div class="pz-group">
-          <span class="pz-label">Одежда / анатомия</span>
+          <span class="pz-label">Королевство</span>
+          <div class="pz-segmented" data-role="kingdom">
+            <button type="button" data-kingdom="both" class="is-active">Оба (контраст)</button>
+            <button type="button" data-kingdom="north">Хладные Ветра</button>
+            <button type="button" data-kingdom="eden">Златодвор</button>
+          </div>
+        </div>
+
+        <div class="pz-group">
+          <span class="pz-label">Комплект</span>
           <div class="pz-segmented" data-role="outfit">
-            <button type="button" data-outfit="villager" class="is-active">Житель Брода</button>
-            <button type="button" data-outfit="underwear">Исподнее (силуэт)</button>
-            <button type="button" data-outfit="warrior">Воин Севера</button>
+            <button type="button" data-outfit="villager" class="is-active">Житель</button>
+            <button type="button" data-outfit="underwear">Исподнее</button>
+            <button type="button" data-outfit="warrior">Воин</button>
           </div>
         </div>
 
         <div class="pz-group">
           <span class="pz-label">Причёска / убор</span>
           <div class="pz-segmented" data-role="hair">
-            <button type="button" data-hair="classic" class="is-active">Косы / стрижка</button>
+            <button type="button" data-hair="classic" class="is-active">Классика</button>
+            <button type="button" data-hair="short">Короткая</button>
             <button type="button" data-hair="long">До плеч</button>
-            <button type="button" data-hair="headwear">Плат / шапка</button>
+            <button type="button" data-hair="headwear">Убор</button>
           </div>
         </div>
 
         <div class="pz-group">
-          <span class="pz-label">Анимация (18 костей)</span>
+          <span class="pz-label">Анимация</span>
           <div class="pz-segmented" data-role="anim">
-            <button type="button" data-anim="scene" class="is-active">Живая сцена</button>
+            <button type="button" data-anim="scene" class="is-active">Сцена</button>
             <button type="button" data-anim="idle">Стойка</button>
             <button type="button" data-anim="walk">Походка</button>
             <button type="button" data-anim="combat">Бой</button>
@@ -147,9 +169,9 @@ export function mountZomboidShowcase(rootEl) {
           <span class="pz-label">Фокус камеры</span>
           <div class="pz-segmented" data-role="focus">
             <button type="button" data-focus="all" class="is-active">Все</button>
-            <button type="button" data-focus="female">Женщина</button>
-            <button type="button" data-focus="male">Мужчина</button>
-            <button type="button" data-focus="closeup">Плечи / лица</button>
+            <button type="button" data-focus="facesNorth">Лица Севера</button>
+            <button type="button" data-focus="facesEden">Лица Центра</button>
+            <button type="button" data-focus="legs">Таз / шаг</button>
             <button type="button" data-focus="well">Колодец</button>
           </div>
         </div>
@@ -157,7 +179,7 @@ export function mountZomboidShowcase(rootEl) {
         <div class="pz-group">
           <span class="pz-label">Вид</span>
           <div class="pz-segmented">
-            <button type="button" id="pz-btn-turntable" title="Медленное вращение сцены">Авто 360°</button>
+            <button type="button" id="pz-btn-turntable" title="Медленное вращение сцены">360°</button>
             <button type="button" id="pz-btn-ground" title="Показать каменную площадку под ногами">Подиум</button>
             <button type="button" id="pz-btn-wire" title="Показать чистую low-poly сетку">Сетка</button>
           </div>
@@ -202,29 +224,29 @@ export function mountZomboidShowcase(rootEl) {
   const camera = new THREE.PerspectiveCamera(34, 16 / 9, 0.1, 60);
 
   /* ---------- 2. МЯГКОЕ ТРЁХТОЧЕЧНОЕ ОСВЕЩЕНИЕ PROJECT ZOMBOID ---------- */
-  const hemiLight = new THREE.HemisphereLight(0xf3f6fb, 0x3b4048, 1.08);
+  const hemiLight = new THREE.HemisphereLight(0xf3f6fb, 0x3b4048, 1.06);
   hemiLight.position.set(0, 6, 0);
   scene.add(hemiLight);
 
   const keyLight = new THREE.DirectionalLight(0xfff4e4, 1.15);
-  keyLight.position.set(2.8, 5.2, 4.2);
+  keyLight.position.set(2.8, 5.4, 4.2);
   keyLight.castShadow = true;
   keyLight.shadow.mapSize.set(1024, 1024);
   keyLight.shadow.camera.near = 0.5;
-  keyLight.shadow.camera.far = 16;
-  keyLight.shadow.camera.left = -3.2;
-  keyLight.shadow.camera.right = 3.2;
-  keyLight.shadow.camera.top = 3.2;
-  keyLight.shadow.camera.bottom = -1.2;
+  keyLight.shadow.camera.far = 18;
+  keyLight.shadow.camera.left = -3.8;
+  keyLight.shadow.camera.right = 3.8;
+  keyLight.shadow.camera.top = 3.4;
+  keyLight.shadow.camera.bottom = -1.4;
   keyLight.shadow.bias = -0.0008;
   scene.add(keyLight);
 
   const rimLight = new THREE.DirectionalLight(0xb8d0f0, 0.42);
-  rimLight.position.set(-3.4, 3.2, -3.2);
+  rimLight.position.set(-3.6, 3.2, -3.2);
   scene.add(rimLight);
 
   /* Невидимая плоскость приёма мягких теней на чистом студийном фоне #2d3034 */
-  const shadowCatcherGeo = new THREE.PlaneGeometry(12, 12);
+  const shadowCatcherGeo = new THREE.PlaneGeometry(14, 14);
   shadowCatcherGeo.rotateX(-Math.PI * 0.5);
   const shadowCatcherMat = new THREE.ShadowMaterial({ opacity: 0.24 });
   const shadowCatcher = new THREE.Mesh(shadowCatcherGeo, shadowCatcherMat);
@@ -232,7 +254,7 @@ export function mountZomboidShowcase(rootEl) {
   shadowCatcher.receiveShadow = true;
   scene.add(shadowCatcher);
 
-  /* ---------- 3. СБОРКА МОДЕЛЕЙ: ЖЕНЩИНА, МУЖЧИНА И СРЕДНЕВЕКОВЫЙ КОЛОДЕЦ ---------- */
+  /* ---------- 3. СБОРКА МОДЕЛЕЙ: ХЛАДНЫЕ ВЕТРА, КОЛОДЕЦ И ЗЛАТОДВОР ---------- */
   const stageGroup = new THREE.Group();
   scene.add(stageGroup);
 
@@ -240,6 +262,7 @@ export function mountZomboidShowcase(rootEl) {
   stageGroup.add(plinth.group);
 
   const state = {
+    kingdomFilter: "both",
     outfit: "villager",
     hairStyle: "classic",
     anim: "scene",
@@ -247,63 +270,104 @@ export function mountZomboidShowcase(rootEl) {
     turntable: false,
     showGround: false,
     wireframe: false,
-    femaleRig: null,
-    maleRig: null,
+    northFemale: null,
+    northMale: null,
+    edenFemale: null,
+    edenMale: null,
     wellProp: null
   };
 
-  /* Средневековый колодец справа от персонажей */
+  /* Эталонный средневековый колодец (10/10) в сердце сцены между двумя королевствами */
   state.wellProp = createZomboidMedievalWell3D();
-  state.wellProp.group.position.set(0.96, 0, -0.18);
-  state.wellProp.group.rotation.y = -0.34;
+  state.wellProp.group.position.set(0.0, 0, -0.34);
+  state.wellProp.group.rotation.y = -0.22;
   stageGroup.add(state.wellProp.group);
 
+  function allRigs() {
+    return [state.northFemale, state.northMale, state.edenFemale, state.edenMale].filter(Boolean);
+  }
+
   function rebuildCharacters(outfit) {
-    if (state.femaleRig) {
-      stageGroup.remove(state.femaleRig.group);
-      disposeZomboidCharacter(state.femaleRig);
-    }
-    if (state.maleRig) {
-      stageGroup.remove(state.maleRig.group);
-      disposeZomboidCharacter(state.maleRig);
-    }
-
-    state.femaleRig = createZomboidCharacter3D({
-      female: true,
-      outfit,
-      hairStyle: state.hairStyle,
-      hairColor: "#4f2d1b"
+    allRigs().forEach((rig) => {
+      stageGroup.remove(rig.group);
+      disposeZomboidCharacter(rig);
     });
-    state.femaleRig.group.position.set(-1.05, 0, 0.14);
-    state.femaleRig.group.rotation.y = 0.16;
-    stageGroup.add(state.femaleRig.group);
 
-    state.maleRig = createZomboidCharacter3D({
-      female: false,
+    /* 1. КОРОЛЕВСТВО ХЛАДНЫХ ВЕТРОВ (СЕВЕР, НОРВИНГ IV) — СЛЕВА */
+    state.northFemale = createZomboidCharacter3D({
+      female: true,
+      kingdom: "north",
       outfit,
       hairStyle: state.hairStyle,
-      hairColor: "#5a361e",
+      hairColor: "#4c3222"
+    });
+    state.northFemale.group.position.set(-1.66, 0, 0.16);
+    state.northFemale.group.rotation.y = 0.18;
+    stageGroup.add(state.northFemale.group);
+
+    state.northMale = createZomboidCharacter3D({
+      female: false,
+      kingdom: "north",
+      outfit,
+      hairStyle: state.hairStyle,
+      hairColor: "#4a2e1b",
       beard: true
     });
-    state.maleRig.group.position.set(-0.22, 0, 0.18);
-    state.maleRig.group.rotation.y = -0.12;
-    stageGroup.add(state.maleRig.group);
+    state.northMale.group.position.set(-0.98, 0, 0.24);
+    state.northMale.group.rotation.y = 0.08;
+    stageGroup.add(state.northMale.group);
+
+    /* 2. КОРОЛЕВСТВО ЗЛАТОДВОР (ЦЕНТР ЗЕМЛИ ЭДЕМА, РОДРИК II) — СПРАВА */
+    state.edenFemale = createZomboidCharacter3D({
+      female: true,
+      kingdom: "eden",
+      outfit,
+      hairStyle: state.hairStyle,
+      hairColor: "#302018"
+    });
+    state.edenFemale.group.position.set(0.98, 0, 0.24);
+    state.edenFemale.group.rotation.y = -0.08;
+    stageGroup.add(state.edenFemale.group);
+
+    state.edenMale = createZomboidCharacter3D({
+      female: false,
+      kingdom: "eden",
+      outfit,
+      hairStyle: state.hairStyle,
+      hairColor: "#281b14",
+      beard: true
+    });
+    state.edenMale.group.position.set(1.66, 0, 0.16);
+    state.edenMale.group.rotation.y = -0.18;
+    stageGroup.add(state.edenMale.group);
+
+    syncKingdomVisibility();
 
     if (state.wireframe) {
-      applyWireframe(state.femaleRig.group, true);
-      applyWireframe(state.maleRig.group, true);
+      allRigs().forEach((rig) => applyWireframe(rig.group, true));
     }
+  }
+
+  function syncKingdomVisibility() {
+    const showNorth = state.kingdomFilter === "both" || state.kingdomFilter === "north";
+    const showEden  = state.kingdomFilter === "both" || state.kingdomFilter === "eden";
+    if (state.northFemale) state.northFemale.group.visible = showNorth;
+    if (state.northMale)   state.northMale.group.visible = showNorth;
+    if (state.edenFemale)  state.edenFemale.group.visible = showEden;
+    if (state.edenMale)    state.edenMale.group.visible = showEden;
   }
 
   rebuildCharacters(state.outfit);
 
   /* ---------- 4. ОРБИТАЛЬНАЯ КАМЕРА 360° С ПЛАВНЫМ ФОКУСОМ ---------- */
   const FOCUS_PRESETS = {
-    all:     { target: [-0.08, 1.02, -0.02], radius: 4.55, yaw: 0.08,  pitch: 0.23 },
-    female:  { target: [-1.05, 0.96,  0.14], radius: 2.55, yaw: 0.18,  pitch: 0.16 },
-    male:    { target: [-0.22, 1.02,  0.18], radius: 2.65, yaw: -0.14, pitch: 0.16 },
-    closeup: { target: [-0.64, 1.46,  0.16], radius: 1.72, yaw: 0.04,  pitch: 0.10 },
-    well:    { target: [ 0.94, 1.05, -0.18], radius: 3.15, yaw: -0.32, pitch: 0.26 }
+    all:        { target: [ 0.00, 1.04, -0.02], radius: 5.35, yaw: 0.00,  pitch: 0.21 },
+    northGroup: { target: [-1.18, 1.02,  0.14], radius: 3.15, yaw: 0.12,  pitch: 0.17 },
+    edenGroup:  { target: [ 1.18, 1.04,  0.14], radius: 3.15, yaw: -0.12, pitch: 0.17 },
+    facesNorth: { target: [-1.32, 1.48,  0.20], radius: 1.56, yaw: 0.12,  pitch: 0.08 },
+    facesEden:  { target: [ 1.32, 1.50,  0.20], radius: 1.56, yaw: -0.12, pitch: 0.08 },
+    legs:       { target: [-1.28, 0.72,  0.20], radius: 2.35, yaw: 0.16,  pitch: 0.12 },
+    well:       { target: [ 0.00, 1.06, -0.34], radius: 3.05, yaw: -0.22, pitch: 0.25 }
   };
 
   const camCtrl = {
@@ -323,7 +387,19 @@ export function mountZomboidShowcase(rootEl) {
   };
 
   function setFocusPreset(key) {
-    const p = FOCUS_PRESETS[key] || FOCUS_PRESETS.all;
+    let resolvedKey = key;
+    if (key === "legs" && state.kingdomFilter === "eden") {
+      camCtrl.goalTarget.set(1.28, 0.74, 0.20);
+      camCtrl.goalRadius = 2.35;
+      camCtrl.goalYaw = -0.16;
+      camCtrl.goalPitch = 0.12;
+      return;
+    }
+    if (key === "all") {
+      if (state.kingdomFilter === "north") resolvedKey = "northGroup";
+      else if (state.kingdomFilter === "eden") resolvedKey = "edenGroup";
+    }
+    const p = FOCUS_PRESETS[resolvedKey] || FOCUS_PRESETS.all;
     camCtrl.goalTarget.set(p.target[0], p.target[1], p.target[2]);
     camCtrl.goalRadius = p.radius;
     camCtrl.goalYaw = p.yaw;
@@ -354,7 +430,7 @@ export function mountZomboidShowcase(rootEl) {
       const rightZ = -Math.sin(camCtrl.yaw);
       camCtrl.goalTarget.x -= rightX * dx * panScale;
       camCtrl.goalTarget.z -= rightZ * dx * panScale;
-      camCtrl.goalTarget.y = Math.max(0.2, Math.min(2.2, camCtrl.goalTarget.y + dy * panScale));
+      camCtrl.goalTarget.y = Math.max(0.18, Math.min(2.3, camCtrl.goalTarget.y + dy * panScale));
     } else {
       camCtrl.goalYaw -= dx * 0.0075;
       camCtrl.goalPitch = Math.max(-0.12, Math.min(1.18, camCtrl.goalPitch + dy * 0.0065));
@@ -368,7 +444,7 @@ export function mountZomboidShowcase(rootEl) {
   canvas.addEventListener("wheel", (e) => {
     e.preventDefault();
     const factor = e.deltaY > 0 ? 1.09 : 0.91;
-    camCtrl.goalRadius = Math.max(1.15, Math.min(8.5, camCtrl.goalRadius * factor));
+    camCtrl.goalRadius = Math.max(1.05, Math.min(9.5, camCtrl.goalRadius * factor));
   }, { passive: false });
 
   /* Двухпальцевый зум на смартфонах/планшетах */
@@ -388,7 +464,7 @@ export function mountZomboidShowcase(rootEl) {
       const dist = Math.hypot(dx, dy);
       const ratio = camCtrl.pinchDist / Math.max(20, dist);
       camCtrl.pinchDist = dist;
-      camCtrl.goalRadius = Math.max(1.15, Math.min(8.5, camCtrl.goalRadius * ratio));
+      camCtrl.goalRadius = Math.max(1.05, Math.min(9.5, camCtrl.goalRadius * ratio));
     }
   }, { passive: true });
 
@@ -407,7 +483,6 @@ export function mountZomboidShowcase(rootEl) {
     lastH = h;
     lastDpr = dpr;
 
-    /* ВАЖНО: setPixelRatio строго ПЕРЕД setSize! */
     renderer.setPixelRatio(dpr);
     renderer.setSize(w, h, false);
     camera.aspect = w / h;
@@ -421,7 +496,6 @@ export function mountZomboidShowcase(rootEl) {
   if (resizeObserver) resizeObserver.observe(viewport);
   window.addEventListener("resize", syncViewportSize);
 
-  /* Защита от потери WebGL-контекста */
   let contextLost = false;
   canvas.addEventListener("webglcontextlost", (e) => {
     e.preventDefault();
@@ -434,6 +508,14 @@ export function mountZomboidShowcase(rootEl) {
   });
 
   /* ---------- 6. ОБРАБОТЧИКИ ПАНЕЛИ УПРАВЛЕНИЯ ---------- */
+  function activateSegmentBtn(role, attr, val) {
+    const wrap = rootEl.querySelector(`[data-role="${role}"]`);
+    if (!wrap) return;
+    wrap.querySelectorAll("button").forEach((b) => {
+      b.classList.toggle("is-active", b.getAttribute(attr) === val);
+    });
+  }
+
   function bindSegmented(role, attr, onPick) {
     const wrap = rootEl.querySelector(`[data-role="${role}"]`);
     if (!wrap) return;
@@ -446,16 +528,28 @@ export function mountZomboidShowcase(rootEl) {
     });
   }
 
+  bindSegmented("kingdom", "data-kingdom", (k) => {
+    state.kingdomFilter = k;
+    syncKingdomVisibility();
+    if (k === "north" && state.focus === "facesEden") {
+      state.focus = "facesNorth";
+      activateSegmentBtn("focus", "data-focus", "facesNorth");
+    } else if (k === "eden" && state.focus === "facesNorth") {
+      state.focus = "facesEden";
+      activateSegmentBtn("focus", "data-focus", "facesEden");
+    }
+    setFocusPreset(state.focus);
+  });
+
   bindSegmented("outfit", "data-outfit", (outfit) => {
     if (outfit === state.outfit) return;
     state.outfit = outfit;
-    if (state.femaleRig && state.maleRig) {
-      state.femaleRig.setOutfit(outfit);
-      state.maleRig.setOutfit(outfit);
-      if (state.wireframe) {
-        applyWireframe(state.femaleRig.group, true);
-        applyWireframe(state.maleRig.group, true);
-      }
+    const rigs = allRigs();
+    if (rigs.length === 4) {
+      rigs.forEach((rig) => {
+        rig.setOutfit(outfit);
+        if (state.wireframe) applyWireframe(rig.group, true);
+      });
     } else {
       rebuildCharacters(outfit);
     }
@@ -464,14 +558,10 @@ export function mountZomboidShowcase(rootEl) {
   bindSegmented("hair", "data-hair", (hairStyle) => {
     if (hairStyle === state.hairStyle) return;
     state.hairStyle = hairStyle;
-    if (state.femaleRig && state.maleRig) {
-      state.femaleRig.setHairStyle(hairStyle);
-      state.maleRig.setHairStyle(hairStyle);
-      if (state.wireframe) {
-        applyWireframe(state.femaleRig.group, true);
-        applyWireframe(state.maleRig.group, true);
-      }
-    }
+    allRigs().forEach((rig) => {
+      rig.setHairStyle(hairStyle);
+      if (state.wireframe) applyWireframe(rig.group, true);
+    });
   });
 
   bindSegmented("anim", "data-anim", (anim) => {
@@ -480,6 +570,16 @@ export function mountZomboidShowcase(rootEl) {
 
   bindSegmented("focus", "data-focus", (focus) => {
     state.focus = focus;
+    /* Если пользователь кликнул Лица Севера или Лица Центра при скрытом королевстве — автоматически покажем его */
+    if (focus === "facesNorth" && state.kingdomFilter === "eden") {
+      state.kingdomFilter = "both";
+      activateSegmentBtn("kingdom", "data-kingdom", "both");
+      syncKingdomVisibility();
+    } else if (focus === "facesEden" && state.kingdomFilter === "north") {
+      state.kingdomFilter = "both";
+      activateSegmentBtn("kingdom", "data-kingdom", "both");
+      syncKingdomVisibility();
+    }
     setFocusPreset(focus);
   });
 
@@ -519,12 +619,10 @@ export function mountZomboidShowcase(rootEl) {
     prevNow = now;
     elapsed += dt;
 
-    /* Автоповорот подиума */
     if (state.turntable && !camCtrl.dragging) {
       camCtrl.goalYaw += dt * 0.42;
     }
 
-    /* Мягкое экспоненциальное сглаживание орбитальной камеры */
     const damp = 1 - Math.exp(-dt * 10.5);
     camCtrl.target.lerp(camCtrl.goalTarget, damp);
     camCtrl.radius += (camCtrl.goalRadius - camCtrl.radius) * damp;
@@ -539,20 +637,28 @@ export function mountZomboidShowcase(rootEl) {
     );
     camera.lookAt(camCtrl.target);
 
-    /* Анимация скелетов персонажей и колодца */
-    if (state.femaleRig && state.maleRig) {
+    /* Анимация скелетов обоих королевств (естественный живой темп ходьбы без замедления и хромоты!) */
+    if (state.northFemale && state.northMale && state.edenFemale && state.edenMale) {
       if (state.anim === "scene") {
-        poseZomboidCharacter(state.femaleRig, "idle", elapsed, { lookYaw: -0.10 });
-        poseZomboidCharacter(state.maleRig, "walk", elapsed * 0.42, { lookYaw: -0.14 });
+        poseZomboidCharacter(state.northFemale, "idle", elapsed,        { lookYaw: 0.06 });
+        poseZomboidCharacter(state.northMale,   "walk", elapsed * 0.94, { lookYaw: 0.04 });
+        poseZomboidCharacter(state.edenFemale,  "idle", elapsed + 1.3,  { lookYaw: -0.06 });
+        poseZomboidCharacter(state.edenMale,    "walk", elapsed * 0.94 + 0.65, { lookYaw: -0.04 });
       } else if (state.anim === "idle") {
-        poseZomboidCharacter(state.femaleRig, "idle", elapsed, { lookYaw: 0 });
-        poseZomboidCharacter(state.maleRig, "idle", elapsed + 1.1, { lookYaw: 0 });
+        poseZomboidCharacter(state.northFemale, "idle", elapsed,       { lookYaw: 0 });
+        poseZomboidCharacter(state.northMale,   "idle", elapsed + 0.9, { lookYaw: 0 });
+        poseZomboidCharacter(state.edenFemale,  "idle", elapsed + 1.7, { lookYaw: 0 });
+        poseZomboidCharacter(state.edenMale,    "idle", elapsed + 2.4, { lookYaw: 0 });
       } else if (state.anim === "walk") {
-        poseZomboidCharacter(state.femaleRig, "walk", elapsed * 0.48, { lookYaw: 0 });
-        poseZomboidCharacter(state.maleRig, "walk", elapsed * 0.48 + 0.5, { lookYaw: 0 });
+        poseZomboidCharacter(state.northFemale, "walk", elapsed,        { lookYaw: 0 });
+        poseZomboidCharacter(state.northMale,   "walk", elapsed + 0.35, { lookYaw: 0 });
+        poseZomboidCharacter(state.edenFemale,  "walk", elapsed + 0.70, { lookYaw: 0 });
+        poseZomboidCharacter(state.edenMale,    "walk", elapsed + 1.05, { lookYaw: 0 });
       } else if (state.anim === "combat") {
-        poseZomboidCharacter(state.femaleRig, "combat", elapsed, { lookYaw: 0.08 });
-        poseZomboidCharacter(state.maleRig, "combat", elapsed + 0.8, { lookYaw: -0.08 });
+        poseZomboidCharacter(state.northFemale, "combat", elapsed,       { lookYaw: 0.08 });
+        poseZomboidCharacter(state.northMale,   "combat", elapsed + 0.6, { lookYaw: 0.06 });
+        poseZomboidCharacter(state.edenFemale,  "combat", elapsed + 1.2, { lookYaw: -0.06 });
+        poseZomboidCharacter(state.edenMale,    "combat", elapsed + 1.8, { lookYaw: -0.08 });
       }
     }
 
@@ -560,7 +666,6 @@ export function mountZomboidShowcase(rootEl) {
 
     renderer.render(scene, camera);
 
-    /* Обновление счётчика FPS и геометрии 2 раза в секунду (без лишнего DOM-дерганья!) */
     fpsFrames++;
     fpsAccum += dt;
     if (fpsAccum >= 0.5) {
@@ -581,8 +686,7 @@ export function mountZomboidShowcase(rootEl) {
       cancelAnimationFrame(rafId);
       if (resizeObserver) resizeObserver.disconnect();
       window.removeEventListener("resize", syncViewportSize);
-      disposeZomboidCharacter(state.femaleRig);
-      disposeZomboidCharacter(state.maleRig);
+      allRigs().forEach((rig) => disposeZomboidCharacter(rig));
       if (state.wellProp) state.wellProp.dispose();
       plinth.dispose();
       shadowCatcherGeo.dispose();

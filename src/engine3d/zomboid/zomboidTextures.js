@@ -1,7 +1,10 @@
 /* ============================================================================
    ПРОЦЕДУРНЫЙ ГЕНЕРАТОР UV-ТЕКСТУР В СТИЛЕ PROJECT ZOMBOID (BUILD 41+ 3D)
-   Лаконичные матовые текстуры: спокойные серьёзные лица без кукольных глаз,
-   цельные шапки волос/головных уборов без «штор», средневековая одежда и дерево.
+   - Суровые мрачные лица без кукольных белых белков и без светлого пятна на бороде
+   - Чёткие резкие границы цветовых зон одежды (под парные UV-кольца без размытия)
+   - Два народа Земли Эдема на контрасте:
+     1) "north" — Королевство Хладных Ветров (бледные обветренные северяне-хладцы)
+     2) "eden"  — Королевство Златодвор (центральное королевство Эдемских земель)
    ============================================================================ */
 
 import * as THREE from "three";
@@ -33,23 +36,37 @@ function softVBand(ctx, x, y, w, h, topCol, midCol, botCol) {
   ctx.fillRect(x, y, w, h);
 }
 
-/* Нормализация имени комплекта одежды (чтобы UI и движок понимали одни и те же ключи) */
 export function normalizeOutfitKey(outfit) {
   if (outfit === "underwear") return "underwear";
   if (outfit === "warrior" || outfit === "armor") return "warrior";
   return "villager";
 }
 
-/* ---------- 1. ЦИЛИНДРИЧЕСКАЯ UV-КАРТА ГОЛОВЫ И ЛИЦА (512×512) ----------
-   u = 0.5 — центр лица (нос/рот); u = 0.25 и 0.75 — виски и уши; u = 0/1 — затылок.
-   v в Three.js: cy = (1 - v) * H:
-   - макушка v = 0.80..1.00 -> cy = 0..102
-   - лоб     v = 0.62..0.78 -> cy = 112..194
-   - брови   v = 0.56       -> cy = 225
-   - глаза   v = 0.52       -> cy = 246
-   - кончик носа v = 0.42   -> cy = 297
-   - рот     v = 0.31       -> cy = 353
-   - подбородок v = 0.14..0.24 -> cy = 390..440 */
+export function normalizeKingdomKey(kingdom) {
+  return kingdom === "eden" ? "eden" : "north";
+}
+
+export function getSkinPalette(kingdom = "north", female = false) {
+  const isEden = normalizeKingdomKey(kingdom) === "eden";
+  if (isEden) {
+    /* Центральное королевство Златодвор: более тёплый оливково-пшеничный тон южных трактов */
+    return female
+      ? { base: "#dec09d", mid: "#cca882", dark: "#ad8660", windburn: "rgba(155, 88, 66, 0.12)" }
+      : { base: "#d2af88", mid: "#be966d", dark: "#9e7650", windburn: "rgba(140, 78, 56, 0.12)" };
+  }
+  /* Королевство Хладных Ветров: бледная, обветренная холодом северная кожа с прохладным подтоном */
+  return female
+    ? { base: "#d9c3b0", mid: "#c4ab96", dark: "#a38873", windburn: "rgba(148, 86, 78, 0.18)" }
+    : { base: "#cdb49e", mid: "#b69a82", dark: "#947862", windburn: "rgba(138, 76, 68, 0.22)" };
+}
+
+/* ---------- 1. МРАЧНАЯ СУРОВАЯ ТЕКСТУРА ГОЛОВЫ В ДУХЕ PROJECT ZOMBOID (512×512) ----------
+   Главный принцип (как на оригинальных моделях Zomboid B41 / Kenshi):
+   - НИКАКИХ белых глазных яблок и кукольных зрачков!
+   - Глубокая надбровная тень в глазницах + узкий тёмный штрих прищура под низкими бровями.
+   - Осунувшиеся скулы, обветренная переносица, сухие сжатые губы без красноты.
+   - У северянина глухая тёмная борода без «высунутого языка»; у златодворца — аккуратная
+     клиновидная бородка и тонкие усы с лёгкой тенью щетины на щеках. */
 export function buildHeadTextureCanvas(opts = {}, canvasFactory = null) {
   const W = 512;
   const H = 512;
@@ -57,145 +74,209 @@ export function buildHeadTextureCanvas(opts = {}, canvasFactory = null) {
   const ctx = cv.getContext("2d");
 
   const fem = !!opts.female;
-  const skinBase = fem ? "#e8c39e" : "#dfb389";
-  const skinMid  = fem ? "#d8ae86" : "#cc9b6f";
-  const skinDark = fem ? "#ba8a63" : "#ad7b52";
-  const hairBase = opts.hairColor || (fem ? "#4f2d1b" : "#5a361e");
-  const hairDark = fem ? "#2c170d" : "#331d0e";
+  const kingdom = normalizeKingdomKey(opts.kingdom);
+  const isEden = kingdom === "eden";
+  const skin = getSkinPalette(kingdom, fem);
 
-  /* 1. Ровный тёплый тон кожи с мягким затенением к затылку и под челюстью */
-  softVBand(ctx, 0, 0, W, H, skinBase, skinBase, skinMid);
-  softRadial(ctx, 0, H * 0.5, 130, "rgba(85, 50, 28, 0.22)", "rgba(85, 50, 28, 0)");
-  softRadial(ctx, W, H * 0.5, 130, "rgba(85, 50, 28, 0.22)", "rgba(85, 50, 28, 0)");
-  softVBand(ctx, 0, H * 0.80, W, H * 0.20, "rgba(110, 68, 40, 0)", "rgba(95, 56, 32, 0.28)", "rgba(80, 46, 26, 0.42)");
+  const hairBase = opts.hairColor || (isEden
+    ? (fem ? "#302018" : "#281b14")
+    : (fem ? "#4c3222" : "#4a2e1b"));
+  const hairDark = "#1a100a";
 
-  /* Едва заметный живой тон на скулах и щеках */
-  softRadial(ctx, W * 0.41, H * 0.56, 36, fem ? "rgba(196, 108, 86, 0.18)" : "rgba(175, 96, 72, 0.12)", "rgba(196, 108, 86, 0)");
-  softRadial(ctx, W * 0.59, H * 0.56, 36, fem ? "rgba(196, 108, 86, 0.18)" : "rgba(175, 96, 72, 0)", "rgba(196, 108, 86, 0)");
+  /* 1. База кожи с тенью к затылку и под челюстью */
+  softVBand(ctx, 0, 0, W, H, skin.base, skin.base, skin.mid);
+  softRadial(ctx, 0, H * 0.5, 140, "rgba(58, 38, 26, 0.24)", "rgba(58, 38, 26, 0)");
+  softRadial(ctx, W, H * 0.5, 140, "rgba(58, 38, 26, 0.24)", "rgba(58, 38, 26, 0)");
+  softVBand(
+    ctx,
+    0,
+    H * 0.80,
+    W,
+    H * 0.20,
+    "rgba(96, 62, 44, 0)",
+    fem ? "rgba(104, 68, 50, 0.14)" : "rgba(68, 44, 30, 0.22)",
+    fem ? "rgba(92, 58, 42, 0.24)" : "rgba(52, 34, 22, 0.34)"
+  );
 
-  /* Ушные раковины по бокам (u = 0.25 и u = 0.75, cy ~ 256) */
+  /* Следы стужи / ветра на переносице и скулах + впадины под скулами (суровое осунувшееся лицо!) */
+  softRadial(ctx, W * 0.50, H * 0.53, 26, skin.windburn, "rgba(0,0,0,0)");
+  softRadial(ctx, W * 0.39, H * 0.55, 28, skin.windburn, "rgba(0,0,0,0)");
+  softRadial(ctx, W * 0.61, H * 0.55, 28, skin.windburn, "rgba(0,0,0,0)");
+  /* Подскуловая тень худобы */
+  softRadial(ctx, W * 0.37, H * 0.65, 28, fem ? "rgba(92, 58, 42, 0.16)" : "rgba(68, 44, 28, 0.22)", "rgba(68, 44, 28, 0)");
+  softRadial(ctx, W * 0.63, H * 0.65, 28, fem ? "rgba(92, 58, 42, 0.16)" : "rgba(68, 44, 28, 0.22)", "rgba(68, 44, 28, 0)");
+
+  /* Уши по бокам */
   [W * 0.25, W * 0.75].forEach((ex) => {
-    softRadial(ctx, ex, H * 0.50, 22, "rgba(130, 76, 46, 0.36)", "rgba(130, 76, 46, 0)");
-    ctx.fillStyle = skinDark;
+    softRadial(ctx, ex, H * 0.50, 20, "rgba(88, 54, 34, 0.36)", "rgba(88, 54, 34, 0)");
+    ctx.fillStyle = skin.dark;
     ctx.beginPath();
-    ctx.ellipse(ex, H * 0.50, 6, 14, 0, 0, Math.PI * 2);
+    ctx.ellipse(ex, H * 0.50, 5.5, 13, 0, 0, Math.PI * 2);
     ctx.fill();
   });
 
-  /* 2. ГЛАЗА И БРОВИ В ПРОПОРЦИЯХ PROJECT ZOMBOID (image-51)
-     Правильная анатомическая посадка глаз (не сбиты в кучу у переносицы!),
-     выразительные густые брови и чёткий тёмный взгляд без кукольных белых блюдец. */
-  const eyeY = H * 0.495; // классическая середина высоты головы!
-  const eyeDX = fem ? 36 : 38;
+  /* 2. ГЛУБОКИЕ ТЕНЕВЫЕ ГЛАЗНИЦЫ И ТЁМНЫЙ ПРИЩУР ZOMBOID (БЕЗ БЕЛЫХ ЯБЛОК!) */
+  const eyeY = H * 0.495;
+  const eyeDX = fem ? 33 : 35;
+
+  /* Хмурая складка на переносице между бровями */
+  softRadial(ctx, W * 0.50, eyeY - 10, 16, "rgba(68, 42, 26, 0.28)", "rgba(68, 42, 26, 0)");
+  if (!fem) {
+    ctx.fillStyle = "rgba(58, 34, 20, 0.36)";
+    ctx.fillRect(W * 0.5 - 4.5, eyeY - 16, 2.2, 9);
+    ctx.fillRect(W * 0.5 + 2.3, eyeY - 16, 2.2, 9);
+  }
 
   [-1, 1].forEach((side) => {
     const ex = W * 0.5 + side * eyeDX;
 
-    /* Мягкая анатомическая тень глазницы под бровью */
-    softRadial(ctx, ex, eyeY - 2, 26, "rgba(112, 66, 38, 0.38)", "rgba(112, 66, 38, 0)");
+    /* Мягкая мрачная тень глазницы под бровью и усталая тень нижнего века */
+    softRadial(ctx, ex, eyeY - 1, 28, fem ? "rgba(68, 42, 28, 0.42)" : "rgba(54, 32, 20, 0.52)", "rgba(54, 32, 20, 0)");
+    softRadial(ctx, ex, eyeY + 8, 18, "rgba(64, 40, 28, 0.24)", "rgba(64, 40, 28, 0)");
 
-    /* Узкий спокойный разрез глаза с деликатным светлым уголком склеры */
-    ctx.fillStyle = "#e5ddd0";
+    /* Никакого белого яблока: чёткий тёмный прищур разреза глаз в масштабе 512×512 */
+    ctx.fillStyle = "rgba(26, 15, 9, 0.92)";
     ctx.beginPath();
-    ctx.ellipse(ex, eyeY + 2.5, fem ? 13.5 : 13.0, fem ? 5.2 : 4.4, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    /* Выразительная тёмная радужка во всю высоту разреза */
-    ctx.fillStyle = fem ? "#2c1b10" : "#21160e";
-    ctx.beginPath();
-    ctx.ellipse(ex - side * 0.8, eyeY + 2.2, fem ? 7.4 : 7.0, fem ? 5.2 : 4.5, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.fillStyle = "#0e0906";
-    ctx.beginPath();
-    ctx.arc(ex - side * 0.8, eyeY + 2.2, 3.4, 0, Math.PI * 2);
-    ctx.fill();
-
-    /* Плотная чёткая линия верхнего века */
-    ctx.fillStyle = "#1c1008";
-    ctx.beginPath();
-    ctx.moveTo(ex - 15, eyeY + 3.0);
-    ctx.quadraticCurveTo(ex, eyeY - (fem ? 4.8 : 3.6), ex + 15, eyeY + 3.0);
-    ctx.lineTo(ex + 14, eyeY - (fem ? 0.6 : 0.2));
-    ctx.quadraticCurveTo(ex, eyeY - (fem ? 7.6 : 6.2), ex - 14, eyeY - (fem ? 0.6 : 0.2));
+    ctx.moveTo(ex - 18, eyeY + 2.4);
+    ctx.quadraticCurveTo(ex, eyeY - (fem ? 4.4 : 3.4), ex + 18, eyeY + 2.0);
+    ctx.quadraticCurveTo(ex, eyeY + (fem ? 5.8 : 4.8), ex - 18, eyeY + 2.4);
     ctx.closePath();
     ctx.fill();
 
-    /* Густые выразительные брови (как на референсе Zomboid image-51!) */
-    ctx.fillStyle = hairDark;
+    /* Едва заметный тёмно-пепельный полутон внутри века (не белый!) и глубокий тёмный зрачок */
+    ctx.fillStyle = "rgba(146, 128, 112, 0.30)";
+    ctx.fillRect(ex - 12, eyeY + 0.2, 24, 2.2);
+    ctx.fillStyle = "#120a06";
+    ctx.beginPath();
+    ctx.ellipse(ex - side * 0.8, eyeY + 1.2, 7.2, 3.8, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    /* Чёткие выразительные низко посаженные брови в духе Zomboid (масштаб 512×512!) */
+    ctx.fillStyle = fem ? hairBase : hairDark;
     ctx.beginPath();
     if (fem) {
-      ctx.moveTo(ex - side * 17, eyeY - 9.5);
-      ctx.quadraticCurveTo(ex - side * 2, eyeY - 16.0, ex + side * 18, eyeY - 10.5);
-      ctx.lineTo(ex + side * 17, eyeY - 6.2);
-      ctx.quadraticCurveTo(ex - side * 2, eyeY - 11.2, ex - side * 16, eyeY - 5.8);
+      /* Строгие плотные брови суровой женщины без удивлённой дуги */
+      ctx.moveTo(ex - side * 20, eyeY - 6.5);
+      ctx.quadraticCurveTo(ex - side * 2, eyeY - 12.2, ex + side * 22, eyeY - 8.5);
+      ctx.lineTo(ex + side * 21, eyeY - 4.0);
+      ctx.quadraticCurveTo(ex - side * 2, eyeY - 6.8, ex - side * 19, eyeY - 2.2);
     } else {
-      ctx.moveTo(ex - side * 18, eyeY - 6.5);
-      ctx.quadraticCurveTo(ex, eyeY - 13.5, ex + side * 20, eyeY - 9.5);
-      ctx.lineTo(ex + side * 19, eyeY - 3.2);
-      ctx.quadraticCurveTo(ex, eyeY - 7.0, ex - side * 17, eyeY - 1.5);
+      /* Густые тяжёлые мужские брови, нависшие над глазами */
+      ctx.moveTo(ex - side * 22, eyeY - 3.8);
+      ctx.quadraticCurveTo(ex - side * 3, eyeY - 12.5, ex + side * 24, eyeY - 8.8);
+      ctx.lineTo(ex + side * 22, eyeY - 1.8);
+      ctx.quadraticCurveTo(ex - side * 3, eyeY - 4.8, ex - side * 20, eyeY + 1.4);
     }
     ctx.closePath();
     ctx.fill();
   });
 
-  /* 3. НОС: мягкие боковые грани переносицы и тень под основанием носа */
-  softRadial(ctx, W * 0.5 - 12, H * 0.54, 15, "rgba(124, 74, 42, 0.22)", "rgba(124, 74, 42, 0)");
-  softRadial(ctx, W * 0.5 + 12, H * 0.54, 15, "rgba(124, 74, 42, 0.22)", "rgba(124, 74, 42, 0)");
-  softRadial(ctx, W * 0.5, H * 0.605, 16, "rgba(110, 62, 34, 0.42)", "rgba(110, 62, 34, 0)");
-  ctx.fillStyle = "rgba(70, 38, 20, 0.60)";
+  /* 3. НОС И НОСОГУБНЫЕ СКЛАДКИ */
+  softRadial(ctx, W * 0.5 - 12, H * 0.555, 14, "rgba(78, 46, 28, 0.24)", "rgba(78, 46, 28, 0)");
+  softRadial(ctx, W * 0.5 + 12, H * 0.555, 14, "rgba(78, 46, 28, 0.24)", "rgba(78, 46, 28, 0)");
+  softRadial(ctx, W * 0.5, H * 0.606, 16, "rgba(68, 38, 22, 0.42)", "rgba(68, 38, 22, 0)");
+  ctx.fillStyle = "rgba(42, 22, 12, 0.68)";
   ctx.beginPath();
-  ctx.ellipse(W * 0.5 - 6.5, H * 0.598, 3.2, 1.8, 0.25, 0, Math.PI * 2);
-  ctx.ellipse(W * 0.5 + 6.5, H * 0.598, 3.2, 1.8, -0.25, 0, Math.PI * 2);
+  ctx.ellipse(W * 0.5 - 6.8, H * 0.598, 3.6, 2.0, 0.25, 0, Math.PI * 2);
+  ctx.ellipse(W * 0.5 + 6.8, H * 0.598, 3.6, 2.0, -0.25, 0, Math.PI * 2);
   ctx.fill();
 
-  /* 4. ЕСТЕСТВЕННЫЙ РОТ НОРМАЛЬНОЙ ШИРИНЫ И ОПРЯТНАЯ БОРОДА С УСАМИ ПОД НОСОМ */
-  const mouthY = H * 0.678;
+  /* Суровые носогубные тени усталости */
+  ctx.fillStyle = "rgba(68, 40, 24, 0.20)";
+  ctx.beginPath();
+  ctx.moveTo(W * 0.452, H * 0.595);
+  ctx.lineTo(W * 0.418, H * 0.688);
+  ctx.lineTo(W * 0.430, H * 0.688);
+  ctx.closePath();
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(W * 0.548, H * 0.595);
+  ctx.lineTo(W * 0.582, H * 0.688);
+  ctx.lineTo(W * 0.570, H * 0.688);
+  ctx.closePath();
+  ctx.fill();
+
+  /* 4. СУХИЕ СЖАТЫЕ ГУБЫ И БОРОДА (БЕЗ РОЗОВОГО «ЯЗЫКА» И БЕЗ РЕЗКОЙ МАСКИ ЩЕТИНЫ!) */
+  const mouthY = H * 0.680;
   if (!fem && opts.beard !== false) {
-    /* Окладистая борода вдоль челюсти и бакенбард + плотные усы сразу под носом! */
-    ctx.fillStyle = hairBase;
-    ctx.beginPath();
-    ctx.moveTo(W * 0.27, H * 0.48);
-    ctx.quadraticCurveTo(W * 0.34, H * 0.64, W * 0.40, H * 0.635);
-    ctx.quadraticCurveTo(W * 0.50, H * 0.605, W * 0.60, H * 0.635);
-    ctx.quadraticCurveTo(W * 0.66, H * 0.64, W * 0.73, H * 0.48);
-    ctx.lineTo(W * 0.75, H * 0.90);
-    ctx.quadraticCurveTo(W * 0.50, H * 0.98, W * 0.25, H * 0.90);
-    ctx.closePath();
-    ctx.fill();
+    if (isEden) {
+      /* Златодворец: мягкая растушёванная щетина на скулах + чёткие усы и бородка-эспаньолка */
+      softRadial(ctx, W * 0.37, H * 0.72, 46, "rgba(38, 25, 16, 0.26)", "rgba(38, 25, 16, 0)");
+      softRadial(ctx, W * 0.63, H * 0.72, 46, "rgba(38, 25, 16, 0.26)", "rgba(38, 25, 16, 0)");
+      softRadial(ctx, W * 0.50, H * 0.82, 54, "rgba(38, 25, 16, 0.28)", "rgba(38, 25, 16, 0)");
 
-    /* Чёткие тёмные усы над линией рта */
-    ctx.fillStyle = hairDark;
-    ctx.beginPath();
-    ctx.moveTo(W * 0.395, mouthY + 2);
-    ctx.quadraticCurveTo(W * 0.45, mouthY - 15, W * 0.50, mouthY - 11);
-    ctx.quadraticCurveTo(W * 0.55, mouthY - 15, W * 0.605, mouthY + 2);
-    ctx.quadraticCurveTo(W * 0.50, mouthY - 3, W * 0.395, mouthY + 2);
-    ctx.closePath();
-    ctx.fill();
+      /* Чёткая эспаньолка по подбородку и усы */
+      ctx.fillStyle = hairBase;
+      ctx.beginPath();
+      ctx.moveTo(W * 0.40, mouthY + 1);
+      ctx.quadraticCurveTo(W * 0.50, mouthY - 17, W * 0.60, mouthY + 1);
+      ctx.lineTo(W * 0.565, H * 0.91);
+      ctx.quadraticCurveTo(W * 0.50, H * 0.97, W * 0.435, H * 0.91);
+      ctx.closePath();
+      ctx.fill();
 
-    /* Тень рта и небольшая нижняя губа в бороде */
-    ctx.fillStyle = "#a8735b";
-    ctx.beginPath();
-    ctx.ellipse(W * 0.5, mouthY + 4, 11, 3.2, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = "#1e0f07";
-    ctx.fillRect(W * 0.5 - 15, mouthY - 0.5, 30, 2.5);
+      /* Сухая сомкнутая тень рта (никакого светлого языка!) */
+      ctx.fillStyle = "#120a05";
+      ctx.fillRect(W * 0.5 - 18, mouthY + 0.8, 36, 2.8);
+    } else {
+      /* Северянин Хладных Ветров: мягкая тень щетины на щеках + густая цельная северная борода! */
+      softRadial(ctx, W * 0.36, H * 0.69, 48, "rgba(46, 28, 16, 0.28)", "rgba(46, 28, 16, 0)");
+      softRadial(ctx, W * 0.64, H * 0.69, 48, "rgba(46, 28, 16, 0.28)", "rgba(46, 28, 16, 0)");
+
+      ctx.fillStyle = hairBase;
+      ctx.beginPath();
+      ctx.moveTo(W * 0.25, H * 0.49);
+      ctx.quadraticCurveTo(W * 0.34, H * 0.635, W * 0.40, H * 0.635);
+      ctx.quadraticCurveTo(W * 0.50, H * 0.602, W * 0.60, H * 0.635);
+      ctx.quadraticCurveTo(W * 0.66, H * 0.635, W * 0.75, H * 0.49);
+      ctx.lineTo(W * 0.76, H * 0.93);
+      ctx.quadraticCurveTo(W * 0.50, H * 0.995, W * 0.24, H * 0.93);
+      ctx.closePath();
+      ctx.fill();
+
+      /* Густые усы и тёмная борозда сжатого рта — БЕЗ светлой нижней губы! */
+      ctx.fillStyle = hairDark;
+      ctx.beginPath();
+      ctx.moveTo(W * 0.38, mouthY + 3);
+      ctx.quadraticCurveTo(W * 0.50, mouthY - 16, W * 0.62, mouthY + 3);
+      ctx.quadraticCurveTo(W * 0.50, mouthY + 6, W * 0.38, mouthY + 3);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.fillStyle = "#0f0804";
+      ctx.fillRect(W * 0.5 - 19, mouthY + 1.4, 38, 3.0);
+    }
   } else {
-    /* Спокойный человеческий рот нормальной ширины (не крошечная точка!) */
-    ctx.fillStyle = fem ? "#b97868" : "#ad7660";
+    /* Строгие сухие губы приглушённого оттенка в масштабе 512×512 (без яркой помады!) */
+    ctx.fillStyle = isEden
+      ? (fem ? "#a27262" : "#966c58")
+      : (fem ? "#9a7568" : "#8d6b5e");
     ctx.beginPath();
-    ctx.moveTo(W * 0.5 - 18, mouthY + 1);
-    ctx.quadraticCurveTo(W * 0.5, mouthY - 5.5, W * 0.5 + 18, mouthY + 1);
-    ctx.quadraticCurveTo(W * 0.5, mouthY + 8.0, W * 0.5 - 18, mouthY + 1);
+    ctx.moveTo(W * 0.5 - 22, mouthY + 1.2);
+    ctx.quadraticCurveTo(W * 0.5, mouthY - 5.2, W * 0.5 + 22, mouthY + 1.2);
+    ctx.quadraticCurveTo(W * 0.5, mouthY + 7.2, W * 0.5 - 22, mouthY + 1.2);
     ctx.closePath();
     ctx.fill();
 
-    ctx.fillStyle = "rgba(64, 30, 22, 0.72)";
-    ctx.fillRect(W * 0.5 - 17, mouthY + 0.2, 34, 2.0);
+    ctx.fillStyle = "rgba(44, 22, 16, 0.80)";
+    ctx.fillRect(W * 0.5 - 22, mouthY + 0.4, 44, 2.4);
+    ctx.fillRect(W * 0.5 - 23.5, mouthY + 1.4, 2.8, 2.4);
+    ctx.fillRect(W * 0.5 + 20.7, mouthY + 1.4, 2.8, 2.4);
   }
 
-  /* Подложка волос на макушке, висках и затылке (естественное обрамление лба и висков!) */
+  /* Небольшой шрам на брови у северного мужчины — живая деталь сурового края */
+  if (!fem && !isEden) {
+    ctx.fillStyle = "rgba(150, 96, 82, 0.52)";
+    ctx.beginPath();
+    ctx.moveTo(W * 0.5 + eyeDX + 6, eyeY - 16);
+    ctx.lineTo(W * 0.5 + eyeDX + 9, eyeY - 16);
+    ctx.lineTo(W * 0.5 + eyeDX + 4, eyeY + 8);
+    ctx.lineTo(W * 0.5 + eyeDX + 1, eyeY + 8);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  /* Подложка волос на темени и висках */
   ctx.fillStyle = hairBase;
   ctx.fillRect(0, 0, W, H * 0.23);
   ctx.fillRect(0, 0, W * 0.28, H * 0.56);
@@ -204,64 +285,90 @@ export function buildHeadTextureCanvas(opts = {}, canvasFactory = null) {
   return cv;
 }
 
-/* ---------- 2. UV-КАРТА ЦЕЛЬНОЙ ШАПКИ ВОЛОС / СРЕДНЕВЕКОВОГО ГОЛОВНОГО УБОРА (256×256) ----------
-   Никакого «частокола штор»! Мягкий живописный объём от темени к краям + режим плата/шапки. */
-export function buildHairTextureCanvas(hairColor = "#4f2d1b", styleKey = "classic", female = false, canvasFactory = null) {
+/* ---------- 2. UV-КАРТА ЦЕЛЬНОЙ ШАПКИ ВОЛОС / УБОРОВ ДВУХ КОРОЛЕВСТВ (256×256) ---------- */
+export function buildHairTextureCanvas(hairColor = "#4a2e1b", styleKey = "classic", female = false, kingdom = "north", canvasFactory = null) {
   const W = 256;
   const H = 256;
   const cv = create2DCanvas(W, H, canvasFactory);
   const ctx = cv.getContext("2d");
+  const isEden = normalizeKingdomKey(kingdom) === "eden";
 
   if (styleKey === "headwear") {
-    if (female) {
-      /* Средневековый женский льняной плат / убрус с тёплой вышивкой по кромке */
-      softVBand(ctx, 0, 0, W, H, "#e4ddd2", "#cfc6b8", "#b2a899");
-      /* Мягкие естественные складки ткани */
-      softRadial(ctx, W * 0.32, H * 0.55, 58, "rgba(95, 84, 70, 0.18)", "rgba(95, 84, 70, 0)");
-      softRadial(ctx, W * 0.68, H * 0.55, 58, "rgba(95, 84, 70, 0.18)", "rgba(95, 84, 70, 0)");
-      /* Тонкая северная тесьма по краю плата (внизу UV v=0..0.12 -> cy=224..256) */
-      ctx.fillStyle = "#7c3229";
-      ctx.fillRect(0, H - 22, W, 8);
-      ctx.fillStyle = "#c9a86a";
-      for (let x = 8; x < W; x += 16) {
-        ctx.fillRect(x, H - 20, 6, 4);
+    if (isEden) {
+      if (female) {
+        /* Златодвор: благородный бордово-парчовый чепец с золотым обручем и светлой вуалью */
+        softVBand(ctx, 0, 0, W, H * 0.65, "#6b232b", "#541a21", "#3e1218");
+        softVBand(ctx, 0, H * 0.65, W, H * 0.35, "#ded6c8", "#c8beae", "#aba08f");
+        /* Золотой венец/обруч на границе чепца */
+        ctx.fillStyle = "#c9a44c";
+        ctx.fillRect(0, H * 0.62, W, 11);
+        ctx.fillStyle = "#8a242c";
+        for (let x = 12; x < W; x += 32) {
+          ctx.fillRect(x, H * 0.635, 7, 6);
+        }
+      } else {
+        /* Златодвор: суконный придворный шаперон / берет тёмно-пурпурного сукна с золотым кантом */
+        softVBand(ctx, 0, 0, W, H * 0.74, "#5c1f28", "#47161e", "#340f15");
+        softVBand(ctx, 0, H * 0.74, W, H * 0.26, "#282320", "#1e1a18", "#151210");
+        ctx.fillStyle = "#c8a24a";
+        ctx.fillRect(0, H * 0.72, W, 7);
       }
     } else {
-      /* Средневековая северная суконная шапка с меховым околышем */
-      softVBand(ctx, 0, 0, W, H * 0.72, "#5c4634", "#4a3728", "#3b2b1f");
-      /* Тёмно-бурый меховой околыш по низу шапки */
-      softVBand(ctx, 0, H * 0.70, W, H * 0.30, "#332419", "#271b12", "#1d140d");
-      for (let x = 4; x < W; x += 12) {
-        ctx.fillStyle = "rgba(180, 145, 110, 0.12)";
-        ctx.fillRect(x, H * 0.72, 5, H * 0.26);
+      if (female) {
+        /* Хладные Ветра: суровый северный небелёный льняной убрус с тёмно-брусничной вышивкой */
+        softVBand(ctx, 0, 0, W, H, "#d8d1c5", "#c2baac", "#a69e90");
+        ctx.fillStyle = "#692822";
+        ctx.fillRect(0, H - 22, W, 8);
+        ctx.fillStyle = "#b89a62";
+        for (let x = 8; x < W; x += 16) {
+          ctx.fillRect(x, H - 20, 6, 4);
+        }
+      } else {
+        /* Хладные Ветра: тёплая таёжная шапка с густым меховым околышем */
+        softVBand(ctx, 0, 0, W, H * 0.68, "#4f3d2d", "#3f3023", "#302419");
+        softVBand(ctx, 0, H * 0.68, W, H * 0.32, "#2c2017", "#211710", "#17100b");
       }
     }
     return cv;
   }
 
-  /* Натуральная цельная шапка волос: мягкий градиент без полосатых «жалюзи»! */
+  /* Цельная шапка волос без полосатых «штор» */
   ctx.fillStyle = hairColor;
   ctx.fillRect(0, 0, W, H);
 
-  /* Чуть темнее у макушки/пробора и у самых кончиков, мягкий тёплый блик по середине объёма */
   const g = ctx.createLinearGradient(0, 0, 0, H);
-  g.addColorStop(0.00, "rgba(18, 9, 4, 0.32)");
-  g.addColorStop(0.28, "rgba(255, 215, 175, 0.14)");
-  g.addColorStop(0.65, "rgba(0, 0, 0, 0.04)");
-  g.addColorStop(1.00, "rgba(16, 8, 3, 0.30)");
+  g.addColorStop(0.00, "rgba(14, 8, 4, 0.36)");
+  g.addColorStop(0.30, "rgba(255, 220, 185, 0.11)");
+  g.addColorStop(0.70, "rgba(0, 0, 0, 0.06)");
+  g.addColorStop(1.00, "rgba(12, 6, 3, 0.34)");
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, W, H);
 
-  /* Лишь 6 широких мягких полутоновых прядей на весь оборот головы (вместо 56 резких полосок!) */
-  for (let i = 0; i < 6; i++) {
-    const cx = (i + 0.5) * (W / 6);
-    softRadial(ctx, cx, H * 0.48, 34, i % 2 === 0 ? "rgba(255, 210, 165, 0.09)" : "rgba(20, 10, 4, 0.12)", "rgba(0,0,0,0)");
+  /* У жительницы Златодвора в собранной причёске тонкий золочёный шнур/обруч вокруг пучка */
+  if (isEden && female && styleKey === "classic") {
+    ctx.fillStyle = "#c49e48";
+    ctx.fillRect(0, H * 0.76, W, 6);
   }
 
   return cv;
 }
 
-/* ---------- 3. АТЛАС ТЕЛА И ОДЕЖДЫ В СТИЛЕ PROJECT ZOMBOID (512×512) ---------- */
+/* ---------- 3. АТЛАС ТЕЛА И ОДЕЖДЫ С ЧЁТКИМИ ЗОНАМИ БЕЗ РАЗМЫТИЯ (512×512) ----------
+   ВАЖНО: каждая цветовая зона одежды выровнена по чётким пиксельным координатам Y,
+   а геометрия в zomboidCharacter.js ставит парные UV-кольца ДО и ПОСЛЕ каждого шва —
+   поэтому края рукавов, наручей, шорт и сапог АБСОЛЮТНО ЧЁТКИЕ, без размазни!
+
+   Карта зон по cy (где v = 1 - cy / 512):
+   - cy =   0 ..  28 : шея и ключицы (чистая кожа)
+   - cy =  28 .. 136 : верх торса (рубаха / дублет / бригантина / сюрко / майка)
+   - cy = 136 .. 150 : ремень / пояс
+   - cy = 150 .. 192 : таз и развилка штанов (СТРОГО один цвет с верхом штанин cy = 304..380!)
+   - cy = 192 .. 244 : верх руки (рукав / плечо)
+   - cy = 244 .. 284 : предплечье (кожа / нижний рукав / наруч)
+   - cy = 284 .. 304 : кисть и пальцы (чистая кожа)
+   - cy = 304 .. 380 : бедро и колено (штаны / шоссы / шорты / кожа)
+   - cy = 380 .. 432 : голень (штаны или высокое голенище сапога воина!)
+   - cy = 432 .. 512 : стопа / башмак / сапог */
 export function buildBodyTextureCanvas(opts = {}, canvasFactory = null) {
   const W = 512;
   const H = 512;
@@ -270,180 +377,271 @@ export function buildBodyTextureCanvas(opts = {}, canvasFactory = null) {
 
   const fem = !!opts.female;
   const outfit = normalizeOutfitKey(opts.outfit);
+  const kingdom = normalizeKingdomKey(opts.kingdom);
+  const isEden = kingdom === "eden";
+  const skin = getSkinPalette(kingdom, fem);
 
-  const skinBase = fem ? "#e8c39e" : "#dfb389";
-  const skinMid  = fem ? "#d8ae86" : "#cc9b6f";
-  const skinDark = fem ? "#ba8a63" : "#ad7b52";
-
-  ctx.fillStyle = skinBase;
+  ctx.fillStyle = skin.base;
   ctx.fillRect(0, 0, W, H);
 
-  /* ================= ПОЛОСА 0: ТОРС, ШЕЯ И ТАЗ (y = 0..192) =================
-     y = 0..24 — ствол шеи (строго чистая кожа без красных пятен!).
-     y = 24..142 — грудь/спина/рубаха.
-     y = 142..192 — пояс и верх брюк/белья. */
-  softVBand(ctx, 0, 0, W, 192, skinBase, skinMid, skinBase);
-
-  function paintSoftFabricVolume(yStart, yEnd, shadeCol) {
-    softRadial(ctx, W * 0.35, (yStart + yEnd) * 0.5, 44, shadeCol, "rgba(0,0,0,0)");
-    softRadial(ctx, W * 0.65, (yStart + yEnd) * 0.5, 44, shadeCol, "rgba(0,0,0,0)");
-    softRadial(ctx, W * 0.50, yEnd - 8, 52, shadeCol, "rgba(0,0,0,0)");
+  function paintSubtleSideShade(y0, h, alpha = 0.16) {
+    softRadial(ctx, W * 0.25, y0 + h * 0.5, h * 0.55, `rgba(12, 12, 14, ${alpha})`, "rgba(0,0,0,0)");
+    softRadial(ctx, W * 0.75, y0 + h * 0.5, h * 0.55, `rgba(12, 12, 14, ${alpha})`, "rgba(0,0,0,0)");
   }
 
+  /* =========================================================================
+     ВАРИАНТ 1: ИСПОДНЕЕ / СИЛУЭТ АНАТОМИИ ("underwear")
+     ========================================================================= */
   if (outfit === "underwear") {
+    softVBand(ctx, 0, 0, W, 192, skin.base, skin.mid, skin.base);
+    const clothTop = isEden ? "#cfc6b4" : "#aeb8c4";
+    const clothBot = isEden ? "#b3a894" : "#8f9aa8";
+    const briefCol = isEden ? "#4a3c34" : "#3a3e45";
+
     if (fem) {
-      /* Анатомический рельеф ключиц и груди + аккуратное светло-серое исподнее (как на референсе Zomboid) */
-      softRadial(ctx, W * 0.43, 66, 24, "rgba(255, 240, 224, 0.28)", "rgba(255, 240, 224, 0)");
-      softRadial(ctx, W * 0.57, 66, 24, "rgba(255, 240, 224, 0.28)", "rgba(255, 240, 224, 0)");
-      softVBand(ctx, 0, 56, W, 38, "#d4dbe4", "#bac3cf", "#9da7b5");
-      ctx.fillStyle = "#c5ceda";
-      ctx.fillRect(W * 0.40, 26, 8, 34);
-      ctx.fillRect(W * 0.58, 26, 8, 34);
-      softVBand(ctx, 0, 148, W, 44, "#50555d", "#42464d", "#34383e");
+      /* Бандо / льняная нагрудная повязка (cy = 56..96) и нижнее бельё на тазу (cy = 150..192) */
+      softVBand(ctx, 0, 56, W, 40, clothTop, clothBot, clothBot);
+      ctx.fillStyle = clothTop;
+      ctx.fillRect(W * 0.40, 28, 8, 30);
+      ctx.fillRect(W * 0.58, 28, 8, 30);
+      ctx.fillStyle = briefCol;
+      ctx.fillRect(0, 150, W, 42);
+      /* Ноги полностью кожа (cy = 304..432) */
+      softVBand(ctx, 0, 304, W, 128, skin.base, skin.mid, skin.base);
     } else {
-      /* Классическая серо-голубая майка и тёмные боксеры из Project Zomboid (image-51) */
-      softVBand(ctx, 0, 32, W, 108, "#b5c2d6", "#9eadc4", "#8595ad");
-      ctx.fillStyle = skinBase;
+      /* Мужская нательная майка (cy = 28..150) и боксеры на тазу + верху бедра (cy = 150..192 и 304..336) */
+      softVBand(ctx, 0, 28, W, 122, clothTop, clothBot, clothBot);
+      ctx.fillStyle = skin.base;
       ctx.beginPath();
-      ctx.ellipse(W * 0.5, 24, 44, 22, 0, 0, Math.PI * 2);
+      ctx.ellipse(W * 0.5, 28, 42, 18, 0, 0, Math.PI * 2);
       ctx.fill();
-      paintSoftFabricVolume(60, 126, "rgba(64, 78, 98, 0.18)");
-      softVBand(ctx, 0, 138, W, 54, "#484c53", "#3b3f45", "#2f3237");
+
+      ctx.fillStyle = briefCol;
+      ctx.fillRect(0, 150, W, 42);
+      softVBand(ctx, 0, 304, W, 128, skin.base, skin.mid, skin.base);
+      ctx.fillStyle = briefCol;
+      ctx.fillRect(0, 304, W, 32); // чёткая граница шорт на cy = 336!
     }
-  } else if (outfit === "villager") {
-    /* Добротная повседневная одежда Студёного Брода / Zomboid:
-       у женщины — светлая льняная блуза с рукавом и тёмно-серые брюки;
-       у мужчины — оливково-серая северная рубаха с рукавами и суконные порты. */
-    const topL = fem ? "#dfd9d0" : "#687666";
-    const topM = fem ? "#c8c1b7" : "#556254";
-    const topD = fem ? "#aba49a" : "#424d41";
-    softVBand(ctx, 0, 26, W, 114, topL, topM, topD);
 
-    /* Чистая шея и аккуратный V-вырез ворота */
-    ctx.fillStyle = skinBase;
-    ctx.fillRect(0, 0, W, 26);
-    ctx.beginPath();
-    ctx.moveTo(W * 0.44, 25);
-    ctx.lineTo(W * 0.56, 25);
-    ctx.lineTo(W * 0.50, 50);
-    ctx.closePath();
-    ctx.fill();
+    softVBand(ctx, 0, 192, W, 112, skin.base, skin.mid, skin.base);
+    ctx.fillStyle = skin.dark;
+    ctx.fillRect(0, 297, W, 7);
+    /* Босые стопы в режиме исподнего (чистая базовая модель тела, как в эталоне Project Zomboid!) */
+    softVBand(ctx, 0, 432, W, 80, skin.base, skin.mid, skin.dark);
+    return cv;
+  }
 
-    paintSoftFabricVolume(62, 126, fem ? "rgba(88, 82, 74, 0.18)" : "rgba(26, 34, 26, 0.22)");
+  /* =========================================================================
+     ВАРИАНТ 2: МИРНЫЙ ЖИТЕЛЬ ("villager") — СЕВЕР vs ЗЛАТОДВОР
+     ========================================================================= */
+  if (outfit === "villager") {
+    if (isEden) {
+      /* ЦЕНТРАЛЬНОЕ КОРОЛЕВСТВО ЗЛАТОДВОР:
+         Благородное пурпурно-винно-красное / тёмно-синее суконное котарди с золотой отделкой,
+         у женщины светлые льняные нижние рукава, у мужчины золочёные пуговицы и тёмные шоссы. */
+      const topL = fem ? "#7a2932" : "#283a52";
+      const topM = fem ? "#632028" : "#1f2e42";
+      const topD = fem ? "#4b171e" : "#172333";
+      const pantsL = fem ? "#4a2026" : "#2c2826";
+      const pantsD = fem ? "#36161b" : "#1e1b1a";
 
-    /* Верх брюк на тазу — тон в тон со штанинами! */
-    softVBand(ctx, 0, 140, W, 52, "#545860", "#494d54", "#3e4248");
+      softVBand(ctx, 0, 0, W, 28, skin.base, skin.base, skin.mid);
+      softVBand(ctx, 0, 28, W, 108, topL, topM, topD);
+      paintSubtleSideShade(28, 108, 0.20);
 
-    /* Кожаный ремень с пряжкой */
-    ctx.fillStyle = "#25211e";
-    ctx.fillRect(0, 134, W, 12);
-    ctx.fillStyle = "#dce2e8";
-    ctx.fillRect(W * 0.5 - 12, 132, 24, 16);
-    ctx.fillStyle = "#6e7680";
-    ctx.fillRect(W * 0.5 - 7, 135, 14, 10);
+      /* Аккуратный вырез с золотистой вышивкой Златодвора */
+      ctx.fillStyle = "#c8a349";
+      ctx.fillRect(0, 28, W, 5);
+      ctx.fillRect(W * 0.5 - 3, 28, 6, 108); // вертикальная золотая планка котарди!
+      if (fem) {
+        ctx.fillStyle = skin.base;
+        ctx.fillRect(W * 0.43, 24, W * 0.14, 16);
+        ctx.fillStyle = "#c8a349";
+        ctx.fillRect(W * 0.43, 39, W * 0.14, 4);
+      }
+
+      /* Пояс с золочёной пряжкой Златодвора (cy = 136..150) */
+      ctx.fillStyle = "#2b1c12";
+      ctx.fillRect(0, 136, W, 14);
+      ctx.fillStyle = "#d4af53";
+      ctx.fillRect(W * 0.5 - 13, 134, 26, 18);
+      ctx.fillStyle = "#2b1c12";
+      ctx.fillRect(W * 0.5 - 7, 138, 14, 10);
+
+      /* Таз и ноги ЕДИНОГО цвета (cy = 150..192 и cy = 304..432) — 0 швов! */
+      softVBand(ctx, 0, 150, W, 42, pantsL, pantsL, pantsD);
+      softVBand(ctx, 0, 304, W, 128, pantsD, pantsL, pantsD);
+
+      /* Рукава: верх cy = 192..244 в цвет котарди + золотая тесьма, предплечье cy = 244..284 узкий нижний рукав! */
+      softVBand(ctx, 0, 192, W, 52, topL, topM, topD);
+      ctx.fillStyle = "#c8a349";
+      ctx.fillRect(0, 239, W, 5);
+      if (fem) {
+        softVBand(ctx, 0, 244, W, 40, "#dfd7c8", "#cdc4b4", "#b8ae9d");
+      } else {
+        softVBand(ctx, 0, 244, W, 40, "#3b2820", "#2f2019", "#241812");
+      }
+      softVBand(ctx, 0, 284, W, 20, skin.base, skin.mid, skin.dark);
+
+      /* Остроносые кожаные туфли/сапожки Златодвора (cy = 432..512) */
+      softVBand(ctx, 0, 432, W, 80, "#3d2618", "#2b1a10", "#1a100a");
+    } else {
+      /* КОРОЛЕВСТВО ХЛАДНЫХ ВЕТРОВ (СЕВЕР):
+         Суровая приглушённая таёжная шерсть и лён, грубый ремень с железной пряжкой, тёмное сукно портов */
+      const topL = fem ? "#b9b2a6" : "#566355";
+      const topM = fem ? "#a39c90" : "#465245";
+      const topD = fem ? "#8a8378" : "#374136";
+      const pantsL = "#464a50";
+      const pantsD = "#383b40";
+
+      softVBand(ctx, 0, 0, W, 28, skin.base, skin.base, skin.mid);
+      softVBand(ctx, 0, 28, W, 108, topL, topM, topD);
+      paintSubtleSideShade(28, 108, 0.20);
+
+      /* Северный V-ворот с тёмной обшивкой */
+      ctx.fillStyle = "#2d2823";
+      ctx.fillRect(0, 28, W, 4);
+      ctx.fillStyle = skin.base;
+      ctx.beginPath();
+      ctx.moveTo(W * 0.45, 27);
+      ctx.lineTo(W * 0.55, 27);
+      ctx.lineTo(W * 0.50, 48);
+      ctx.closePath();
+      ctx.fill();
+
+      /* Кожаный ремень с кованой железной пряжкой (cy = 136..150) */
+      ctx.fillStyle = "#221e1b";
+      ctx.fillRect(0, 136, W, 14);
+      ctx.fillStyle = "#aeb6bf";
+      ctx.fillRect(W * 0.5 - 12, 134, 24, 18);
+      ctx.fillStyle = "#221e1b";
+      ctx.fillRect(W * 0.5 - 7, 138, 14, 10);
+
+      /* Таз (cy = 150..192) и штанины (cy = 304..432) одного плотного серо-бурого сукна! */
+      ctx.fillStyle = pantsL;
+      ctx.fillRect(0, 150, W, 42);
+      softVBand(ctx, 0, 304, W, 128, pantsL, pantsD, "#2e3136");
+
+      /* Рукав строго до cy = 244, дальше чистая кожа предплечья cy = 244..304 (резкий край без размытия!) */
+      softVBand(ctx, 0, 192, W, 52, topL, topM, topD);
+      ctx.fillStyle = fem ? "#756e64" : "#2c342b";
+      ctx.fillRect(0, 239, W, 5);
+      softVBand(ctx, 0, 244, W, 60, skin.base, skin.mid, skin.dark);
+
+      /* Крепкие северные кожаные башмаки (cy = 432..512) */
+      softVBand(ctx, 0, 432, W, 80, "#262320", "#191715", "#100f0e");
+    }
+    return cv;
+  }
+
+  /* =========================================================================
+     ВАРИАНТ 3: ВОИН ("warrior") — ХЛАДНЫЕ ВЕТРА vs РАТНИК ЗЛАТОДВОРА
+     ========================================================================= */
+  if (isEden) {
+    /* РАТНИК ЗЛАТОДВОРА: стальная кольчуга под пурпурно-белым королевским сюрко с золотым гербовым столбом,
+       стальные наручи на предплечьях и стальные/кожаные поножи! */
+    softVBand(ctx, 0, 0, W, 28, skin.base, skin.base, skin.mid);
+    /* Кольчужный воротник у ключиц */
+    ctx.fillStyle = "#6c747d";
+    ctx.fillRect(0, 24, W, 8);
+
+    /* Пурпурно-кремовый гербовый табард Златодвора (cy = 28..136) */
+    softVBand(ctx, 0, 28, W, 108, "#6e222b", "#591b23", "#43141a");
+    /* Светло-кремовая передняя полоса с золотым королевским столбом */
+    ctx.fillStyle = "#d8cfc0";
+    ctx.fillRect(W * 0.38, 30, W * 0.24, 106);
+    ctx.fillStyle = "#c9a246";
+    ctx.fillRect(W * 0.48, 30, W * 0.04, 106);
+    ctx.fillRect(W * 0.43, 56, W * 0.14, 7); // золотой крест/перекладина знамени Златодвора
+
+    /* Воинский пояс с золочёной пряжкой (cy = 136..150) */
+    ctx.fillStyle = "#261910";
+    ctx.fillRect(0, 136, W, 14);
+    ctx.fillStyle = "#d8b254";
+    ctx.fillRect(W * 0.5 - 13, 134, 26, 18);
+    ctx.fillStyle = "#261910";
+    ctx.fillRect(W * 0.5 - 7, 138, 14, 10);
+
+    /* Низ таза и бёдра ЕДИНОГО тёмно-стального цвета стеганых шосс (cy = 150..192 и 304..380) — без зелёного памперса! */
+    ctx.fillStyle = "#363a42";
+    ctx.fillRect(0, 150, W, 42);
+    softVBand(ctx, 0, 304, W, 76, "#363a42", "#2e3239", "#262a30");
+
+    /* Кольчужный рукав (cy = 192..244) + воронёный стальной наруч с латунной кромкой (cy = 244..284) + кисть (284..304) */
+    softVBand(ctx, 0, 192, W, 52, "#78818b", "#636b74", "#4f565e");
+    for (let ry = 198; ry < 242; ry += 6) {
+      ctx.fillStyle = "rgba(24, 28, 34, 0.28)";
+      ctx.fillRect(0, ry, W, 2);
+    }
+    softVBand(ctx, 0, 244, W, 40, "#8d97a3", "#68717c", "#4c535c");
+    ctx.fillStyle = "#c9a246";
+    ctx.fillRect(0, 244, W, 4);
+    ctx.fillRect(0, 280, W, 4);
+    softVBand(ctx, 0, 284, W, 20, skin.base, skin.mid, skin.dark);
+
+    /* Высокие латно-кожаные рыцарские сапоги Златодвора (строго с cy = 380 до 512!) */
+    softVBand(ctx, 0, 380, W, 52, "#4a3120", "#3a2518", "#2b1b11");
+    ctx.fillStyle = "#c9a246";
+    ctx.fillRect(0, 380, W, 5);
+    softVBand(ctx, 0, 432, W, 80, "#2b1b11", "#1f130c", "#140c07");
   } else {
-    /* «Воин Севера»: стёгано-кожаная бригантина поверх плотной тёмно-зелёной рубахи */
-    const brL = fem ? "#6e4b35" : "#765036";
-    const brM = fem ? "#573a27" : "#5e3e28";
-    const brD = "#3d2718";
-    softVBand(ctx, 0, 28, W, 114, brL, brM, brD);
+    /* ВОИН СЕВЕРА (ХЛАДНЫЕ ВЕТРА):
+       Клёпаная кожано-ламельная бригантина поверх тёмного таёжного поддоспешника,
+       меховая оторочка по плечам, чёткие кожаные наручи и высокие северные сапоги (БЕЗ размытия и БЕЗ зелёного клина в паху!) */
+    softVBand(ctx, 0, 0, W, 28, skin.base, skin.base, skin.mid);
+    /* Тёмно-бурый меховой воротник у ключиц */
+    ctx.fillStyle = "#33261c";
+    ctx.fillRect(0, 23, W, 8);
 
-    /* Шея полностью телесная (никаких красных пятен на шее!) */
-    ctx.fillStyle = skinBase;
-    ctx.fillRect(0, 0, W, 27);
-
-    /* Узкий тёмно-суконный воротник поддоспешника только по краю ключиц */
-    ctx.fillStyle = "#3a4639";
-    ctx.fillRect(0, 26, W, 6);
-
+    softVBand(ctx, 0, 28, W, 108, "#63442e", "#4f3523", "#3b2719");
     for (let y = 48; y <= 118; y += 23) {
-      ctx.fillStyle = "rgba(22, 12, 5, 0.42)";
+      ctx.fillStyle = "rgba(18, 10, 4, 0.48)";
       ctx.fillRect(0, y, W, 3);
-      ctx.fillStyle = "#bcc6d0";
+      ctx.fillStyle = "#9da6b0";
       for (let rx = W * 0.36; rx <= W * 0.64; rx += 28) {
         ctx.fillRect(rx - 2, y - 12, 4, 4);
       }
     }
 
-    /* Подол зелёного гамбезона и ремень */
-    softVBand(ctx, 0, 142, W, 50, "#3b473a", "#2f3a2e", "#252e24");
-    ctx.fillStyle = "#23160c";
-    ctx.fillRect(0, 134, W, 13);
-    ctx.fillStyle = "#cfa954";
-    ctx.fillRect(W * 0.5 - 12, 132, 24, 17);
-    ctx.fillStyle = "#23160c";
-    ctx.fillRect(W * 0.5 - 7, 135, 14, 11);
+    /* Тяжёлый северный пояс (cy = 136..150) */
+    ctx.fillStyle = "#1f150d";
+    ctx.fillRect(0, 136, W, 14);
+    ctx.fillStyle = "#9ca5ae";
+    ctx.fillRect(W * 0.5 - 13, 134, 26, 18);
+    ctx.fillStyle = "#1f150d";
+    ctx.fillRect(W * 0.5 - 7, 138, 14, 10);
+
+    /* ВАЖНО: Таз (cy = 150..192) и бёдра (cy = 304..380) СТРОГО ОДНОГО цвета тёмно-серых походных штанов! */
+    ctx.fillStyle = "#3a4047";
+    ctx.fillRect(0, 150, W, 42);
+    softVBand(ctx, 0, 304, W, 76, "#3a4047", "#31363d", "#282c32");
+
+    /* Рукав тёмно-хвойного стёганого поддоспешника (cy = 192..244) + чёткий кожаный наруч с ремнями (cy = 244..284) */
+    softVBand(ctx, 0, 192, W, 52, "#3f4b3e", "#333d32", "#283027");
+    softVBand(ctx, 0, 244, W, 40, "#593b24", "#472e1b", "#362213");
+    ctx.fillStyle = "#1f1209";
+    ctx.fillRect(0, 244, W, 4);
+    ctx.fillRect(0, 262, W, 4);
+    ctx.fillRect(0, 280, W, 4);
+    softVBand(ctx, 0, 284, W, 20, skin.base, skin.mid, skin.dark);
+
+    /* Высокие кожаные сапоги хладцев с меховой опушкой сверху (строго с cy = 380 до 512!) */
+    softVBand(ctx, 0, 380, W, 52, "#4d331f", "#3d2818", "#2d1d11");
+    ctx.fillStyle = "#2b2017";
+    ctx.fillRect(0, 380, W, 7); // тёмная меховая/кожаная оторочка верха голенища!
+    softVBand(ctx, 0, 432, W, 80, "#2d1d11", "#20140b", "#140c07");
   }
-
-  /* ================= ПОЛОСА 1: РУКИ И КИСТИ (y = 192..304) =================
-     ВАЖНО: в одежде верх плеча (y = 192..238) ВСЕГДА закрыт рукавом того же цвета,
-     что и рубаха/поддоспешник — никаких голых пятен на плечах! */
-  softVBand(ctx, 0, 192, W, 112, skinBase, skinMid, skinBase);
-
-  if (outfit === "villager") {
-    if (fem) {
-      /* Аккуратный рукав льняной блузы чуть выше локтя */
-      softVBand(ctx, 0, 192, W, 38, "#dfd9d0", "#c8c1b7", "#aba49a");
-      ctx.fillStyle = "#9c958c";
-      ctx.fillRect(0, 228, W, 3);
-    } else {
-      /* Закатанный по предплечье рукав мужской северной рубахи */
-      softVBand(ctx, 0, 192, W, 58, "#687666", "#556254", "#424d41");
-      ctx.fillStyle = "#364035";
-      ctx.fillRect(0, 247, W, 4);
-    }
-  } else if (outfit === "warrior") {
-    /* Полный плотный рукав зелёного поддоспешника + кожаные наручи на предплечье */
-    softVBand(ctx, 0, 192, W, 56, "#495748", "#3b473a", "#2e382d");
-    softVBand(ctx, 0, 246, W, 38, "#664329", "#50331e", "#3b2414");
-    ctx.fillStyle = "#23140a";
-    ctx.fillRect(0, 255, W, 4);
-    ctx.fillRect(0, 272, W, 4);
-  }
-
-  /* Тень между пальцами на кончиках кисти */
-  ctx.fillStyle = skinDark;
-  ctx.fillRect(0, 296, W, 8);
-
-  /* ================= ПОЛОСА 2: НОГИ (y = 304..432) ================= */
-  if (outfit === "underwear") {
-    softVBand(ctx, 0, 304, W, 128, skinBase, skinMid, skinBase);
-    softRadial(ctx, W * 0.5, 366, 20, "rgba(155, 96, 56, 0.26)", "rgba(155, 96, 56, 0)");
-    if (!fem) {
-      softVBand(ctx, 0, 304, W, 28, "#3b3f45", "#34383e", "#2f3237");
-    }
-  } else {
-    const pL = outfit === "warrior" ? "#454c55" : "#545860";
-    const pM = outfit === "warrior" ? "#373d45" : "#484c53";
-    const pD = outfit === "warrior" ? "#2a2f36" : "#3b3f45";
-    softVBand(ctx, 0, 304, W, 128, pL, pM, pD);
-
-    /* Мягкая полутень под коленом */
-    softRadial(ctx, W * 0.5, 368, 36, "rgba(18, 20, 24, 0.24)", "rgba(18, 20, 24, 0)");
-
-    if (outfit === "warrior") {
-      softVBand(ctx, 0, 374, W, 58, "#593b24", "#462e1b", "#332012");
-      ctx.fillStyle = "#23140a";
-      ctx.fillRect(0, 376, W, 5);
-    }
-  }
-
-  /* ================= ПОЛОСА 3: ОБУВЬ (y = 432..512) ================= */
-  const bootTop = outfit === "warrior" ? "#4a301c" : "#25272b";
-  const bootBot = outfit === "warrior" ? "#2b1b0f" : "#151619";
-  softVBand(ctx, 0, 432, W, 80, bootTop, bootBot, "#0e0f12");
 
   return cv;
 }
 
-/* ---------- 4. АТЛАС КАМНЯ, ТЁСАНОГО ДЕРЕВА, СТАЛИ И СНЕГА ДЛЯ 3D-ОБЪЕКТА ---------- */
+/* ---------- 4. АТЛАС КАМНЯ, ТЁСАНОГО ДЕРЕВА, СТАЛИ И СНЕГА ДЛЯ 3D-ОБЪЕКТА (ЭТАЛОН 10/10 — НЕ ТРОГАЕМ!) ---------- */
 export function buildPropAtlasCanvas(canvasFactory = null) {
   const W = 512;
   const H = 512;
   const cv = create2DCanvas(W, H, canvasFactory);
   const ctx = cv.getContext("2d");
 
-  /* Квадрант 1 (0..256, 0..256): Тёсаная каменная кладка */
   ctx.fillStyle = "#2b3138";
   ctx.fillRect(0, 0, 256, 256);
   const rows = 5;
@@ -468,24 +666,17 @@ export function buildPropAtlasCanvas(canvasFactory = null) {
     }
   }
 
-  /* Квадрант 2 (256..512, 0..256): Натуральное состаренное северное дерево (широкие плахи без «трубных полосок»!) */
   softVBand(ctx, 256, 0, 256, 256, "#7b5c3e", "#694d33", "#563e28");
-  const plankCount = 4; // широкие добротные доски вместо узкого частокола!
+  const plankCount = 4;
   const plankW = 256 / plankCount;
   for (let p = 0; p < plankCount; p++) {
     const px = 256 + p * plankW;
     ctx.fillStyle = p % 2 === 0 ? "rgba(245, 210, 168, 0.07)" : "rgba(28, 16, 7, 0.11)";
     ctx.fillRect(px + 2, 0, plankW - 3, 256);
-
-    /* Тонкий паз между досками */
     ctx.fillStyle = "rgba(32, 18, 8, 0.55)";
     ctx.fillRect(px, 0, 2, 256);
-
-    /* Мягкий светлый скос кромки доски */
     ctx.fillStyle = "rgba(255, 225, 190, 0.10)";
     ctx.fillRect(px + 2, 0, 3, 256);
-
-    /* Естественные редкие волокна и сучок дерева */
     const knotY = 48 + ((p * 67) % 160);
     softRadial(ctx, px + plankW * 0.52, knotY, 12, "rgba(42, 24, 10, 0.32)", "rgba(42, 24, 10, 0)");
     ctx.fillStyle = "rgba(36, 20, 8, 0.45)";
@@ -493,11 +684,9 @@ export function buildPropAtlasCanvas(canvasFactory = null) {
     ctx.ellipse(px + plankW * 0.52, knotY, 3.5, 6.5, 0, 0, Math.PI * 2);
     ctx.fill();
   }
-  /* Лёгкое потемнение от сырости у торцов бруса */
   softVBand(ctx, 256, 0, 256, 36, "rgba(24, 14, 6, 0.28)", "rgba(24, 14, 6, 0.08)", "rgba(24, 14, 6, 0)");
   softVBand(ctx, 256, 220, 256, 36, "rgba(24, 14, 6, 0)", "rgba(24, 14, 6, 0.10)", "rgba(24, 14, 6, 0.32)");
 
-  /* Квадрант 3 (0..256, 256..512): Кованое железо и сталь */
   softVBand(ctx, 0, 256, 256, 256, "#9eaab8", "#6b7682", "#3e464f");
   ctx.fillStyle = "#d8e2ec";
   for (let rx = 24; rx < 240; rx += 48) {
@@ -507,7 +696,6 @@ export function buildPropAtlasCanvas(canvasFactory = null) {
     ctx.fill();
   }
 
-  /* Квадрант 4 (256..512, 256..512): Северный снег */
   softVBand(ctx, 256, 256, 256, 256, "#f2f7fc", "#d8e6f3", "#adc2d7");
 
   return cv;

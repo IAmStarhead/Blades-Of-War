@@ -166,27 +166,27 @@ const css = `
   .pz-dock {
     position: absolute;
     left: 50%;
-    bottom: 16px;
+    bottom: 14px;
     transform: translateX(-50%);
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
-    gap: 12px;
-    max-width: calc(100vw - 24px);
+    gap: 9px;
+    max-width: calc(100vw - 20px);
     background: rgba(22, 25, 29, 0.92);
     border: 1px solid rgba(255, 255, 255, 0.13);
     border-radius: 12px;
-    padding: 10px 14px;
+    padding: 8px 12px;
     box-shadow: 0 10px 28px rgba(0, 0, 0, 0.42);
     z-index: 10;
   }
   .pz-group {
     display: flex;
     flex-direction: column;
-    gap: 5px;
+    gap: 4px;
   }
   .pz-label {
-    font-size: 10px;
+    font-size: 9.5px;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.06em;
@@ -196,7 +196,7 @@ const css = `
   .pz-segmented {
     display: flex;
     flex-wrap: wrap;
-    gap: 4px;
+    gap: 3px;
     background: #141619;
     padding: 3px;
     border-radius: 8px;
@@ -207,9 +207,9 @@ const css = `
     border: none;
     background: transparent;
     color: #bcc5cf;
-    font-size: 12px;
+    font-size: 11.5px;
     font-weight: 600;
-    padding: 6px 10px;
+    padding: 5px 8px;
     border-radius: 6px;
     cursor: pointer;
     transition: background 0.12s ease, color 0.12s ease;
