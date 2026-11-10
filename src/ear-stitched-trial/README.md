@@ -1,0 +1,7 @@
+# Ear boundary reconstruction — incomplete
+
+Left is `ear-detail-trial`'s right-hand result, right is the final time-boxed reconstruction attempt on copies. It identifies small inner boundary cycles on the extracted ear geometry (female 13 vertices, male 21/22) and triangulates them using vertices at the boundary positions. The old ellipsoid insert is hidden; a small local x-only recess of the copied head under each ear makes room for the reconstructed surface. Head/neck height, body and original game characters are unchanged. Ear geometry is CC0 MakeHuman-derived; see `../head-reference/README.md`.
+
+This is not a fully welded ear/head mesh: the original ear is split-vertex geometry, and the new triangles use representative vertices at coincident boundary positions. Ear and head remain separate. The images show angular dark patches and discontinuities, especially on the female, so this attempt is **not a successful final repair** or recommended integration. It has not been tested in animation. Screenshots from four angles and enlarged side crops are in `docs/previews/ear-stitched-trial/`.
+
+Desktop/mobile browser checks exercised controls, confirmed finite ear geometry, expected boundary and triangle counts, common parent with the head, unchanged body geometry and x-only head edits. `npm run verify` passed 232 tests. These checks do not validate visual quality, closed manifold topology, or animation.
