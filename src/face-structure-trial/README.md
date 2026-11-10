@@ -1,0 +1,9 @@
+# Face structure trial — experimental, not integrated
+
+Open `/src/face-structure-trial/` on a Vite server. Left and right start with the same private copies of the earlier calm face, long neck and reference-derived ears. On the right a broad symmetric cheek/temple adjustment changes the existing head vertices, and one Loop subdivision smooths the independent ear mesh and interpolates its vertex colours. Eyes, lips and the approved central nose and jaw are not redrawn or replaced. The bodies are identical between columns. This trial does **not** weld the ears to the head, and it does not rebuild the facial topology.
+
+The first, stronger cheek treatment produced an obvious vertical/round shadow beside the nose; it was rejected and substantially reduced. The final face change is subtle, especially at game scale. The ear silhouette is smoother but the attachment is still an overlap with possible seams and the inner contours are softened. A missing colour attribute initially made the subdivided ear black; colours are now interpolated and tested. The subdivision increases triangles (female 1424 each; male 864 and 1240 after earlier asymmetric trimming), and has not been tested with animation, hair, production lighting or a performance budget.
+
+Checks: `node tests/face-structure-trial.mjs`, `npm run verify`; browser checks on both sexes, four angles, two lights and two distances; screenshots at desktop and mobile widths. Browser assertions compare body arrays, protected nose/mouth points and finite ear position/normal/colour data. Maximum head displacement in the rendered north samples: female 0.00223, male 0.00410 units. Tests do not judge aesthetics or prove seam closure.
+
+Ear geometry derives from the CC0 MakeHuman asset described in `src/head-reference/README.md`, not the AGPL application code.
