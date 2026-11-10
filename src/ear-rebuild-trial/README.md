@@ -1,0 +1,7 @@
+# Concha surface attempt — incomplete
+
+The left side is the prior `ear-detail-trial` result (with the original oval root); on the right the root is hidden and a newly triangulated shallow patch is projected onto the copied head under each ear. It is subtly coloured in the centre. Face, head and body vertex positions and neck length are unchanged. This experiment does not change original characters. Ear source is CC0 MakeHuman-derived; see `../head-reference/README.md`.
+
+The new 216-triangle surface is a separate overlapping mesh; its boundary is not stitched to the extracted ear. It reduces some of the plain central opening but does not remove the visible pale regions and discontinuities, especially on the male. It is not a finished or recommended replacement. The female extracted ear includes a 13-vertex inner boundary loop; male boundary components branch and need additional manual topology analysis before a stitched surface can be reliably constructed. The head-neck connection remains separate. Animation has not been tested.
+
+Desktop/mobile browser checks exercised controls, checked unchanged head/body vertex positions and finite nonempty ears. A separate geometry check verified both new patches have finite nondegenerate triangles and share the ear's head parent. `npm run verify`: 232 passed. These are not artistic or animation checks. PNG comparisons and enlarged crops are in `docs/previews/ear-rebuild-trial/`.
