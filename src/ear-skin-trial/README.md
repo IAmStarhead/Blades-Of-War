@@ -1,0 +1,7 @@
+# Ear/skin colour matching — partial
+
+Left is `ear-normal-trial`'s right-hand result. On the right only each copied ear material's base colour changes, sampled from the adjacent side of that figure's head texture in sRGB; the existing subtle inner-ear vertex tint remains. The head, body and ear vertex positions and indices are unchanged across the comparison, as are all source/game characters. This preserves the female reconstruction. CC0 MakeHuman-derived ear provenance is in `../head-reference/README.md`.
+
+The previous ears used independently chosen fixed colours (`e0cbbf`/`dac4b7`), whereas the head uses a textured material. Sampled skin colours are female around `ecddd2`, male around `e8d5c9`; normals, vertex tint and lighting still make the surfaces differ. This is not a material or topology weld. The male still has a visible cropped scalp/ear-margin fragment and the concha still has discontinuities. Experiments to hide or crop that margin made the profile worse and were discarded. No animation or alternative lighting has been validated.
+
+Desktop/mobile browser checks exercise view controls and confirm unchanged head/body/ear positions and ear indices, independent ear materials and sampled colours. Chromium initially failed on launch, then passed on retry. `npm run verify` passed 232 tests. Artistic acceptance and motion are not established by tests. PNGs and enlarged ear crops are in `docs/previews/ear-skin-trial/`.
