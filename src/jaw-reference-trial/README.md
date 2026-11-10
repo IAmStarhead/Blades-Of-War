@@ -1,0 +1,7 @@
+# Game head and jaw — visual trial
+
+A separate trial on clones of the original game characters: original left, experiment right. The game's original heads and bodies are not replaced. The jaw clone is derived from `../jaw-construction-wip/` and borrows a smoothed lower-face displacement field sampled from the CC0 MakeHuman-derived `../head-balance/` mesh (source and licence: `../head-reference/README.md`). This is neither a new sculpt from scratch nor the detached reference head attached to the game body. Hair/beard are hidden and ear triangles are omitted on the trial copy only. The female lip texture is enlarged on a cloned canvas; there is also a small lip geometry adjustment.
+
+The very top of the trial clone's existing neck is tapered on a separate copy of the body geometry to reduce intersection with the head. It is not welded: the joint is still visible and will need further work. The side of the head remains too full, the underside of the chin is dark and the contours still differ considerably from the anatomical references. This is a static visual study, not a completed anatomical head or game/editor integration; animation, hair and beard compatibility have not been verified.
+
+Open `/src/jaw-reference-trial/` in Vite. Captures are in `docs/previews/jaw-reference-trial/`; these show the actual trial from front, three-quarter and profile. `tests/jaw-construction-wip.mjs` verifies properties of the underlying clone, not visual quality.
