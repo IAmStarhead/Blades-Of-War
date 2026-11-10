@@ -1,0 +1,7 @@
+# Face relief trial — first phase only
+
+Comparison on copies of the prior male-ear-fragment study, with the trimmed male ears on both sides. Left is the existing form, right applies a localized, symmetric depth displacement to the already-subdivided head surface around cheekbones, eye sockets, brow, temples, nasolabial region and below the lip. The result is intentionally subtle; this is not a finished face reconstruction. Normals blend toward recomputed geometry only in edited regions. The head shape, nose and lip protected UV zones, head texture, body and ear geometry are not changed by this pass. Shadows in this study are disabled to evaluate the form under ordinary soft lights.
+
+This is only the first phase on the existing north-body comparison with the previously selected straight central-style nose; it does not yet implement separate northern/central facial variants, reposition eyes, add eyelashes, or create cel shading. Ear/head and head/neck remain separate. No game integration, hair, animation, or artistic approval; earlier models remain intact. PNGs include face angles and full-body comparisons in `docs/previews/face-relief-trial/`.
+
+`node tests/face-relief-trial.mjs` checks bounded, finite localized edits and preservation of protected nose/lip positions; desktop/mobile browser checks exercise angles/light/focus controls and compare body, ears and protected positions. `npm run verify` passed 232 tests. These tests do not establish artistic quality or motion compatibility.
