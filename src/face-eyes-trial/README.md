@@ -1,0 +1,7 @@
+# Eye redraw trial — incomplete
+
+Left is the right-hand `front-ear-face-trial` result; right redraws the eyes symmetrically on cloned textures, at the original eye centres. The female receives a thin eyelid contour and a few restrained edge strokes. This modifies no head/body/ear geometry and leaves the centre of the nose and mouth texture intact. Faces remain based on the previous north-body study with the straight central-style nose; ear asset provenance: CC0 MakeHuman-derived, `../head-reference/README.md`.
+
+The eyes are still painted on the head texture, not eye spheres or articulated eyelids. The new eyes appear smaller and paler than before in some views and their eye-region feathering can look soft; this is an aesthetic comparison, not a finished approved design. Anatomical placement has not yet been validated or adjusted beyond using mirrored original texture centres. Northern/central facial differences, facial animation and hair remain unfinished. Original characters and earlier trials are untouched, with no game integration.
+
+Desktop/mobile browser checks exercised view controls, verified head/body/ear positions and source texture isolation, and confined modified texture pixels to the two eye regions (outside the central nose and mouth). `npm run verify` passed 232 tests. These checks do not establish artistic quality or animation. PNGs in `docs/previews/face-eyes-trial/`.
