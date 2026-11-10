@@ -1,0 +1,11 @@
+# Feature positioning and edge retouch (isolated)
+
+Open `/src/feature-retouch-trial/` on Vite. Both sides reconstruct the earlier `head-plane-trial`-derived game-character copies; this does not modify the original game assets or earlier studies. The left is the same baseline as the right before this pass (the extra head-surface deformation is not applied). The right:
+
+- Warps a clone of the existing eye/brow texture smoothly: approximately 3.5 canvas pixels down and 1.5 pixels outward, not new eyes or a change to their underlying geometry. Other facial features are not repositioned. The shift is provisional, not verified to match the user's intended placement.
+- Enlarge the separate existing MakeHuman-derived ears vertically by 14% and in depth by 3.5%; apply an additional boundary smoothing pass. Source/provenance in `../ear-reference-trial/README.md`. These are still overlapping separate meshes, not welded. The male ear geometry was already asymmetrical because of earlier clipping; the same proportional scaling is applied to each side.
+- Average head facial normals gently and modify only shading normals on the lower sides/back of the head and upper neck. On the right, head and body vertex coordinates are exactly the same as the left. This preserves their geometry and volume but cannot round a silhouette or repair a physical gap between distinct head and body meshes. The neck seam remains visible, especially in profile. The existing baseline includes earlier neck and head adjustments; the preservation claim is relative to the left trial, not the original raw game mesh.
+
+The result is not approved or animation-ready. Eye texture movement does not reshape eye sockets, and cheeks, mouth, nose and existing separate ears may still appear too sharp or have seams. Hair, animation and shadow maps were not assessed. Screenshots include both sexes, front/three-quarter/profile, body scale, opposite light, clay and mobile.
+
+Validation: `node tests/feature-retouch-trial.mjs`; browser checked head and body positions exactly equal across columns, ear bounding-box height +13.8–14% after extra boundary smoothing, finite behavior and normals changed, for both sexes; `npm run verify` 232/232. These checks do not evaluate beauty, anatomical placement or animation.
