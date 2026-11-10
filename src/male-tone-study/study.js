@@ -1,0 +1,27 @@
+import * as THREE from 'three';
+const view=document.querySelector('#view'),scene=new THREE.Scene();scene.background=new THREE.Color('#292d2d');
+const renderer=new THREE.WebGLRenderer({antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.outputColorSpace=THREE.SRGBColorSpace;view.append(renderer.domElement);
+const camera=new THREE.PerspectiveCamera(30,1,.01,100);const ambient=new THREE.AmbientLight(0xffffff,.32);scene.add(ambient);const light=new THREE.DirectionalLight(0xffeadc,1.05);light.position.set(-2,4,5);scene.add(light);
+// A small ramp keeps transitions deliberately soft rather than outlined comic bands.
+const ramp=new Uint8Array([105,105,105,255,145,145,145,255,177,177,177,255,202,202,202,255,220,220,220,255,235,235,235,255,248,248,248,255,255,255,255,255]);const gradient=new THREE.DataTexture(ramp,8,1,THREE.RGBAFormat);gradient.minFilter=gradient.magFilter=THREE.LinearFilter;gradient.needsUpdate=true;
+const skin=new THREE.MeshToonMaterial({color:0xd3ac93,gradientMap:gradient}), cloth=new THREE.MeshToonMaterial({color:0x4b5948,gradientMap:gradient}), pants=new THREE.MeshToonMaterial({color:0x454642,gradientMap:gradient});
+const model=new THREE.Group();scene.add(model);
+function ellipsoid(x,y,z,sx,sy,sz,mat,rx=0,rz=0){const m=new THREE.Mesh(new THREE.SphereGeometry(1,20,12),mat);m.position.set(x,y,z);m.scale.set(sx,sy,sz);m.rotation.set(rx,0,rz);model.add(m);return m}
+// Independently authored proportion study. Simple overlapping parts, not a rig.
+ellipsoid(0,.99,0,.205,.29,.105,cloth);ellipsoid(0,.77,0,.17,.13,.1,pants);
+for(const s of [-1,1]){ellipsoid(s*.125,.52,0,.083,.26,.085,pants,0,s*.035);ellipsoid(s*.13,.22,.005,.067,.22,.068,pants,0,-s*.025);ellipsoid(s*.13,.045,.045,.075,.045,.125,pants);ellipsoid(s*.235,1.12,0,.084,.13,.09,cloth,0,s*.2);ellipsoid(s*.27,.94,0,.065,.19,.068,cloth,0,-s*.1);ellipsoid(s*.292,.65,.015,.052,.16,.056,skin,0,-s*.04);ellipsoid(s*.30,.46,.02,.057,.09,.028,skin)}
+ellipsoid(0,1.33,0,.075,.125,.073,skin);
+// Low-density head built from authored cross sections. Front is +Z.
+const rows=[[1.34,.032,.045,.030],[1.36,.058,.075,.046],[1.40,.083,.087,.061],[1.45,.096,.090,.082],[1.50,.102,.089,.098],[1.55,.102,.085,.105],[1.60,.099,.087,.105],[1.65,.083,.079,.091],[1.69,.050,.051,.059],[1.70,.005,.005,.006]];
+function interp(y,k){let i=0;while(i<rows.length-2&&y>rows[i+1][0])i++;let a=rows[i],b=rows[i+1],t=(y-a[0])/(b[0]-a[0]);return THREE.MathUtils.lerp(a[k],b[k],t)}
+const gauss=(x,c,w)=>Math.exp(-(((x-c)/w)**2)),v=[],uv=[],indices=[],nr=48,ns=48;
+for(let j=0;j<=nr;j++){const y=1.34+.36*j/nr,w=interp(y,1),f=interp(y,2),b=interp(y,3);for(let i=0;i<=ns;i++){let p=(i/ns-.5)*2*Math.PI,c=Math.cos(p),x=w*Math.sin(p),z=(c>0?f:b)*c;if(c>0){let ax=Math.abs(x);z+=Math.pow(c,1.3)*(.017*gauss(x,0,.014)*gauss(y,1.485,.04)-.0025*gauss(ax,.04,.018)*gauss(y,1.525,.018)+.002*gauss(ax,.065,.025)*gauss(y,1.49,.025)+.002*gauss(x,0,.03)*gauss(y,1.43,.012));}v.push(x,y,z);uv.push(i/ns,j/nr)}}
+for(let j=0;j<nr;j++)for(let i=0;i<ns;i++){let a=j*(ns+1)+i,b=a+1,c=a+ns+1;indices.push(a,b,c,b,c+1,c)}const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(v,3));geo.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));geo.setIndex(indices);geo.computeVertexNormals();
+const canvas=document.createElement('canvas');canvas.width=canvas.height=512;const ctx=canvas.getContext('2d');ctx.fillStyle='#ffffff';ctx.fillRect(0,0,512,512);const Y=y=>512*(1-(y-1.34)/.36);function shade(x,y,rx,ry,color){ctx.save();ctx.translate(x,y);ctx.scale(rx,ry);const g=ctx.createRadialGradient(0,0,0,0,0,1);g.addColorStop(0,color);g.addColorStop(1,'rgba(110,75,65,0)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(0,0,1,0,Math.PI*2);ctx.fill();ctx.restore()}
+for(const s of [-1,1]){let x=256+s*33;shade(x,Y(1.525),29,15,'rgba(90,60,52,.25)');shade(256+s*14,Y(1.49),12,30,'rgba(105,72,61,.12)');shade(256+s*48,Y(1.48),27,24,'rgba(125,82,69,.09)');ctx.fillStyle='rgba(65,51,46,.70)';ctx.beginPath();ctx.ellipse(x,Y(1.525),8,4,0,0,Math.PI*2);ctx.fill();ctx.strokeStyle='rgba(65,47,40,.55)';ctx.lineWidth=3;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(x-10,Y(1.547));ctx.quadraticCurveTo(x,Y(1.55),x+10,Y(1.547));ctx.stroke()}
+shade(256,Y(1.454),23,7,'rgba(120,76,65,.19)');ctx.strokeStyle='rgba(91,55,50,.48)';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(245,Y(1.436));ctx.quadraticCurveTo(256,Y(1.434),267,Y(1.436));ctx.stroke();
+const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;const faceMat=skin.clone();faceMat.map=texture;const head=new THREE.Mesh(geo,faceMat);model.add(head);
+for(const s of [-1,1]){ellipsoid(s*.102,1.50,-.006,.017,.035,.013,skin,0,0,s*.1);}
+let mode='face';function setView(){camera.position.set(0,mode==='face'?1.51: .94,mode==='face'?1.25:4.1);camera.lookAt(0,mode==='face'?1.51:.90,0);camera.updateProjectionMatrix()}setView();
+document.querySelectorAll('button').forEach(b=>b.onclick=()=>{if(b.dataset.angle!==undefined)model.rotation.y=Number(b.dataset.angle);if(b.dataset.light)light.position.x=Number(b.dataset.light)*2;if(b.dataset.mode){mode=b.dataset.mode;setView()}if(b.dataset.map){faceMat.map=b.dataset.map==='1'?texture:null;faceMat.needsUpdate=true}});
+function resize(){renderer.setSize(view.clientWidth,view.clientHeight,false);camera.aspect=view.clientWidth/view.clientHeight;camera.updateProjectionMatrix()}window.addEventListener('resize',resize);resize();renderer.setAnimationLoop(()=>renderer.render(scene,camera));
