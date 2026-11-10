@@ -11,21 +11,24 @@ export function makeHeadForm(source,female,kingdom='north'){
   x-=Math.sign(sn)*.011*gauss(Math.abs(phi)-1.55,.13)*gauss(v-.5,.08);
   const forehead=gauss(v-.72,.14);x*=1+.09*forehead;
   if(!female && c>0)z+=.014*forehead*Math.pow(c,3);
-  if(c<0)z*=1-.28*gauss(v-.37,.23);
+  if(c<0)z*=1-.34*gauss(v-.32,.22);
+  // Create the rising jaw angle at the sides rather than pulling the entire
+  // underside down to a common point.
+  y+=(female?.012:.016)*gauss(v-.24,.16)*Math.pow(Math.abs(sn),1.2);
   // The lower surface is rebuilt as a jaw rim and an underside flowing back
   // into a neck opening, instead of a pointed cap at the bottom of a sphere.
   if(v<.30){
     let blend=1-smooth((v-.20)/.10);
     const front=Math.max(0,c),back=Math.max(0,-c);
-    const jawX=(female?.052:.060)*sn;
-    const jawZ=(female?.096:.108)*Math.pow(front,.72)-(female?.037:.041)*back;
+    const jawX=(female?.045:.056)*sn;
+    const jawZ=(female?.096:.105)*Math.pow(front,.72)-(female?.037:.041)*back;
     const jawY=(female?-.010:-.012)+(female?.008:.010)*(1-Math.pow(front,2));
     let low=smooth(v/.26);
     const neckX=(female?.025:.029)*sn;
     const neckZ=(female?.020:.023)*c-.014;
     const neckY=female?-.045:-.045;
     const targetX=neckX+(jawX-neckX)*low;
-    const targetY=neckY+(v/.26)*.052 + .012*(1-Math.pow(front,2))*low;
+    const targetY=neckY+(v/.26)*.052 + .010*(1-Math.pow(front,2))*low;
     const targetZ=neckZ+(jawZ-neckZ)*low;
     x=x*(1-blend)+targetX*blend;y=y*(1-blend)+targetY*blend;z=z*(1-blend)+targetZ*blend;
   }
