@@ -81,7 +81,7 @@ for(const [sex,female] of [['female',true],['male',false]]){
   }
 
   softenNeckColour(rig);trimEarMargins(rig.trialEars,female);
-  if(k===1){if(!female)for(const mesh of rig.earJoins){mesh.removeFromParent();mesh.geometry.dispose()} fitMargin(rig,rig.trialEars,female);}
+  {if(!female)for(const mesh of rig.earJoins){mesh.removeFromParent();mesh.geometry.dispose()} fitMargin(rig,rig.trialEars,female);}
   if(k===1)adjustEarDetail(rig.trialEars,female);
   scene.add(rig.group);variants.push(rig);
  }figures[sex]=variants;
