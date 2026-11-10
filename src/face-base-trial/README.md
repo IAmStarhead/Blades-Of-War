@@ -1,0 +1,7 @@
+# Temporary blank face base and ear-contour study
+
+Left is the previous `front-ear-face-trial` result. Right has the painted facial markings temporarily blended away on an independently cloned texture, a further local relief pass, and light relaxation of the largest boundary component of each copied ear. Previously drawn features and all original game models remain available; no game integration. The nose and lip geometry within protected regions, head height, body and neck are unchanged. Ear topology is unchanged; no automatic mesh decimation was performed. Ear geometry is CC0 MakeHuman-derived; provenance in `../head-reference/README.md`.
+
+This is a deliberately unfinished, featureless diagnostic, not a final face or a replacement for the earlier nose/mouth artwork. The blending may leave residual facial shading; the relief creates some conspicuous uneven/rounded cheek and eye-area shading and needs visual judgement. Ear contours are only partially relaxed and still show edges; head and ears remain separate meshes. New eyes, choice of eye style, nation differences, hair and animation are not done or tested. Comparisons at multiple angles and full-body are in `docs/previews/face-base-trial/`.
+
+Desktop/mobile browser checks exercised controls, confirmed independent head texture, protected nose/lip geometry, unchanged body and ear indices, finite and bounded ear boundary movement. `node tests/face-relief-trial.mjs` passed and `npm run verify` passed 232 tests. These do not verify artistic quality or animation.
