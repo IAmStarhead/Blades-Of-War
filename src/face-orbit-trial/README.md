@@ -1,0 +1,7 @@
+# Eye-region relief alignment — exploratory comparison
+
+Both sides use the calm face texture and identical ear meshes of `face-calm-trial`. Right uses a trial relief field with the brow and socket components centred closer to the UV positions of the painted brows and eyes; cheeks are slightly stronger. The field changes only Z, with central nose/lip geometry excluded; texture pixels, ear topology and body are identical between sides. No game model or previous trial is replaced. Ear geometry provenance: CC0 MakeHuman-derived (`../head-reference/README.md`).
+
+This is not a repositioning of real eyeballs or eyelids; the eyes remain painted on the head. The comparison shows a very small difference, not a convincing full anatomical correction. Painted shading, earlier base shape and lighting still interact around the brow, and the diagnosis has not been conclusively isolated. Mouth refinement, more expressive but calm eye design, ear contour polish, separate nation variants and animation remain unfinished.
+
+Browser checks at desktop/mobile exercised controls, lights, views and distance; verified equal texture pixels, unchanged head X/Y and protected central nose/lips, body positions and ear indices. Changed head vertices: 786 each; max Z difference female 0.00063, male 0.00087 model units. `npm run verify` passed 232 tests. These checks cannot confirm visual quality. Screenshots: `docs/previews/face-orbit-trial/`.
