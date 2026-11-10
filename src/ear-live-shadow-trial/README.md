@@ -1,0 +1,7 @@
+# Dynamic ear-shadow comparison (trial)
+
+Left reproduces the painted-overlay result from `ear-shadow-trial`; right removes that overlay and enables real shadow mapping from a directional light, with copied ears casting and receiving shadows and copied heads receiving them. Non-ear meshes do not cast/receive in this isolated study to reduce incidental shadows. Head, ear and body positions and source characters are unchanged. Ear geometry derives from CC0 MakeHuman assets; see `../head-reference/README.md`.
+
+The buttons switch the light from left to right, affecting both figures: the live shadow's direction and intensity change with lighting. It can darken the concha and cast a shadow onto the head, but it exposes the actual incomplete/intersecting geometry; under right-side light the cast shadow can be harsh and the male scalp fragment still exists. This is not a fix to topology or a final artistic result. 4096-square shadow maps are deliberately used only in this experiment and their cost has not been benchmarked. In-game animation, hair, moving lights and varied GPU/mobile hardware have not been validated.
+
+Desktop/mobile browser checks exercised view and light controls, confirmed unchanged head/body geometry, the expected shadow flags and overlay presence only on the left, and finite scene rendering. `npm run verify` passed 232 tests. This does not establish production performance, artistic quality or animation compatibility. PNGs, both light directions and enlarged ear crops: `docs/previews/ear-live-shadow-trial/`.
