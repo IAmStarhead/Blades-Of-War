@@ -1,0 +1,7 @@
+# Head surface trial — unfinished
+
+Open `/src/head-surface-trial/` on Vite. Both columns use the previous head-plane trial, including its rear skull adjustment and rounded ears. Only the right adds a symmetric face deformation: wider cheeks (more in the male), gentle changes to cheek, socket and brow depth, with a smooth protective margin around the nose and mouth. Same body, ear geometry, texture and facial drawing in both columns. No original assets replaced. The clay button disables the head map on both sides only; ears retain their skin material.
+
+Iterations: the first deeper cheek produced a dark groove beside the nose; a wider but much shallower version was tried. A more extreme width stretched the painted eyes and was rejected. The retained intermediate version is subtler and still does not deliver clearly articulated facial planes. Eyes and eyebrows were not redesigned or repositioned. The ear attachment is unchanged and remains overlapping rather than welded. This is not production-ready or visually approved; performance and animation were not tested.
+
+`node tests/head-surface-trial.mjs` checks symmetry, bounded finite edits and protected centre samples. Browser tests exercised both sexes, all four angles, both lights, both distances, desktop/mobile, and compared body and protected points. Maximum head displacement relative to the left sample: female 0.00364, male 0.00616 units. `npm run verify` 232/232. Tests do not assess aesthetic quality or imply suitability for animation.
