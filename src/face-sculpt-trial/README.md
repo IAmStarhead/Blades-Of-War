@@ -1,0 +1,5 @@
+# Face relief experiment — still unsatisfactory
+
+Left reproduces `face-orbit-trial` right-hand variant; right tries broader cheek/socket relief, protecting the nose, mouth, body and texture. It retains the earlier calm features and identical ears. Iteration at much higher displacement produced conspicuous pinched dark cheek creases; the final included version reduces that and moves cheek influence outward, but the difference is again subtle and remains imperfect. This is **not** a completed or accepted face, and the brow/texture/lighting interaction remains unresolved. Eyes, lips and ears were not redesigned. All previous trials and game models are preserved. Ear geometry is CC0 MakeHuman-derived (`../head-reference/README.md`).
+
+Desktop/mobile browser exercised both sexes, all views, both lights and both distances; checked body positions, head height, protected nose/lip coordinates, ear indices and cloned texture. `npm run verify` passed 232 tests. Screenshots: `docs/previews/face-sculpt-trial/`. Technical checks do not prove artistic quality or animation compatibility.
