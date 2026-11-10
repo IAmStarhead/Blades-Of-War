@@ -1,0 +1,7 @@
+# Anatomical planes — limited evaluation, not a rebuilt head
+
+This is an isolated clay viewer, not a newly modeled head. It reuses the already existing `../head-balance/heads.json` 3800-triangle MakeHuman-derived head and neck for male/female, unchanged in vertex positions. These assets are CC0; source and provenance are in `../head-reference/README.md`. No game assets or original character are replaced. The previously simplified mesh is not newly decimated or retopologized. It includes its original detailed ears, not newly built simplified ears.
+
+An 0.85-radian crease threshold changes the vertex normals only; the geometry and its facial planes are not remodeled. A switch shows the existing smooth normals. Small skin-coloured balls are inset as neutral guides, without irises. Neutral clay lighting and no face textures distinguish underlying relief from drawn shadows. Neither is cel shading. Visual artifacts remain: pronounced dark mouth slit and eye edges, irregular ear triangles and a stern, unfinished expression. This is an anatomical baseline assessment, not the requested fresh sculpt, optimized topology, finished face, approval or a game-ready head. Hair, rigging, body fit, animation and performance have not been checked.
+
+Run Vite, open `/src/anatomy-planes-study/`. Screenshots cover male/female, front, profile, both three-quarter views, opposite light, smooth normals and approximate small scale. `node tests/anatomy-planes-study.mjs` checks input topology; `npm run verify` 232/232. Browser checks do not establish anatomical or artistic quality.
