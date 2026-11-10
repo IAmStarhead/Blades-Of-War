@@ -1,0 +1,7 @@
+# Eye-shape trial on softened face base
+
+Both copies use the same `face-form-study` softer head and twice-relaxed ear contours; left retains the prior eye artwork, right uses symmetric newly painted eyes on a cloned texture. Eye centres are moved 3 texture pixels toward the middle on each side compared with the earlier eye drawing trial (female ±32 vs ±35, male ±34 vs ±37 on a 512-pixel map). Female eyes are more open with a few thin lash strokes; male eyes have a less open contour. Existing nose, mouth, brows, head and ear geometry are unchanged between the two sides. Original game models and all previous trials are untouched.
+
+These remain painted, static eyes rather than eyelids/eyeballs, and lashes are very subtle at this scale. The male brows remain heavy and eye shapes/placement need visual review. Shading is soft rather than anatomically resolved, ear boundaries and attachment remain visibly faceted, and no separate nation variations or animation have been completed. Ear asset provenance: CC0 MakeHuman-derived, `../head-reference/README.md`.
+
+Browser checks in desktop/mobile exercised controls and views, and checked identical head/body/ear positions, independent textures, and texture changes confined to eye regions outside the central nose and mouth. `npm run verify` passed 232 tests. These checks do not establish visual quality or animation compatibility. Screenshots: `docs/previews/face-expression-trial/`.
