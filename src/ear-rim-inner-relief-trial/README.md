@@ -1,0 +1,7 @@
+# Ear rim and inner relief experiment
+
+Left shows the non-mirrored `ear-top-tip-balance-trial` result (16e217d), because the later mirror experiment introduced an extra fragment behind the female lobe in profile. On the right, before rebuilding the same upper root overlap strip, the upper ear region receives another eight iterations of the prior limited neighbour relaxation, and the ear bowl receives a tapered outward displacement up to .0012 local units. This is a restrained geometric bulge, not a painted shadow or an anatomically reconstructed antihelix. Both ears of both sexes are processed; colours, pre-strip indices and inner-relief open boundaries are unchanged. The additional upper smoothing can move upper boundary vertices, but does not operate on the lower lobe. The head and game assets are unchanged.
+
+Inner-relief counts on the actual ears are female 70/97 and male 58/84 vertices. The change is very subtle in front, and it does not resolve the asymmetry, dark spot, light male artifacts or lower seams. The ear and head remain overlapping meshes, not a weld. Static turn/tilt images were captured, not a full animation cycle. Do not integrate without review.
+
+Open `/src/ear-rim-inner-relief-trial/` in Vite; screenshots in `docs/previews/ear-rim-inner-relief-trial/`. `node tests/ear-rim-inner-relief-trial.mjs` checks synthetic relief step bounds, boundary, topology and finite normals for both sexes and sides; it does not validate visual quality or animation. See `../head-reference/README.md` for ear source.
