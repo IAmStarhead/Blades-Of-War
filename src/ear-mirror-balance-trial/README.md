@@ -1,0 +1,7 @@
+# Mirrored ear comparison
+
+Left is `ear-top-tip-balance-trial` (16e217d). On the right, each character's processed `reference-ear-left` mesh is reflected to replace its `reference-ear-right` counterpart on a trial copy, before building the upper root strip. Position, normal, triangle winding and vertex colour are reflected/copied; both remain separate meshes attached to the head bone. Original faces and game assets are unchanged. Left/right here name meshes, not necessarily the character's anatomical sides in the image.
+
+This aligns ear geometry before the upper-root strip, but does not guarantee identical final silhouettes: each side's strip is independently projected onto the head and lighting and scalp overlap differ. In front the difference is modest. In the opposite three-quarter view the prior dark speck appears reduced; in the female opposite profile an extra overlapping fragment is visible behind the lobe, so this is not ready for integration. Male interior and junctions remain imperfect. It does not weld the ears to the head. Static turn/tilt screenshots exist; a full animation cycle is untested.
+
+Screenshots are in `docs/previews/ear-mirror-balance-trial/`; Vite page `/src/ear-mirror-balance-trial/`. `node tests/ear-mirror-balance-trial.mjs` checks synthetic geometry reflection, winding, normals, colours and source preservation, not visual or animation quality. Ear source: `../head-reference/README.md`.
