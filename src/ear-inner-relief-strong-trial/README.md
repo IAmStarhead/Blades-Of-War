@@ -1,0 +1,7 @@
+# Stronger inner-ear relief experiment
+
+Left recreates `ear-rim-inner-relief-trial` (08153dc). Right uses the same local, tapered inner-bowl displacement but increases its cap from .0012 to .0036 local units, for both ears and both sexes. The remaining pipeline is identical, including upper-rim smoothing and later rebuilding of the root overlap strip. The relief operation preserves its existing open-boundary vertices, triangle indices and colours; no face, lobe or original game asset is changed. The localized displacement is a smooth bulge, not an anatomical reconstruction or a true canal.
+
+Measured maxima on the actual ears: female .003441/.003442, male .002423/.003110 local units. Despite the stronger geometry change the visible effect from the front and three-quarter views remains small; it is not evidence of the missing anatomy being fixed. The dark spot at the top and uneven edge remain, and the male pale artifact is not specifically addressed. Ear and head overlap without welding. Static poses were captured; the full animation cycle is untested. This is an isolated comparison and must not be integrated without visual approval.
+
+See `docs/previews/ear-inner-relief-strong-trial/`, including magnified front and three-quarter ear crops. Open `/src/ear-inner-relief-strong-trial/` in Vite. Synthetic test `node tests/ear-inner-relief-strong-trial.mjs` verifies displacement cap, boundary preservation, indices and finite normals, not visual quality. Ear provenance: `../head-reference/README.md`.
