@@ -1,0 +1,7 @@
+# Further female inner-ear smoothing trial
+
+This isolated comparison retains the previous root overlap strip on both sides. Left is the previous 10-pass female inner relax (53b52b7); right uses 20 passes on the same starting mesh, with each step limited to .00025 local units and fixed open-boundary vertices. The same tapered inner region is used; the lower lobe, head and male ear geometry are untouched by this change. Existing vertex colours are retained. Normals are adjusted by half the change in the geometry-derived normals, preserving the existing baseline elsewhere.
+
+The additional visual difference in front and profiles is slight; the upper interior in three-quarter view appears somewhat softer, but the dark line and pointed junction under the lobe remain. The meshes overlap rather than being welded, and the local dark area is not a true ear canal. Static head turn/tilt images are included; a full animation cycle has not been verified. This is a comparison, not a finished repair or game integration.
+
+Open `/src/female-ear-inner-soften-more-trial/` in Vite. Screenshots and enlarged crops are in `docs/previews/female-ear-inner-soften-more-trial/`. The synthetic test `node tests/female-ear-inner-soften-more-trial.mjs` checks fixed boundary, unchanged indices, finite normals and the per-step cap; it does not certify artistic quality. See `../head-reference/README.md` for ear source provenance.
