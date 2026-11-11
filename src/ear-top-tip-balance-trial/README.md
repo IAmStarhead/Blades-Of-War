@@ -1,0 +1,7 @@
+# Ear upper-tip adjustment trial
+
+Left is the prior 20-pass female ear / previous male ear from `female-ear-inner-soften-more-trial` (a1f68a7). Right locally lowers upper-inner ear vertices with a tapered maximum of .0018 local units, for both sexes and sides, before rebuilding the same upper-root overlap strip. The ear's triangle indices before strip generation and the lower/lobe vertices remain untouched. No face or original game asset is modified. Ears continue to be separate meshes parented to the head bone.
+
+Raycasts near the female front upper attachment hit `reference-ear-left` at approximately local y=.104–.106 and x=-.073–-.078. This locates part of the visible area, but does not prove a single triangle is responsible for the tiny peak. Actual adjusted vertex counts are female 58/86 and male 70/92. The result is subtle, not a confirmed removal of the peak; the front silhouette remains uneven and female/male topologies remain asymmetric. The white male ear artifact and the lower seams remain. The overlap is not a weld and full animation has not been verified.
+
+See screenshots in `docs/previews/ear-top-tip-balance-trial/`, or open `/src/ear-top-tip-balance-trial/` in Vite. `node tests/ear-top-tip-balance-trial.mjs` checks bounds, unchanged topology and a synthetic lower vertex for both sides and sexes; it does not certify appearance or animation. Ear source provenance: `../head-reference/README.md`.
