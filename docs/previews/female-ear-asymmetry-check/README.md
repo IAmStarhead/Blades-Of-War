@@ -1,0 +1,5 @@
+# Female ear asymmetry diagnostic
+
+Same right-hand 20-pass female trial from `female-ear-inner-soften-more-trial`, same front view, with the key light moved between x=-3 and x=+3. The fill and hemisphere lighting remain unchanged, so this is not a perfectly mirrored lighting test. No geometry is changed by the light toggle.
+
+After all processing including the root strip, `reference-ear-left` has 566 vertices and 1,024 triangles; `reference-ear-right` has 829 vertices and 1,519 triangles. Their root strips add 60 and 88 triangles respectively. Both use 20 inner-relax passes, but their different topology and boundaries mean different vertices and shapes are affected. Female ears are copied from the corresponding processed male ears, which are extracted from opposite sides of the reference head and are not identical meshes. Light direction changes the appearance substantially, but the geometry also differs; this does not identify the specific protruding triangle or prove which effect dominates. No repair in this diagnostic.
