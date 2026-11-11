@@ -1,0 +1,7 @@
+# Head and neck finish experiment
+
+Separate comparison based on the accepted female-chin-forward trial. Left is the accepted version for each sex; right adds a very shallow, broad inward temple adjustment (maximum x displacement about 0.0018 model units) and a rest-pose nearest-neck normal blend. Face textures, body positions, y/z head coordinates and the accepted chin are unchanged. The original game models and presets are untouched.
+
+This is **not a welded or animation-ready neck**. The head is a rigid mesh attached to the HEAD bone, while the body is skinned: shading cannot close their intersection or prevent separation when they move. The result does not remove the visible seam, and the normal blend creates small streaks especially on the male neck in profile. Do not integrate it as a fix. The modest temple change is hard to see and should be judged independently; no claim of improved face anatomy is made.
+
+Open `/src/head-neck-finish-trial/` in Vite. Compare front, profiles, alternate lighting, clay, full body, and head turn/tilt using the controls; screenshots are under `docs/previews/head-neck-finish-trial/`. Poses are static samples, not a validation of a full animation cycle. `node tests/head-neck-finish-trial.mjs` checks bounds and finite normals; a browser comparison additionally confirmed identical body positions and face texture pixels. `npm run verify` passed 232/232; neither test establishes visual quality or seam integrity during animation.
