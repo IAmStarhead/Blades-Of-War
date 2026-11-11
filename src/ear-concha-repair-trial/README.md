@@ -1,0 +1,7 @@
+# Ear concha and rear fragment experiment
+
+Separate comparison based on female-chin-forward (not the rejected ear-depth tint). The left side is the accepted face/ear base; the right shows an experimental partially buried ellipsoid in the ear bowl, plus more aggressive removal of the shallow rear male ear margin. The face and body have not been replaced or changed for this comparison. The user-requested darkening of the actual bowl has NOT been solved by this insert.
+
+The exposed skin-colored opening appears to involve the cropped ear geometry and its overlap with the head, not merely a missing image texture: the reference ear material uses no image map. This does not prove every visible defect has the same cause. The insert is a separate overlapping mesh and is visibly a round plug, especially in the female ear; it is not an anatomical surface and must not be integrated. The extra male trimming can remove the protruding back fragment in the shown profile but may also remove useful ear-edge triangles; check both sides and lighting. Ear/head and head/neck joins remain unwelded and neck seam unchanged. A real repair should reconstruct the ear surface, inspect boundaries and avoid a floating insert.
+
+Open `/src/ear-concha-repair-trial/` in Vite; screenshots and enlarged crops are in `docs/previews/ear-concha-repair-trial/`. Turn/tilt are static samples, not a full animation test. Run `node tests/ear-concha-repair-trial.mjs`; `npm run verify` passed 232/232. These checks cannot validate visual anatomy or connectivity.
