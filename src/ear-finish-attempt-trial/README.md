@@ -1,0 +1,7 @@
+# Ear finish attempt
+
+Separate comparison based on `ear-boundary-fit-trial`. Both sides use the previously fitted ear edges and accepted face; the right adds a small strip of ear triangles extending the female lower/front boundary into the head and trims additional low rear male ear triangles. The strip is appended to the ear mesh, projected onto the head in rest pose, with its end buried inside the scalp. This is NOT welded to the head. No original game asset or preset is replaced.
+
+Result is limited: the male rear fragment is reduced in the shown profile, but the female lobe transition remains difficult to read and can still look pointed. The triangle strip may intersect the head or leave a seam under other angles/light, and male trimming can open the mesh. The head recess and shading artifacts remain. There is no verified watertight join; the neck seam is unchanged. Do not integrate without review. Static turn/tilt screenshots do not validate a full animation cycle.
+
+Open `/src/ear-finish-attempt-trial/` in Vite; screenshots and enlarged crops in `docs/previews/ear-finish-attempt-trial/`. `node tests/ear-finish-attempt-trial.mjs` checks synthetic strip construction and preservation of head indices; browser run showed 11 strip boundary edges per female ear. `npm run verify` passed 232/232. Tests do not establish visual anatomy or topology. CC0 reference ear source documented in `../head-reference/README.md`.
