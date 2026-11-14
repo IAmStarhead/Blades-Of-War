@@ -1,0 +1,8 @@
+{
+  "name": "blades-of-war-model-a-motion-tests",
+  "private": true,
+  "type": "module",
+  "devDependencies": {
+    "three": "0.180.0"
+  }
+}

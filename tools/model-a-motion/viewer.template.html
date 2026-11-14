@@ -1,0 +1,382 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Blades of War — брови, моргание и кулаки Евы</title>
+<style>
+  :root { color-scheme: dark; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; background: #161b20; color: #ebedf0; }
+  * { box-sizing: border-box; }
+  body { margin: 0; min-width: 290px; height: 100dvh; display: flex; flex-direction: column; }
+  header { display: flex; align-items: center; gap: 14px; padding: 12px 18px; border-bottom: 1px solid #39414a; background: #1a2027; }
+  .mark { width: 30px; height: 30px; display: grid; place-items: center; border: 1px solid #a4865c; border-radius: 8px; color: #d9bd91; font-weight: 800; }
+  h1 { margin: 0; font-size: 15px; letter-spacing: .035em; }
+  .subtitle { margin: 3px 0 0; color: #aeb8c0; font-size: 12px; }
+  .workspace { display: flex; flex: 1; min-height: 0; }
+  .stage { min-width: 0; min-height: 0; position: relative; flex: 1; background: #232930; }
+  #view { width: 100%; height: 100%; touch-action: none; }
+  canvas { display: block; width: 100%; height: 100%; }
+  .hint { position: absolute; left: 14px; bottom: 14px; pointer-events: none; padding: 7px 10px; border: 1px solid #4a525a; border-radius: 6px; background: #151b20d9; color: #c7cdd2; font-size: 11px; }
+  aside { flex: 0 0 292px; overflow: auto; padding: 20px; background: #1b2229; border-left: 1px solid #39414a; }
+  .eyebrow { color: #c7a875; font-size: 10px; text-transform: uppercase; font-weight: 700; letter-spacing: .12em; margin: 0 0 10px; }
+  .group { margin-bottom: 24px; }
+  .buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+  button { font: inherit; font-size: 12px; color: #d9dfe3; background: #282f37; border: 1px solid #46505a; border-radius: 7px; padding: 10px 8px; cursor: pointer; min-height: 38px; }
+  button:hover { border-color: #b99c70; background: #313942; }
+  button.active { background: #705c41; border-color: #d3b783; color: #fff; }
+  button:focus-visible, input:focus-visible { outline: 2px solid #f4d7a7; outline-offset: 2px; }
+  button.wide { grid-column: 1 / -1; }
+  label { display: flex; align-items: center; gap: 9px; font-size: 12px; color: #d1d7db; cursor: pointer; }
+  input { accent-color: #c5a375; }
+  #status { font-size: 12px; color: #b8c1c7; line-height: 1.5; }
+  #error { color: #ffc5b4; font-size: 12px; line-height: 1.5; white-space: pre-wrap; }
+  .note { color: #929da5; font-size: 11px; line-height: 1.55; border-top: 1px solid #39414a; padding-top: 14px; }
+  .light-note { margin: 7px 0 0 22px; color: #929da5; font-size: 11px; line-height: 1.5; }
+  .motion-controls { display: grid; gap: 12px; }
+  button:disabled, input:disabled { opacity: .55; cursor: not-allowed; }
+  .touch-hint { display: none; }
+  @media (max-width: 720px) {
+    body { height: auto; min-height: 100dvh; }
+    .workspace { display: block; }
+    .stage { height: 61vh; min-height: 340px; }
+    .hint { display: none; }
+    .touch-hint { display: block; margin: 0 0 17px; color: #aeb8c0; font-size: 11px; line-height: 1.5; }
+    aside { border-left: 0; border-top: 1px solid #39414a; padding: 16px; }
+    .group { margin-bottom: 17px; }
+    .buttons { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    button.wide { grid-column: auto; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <span class="mark" aria-hidden="true">B</span>
+  <div><h1>BLADES OF WAR</h1><p class="subtitle">Ева · брови, моргание и кулаки + колодец</p></div>
+</header>
+<main class="workspace">
+  <section class="stage" aria-label="Область 3D-просмотра">
+    <div id="view"></div>
+    <div class="hint">Мышь: вращение · колесо: масштаб · правая кнопка: сдвиг</div>
+  </section>
+  <aside aria-label="Настройки просмотра">
+    <p class="touch-hint">Пальцем: вращение · двумя пальцами: масштаб и сдвиг</p>
+    <div class="group">
+      <p class="eyebrow">Сцена</p>
+      <div class="buttons">
+        <button type="button" data-mode="female">Женщина А</button>
+        <button type="button" data-mode="well">Колодец</button>
+        <button type="button" data-mode="pair" class="wide">Вместе</button>
+      </div>
+    </div>
+    <div class="group">
+      <p class="eyebrow">Ракурс</p>
+      <div class="buttons">
+        <button type="button" data-view="front">Спереди</button>
+        <button type="button" data-view="angle">Три четверти</button>
+        <button type="button" data-view="side">Сбоку</button>
+        <button type="button" data-view="back">Сзади</button>
+        <button type="button" data-view="face">Лицо крупно</button>
+        <button type="button" data-view="hands">Кисти крупно</button>
+        <button type="button" data-view="left-hand">Левая кисть</button>
+        <button type="button" data-view="right-hand">Правая кисть</button>
+      </div>
+    </div>
+    <div class="group motion-controls" aria-label="Движения Евы">
+      <p class="eyebrow">Движения Евы</p>
+      <button type="button" id="blink-once">Моргнуть</button>
+      <label><input type="checkbox" id="auto-blink" checked> Автоморгание</label>
+      <label><input type="checkbox" id="eyes-closed"> Закрыть глаза для просмотра</label>
+      <label><input type="checkbox" id="fists"> Кулаки</label>
+      <p class="light-note">Кулаки слегка сжаты. Флажок возвращает исходные открытые кисти.</p>
+    </div>
+    <div class="group">
+      <label><input type="checkbox" id="soft-light" checked aria-describedby="light-note"> Мягкий свет для Евы</label>
+      <p id="light-note" class="light-note">Действует только в режиме «Женщина А».</p>
+    </div>
+    <div class="group"><label><input type="checkbox" id="spin"> Автовращение камеры</label></div>
+    <p id="status" role="status">Загрузка сцены…</p>
+    <p id="error" role="alert"></p>
+    <p class="note">В GLB записаны морфы и короткие клипы, но скелета нет. Автоморгание и переключатели работают в этой витрине. Для просмотра сеть не нужна.</p>
+  </aside>
+</main>
+<script type="module">
+/*__ORIGINAL_WELL_AND_ENGINE_BUNDLE__*/
+const FEMALE_URI = "__FEMALE_DATA_URI__";
+const vpEl = document.querySelector('#view');
+const scene = new Pn();
+scene.background = new Y(0x232930);
+
+// The original well and shared scene retain their original light values.
+// Only the female-only view can use a different balance of these same lights.
+const ambientLight = new ks(0xf8efe8, 0x3b4452, 1.08);
+scene.add(ambientLight);
+const keyLight = new Js(0xfff5ec, 1.55);
+keyLight.position.set(-2.6, 4.2, 4.8);
+keyLight.castShadow = true;
+keyLight.shadow.mapSize.set(1024, 1024);
+keyLight.shadow.bias = -0.0004;
+keyLight.shadow.normalBias = 0.02;
+scene.add(keyLight);
+const fillLight = new Js(0xc8dcf5, 0.72);
+fillLight.position.set(3.2, 2.5, -2.0);
+scene.add(fillLight);
+const frontEyeLight = new Js(0xffffff, 0.38);
+frontEyeLight.position.set(0.2, 1.9, 5.2);
+scene.add(frontEyeLight);
+const studioFloor = new X(new sa(2.6, 48).rotateX(-Math.PI * 0.5), new Uo({color: 0x1a2026}));
+studioFloor.position.y = -0.002;
+studioFloor.receiveShadow = true;
+scene.add(studioFloor);
+
+try {
+  const renderer = new Dd({antialias: true});
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.outputColorSpace = ze;
+  renderer.shadowMap.enabled = true;
+  vpEl.appendChild(renderer.domElement);
+  const camera = new Vs(30, 1, 0.01, 100);
+  const controls = new Hf(camera, renderer.domElement);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.08;
+
+  const loaded = await new jd().loadAsync(FEMALE_URI);
+  const female = loaded.scene;
+  female.traverse(object => {
+    if (object.isMesh) {
+      object.castShadow = true;
+      object.receiveShadow = false;
+      object.frustumCulled = false;
+    }
+  });
+  const wellProp = sp();
+  scene.add(female, wellProp.group);
+  const bodyMesh = female.getObjectByName('basemesh_female_body');
+  const faceMesh = female.getObjectByName('face_blink');
+  const lineMesh = female.getObjectByName('upper_eyelid_line');
+  const target = (mesh, name) => {
+    const index = mesh?.morphTargetDictionary?.[name];
+    if (!Number.isInteger(index) || !mesh.morphTargetInfluences) throw new Error(`Missing morph target ${name}`);
+    return index;
+  };
+  const ids = {
+    fists: target(bodyMesh, 'Fists'), blink: target(faceMesh, 'Blink'),
+    lineBlink: target(lineMesh, 'Blink'), lineNarrow: target(lineMesh, 'BlinkLineNarrow'),
+  };
+  const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches || false;
+  document.querySelector('#auto-blink').checked = !reducedMotion;
+  const state = {
+    mode: 'pair', view: 'front', spin: false, animateWell: true, softLight: true,
+    autoBlink: !reducedMotion, eyesClosed: false, fists: false,
+    blinkWeight: 0, fistWeight: 0, animateMotion: true,
+  };
+  let nextBlink = performance.now() + 3500;
+  let blinkStart = null;
+  let lastMotionFrame = performance.now();
+  let fistFrom = 0, fistTo = 0, fistStart = performance.now();
+
+  function setBlinkWeight(value) {
+    const b = Math.max(0, Math.min(1, value));
+    state.blinkWeight = b;
+    faceMesh.morphTargetInfluences[ids.blink] = b;
+    lineMesh.morphTargetInfluences[ids.lineBlink] = b;
+    lineMesh.morphTargetInfluences[ids.lineNarrow] = Math.min(1, 2 * b);
+  }
+  function setFistWeight(value) {
+    const f = Math.max(0, Math.min(1, value));
+    state.fistWeight = f;
+    bodyMesh.morphTargetInfluences[ids.fists] = f;
+  }
+  function startBlink(now = performance.now()) {
+    if (state.eyesClosed) return;
+    blinkStart = now;
+    nextBlink = now + 4000;
+  }
+  // Exactly the same shape/line timing as the embedded Blink_Once clip.
+  function sampleBlink(seconds) {
+    const time = [0, .08, .14, .17, .23, .31];
+    const value = [0, .5, 1, 1, .5, 0];
+    if (seconds >= time[time.length - 1]) return 0;
+    for (let i = 1; i < time.length; i++) {
+      if (seconds <= time[i]) {
+        const t = Math.max(0, (seconds - time[i - 1]) / (time[i] - time[i - 1]));
+        return value[i - 1] + (value[i] - value[i - 1]) * t;
+      }
+    }
+    return 0;
+  }
+  function updateMotion(now) {
+    const dt = Math.min(.1, Math.max(0, (now - lastMotionFrame) / 1000));
+    lastMotionFrame = now;
+    if (!state.animateMotion) return;
+    if (state.eyesClosed) {
+      blinkStart = null;
+      setBlinkWeight(Math.min(1, state.blinkWeight + dt * 8));
+    } else {
+      if (blinkStart === null && state.autoBlink && now >= nextBlink) startBlink(now);
+      if (blinkStart !== null) {
+        const seconds = (now - blinkStart) / 1000;
+        setBlinkWeight(sampleBlink(seconds));
+        if (seconds >= .31) blinkStart = null;
+      } else if (state.blinkWeight > 0) {
+        setBlinkWeight(Math.max(0, state.blinkWeight - dt * 8));
+      }
+    }
+    const t = Math.max(0, Math.min(1, (now - fistStart) / 350));
+    const smooth = t * t * (3 - 2 * t);
+    setFistWeight(fistFrom + (fistTo - fistFrom) * smooth);
+  }
+
+  function applyLighting() {
+    // Preserve the exact previous lighting in the well-only and paired views.
+    // This changes no light count, shadow map, mesh, material or texture.
+    const active = state.mode === 'female' && state.softLight;
+    ambientLight.intensity = active ? 0.88 : 1.08;
+    keyLight.intensity = active ? 1.75 : 1.55;
+    keyLight.position.set(...(active ? [-3.1, 3.8, 4.2] : [-2.6, 4.2, 4.8]));
+    fillLight.intensity = active ? 0.62 : 0.72;
+    frontEyeLight.intensity = active ? 0.32 : 0.38;
+    document.querySelector('#soft-light').disabled = state.mode !== 'female';
+  }
+
+  function fit(height, width) {
+    const aspect = Math.max(0.05, camera.aspect);
+    const tan = Math.tan(camera.fov * Math.PI / 360);
+    return Math.max(height / (2 * tan), width / (2 * tan * aspect)) * 1.14;
+  }
+  function applyMode() {
+    const pair = state.mode === 'pair';
+    female.visible = state.mode !== 'well';
+    wellProp.group.visible = state.mode !== 'female';
+    studioFloor.visible = state.mode === 'female';
+    female.position.set(pair ? 1.0 : 0, 0, pair ? 0.15 : 0);
+    female.rotation.set(0, 0, 0);
+    wellProp.group.position.set(pair ? -0.7 : 0, 0, 0);
+    applyLighting();
+    const descriptions = {
+      female: 'Женщина А · брови, моргание и кулаки',
+      pair: 'Женщина А и детализированный колодец',
+      well: 'Детализированный колодец из последней витрины',
+    };
+    document.querySelector('#status').textContent = descriptions[state.mode];
+    for (const id of ['auto-blink', 'eyes-closed', 'fists']) {
+      document.getElementById(id).disabled = state.mode === 'well';
+    }
+    document.querySelector('#blink-once').disabled = state.mode === 'well' || state.eyesClosed;
+    document.querySelectorAll('[data-mode]').forEach(button => {
+      const active = button.dataset.mode === state.mode;
+      button.classList.toggle('active', active);
+      button.setAttribute('aria-pressed', String(active));
+    });
+    document.querySelectorAll('[data-view]').forEach(button => {
+      const active = button.dataset.view === state.view;
+      button.classList.toggle('active', active);
+      button.setAttribute('aria-pressed', String(active));
+    });
+  }
+  function frameView() {
+    const face = state.mode === 'female' && state.view === 'face';
+    const hands = state.mode === 'female' && state.view === 'hands';
+    const singleHand = state.mode === 'female' && ['left-hand', 'right-hand'].includes(state.view);
+    const handSide = state.view === 'right-hand' ? -1 : 1;
+    let center, width, height, depthAllowance;
+    if (face) {
+      center = [0, 1.56, 0.02]; width = 0.26; height = 0.34; depthAllowance = 0;
+    } else if (hands) {
+      center = [0, 0.765, 0.05]; width = 0.56; height = 0.29; depthAllowance = 0;
+    } else if (singleHand) {
+      center = [handSide * 0.215, 0.765, 0.05]; width = 0.17; height = 0.21; depthAllowance = 0;
+    } else if (state.mode === 'female') {
+      center = [0, 0.85, 0]; width = 0.68; height = 1.85; depthAllowance = 0.15;
+    } else if (state.mode === 'well') {
+      center = [-0.10, 1.22, 0.08]; width = state.view === 'angle' ? 2.85 : 2.35; height = 2.5; depthAllowance = 1.20;
+    } else {
+      center = [-0.34, 1.22, 0.08]; width = state.view === 'angle' ? 3.75 : 3.25; height = 2.5; depthAllowance = 1.20;
+    }
+    // The well has substantial depth. Account for its diagonal width and near
+    // side as well as height, otherwise the roof or snow can be cropped.
+    const dist = fit(height, width) + depthAllowance;
+    let dx = 0, dz = 1;
+    if (state.view === 'angle') { dx = 0.50; dz = 0.8660254; }
+    if (state.view === 'side') { dx = 1; dz = 0; }
+    if (state.view === 'back') { dx = 0; dz = -1; }
+    if (singleHand) { dx = handSide; dz = 0; }
+    controls.target.set(...center);
+    camera.position.set(center[0] + dist * dx, center[1] + (singleHand ? 0 : face ? 0.01 : 0.12), center[2] + dist * dz);
+    controls.update();
+  }
+  function setMode(mode) {
+    if (!['female', 'well', 'pair'].includes(mode)) return;
+    state.mode = mode;
+    state.view = 'front';
+    applyMode();
+    frameView();
+  }
+  function setView(view) {
+    if (!['front', 'angle', 'side', 'back', 'face', 'hands', 'left-hand', 'right-hand'].includes(view)) return;
+    if (['face', 'hands', 'left-hand', 'right-hand'].includes(view)) state.mode = 'female';
+    state.view = view;
+    applyMode();
+    frameView();
+  }
+  document.querySelectorAll('[data-mode]').forEach(button => button.addEventListener('click', () => setMode(button.dataset.mode)));
+  document.querySelectorAll('[data-view]').forEach(button => button.addEventListener('click', () => setView(button.dataset.view)));
+  document.querySelector('#blink-once').addEventListener('click', () => startBlink());
+  document.querySelector('#auto-blink').addEventListener('change', event => {
+    state.autoBlink = event.target.checked;
+    nextBlink = performance.now() + 3500;
+  });
+  document.querySelector('#eyes-closed').addEventListener('change', event => {
+    state.eyesClosed = event.target.checked;
+    blinkStart = null;
+    nextBlink = performance.now() + 3500;
+    applyMode();
+  });
+  document.querySelector('#fists').addEventListener('change', event => {
+    state.fists = event.target.checked;
+    fistFrom = state.fistWeight;
+    fistTo = state.fists ? 1 : 0;
+    fistStart = performance.now();
+  });
+  document.querySelector('#soft-light').addEventListener('change', event => {
+    state.softLight = event.target.checked;
+    applyLighting();
+  });
+  document.querySelector('#spin').addEventListener('change', event => {
+    state.spin = event.target.checked;
+    controls.autoRotate = state.spin;
+    controls.autoRotateSpeed = 1.0;
+  });
+  function resize() {
+    const width = Math.max(1, vpEl.clientWidth), height = Math.max(1, vpEl.clientHeight);
+    renderer.setSize(width, height);
+    camera.aspect = width / height;
+    camera.updateProjectionMatrix();
+    frameView();
+  }
+  window.addEventListener('resize', resize);
+  applyMode();
+  resize();
+  const start = performance.now();
+  function animate(now) {
+    requestAnimationFrame(animate);
+    if (state.animateWell && wellProp.pendulum) {
+      const t = (now - start) * 0.001;
+      wellProp.pendulum.rotation.z = Math.sin(t * 0.9) * 0.018;
+      wellProp.pendulum.rotation.x = Math.cos(t * 0.65) * 0.010;
+    }
+    updateMotion(now);
+    controls.update();
+    renderer.render(scene, camera);
+  }
+  requestAnimationFrame(animate);
+  window.preview = { female, well: wellProp.group, wellProp, state, camera, controls, renderer,
+    setMode, setView, bodyMesh, faceMesh, lineMesh, clips: loaded.animations, setBlinkWeight, setFistWeight };
+  window.ready = true;
+} catch (error) {
+  document.querySelector('#status').textContent = 'Не удалось загрузить сцену.';
+  document.querySelector('#error').textContent = 'Проверьте поддержку WebGL и откройте распакованный файл в современном браузере. ' + (error?.message || error);
+  throw error;
+}
+</script>
+</body>
+</html>
