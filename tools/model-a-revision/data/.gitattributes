@@ -1,0 +1,2 @@
+# Preserve the upstream MakeHuman asset byte-for-byte, including header spacing.
+*.target whitespace=-blank-at-eol
