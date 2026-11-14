@@ -1,6 +1,6 @@
 # Поиск старой голубоглазой модели
 
-В истории проекта нашлись два разных старых женских персонажа с голубыми глазами. Это **кандидаты для узнавания**, а не утверждение, что найден именно тот вариант, который вы имели в виду. Никакие модели и колодец не изменялись; новые здесь только снимки экрана.
+В истории проекта нашлись три старых версии женских персонажей с голубыми глазами. Это **кандидаты для узнавания**, а не утверждение, что найден именно тот вариант, который вы имели в виду. Никакие модели и колодец не изменялись; новые здесь только снимки экрана.
 
 ## Вариант А — модель из архива 13 ноября
 
@@ -22,8 +22,24 @@
 
 ![Вариант Б — лицо](candidate-b-face.png)
 
+[В полный рост](candidate-b-full.png) · [Сзади](candidate-b-back.png)
+
 - [Скачать исходный GLB](https://github.com/IAmStarhead/Blades-Of-War/raw/f884ef2bcc698f857d5b676e6a53d9c0c5a1e1fb/assets/models/female_styled.glb)
 - [Исходный архив с редактором и моделями](https://github.com/IAmStarhead/Blades-Of-War/blob/f884ef2bcc698f857d5b676e6a53d9c0c5a1e1fb/BladesOfWar_styled_creator.zip)
 - [Коммит от 13 ноября 2026](https://github.com/IAmStarhead/Blades-Of-War/commit/f884ef2bcc698f857d5b676e6a53d9c0c5a1e1fb)
 
 У этой версии есть скелет, но отдельных клипов анимации в GLB нет.
+
+## Вариант В — ранняя «Ева» с ригом
+
+Близкая к варианту А более поздняя версия из той же истории: тоже голубые глаза, но файл уже со скелетом. Снимок — из её исходной витрины, выбран пресет «Златодвор»:
+
+![Вариант В — лицо](candidate-c-face.png)
+
+[В полный рост](candidate-c-full.png) · [Сзади](candidate-c-back.png)
+
+- [Скачать исходный GLB](https://github.com/IAmStarhead/Blades-Of-War/raw/4f278ec9d8c4ccd28b9b312764d26146e25e17a9/assets/models/female_fixed.glb)
+- [Исходный архив с витриной и моделями](https://github.com/IAmStarhead/Blades-Of-War/blob/4f278ec9d8c4ccd28b9b312764d26146e25e17a9/BladesOfWar_Adam_Eve_Showcase.zip)
+- [Коммит от 13 ноября 2026](https://github.com/IAmStarhead/Blades-Of-War/commit/4f278ec9d8c4ccd28b9b312764d26146e25e17a9)
+
+Скелет в GLB есть, отдельных клипов анимации нет. Проверенный SHA-256 исходной модели: `88fd22c32b1a573079888f1b6fc9f1fb9ffec77e9c16d8e4f4f36cbf0b3164bc`.
