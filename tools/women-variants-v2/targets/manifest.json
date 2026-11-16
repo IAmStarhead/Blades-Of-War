@@ -1,0 +1,9 @@
+{
+  "eyes/l-eye-height1-decr.target": "d1d9f77ff6efc9ccdfcc88beafc8a3be8170b3ea386b7a44b414df1f41e84daf",
+  "eyes/l-eye-height1-incr.target": "75ce5285db2e3721ae5434c8a9d27669eb632da7e588000a112d34264216de20",
+  "eyes/r-eye-height1-decr.target": "0e561d96be0453c209ff7cbffdd86cdd73e790a11fc7c0cc8e2e36a1143c46ef",
+  "eyes/r-eye-height1-incr.target": "daab8f4115ade91e776f9bb4622926ddd20cff2ddcfe74e1ff3654132b727933",
+  "mouth/mouth-lowerlip-volume-decr.target": "45f1fe355546cdaa86581512810ee1cd2c6971ac67ffb46d3391ac438e539d15",
+  "mouth/mouth-upperlip-volume-decr.target": "20b285d94ecb62cf605907d65659ab11ff760dbb938ba9ae7fc13429b1e3ba16",
+  "nose/nose-nostrils-width-incr.target": "15dfd7b35cac462e8ceca6b3787bd863982b765c1b8a39375e2271b55434a29f"
+}
