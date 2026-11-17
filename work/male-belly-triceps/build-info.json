@@ -1,0 +1,78 @@
+{
+  "sourceSha256": "ed3c99b191e4f8f4cfd2f69bea0584b23faa12da9d2e9128f4842d9419328382",
+  "outputSha256": "0525f293409ad40e5146f461964d89d23e863ac57f57b12a51ea453f87867554",
+  "bytes": 4617892,
+  "bones": 22,
+  "newTargets": [
+    {
+      "name": "Belly_Stabilizer_1",
+      "movedVertices": 486,
+      "maxDeltaMetres": 0.021682710890855963,
+      "normalVertices": 555,
+      "maxNormalAngleDegrees": 14.936724991803011
+    },
+    {
+      "name": "Belly_Stabilizer_2",
+      "movedVertices": 484,
+      "maxDeltaMetres": 0.02763453124108994,
+      "normalVertices": 555,
+      "maxNormalAngleDegrees": 15.498139452038815
+    },
+    {
+      "name": "Belly_Stabilizer_3",
+      "movedVertices": 484,
+      "maxDeltaMetres": 0.010540806210154043,
+      "normalVertices": 555,
+      "maxNormalAngleDegrees": 5.472005518853977
+    },
+    {
+      "name": "Run_Posterior_UpperArms",
+      "movedVertices": 682,
+      "maxDeltaMetres": 0.0066125404388700515,
+      "normalVertices": 842,
+      "maxNormalAngleDegrees": 4.104952755810579
+    }
+  ],
+  "paddedTracks": 3,
+  "belly": {
+    "selectedVertices": 486,
+    "sampledKeys": 117,
+    "explainedVariance": 0.9953198945769484,
+    "bindSpaceRmsResidualMetres": 0.0006553177941830753,
+    "bindSpaceMaxResidualMetres": 0.004550459860644214,
+    "maxCombinedBindDeltaMetres": 0.025698395686349358,
+    "spineYawRollFactor": 0.15
+  },
+  "clips": [
+    "Adjusted_Walk",
+    "Adjusted_Run"
+  ],
+  "allAnimations": [
+    "Idle_Breathing",
+    "Walk_Loop",
+    "Run_Loop",
+    "Test_Arms",
+    "Test_Elbow",
+    "Test_Knee",
+    "Test_Head",
+    "Previous_Walk",
+    "Previous_Refined_Idle",
+    "Previous_Idle",
+    "Previous_Arms",
+    "Previous_Knee",
+    "Reference_Walk",
+    "Reference_Run",
+    "Corrected_Walk",
+    "Corrected_Run",
+    "Adjusted_Walk",
+    "Adjusted_Run"
+  ],
+  "sourceZipSha256": "12298bbbb1c9a92a9cbc8f126954b731f3a9b53e03e4869befa52d7d168c6c8f",
+  "sharedCodeSha256": {
+    "well-source.mjs": "62ef93410bca00fe6b2bc7e2232138edf1077178cb704d59c2aecd9ddf0ce7b5",
+    "navigation.mjs": "93127f23ebc0185c21a11cceace973e0ab3eb9c3a19b447c5d215590527aa608",
+    "floor-guard.mjs": "539257a8ad078e4793f8cab6a0cb26e31bba6af0d6bc1d4ef4a3defe9d64ee06"
+  },
+  "pageSha256": "49121192baac0ca59a6adfbd4527f408a87fd375fbdc78cdc496c29c998be199",
+  "archiveSha256": "f9ae35be819bd2a7954c0b635c0cf3fa0dcb33f2887f884948f4bf4bb908ac3e"
+}
