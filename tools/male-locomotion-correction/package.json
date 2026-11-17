@@ -1,0 +1,14 @@
+{
+  "name": "blades-of-war-locomotion-correction",
+  "private": true,
+  "type": "module",
+  "description": "Separate corrected CMU-based locomotion comparison.",
+  "dependencies": {
+    "@gltf-transform/core": "4.5.1",
+    "esbuild": "0.28.2",
+    "three": "0.187.0"
+  },
+  "devDependencies": {
+    "three-mesh-bvh": "0.9.4"
+  }
+}
