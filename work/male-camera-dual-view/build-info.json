@@ -1,0 +1,9 @@
+{
+  "previousZipSha256": "3cc9da6d6264822a0957cec0cf533dbffff15a0d6cbbf556bd6ed0877afb2a82",
+  "originalGlbSha256": "450d660b03b284fdb4e3c9363a6211c02525311096d2cd9da69449e9f84a85b3",
+  "optimizedGlbSha256": "ee4fee7388eaf3e77ba01061e11d9a569e6e8684ce349ab86981a9408b33b5c3",
+  "originalTriangles": 287782,
+  "optimizedTriangles": 32354,
+  "pageSha256": "8e30c8fba48e758d4862f05db33e13b7d85bd2374a227b9fc508761f352894d2",
+  "archiveSha256": "0551dc2115f2ac4e2f64be98ef13d3249c121748d72d03d31176fc8855563c04"
+}

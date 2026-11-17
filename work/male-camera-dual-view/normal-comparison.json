@@ -1,0 +1,93 @@
+{
+  "description": "Head bounding rectangle including nearby background; fixed ordinary camera and same light; not pixel-identical.",
+  "reports": [
+    {
+      "angle": 0,
+      "headCrop": [
+        55,
+        87
+      ],
+      "changed": 1721,
+      "meanRGB": 0.5088819226750261,
+      "max": 54,
+      "repeated": 0
+    },
+    {
+      "angle": 45,
+      "headCrop": [
+        86,
+        89
+      ],
+      "changed": 1752,
+      "meanRGB": 0.29936416688441775,
+      "max": 45,
+      "repeated": 0
+    },
+    {
+      "angle": 90,
+      "headCrop": [
+        73,
+        85
+      ],
+      "changed": 1660,
+      "meanRGB": 0.3279613215149073,
+      "max": 44,
+      "repeated": 0
+    },
+    {
+      "angle": 135,
+      "headCrop": [
+        86,
+        89
+      ],
+      "changed": 1258,
+      "meanRGB": 0.2100426792091281,
+      "max": 69,
+      "repeated": 0
+    },
+    {
+      "angle": 180,
+      "headCrop": [
+        56,
+        88
+      ],
+      "changed": 1096,
+      "meanRGB": 0.33306277056277056,
+      "max": 65,
+      "repeated": 0
+    },
+    {
+      "angle": 225,
+      "headCrop": [
+        86,
+        89
+      ],
+      "changed": 1437,
+      "meanRGB": 0.2553784513544116,
+      "max": 68,
+      "repeated": 0
+    },
+    {
+      "angle": 270,
+      "headCrop": [
+        73,
+        85
+      ],
+      "changed": 1785,
+      "meanRGB": 0.4076819769003492,
+      "max": 45,
+      "repeated": 0
+    },
+    {
+      "angle": 315,
+      "headCrop": [
+        86,
+        89
+      ],
+      "changed": 1761,
+      "meanRGB": 0.3126469819702117,
+      "max": 63,
+      "repeated": 0
+    }
+  ]
+}
