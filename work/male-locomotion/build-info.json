@@ -1,0 +1,45 @@
+{
+  "sourceSha256": "a442b85eab3e725bb54f87ce5a3e89da05e7cfefa02cf5cfbb817cf6c67fcc4d",
+  "outputSha256": "bf967a9abea76c35ecbbeebde644a34a2b45984ab13526d9047680e6487d6200",
+  "bytes": 1942292,
+  "bones": 22,
+  "triangles": 32354,
+  "hipWeights": {
+    "adjustedVertices": 284,
+    "maxIncrease": 0.4884968166679293,
+    "meanIncrease": 0.1922184251458967
+  },
+  "gait": {
+    "walk": {
+      "duration": 1,
+      "speed": 0.9,
+      "stance": 0.6,
+      "clearance": 0.075
+    },
+    "run": {
+      "duration": 0.72,
+      "speed": 2.2,
+      "stance": 0.38,
+      "clearance": 0.12
+    }
+  },
+  "worstStanceReach": 0,
+  "worstSwingReach": 0.01220155984013871,
+  "clips": [
+    "Idle_Breathing",
+    "Walk_Loop",
+    "Run_Loop",
+    "Test_Arms",
+    "Test_Elbow",
+    "Test_Knee",
+    "Test_Head",
+    "Previous_Refined_Idle",
+    "Previous_Idle",
+    "Previous_Arms",
+    "Previous_Knee"
+  ],
+  "sourceZipSha256": "494b0b314c47f8ff288c7ed3d03b834e019738de8101b5dd3e50ce36e6b4ff04",
+  "wellCodeSha256": "62ef93410bca00fe6b2bc7e2232138edf1077178cb704d59c2aecd9ddf0ce7b5",
+  "pageSha256": "1114865445f1ed748d0d05dff7bad07b1a922da7116f13c962c7bb5a09820cc4",
+  "archiveSha256": "81d1f0c0663d5a69ab314fb65baa7b4402d1b5ec42372233f5985e4fdc80345f"
+}

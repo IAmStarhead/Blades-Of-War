@@ -1,0 +1,200 @@
+// Browser regression: offline, real inputs, controller, skins, gait and layouts.
+import assert from 'node:assert/strict';
+import {createRequire} from 'node:module';
+import {fileURLToPath,pathToFileURL} from 'node:url';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
+const req=createRequire(path.join(root,'tools/character-showcase/package.json'));
+const puppeteer=req('puppeteer-core'),chromium=req('@sparticuz/chromium').default;
+const argv=process.argv.slice(2),output=path.resolve(argv.find(x=>!x.startsWith('--'))||path.join(root,'work/male-locomotion'));
+const arg=argv.find(x=>x.startsWith('--screenshots=')),shots=arg?path.resolve(arg.slice('--screenshots='.length)):fs.mkdtempSync(path.join(os.tmpdir(),'bow-locomotion-review-'));
+fs.mkdirSync(shots,{recursive:true});const errors=[];
+const browser=await puppeteer.launch({executablePath:process.env.CHROME_BIN||await chromium.executablePath(),headless:'shell',dumpio:true,
+ args:[...chromium.args,'--allow-file-access-from-files','--disable-dev-shm-usage'],defaultViewport:{width:1280,height:720,deviceScaleFactor:1}});
+async function open(file,viewport,reduce=false){const page=await browser.newPage();if(viewport)await page.setViewport(viewport);
+ if(reduce)await page.emulateMediaFeatures([{name:'prefers-reduced-motion',value:'reduce'}]);
+ page.on('pageerror',e=>errors.push('page: '+e.message));
+ page.on('console',m=>{if(m.type()==='error'||(m.type()==='warn'&&m.text().startsWith('THREE.')))errors.push('console: '+m.text())});
+ await page.setRequestInterception(true);page.on('request',r=>{if(/^(file|data|blob):/i.test(r.url()))r.continue();else{errors.push('external request: '+r.url());r.abort()}});
+ await page.setOfflineMode(true);await page.goto(pathToFileURL(file).href,{waitUntil:'load',timeout:120_000});await page.waitForFunction('window.ready===true',{timeout:120_000});return page}
+const frame=page=>page.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));
+const near=(a,b,tol=1e-6)=>assert.ok(Math.abs(a-b)<tol,`${a} != ${b} (${tol})`);
+const nearArray=(a,b,tol=1e-6)=>a.forEach((x,i)=>near(x,b[i],tol));
+try{
+ const page=await open(path.join(output,'index.html'));await frame(page);
+ const initial=await page.evaluate(()=>({view:demo.state.view,mode:demo.state.mode,pace:demo.state.pace,breath:demo.state.breath,bones:demo.bones.length,
+  clips:[...demo.clips.keys()],well:demo.well.visible,skeleton:demo.skeleton.visible,zoom:demo.controls.enableZoom,pan:demo.controls.enablePan,two:demo.controls.touches.TWO,
+  skinned:['head_1','head_2'].map(n=>demo.male.getObjectByName(n).isSkinnedMesh),position:demo.player.position.toArray()}));
+ assert.deepEqual(initial,{view:'game',mode:'control',pace:'walk',breath:'soft',bones:22,clips:['Idle_Breathing','Walk_Loop','Run_Loop','Test_Arms','Test_Elbow','Test_Knee','Test_Head','Previous_Refined_Idle','Previous_Idle','Previous_Arms','Previous_Knee'],
+  well:true,skeleton:false,zoom:false,pan:false,two:null,skinned:[true,true],position:[1,0,.15]});
+ await page.waitForFunction('demo.state.breathTime > .2');
+ // Check that the default loop advances on requestAnimationFrame and then
+ // moves the player all the way to a mouse-set goal without test-only steps.
+ await page.evaluate(()=>demo.moveTo(2.7,.15));
+ await page.waitForFunction('demo.player.position.x > 1.3',{timeout:30_000});
+ await page.waitForFunction('demo.state.target === null',{timeout:30_000});
+ let auto=await page.evaluate(()=>({position:demo.player.position.toArray(),speed:demo.state.speed}));
+ assert.ok(Math.hypot(auto.position[0]-2.7,auto.position[2]-.15)<.08);assert.equal(auto.speed,0);
+ await page.evaluate(()=>{demo.setManual(true);demo.reset()});
+ const focus=await page.evaluate(()=>{
+  demo.setMode('run');window.dispatchEvent(new Event('blur'));const preview=demo.state.mode;
+  demo.setMode('control');demo.moveTo(3,2);demo.keys.add('ShiftLeft');window.dispatchEvent(new Event('blur'));
+  return {preview,target:demo.state.target,keys:demo.keys.size};
+ });
+ assert.equal(focus.preview,'run');assert.ok(focus.target);assert.equal(focus.keys,0);await page.evaluate(()=>demo.reset());
+ await page.click('[data-skeleton]');assert.equal(await page.evaluate(()=>demo.skeleton.visible),true);await page.click('[data-skeleton]');assert.equal(await page.evaluate(()=>demo.skeleton.visible),false);
+ await page.click('[data-breath="old"]');assert.equal(await page.$eval('[data-breath="old"]',b=>b.getAttribute('aria-pressed')),'true');assert.equal(await page.$eval('[data-breath="old"]',b=>getComputedStyle(b).backgroundColor),'rgb(239, 215, 166)');
+ await page.click('[data-breath="soft"]');assert.equal(await page.evaluate(()=>demo.state.breath),'soft');
+ await page.click('[data-mode="walk"]');let phase=await page.evaluate(()=>demo.state.phase);await page.evaluate(()=>demo.step(.05));assert.ok((await page.evaluate(()=>demo.state.phase))>phase);
+ await page.click('[data-mode="run"]');assert.equal(await page.evaluate(()=>demo.state.mode),'run');await page.click('[data-stop]');assert.equal(await page.evaluate(()=>demo.state.mode),'control');assert.equal(await page.evaluate(()=>demo.state.speed),0);
+ await page.click('[data-pace="run"]');assert.equal(await page.evaluate(()=>demo.state.pace),'run');await page.click('[data-pace="walk"]');
+ console.log('PASS: offline page, all 11 clips, idle playback, buttons, skeleton, walk/run previews, stop and pace');
+
+ // Real mouse, Shift+mouse, keyboard, drag, wheel and Escape, not direct API calls.
+ await page.click('[data-view="game"]');await page.evaluate(()=>{demo.reset();demo.setYaw(25*Math.PI/180)});let box=await (await page.$('#view canvas')).boundingBox(),x=box.x+box.width*.67,y=box.y+box.height*.67;
+ await page.mouse.click(x,y);assert.ok(await page.evaluate(()=>!!demo.state.target));assert.equal(await page.evaluate(()=>demo.state.shiftTarget),false);
+ await page.keyboard.down('Shift');await page.mouse.click(x+22,y+12);await page.keyboard.up('Shift');assert.equal(await page.evaluate(()=>demo.state.shiftTarget),true);
+ const dragBefore=await page.evaluate(()=>({yaw:demo.currentYaw(),target:{...demo.state.target},distance:demo.camera.position.distanceTo(demo.controls.target)}));
+ await page.mouse.move(x,y);await page.mouse.down();await page.mouse.move(x+110,y,{steps:10});await page.mouse.up();
+ const dragAfter=await page.evaluate(()=>({yaw:demo.currentYaw(),target:demo.state.target,distance:demo.camera.position.distanceTo(demo.controls.target)}));
+ assert.ok(Math.abs(dragAfter.yaw-dragBefore.yaw)>.1);assert.deepEqual(dragAfter.target,dragBefore.target);near(dragAfter.distance,dragBefore.distance);
+ await page.mouse.wheel({deltaY:-600});await frame(page);near(await page.evaluate(()=>demo.camera.position.distanceTo(demo.controls.target)),dragBefore.distance);
+ await page.evaluate(()=>demo.reset());const start=await page.evaluate(()=>demo.player.position.toArray());await page.keyboard.down('w');await page.evaluate(()=>{for(let i=0;i<100;i++)demo.step(.016)});await page.keyboard.up('w');
+ let moved=await page.evaluate(()=>demo.player.position.toArray());assert.ok(Math.hypot(moved[0]-start[0],moved[2]-start[2])>.5);assert.equal(await page.evaluate(()=>demo.state.target),null);
+ await page.keyboard.down('Shift');await page.keyboard.down('d');await page.evaluate(()=>{for(let i=0;i<120;i++)demo.step(.016)});assert.ok(await page.evaluate(()=>demo.state.actualSpeed)>1.8);await page.keyboard.up('d');await page.keyboard.up('Shift');
+ await page.keyboard.press('Escape');assert.equal(await page.evaluate(()=>demo.state.speed),0);assert.equal(await page.evaluate(()=>demo.keys.size),0);
+ await page.click('[data-reset-player]');nearArray(await page.evaluate(()=>demo.player.position.toArray()),[1,0,.15]);
+ const cameraBefore=await page.evaluate(()=>({cam:demo.camera.position.toArray(),target:demo.controls.target.toArray(),player:demo.player.position.toArray()}));
+ await page.keyboard.down('d');await page.evaluate(()=>{for(let i=0;i<80;i++)demo.step(.016)});await page.keyboard.up('d');const cameraAfter=await page.evaluate(()=>({cam:demo.camera.position.toArray(),target:demo.controls.target.toArray(),player:demo.player.position.toArray()}));
+ nearArray(cameraAfter.cam.map((v,i)=>v-cameraBefore.cam[i]),cameraAfter.player.map((v,i)=>v-cameraBefore.player[i]),1e-5);
+ nearArray(cameraAfter.target.map((v,i)=>v-cameraBefore.target[i]),cameraAfter.player.map((v,i)=>v-cameraBefore.player[i]),1e-5);
+ console.log('PASS: mouse click/Shift-click, camera drag, disabled zoom, WASD/Shift/Escape and camera follow');
+
+ // Circular routing and continuous player collision, including into the well.
+ const navigation=await page.evaluate(()=>{
+  const d=demo;let cases=[],worst=Infinity;
+  for(let k=0;k<180;k++){
+   d.reset();const a=2*Math.PI*k/180,target={x:d.obstacle.x+3*Math.cos(a),z:d.obstacle.z+3*Math.sin(a)};d.moveTo(target.x,target.z,k%2===0);let detour=d.state.detour;
+   for(let i=0;i<1200&&d.state.target;i++){d.step(.016);worst=Math.min(worst,Math.hypot(d.player.position.x-d.obstacle.x,d.player.position.z-d.obstacle.z))}
+   cases.push({detour,remaining:!!d.state.target,error:Math.hypot(d.player.position.x-target.x,d.player.position.z-target.z)});
+  }
+  d.reset();d.moveTo(d.obstacle.x,d.obstacle.z);for(let i=0;i<1000&&d.state.target;i++)d.step(.016);const inside=Math.hypot(d.player.position.x-d.obstacle.x,d.player.position.z-d.obstacle.z);
+  d.reset();d.setView('game');d.setYaw(Math.PI/2);d.keys.add('KeyW');for(let i=0;i<500;i++){d.step(.016);worst=Math.min(worst,Math.hypot(d.player.position.x-d.obstacle.x,d.player.position.z-d.obstacle.z))}d.keys.clear();
+  return {cases,worst,inside,radius:d.obstacle.radius};
+ });
+ assert.ok(navigation.cases.filter(x=>x.detour).length>30);for(const c of navigation.cases)assert.ok(!c.remaining&&c.error<.08,'path did not reach goal');
+ assert.ok(navigation.worst>=navigation.radius-1e-5&&navigation.inside>=navigation.radius);console.log(`PASS: 180 click routes (including around well), click inside well and keyboard collision; min centre clearance ${navigation.worst.toFixed(3)} m`);
+ const turning=await page.evaluate(()=>{
+  const d=demo;d.reset();d.setYaw(0);d.keys.add('KeyW');for(let i=0;i<120;i++)d.step(.016);d.keys.delete('KeyW');d.keys.add('KeyS');
+  let min=1;for(let i=0;i<35;i++){const prev=d.player.position.clone();d.step(.016);const delta=d.player.position.clone().sub(prev);if(delta.length()>1e-7){delta.normalize();min=Math.min(min,Math.sin(d.player.rotation.y)*delta.x+Math.cos(d.player.rotation.y)*delta.z)}}d.keys.clear();return min;
+ });
+ assert.ok(turning>.7,'player translated sideways during a 180-degree reversal');
+ console.log(`PASS: player turns before moving in a new direction (sampled minimum forward alignment ${turning.toFixed(3)})`);
+
+ // Rendering-side deformation measurements. Contact is sampled, not runtime IK.
+ const gait=await page.evaluate(()=>{
+  const d=demo;d.reset();d.setManual(true);d.setView('inspect');d.scene.updateMatrixWorld(true);
+  const body=d.male.getObjectByName('head_2'),head=d.male.getObjectByName('head_1'),pos=body.geometry.attributes.position,v=d.camera.position.clone();
+  function pose(mode,phase){
+   for(const a of Object.values(d.actions))a.setEffectiveWeight(0);const a=d.actions[mode];a.setEffectiveWeight(1);a.time=a.getClip().duration*phase;d.mixer.update(0);d.scene.updateMatrixWorld(true);body.skeleton.update();
+  }
+  function bone(name){return d.male.getObjectByName(name).getWorldPosition(v).toArray()}
+  function foot(side){let min=Infinity,sumz=0,n=0;const sign=side==='L'?1:-1;
+   for(let i=0;i<pos.count;i++)if(sign*pos.getX(i)>.03&&sign*pos.getX(i)<.22&&pos.getY(i)<.12){body.getVertexPosition(i,v);v.applyMatrix4(body.matrixWorld);min=Math.min(min,v.y);sumz+=v.z;n++}
+   return {min,z:sumz/n};
+  }
+  const out={};for(const [mode,speed,duration,stance] of [['walk',.9,1,.6],['run',2.2,.72,.38]]){
+   let min=Infinity,swing=-Infinity,plant=[];for(let i=0;i<=120;i++){
+    const p=i/120;pose(mode,p);const l=foot('L'),r=foot('R');min=Math.min(min,l.min,r.min);
+    if(p>stance+.05&&p<.95)swing=Math.max(swing,l.min);if(p>=.05&&p<=stance-.05)plant.push(l.z+speed*duration*p);
+   }
+   pose(mode,0);const start=['Rig_Thigh_L','Rig_Shin_L','Rig_Foot_L','Rig_Thigh_R','Rig_Shin_R','Rig_Foot_R'].map(bone);
+   pose(mode,.999999);const end=['Rig_Thigh_L','Rig_Shin_L','Rig_Foot_L','Rig_Thigh_R','Rig_Shin_R','Rig_Foot_R'].map(bone);
+   out[mode]={min,swing,drift:Math.max(...plant)-Math.min(...plant),closing:Math.max(...start.map((p,i)=>Math.hypot(...p.map((x,j)=>x-end[i][j]))))};
+  }
+  pose('soft',0);const restHead=bone('Rig_Head'),restFoot=bone('Rig_Foot_L');pose('soft',.5);const softHead=bone('Rig_Head'),softFoot=bone('Rig_Foot_L'),chestSoft=d.male.getObjectByName('Rig_Chest').scale.toArray();
+  pose('old',.5);const oldHead=bone('Rig_Head'),chestOld=d.male.getObjectByName('Rig_Chest').scale.toArray();
+  const distance=(a,b)=>Math.hypot(...a.map((v,i)=>v-b[i]));
+  out.breath={softHead:distance(restHead,softHead),oldHead:distance(restHead,oldHead),softFoot:distance(restFoot,softFoot),chestSoft,chestOld};
+  // Head and elbows are far from the changed hip weights. Independent actions
+  // check the rendered mesh deformation, not just the preserved glTF keys.
+  return out;
+ });
+ for(const [name,g] of Object.entries({walk:gait.walk,run:gait.run})){
+  assert.ok(g.min>-.003&&g.min<.015,`${name} contact sample ${g.min}`);assert.ok(g.swing>.04,`${name} swing`);assert.ok(g.drift<.04,`${name} stance drift`);assert.ok(g.closing<2e-5,`${name} loop seam`);
+ }
+ nearArray(gait.breath.chestSoft,[1,1,1]);assert.ok(gait.breath.chestOld[0]>1.04);assert.ok(gait.breath.softHead>.003&&gait.breath.softHead<.02);assert.ok(gait.breath.softFoot<1e-6);
+ console.log('PASS: sampled foot heights, stance drift and closed loops (not runtime IK): '+JSON.stringify(gait));
+
+ // Match the untouched, generated well at mesh/material/texture level.
+ const previous=await open(path.join(root,'work/male-rig-refinement/index.html'));
+ const fingerprint=()=>{function hash(arr){let h=2166136261;const u=new Uint8Array(arr.buffer,arr.byteOffset,arr.byteLength);for(const b of u)h=Math.imul(h^b,16777619);return h>>>0}
+  const rows=[];let texture='';demo.well.traverse(o=>{if(!o.isMesh)return;const m=o.material,g=o.geometry,a={};for(const k of Object.keys(g.attributes).sort())a[k]=[g.attributes[k].count,g.attributes[k].itemSize,hash(g.attributes[k].array)];
+   const map=m.map;if(map&&!texture)texture=map.image.toDataURL();rows.push({position:o.position.toArray(),quaternion:o.quaternion.toArray(),scale:o.scale.toArray(),attributes:a,index:g.index&&[g.index.count,hash(g.index.array)],material:[m.type,m.color?.getHex(),m.side,m.flatShading,map?.wrapS,map?.wrapT,map?.minFilter,map?.magFilter],cast:o.castShadow,receive:o.receiveShadow})});return JSON.stringify({rows,texture})};
+ assert.equal(await page.evaluate(fingerprint),await previous.evaluate(fingerprint),'well differs from previous trial');
+ console.log('PASS: detailed well mesh, transforms, materials and generated texture match the previous viewer');await previous.close();
+
+ // Transition continuity at 60 Hz after aligning the character with movement.
+ const transitions=await page.evaluate(()=>{
+  const d=demo;d.reset();d.setManual(true);d.setView('inspect');d.setYaw(0);d.player.rotation.y=Math.PI;d.step(.05);
+  const body=d.male.getObjectByName('head_2'),p=body.geometry.attributes.position,v=d.camera.position.clone();
+  const sample=()=>{d.scene.updateMatrixWorld(true);body.skeleton.update();const a=[];for(let i=0;i<p.count;i+=5){body.getVertexPosition(i,v);v.applyMatrix4(body.matrixWorld);a.push(v.x-d.player.position.x,v.y-d.player.position.y,v.z-d.player.position.z)}return a};
+  let prev=sample(),res={start:0,change:0,stop:0},group='start';
+  function tick(){d.step(1/60);let next=sample(),max=0;for(let i=0;i<next.length;i+=3)max=Math.max(max,Math.hypot(next[i]-prev[i],next[i+1]-prev[i+1],next[i+2]-prev[i+2]));res[group]=Math.max(res[group],max);prev=next}
+  d.keys.add('KeyW');for(let i=0;i<120;i++)tick();group='change';d.keys.add('ShiftLeft');for(let i=0;i<120;i++)tick();group='stop';d.keys.clear();for(let i=0;i<90;i++)tick();return res;
+ });
+ for(const [name,n] of Object.entries(transitions))assert.ok(n<.12,`${name} discontinuity ${n}`);console.log('PASS: sampled 60 Hz start, walk→run and stop transitions, maximum relative vertex movement '+JSON.stringify(transitions));
+
+ // Layout checks allow vertical scrolling for the controls; no horizontal
+ // overflow. All controls remain reachable and leg detail is framed at 8 yaws.
+ const viewports=[['desktop',1280,720],['phone',390,844],['small phone',320,568],['minimum phone',290,568],['tall phone',360,896],['landscape',568,320],['short phone',390,400],['large desktop',1920,1080]];
+ for(const [label,width,height] of viewports){
+  await page.setViewport({width,height,deviceScaleFactor:1});await frame(page);
+  const result=await page.evaluate(()=>{
+   const d=demo;d.reset();d.setManual(true);const v=d.camera.position.clone(),o=d.male.getObjectByName('head_2'),p=o.geometry.attributes.position;
+   const cases=[];for(const view of ['game','normal','inspect','legs'])for(let a=0;a<360;a+=45){d.setView(view);d.setYaw(a*Math.PI/180);
+    for(const mode of ['control','walk','run']){d.setMode(mode);for(let f=0;f<8;f++){d.step(.05);d.scene.updateMatrixWorld(true);d.camera.updateMatrixWorld(true);o.skeleton.update();const bounds=[Infinity,-Infinity,Infinity,-Infinity];
+     // For the leg detail, intentionally ignore torso/head above the hips.
+     for(const name of view==='legs'?['head_2']:['head_2','head_1','ear-makehuman-left','ear-makehuman-right']){const mesh=d.male.getObjectByName(name),p=mesh.geometry.attributes.position;if(mesh.skeleton)mesh.skeleton.update();for(let i=0;i<p.count;i+=2){if(view==='legs'&&p.getY(i)>.94)continue;mesh.getVertexPosition(i,v);v.applyMatrix4(mesh.matrixWorld).project(d.camera);bounds[0]=Math.min(bounds[0],v.x);bounds[1]=Math.max(bounds[1],v.x);bounds[2]=Math.min(bounds[2],v.y);bounds[3]=Math.max(bounds[3],v.y)}}
+     if(bounds.some(n=>Math.abs(n)>1))cases.push({view,a,mode,f,bounds});
+    }}
+   }
+   d.reset();d.setView('game');d.setYaw(d.views.game.startYaw);d.draw();
+   return {cases,page:[document.documentElement.clientWidth,document.documentElement.scrollWidth],canvas:[d.renderer.domElement.clientWidth,d.renderer.domElement.clientHeight],aspect:d.camera.aspect,
+    clipped:[...document.querySelectorAll('button')].filter(b=>b.scrollWidth>b.clientWidth+1||b.scrollHeight>b.clientHeight+1).map(b=>b.textContent),
+    outside:[...document.querySelectorAll('button')].filter(b=>{let r=b.getBoundingClientRect();return r.left<0||r.right>innerWidth}).map(b=>b.textContent)};
+  });
+  assert.equal(result.page[0],result.page[1],`${label} horizontal overflow`);near(result.aspect,result.canvas[0]/result.canvas[1],.003);
+  assert.deepEqual(result.clipped,[],`${label} clipped controls`);assert.deepEqual(result.outside,[],`${label} controls outside horizontal viewport`);
+  assert.deepEqual(result.cases,[],`${label} model cropped in views`);console.log(`PASS ${label}: controls and 4 views × 8 angles × 3 modes × 8 sampled poses`);
+  if(['desktop','small phone'].includes(label)){await page.screenshot({path:path.join(shots,label+'.png'),fullPage:true})}
+ }
+ // Real touch tap/drag after viewport change: drag must not replace target.
+ await page.setViewport({width:390,height:844,isMobile:true,hasTouch:true,deviceScaleFactor:1});await frame(page);
+ await page.evaluate(()=>{demo.setManual(true);demo.setView('game');demo.reset()});box=await (await page.$('#view canvas')).boundingBox();x=box.x+box.width*.7;y=box.y+box.height*.6;
+ await page.touchscreen.tap(x,y);const touch=await page.evaluate(()=>({target:demo.state.target,yaw:demo.currentYaw()}));assert.ok(touch.target);
+ const client=await page.target().createCDPSession();await client.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x,y}]});
+ for(let i=1;i<=8;i++)await client.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:x+i*10,y}]});await client.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+ const touchAfter=await page.evaluate(()=>({target:demo.state.target,yaw:demo.currentYaw()}));assert.deepEqual(touchAfter.target,touch.target);assert.ok(Math.abs(touchAfter.yaw-touch.yaw)>.1);
+ await page.click('[data-pace="run"]');await page.touchscreen.tap(x,y);assert.equal(await page.evaluate(()=>demo.state.pace),'run');assert.ok(await page.evaluate(()=>!!demo.state.target));
+ console.log('PASS: real touch tap, one-finger rotation without replacing target, and run selection');
+
+ // Screenshots are for human inspection, not golden image assertions.
+ await page.setViewport({width:1280,height:900,deviceScaleFactor:1});await frame(page);
+ for(const [name,mode,view,yaw] of [['run-front','run','inspect',0],['run-side','run','inspect',Math.PI/2],['walk-side','walk','inspect',Math.PI/2],['run-legs','run','legs',0]]){
+  await page.evaluate(({mode,view,yaw})=>{demo.reset();demo.setMode(mode);demo.setView(view);demo.setYaw(yaw);for(let i=0;i<20;i++)demo.step(.016);demo.draw()},{mode,view,yaw});
+  await page.screenshot({path:path.join(shots,name+'.png')});
+ }
+ // Mobile close-up must keep the leg focus out of badge/help overlays.
+ await page.setViewport({width:320,height:568,deviceScaleFactor:1});await frame(page);
+ await page.evaluate(()=>{window.scrollTo(0,0);demo.reset();demo.setMode('run');demo.setView('legs');demo.setYaw(0);for(let i=0;i<20;i++)demo.step(.016);demo.draw()});
+ await page.screenshot({path:path.join(shots,'phone-leg-detail.png')});
+ await page.close();
+ const reduced=await open(path.join(output,'index.html'),undefined,true);await reduced.evaluate(()=>demo.setManual(true));
+ const reducedResult=await reduced.evaluate(()=>{const a=demo.state.breathTime;for(let i=0;i<120;i++)demo.step(.016);const b=demo.state.breathTime;demo.keys.add('KeyW');for(let i=0;i<120;i++)demo.step(.016);return {reduce:demo.state.reducedMotion,a,b,phase:demo.state.phase,pos:demo.player.position.toArray()}});
+ assert.equal(reducedResult.reduce,true);near(reducedResult.a,reducedResult.b);assert.ok(reducedResult.phase>0&&Math.hypot(reducedResult.pos[0]-1,reducedResult.pos[2]-.15)>.5);
+ console.log('PASS: prefers-reduced-motion freezes idle but does not prevent player control');await reduced.close();
+ assert.deepEqual(errors,[],errors.join('\n'));console.log(`PASS: no page errors, Three.js warnings or external requests; screenshots: ${shots}`);
+}catch(error){console.error(error);process.exitCode=1}finally{await browser.close()}
