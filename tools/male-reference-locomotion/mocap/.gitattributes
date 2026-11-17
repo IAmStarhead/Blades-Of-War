@@ -1,0 +1,3 @@
+# Preserve the published capture bytes and conversion notes verbatim.
+*.bvh -text -whitespace
+READMEFIRST.txt -whitespace

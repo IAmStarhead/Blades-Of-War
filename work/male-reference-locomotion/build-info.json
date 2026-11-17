@@ -1,0 +1,72 @@
+{
+  "sourceSha256": "e32fca3f789abbb0eebcf17f21cba5d2a981155de50e155982bbcb0281574d6c",
+  "outputSha256": "a7a2d08f8c92a11c713cc855a734437a98cd7e3e1e6cf8e19baafe32db572343",
+  "bytes": 2426720,
+  "bones": 22,
+  "soleVertices": 3332,
+  "clips": [
+    {
+      "name": "Reference_Walk",
+      "source": "02_01.bvh",
+      "sourceSha256": "cf56db43157acc3d200b3d4215523f54d354a8926bea67e1f6c8031bd335ba7e",
+      "sourceFrames": [
+        136,
+        268
+      ],
+      "sourceFrameTime": 0.008333300240337849,
+      "duration": 1,
+      "strideScale": 0.85,
+      "neckDegrees": 9,
+      "headDegrees": 18,
+      "armOutDegrees": 11,
+      "rootConstraints": 128,
+      "worstSoleFitMetres": 3.7470027081099033e-16,
+      "rootY": [
+        -0.051241481410634115,
+        -0.014121102084086679
+      ]
+    },
+    {
+      "name": "Reference_Run",
+      "source": "35_17.bvh",
+      "sourceSha256": "50c6469efea1edbba0f7acd46b1fa72e0b74b78e1698aa1b441990bd2a78d730",
+      "sourceFrames": [
+        32,
+        121
+      ],
+      "sourceFrameTime": 0.008333300240337849,
+      "duration": 0.75,
+      "strideScale": 0.9,
+      "neckDegrees": 6,
+      "headDegrees": 10,
+      "armOutDegrees": 0,
+      "rootConstraints": 32,
+      "worstSoleFitMetres": 4.718447854656915e-16,
+      "rootY": [
+        -0.054770857623652885,
+        0.019035092678147736
+      ]
+    }
+  ],
+  "allAnimations": [
+    "Idle_Breathing",
+    "Walk_Loop",
+    "Run_Loop",
+    "Test_Arms",
+    "Test_Elbow",
+    "Test_Knee",
+    "Test_Head",
+    "Previous_Walk",
+    "Previous_Refined_Idle",
+    "Previous_Idle",
+    "Previous_Arms",
+    "Previous_Knee",
+    "Reference_Walk",
+    "Reference_Run"
+  ],
+  "sourceZipSha256": "328d5250c525d9a1a6af65320b8ba4316e310380e737b7d79af4d5543f16b4c6",
+  "wellCodeSha256": "62ef93410bca00fe6b2bc7e2232138edf1077178cb704d59c2aecd9ddf0ce7b5",
+  "navigationCodeSha256": "93127f23ebc0185c21a11cceace973e0ab3eb9c3a19b447c5d215590527aa608",
+  "pageSha256": "8c6718359557a44fb6256beea4095f82b889658c79d11f21166638cc86e74c0e",
+  "archiveSha256": "bc99287dedbb0bb80cf246ef75e76f55c46d4c533a73ed4882656b50021f2b63"
+}
