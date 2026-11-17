@@ -1,0 +1,2 @@
+# Generated page includes upstream shader templates; preserve them byte-for-byte.
+index.html -whitespace
