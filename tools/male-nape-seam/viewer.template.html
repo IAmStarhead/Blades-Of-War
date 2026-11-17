@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Blades of War — проба сглаживания затылка</title>
+<style>
+  :root{color-scheme:dark;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#111715;color:#ecf0e8}
+  *{box-sizing:border-box}
+  body{margin:0;min-width:290px;height:100dvh;min-height:440px;display:flex;flex-direction:column;overflow:hidden}
+  header{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 22px;background:#141b19;border-bottom:1px solid #303b35;min-height:60px}
+  .brand{display:flex;align-items:center;gap:12px}.brand-mark{display:grid;place-items:center;width:32px;height:32px;border:1px solid #a1865c;border-radius:7px;color:#d7bd90;font-family:Georgia,serif;font-size:19px}
+  h1{font-size:13px;letter-spacing:.14em;margin:0;font-weight:750}.sub{margin:3px 0 0;color:#96a69a;font-size:11px}.top-note{font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:#9eab9f;white-space:nowrap}
+  main{position:relative;flex:1;min-height:0;background:#2e3930}.viewport{position:absolute;inset:0;touch-action:none}canvas{display:block;width:100%;height:100%}
+  .scene-label,.scene-hint{pointer-events:none;position:absolute;font-size:11px;color:#d0dbd0;line-height:1.5;text-shadow:0 1px 4px #000}
+  .scene-label{left:20px;top:18px}.scene-label strong{display:block;font-size:10px;letter-spacing:.17em;color:#d8c19a}.scene-label span{color:#c5d0c5}
+  .scene-hint{left:20px;bottom:16px;padding:7px 10px;border:1px solid #ffffff22;border-radius:6px;background:#18241dd9}
+  .badge{position:absolute;right:18px;top:18px;background:#152019dd;border:1px solid #ffffff24;border-radius:8px;padding:10px 13px;min-width:156px;box-shadow:0 4px 18px #0002;pointer-events:none}
+  .badge .tiny{display:block;color:#a8b8a7;font-size:9px;text-transform:uppercase;letter-spacing:.15em}.badge strong{display:block;color:#f0f0e7;font-size:16px;margin-top:2px;font-variant-numeric:tabular-nums}.badge span:last-child{color:#a8b8a7;font-size:10px}
+  footer{display:flex;align-items:center;gap:24px;justify-content:space-between;padding:13px 22px 15px;background:#151d19;border-top:1px solid #334038}
+  .panel{display:flex;align-items:center;gap:10px}.panel-title{font-size:10px;letter-spacing:.11em;text-transform:uppercase;color:#9cad9f;white-space:nowrap}.buttons{display:flex;gap:6px}
+  button{font:inherit;color:#d9e4da;background:#25332b;border:1px solid #435348;border-radius:6px;padding:9px 12px;min-height:38px;font-size:12px;cursor:pointer;white-space:nowrap}
+  button:hover{background:#304337;border-color:#78957e}button.active{color:#171e17;background:#d3bb8e;border-color:#dfccaa;font-weight:650}button:focus-visible{outline:2px solid #f4d7a7;outline-offset:2px}.rotate{min-width:42px;font-size:16px;line-height:1}
+  .fixed{font-size:11px;color:#9aaba0;line-height:1.5;max-width:245px}.fixed strong{display:block;color:#d2ded1;font-weight:600}
+  #error{position:absolute;top:70px;left:18px;right:18px;white-space:pre-wrap;color:#ffc3b9;background:#3d201be8;border:1px solid #a55a4b;padding:10px 12px;border-radius:6px;font-size:12px;display:none}
+  @media(max-width:1100px){.fixed{display:none}footer{gap:12px}}
+  @media(max-width:850px){.top-note{display:none}footer{gap:14px;flex-wrap:wrap;padding:10px 14px}.panel{gap:8px}header{padding:10px 14px}.scene-label{left:14px;top:13px}.scene-hint{left:14px;bottom:12px}.badge{right:13px;top:13px}}
+  @media(max-width:500px){body{min-height:400px}header{min-height:52px}.brand-mark{width:28px;height:28px;font-size:16px}.sub{font-size:10px}.viewport{top:50%;bottom:auto;height:min(100%,138vw);transform:translateY(-50%)}.scene-label{max-width:140px}.badge{min-width:130px;padding:8px 10px}.badge strong{font-size:14px}.scene-hint{font-size:10px}.panel{width:100%;justify-content:space-between}.panel-title{font-size:9px}footer{gap:7px;padding:8px 12px}button{min-height:34px;padding:7px 10px;font-size:11px}.rotate{font-size:14px}.buttons{gap:5px}.camera-panel .panel-title{display:none}.camera-panel .buttons{width:100%;display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}.camera-panel button{padding-left:2px;padding-right:2px;font-size:10px}}
+  @media(max-width:350px){.scene-label{max-width:112px;font-size:10px}.scene-label strong{font-size:9px;letter-spacing:.08em}.badge{max-width:150px}.badge span:last-child{font-size:9px}main .scene-label span{display:none}main[data-mode="inspect"] .badge,main[data-mode="head"] .badge{top:auto;bottom:12px;right:12px;min-width:0;max-width:none;padding:5px 8px}main[data-mode="inspect"] .badge .tiny,main[data-mode="inspect"] .badge span:last-child,main[data-mode="head"] .badge .tiny,main[data-mode="head"] .badge span:last-child{display:none}main[data-mode="inspect"] .badge strong,main[data-mode="head"] .badge strong{margin:0;font-size:12px}main[data-mode="inspect"] .scene-hint,main[data-mode="head"] .scene-hint{max-width:115px;font-size:9px}}
+  @media(max-height:470px){body{height:100dvh;min-height:0}header{min-height:38px;padding:4px 14px}header .sub{display:none}.brand-mark{width:25px;height:25px;font-size:15px}footer{gap:6px 14px;padding:5px 12px}.panel{gap:6px}button{min-height:30px;padding:5px 9px;font-size:11px}.scene-hint{display:none}.badge{top:8px}.scene-label{top:8px}}
+  @media(max-height:470px) and (max-width:700px){.scene-label{max-width:145px;font-size:10px}.scene-label strong{font-size:9px;letter-spacing:.08em}.scene-label span{display:none}.badge{min-width:0;padding:6px 9px}.badge strong{font-size:13px}}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><span class="brand-mark" aria-hidden="true">B</span><div><h1>BLADES OF WAR</h1><p class="sub">Мужчина и колодец · проба затылка</p></div></div>
+  <div class="top-note">Отдельная статичная витрина</div>
+</header>
+<main aria-label="Область 3D-просмотра">
+  <div class="viewport" id="view"></div>
+  <div class="scene-label"><strong id="view-label">ЗАТЫЛОК КРУПНЕЕ</strong><span id="view-description">Облегчённая модель: сравните «До» и «После»<br>Отдельная проба</span></div>
+  <div class="badge" aria-live="polite"><span class="tiny" id="version-label">После правки · облегчённая</span><strong id="triangle-label">__OPTIMIZED_TRIANGLES__</strong><span>треугольников у мужчины</span></div>
+  <div class="scene-hint" id="scene-hint">Перетащите, чтобы повернуть камеру по кругу</div>
+  <div id="error" role="alert"></div>
+</main>
+<footer>
+  <div class="panel camera-panel" role="group" aria-label="Ракурс"><div class="panel-title">Камера</div><div class="buttons">
+    <button type="button" data-view="game">Сверху</button>
+    <button type="button" data-view="normal" aria-label="Обычный ракурс мужчины и колодца">Обычный</button>
+    <button type="button" data-view="inspect" aria-label="Осмотреть мужчину в полный рост">Осмотр</button>
+    <button type="button" data-view="head" class="active" aria-label="Осмотреть затылок крупнее">Затылок</button>
+  </div></div>
+  <div class="panel" role="group" aria-label="Вариант модели"><div class="panel-title">Вариант</div><div class="buttons">
+    <button type="button" data-version="original" title="Неизменённая исходная модель">Исходная</button>
+    <button type="button" data-version="before" aria-label="Облегчённая модель до правки" title="Облегчённая модель до правки">До</button>
+    <button type="button" data-version="after" class="active" aria-label="Облегчённая модель после правки" title="Облегчённая модель после правки">После</button>
+  </div></div>
+  <div class="panel"><div class="panel-title">Поворот</div><div class="buttons">
+    <button type="button" class="rotate" data-rotate="-1" aria-label="Повернуть камеру влево">↶</button>
+    <button type="button" data-reset>Начальный вид</button>
+    <button type="button" class="rotate" data-rotate="1" aria-label="Повернуть камеру вправо">↷</button>
+  </div></div>
+  <div class="fixed"><strong>Сравнение до и после</strong>Кулаки выключены · руки расслаблены</div>
+</footer>
+<script type="module">
+/*__ORIGINAL_WELL_AND_ENGINE_BUNDLE__*/
+const ORIGINAL_URI = "__ORIGINAL_DATA_URI__";
+const OPTIMIZED_URI = "__OPTIMIZED_DATA_URI__";
+const FIXED_URI = "__FIXED_DATA_URI__";
+const OPTIMIZED_TRIANGLES = __OPTIMIZED_TRIANGLES_NUMBER__;
+const view = document.querySelector('#view');
+const scene = new Pn();
+scene.background = new Y(0x27312c);
+const ambientLight = new ks(0xf8efe8,0x3b4452,1.08);
+const keyLight = new Js(0xfff5ec,1.55); keyLight.position.set(-2.6,4.2,4.8); keyLight.castShadow=true;
+keyLight.shadow.mapSize.set(1024,1024); keyLight.shadow.bias=-0.0004; keyLight.shadow.normalBias=0.02;
+const fillLight = new Js(0xc8dcf5,0.72); fillLight.position.set(3.2,2.5,-2.0);
+const eyeLight = new Js(0xffffff,0.38); eyeLight.position.set(0.2,1.9,5.2);
+scene.add(ambientLight,keyLight,fillLight,eyeLight);
+
+try {
+  const renderer = new Dd({antialias:true});
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1,2));
+  renderer.outputColorSpace=ze;
+  renderer.shadowMap.enabled=true;
+  view.appendChild(renderer.domElement);
+
+  // A neutral display floor makes height and shadows readable; it is separate
+  // from, and does not alter, the original detailed well or the male GLBs.
+  const floor = new X(new oa(80,0.04,80),new Uo({color:0x36443b}));
+  floor.name='neutral-display-floor'; floor.position.y=-0.022; floor.receiveShadow=true; scene.add(floor);
+  const wellProp=sp(); wellProp.group.position.set(-0.7,0,0); scene.add(wellProp.group);
+  const loader=new jd();
+  const [originalGltf,optimizedGltf,fixedGltf]=await Promise.all([
+    loader.loadAsync(ORIGINAL_URI),loader.loadAsync(OPTIMIZED_URI),loader.loadAsync(FIXED_URI)]);
+  const original=originalGltf.scene, before=optimizedGltf.scene, after=fixedGltf.scene;
+  for(const male of [original,before,after]) {
+    male.position.set(1,0,0.15);
+    male.traverse(object=>{if(object.isMesh){object.castShadow=true;object.receiveShadow=false;}});
+    scene.add(male);
+  }
+
+  // The tactical camera remains the original fixed view. The ordinary scene
+  // and close inspection are near-horizontal showcase presets, not gameplay.
+  const views={
+    game:{distance:10.6,elevation:52*Math.PI/180,startYaw:25*Math.PI/180,target:[-0.18,0.65,0.05]},
+    normal:{get distance(){return Math.max(6.5,6.8*Math.max(1,view.clientHeight)/Math.max(1,view.clientWidth))},
+      elevation:5*Math.PI/180,startYaw:0,target:[-0.3,1.2,0.05]},
+    inspect:{distance:3.9,elevation:5*Math.PI/180,startYaw:0,target:[1,0.9,0.15]},
+    head:{distance:0.95,elevation:0,startYaw:Math.PI,target:[1.004,1.68,0.15]},
+  };
+  const camera=new Vs(35,1,0.01,100);
+  const controls=new Hf(camera,renderer.domElement);
+  controls.enableZoom=false; controls.enablePan=false; controls.enableDamping=false;
+  // Do not let a second finger inherit a one-finger rotation state.
+  controls.touches.TWO=null;
+  const state={version:'after',view:'head',yaws:{game:views.game.startYaw,normal:views.normal.startYaw,inspect:views.inspect.startYaw,head:views.head.startYaw}};
+  let needsRender=true;
+  controls.addEventListener('change',()=>{state.yaws[state.view]=currentYaw();needsRender=true});
+
+  function setYaw(yaw) {
+    const {distance,elevation}=views[state.view];
+    const horizontal=distance*Math.cos(elevation);
+    camera.position.set(controls.target.x+horizontal*Math.sin(yaw),
+      controls.target.y+distance*Math.sin(elevation),controls.target.z+horizontal*Math.cos(yaw));
+    controls.update();state.yaws[state.view]=currentYaw();needsRender=true;
+  }
+  function currentYaw(){return Math.atan2(camera.position.x-controls.target.x,camera.position.z-controls.target.z)}
+  function setView(name) {
+    if(!Object.hasOwn(views,name))return;
+    // The two ordinary presets share the direction when switched directly.
+    if(['normal','inspect'].includes(name) && ['normal','inspect'].includes(state.view))state.yaws[name]=currentYaw();
+    state.view=name;
+    const {distance,elevation,target}=views[name];
+    controls.target.set(...target);
+    controls.minPolarAngle=controls.maxPolarAngle=Math.PI/2-elevation;
+    controls.minDistance=controls.maxDistance=distance;
+    // The well is only hidden during close inspection, never altered.
+    wellProp.group.visible=name==='game'||name==='normal';
+    scene.background.setHex(name==='game'?0x27312c:0x2e3930);
+    setYaw(state.yaws[name]);
+    document.querySelector('main').dataset.mode=name;
+    document.querySelector('#scene-hint').textContent=name==='game'?'Перетащите, чтобы повернуть камеру по кругу':'Перетащите для поворота';
+    document.querySelector('#view-label').textContent=name==='game'?'ВИД СВЕРХУ ПОД УГЛОМ':name==='normal'?'ОБЫЧНЫЙ РАКУРС':name==='inspect'?'ОСМОТР МУЖЧИНЫ':'ЗАТЫЛОК КРУПНЕЕ';
+    document.querySelector('#view-description').innerHTML=name==='game'
+      ? 'Фиксированный масштаб · проба, не игра<br>Руки расслаблены'
+      : name==='normal'?'Мужчина и колодец · проба, не игра<br>Руки расслаблены'
+      : name==='inspect'?'Мужчина в полный рост · колодец временно скрыт<br>Руки расслаблены'
+      : 'Облегчённая модель: сравните «До» и «После»<br>Колодец временно скрыт';
+    for(const button of document.querySelectorAll('[data-view]')) {
+      const active=button.dataset.view===name;button.classList.toggle('active',active);button.setAttribute('aria-pressed',String(active));
+    }
+    needsRender=true;
+  }
+  function choose(version) {
+    if(!['original','before','after'].includes(version)) return;
+    state.version=version; original.visible=version==='original';before.visible=version==='before';after.visible=version==='after';
+    document.querySelector('#version-label').textContent=version==='original'?'Исходная модель':version==='before'?'До правки · облегчённая':'После правки · облегчённая';
+    document.querySelector('#triangle-label').textContent=(version==='original'?287782:OPTIMIZED_TRIANGLES).toLocaleString('ru-RU');
+    for(const button of document.querySelectorAll('[data-version]')) {
+      const active=button.dataset.version===version;button.classList.toggle('active',active);button.setAttribute('aria-pressed',String(active));
+    }
+    needsRender=true;
+  }
+  document.querySelectorAll('[data-version]').forEach(b=>b.addEventListener('click',()=>choose(b.dataset.version)));
+  document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>setView(b.dataset.view)));
+  document.querySelectorAll('[data-rotate]').forEach(b=>b.addEventListener('click',()=>setYaw(currentYaw()+Number(b.dataset.rotate)*Math.PI/4)));
+  document.querySelector('[data-reset]').addEventListener('click',()=>setYaw(views[state.view].startYaw));
+  function resize(){
+    const w=Math.max(1,view.clientWidth),h=Math.max(1,view.clientHeight);
+    renderer.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix();
+    // The ordinary scene fits both props on narrow screens. This adjustment is
+    // only for viewport resizing; free camera zoom remains disabled.
+    if(state.view==='normal'){const yaw=currentYaw(),distance=views.normal.distance;controls.minDistance=controls.maxDistance=distance;setYaw(yaw)}
+    needsRender=true;
+  }
+  window.addEventListener('resize',resize);
+  function draw(){renderer.render(scene,camera);needsRender=false}
+  function tick(){requestAnimationFrame(tick);if(needsRender)draw()}
+  setView('head');choose('after');resize();requestAnimationFrame(tick);
+  window.demo={scene,renderer,camera,controls,well:wellProp.group,wellProp,floor,original,before,after,optimized:before,state,views,
+    choose,setView,setYaw,currentYaw,draw,
+    get distance(){return views[state.view].distance},get elevation(){return views[state.view].elevation},get startYaw(){return views[state.view].startYaw}};
+  window.ready=true;
+} catch(error) {
+  const box=document.querySelector('#error');box.style.display='block';box.textContent='Не удалось загрузить сцену. Проверьте поддержку WebGL и откройте распакованный HTML в современном браузере. '+(error?.message||error);
+  throw error;
+}
+</script>
+</body>
+</html>

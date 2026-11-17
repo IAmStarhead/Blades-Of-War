@@ -1,0 +1,9 @@
+{
+  "name": "blades-of-war-male-nape-study",
+  "private": true,
+  "type": "module",
+  "description": "A separate, localized normal-smoothing study for the selected static male model.",
+  "dependencies": {
+    "@gltf-transform/core": "4.5.1"
+  }
+}

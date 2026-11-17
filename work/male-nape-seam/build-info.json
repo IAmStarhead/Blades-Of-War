@@ -1,0 +1,15 @@
+{
+  "sigma": 0.007,
+  "selectedVertices": 437,
+  "verticesChangedOverPointZeroOneDegrees": 407,
+  "maximumNormalChangeDegrees": 3.955264107820109,
+  "meanNormalChangeDegrees": 1.7397769583898006,
+  "triangles": 32354,
+  "sourceOriginalSha256": "450d660b03b284fdb4e3c9363a6211c02525311096d2cd9da69449e9f84a85b3",
+  "sourceOptimizedSha256": "ee4fee7388eaf3e77ba01061e11d9a569e6e8684ce349ab86981a9408b33b5c3",
+  "fixedSha256": "009275f703e22426139908f03c44e52a52cc52f20b9f3d6e12fb39ae1285075e",
+  "bytes": 1193084,
+  "previousZipSha256": "03a6e5a6cf2b477c384764c3214961c60438d1489ffbec41766a070675210a99",
+  "pageSha256": "4e0846bc8911045434cb08d961359c34e48b3e7673a437f0f701bb0e4c56234a",
+  "archiveSha256": "62e31dbee8df16368687c1af9740fc3e0136e68e4cfba9827134e056860f00a6"
+}
