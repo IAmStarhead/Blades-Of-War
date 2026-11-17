@@ -1,0 +1,59 @@
+{
+  "sourceSha256": "bf967a9abea76c35ecbbeebde644a34a2b45984ab13526d9047680e6487d6200",
+  "outputSha256": "e32fca3f789abbb0eebcf17f21cba5d2a981155de50e155982bbcb0281574d6c",
+  "bytes": 2361796,
+  "bones": 22,
+  "triangles": 32354,
+  "profile": {
+    "strength": 0.01,
+    "y0": 1.3,
+    "y1": 1.465,
+    "y2": 1.52,
+    "y3": 1.625,
+    "z0": -0.14,
+    "z1": 0.01,
+    "x0": 0.09,
+    "x1": 0.21
+  },
+  "profileStats": {
+    "head_1": {
+      "vertices": 1653,
+      "maxPosition": 0.0010346387214423384,
+      "maxNormalDegrees": 3.7391177098635566
+    },
+    "head_2": {
+      "vertices": 1340,
+      "maxPosition": 0.009626366875292289,
+      "maxNormalDegrees": 6.465641614033725
+    }
+  },
+  "walk": {
+    "duration": 0.9,
+    "speed": 0.9,
+    "stance": 0.6,
+    "clearance": 0.04,
+    "rootMin": -0.04,
+    "rootBob": 0.03
+  },
+  "worstStanceReach": 0,
+  "worstSwingReach": 0.0027623422549449828,
+  "clips": [
+    "Idle_Breathing",
+    "Walk_Loop",
+    "Run_Loop",
+    "Test_Arms",
+    "Test_Elbow",
+    "Test_Knee",
+    "Test_Head",
+    "Previous_Walk",
+    "Previous_Refined_Idle",
+    "Previous_Idle",
+    "Previous_Arms",
+    "Previous_Knee"
+  ],
+  "sourceZipSha256": "81d1f0c0663d5a69ab314fb65baa7b4402d1b5ec42372233f5985e4fdc80345f",
+  "wellCodeSha256": "62ef93410bca00fe6b2bc7e2232138edf1077178cb704d59c2aecd9ddf0ce7b5",
+  "navigationCodeSha256": "93127f23ebc0185c21a11cceace973e0ab3eb9c3a19b447c5d215590527aa608",
+  "pageSha256": "9df6b2580556c6002fbf44f161fb6e8e6ed737eac2bf8b52f79fc57583d33810",
+  "archiveSha256": "328d5250c525d9a1a6af65320b8ba4316e310380e737b7d79af4d5543f16b4c6"
+}
