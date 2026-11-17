@@ -43,7 +43,7 @@ def verify(output: Path, rebuild: bool) -> None:
         assert z.read(builder.PAGE) == html and z.read(builder.ORIGINAL) == original and z.read(builder.OPTIMIZED) == optimized
         assert all(z.read(name) == licenses[name] for name in builder.LICENSES)
         readme = z.read("README.txt").decode("utf-8")
-        for word in ("Обычный ракурс", "Сверху", "287 782", "32 354", "скелета"):
+        for word in ("Обычный", "Осмотр", "Сверху", "287 782", "32 354", "скелета"):
             assert word.lower() in readme.lower(), word
     print("PASS: both GLBs and the complete previous well/engine bundle copied unchanged; no fist trial")
     print("PASS: standalone page, ZIP CRC, models and licenses")

@@ -1,5 +1,5 @@
 {
-  "description": "Head bounding rectangle including nearby background; fixed ordinary camera and same light; not pixel-identical.",
+  "description": "Head bounding rectangle including nearby background; close ordinary inspection with well hidden, same light; not pixel-identical.",
   "reports": [
     {
       "angle": 0,

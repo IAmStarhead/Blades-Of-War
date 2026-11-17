@@ -44,9 +44,10 @@ async function basic() {
   visible:[demo.original.visible,demo.optimized.visible,demo.well.visible],
   game:document.querySelector('[data-view="game"]').getAttribute('aria-pressed'),
   normal:document.querySelector('[data-view="normal"]').getAttribute('aria-pressed'),
+  inspect:document.querySelector('[data-view="inspect"]').getAttribute('aria-pressed'),
   zoom:demo.controls.enableZoom,pan:demo.controls.enablePan,touchTwo:demo.controls.touches.TWO,
   hand:!!document.querySelector('[data-hand]'),triangles:document.querySelector('#triangle-label').textContent.replace(/\s/g,'')}));
- assert.deepEqual(status,{view:'game',version:'optimized',visible:[false,true,true],game:'true',normal:'false',zoom:false,pan:false,touchTwo:null,hand:false,triangles:'32354'});
+ assert.deepEqual(status,{view:'game',version:'optimized',visible:[false,true,true],game:'true',normal:'false',inspect:'false',zoom:false,pan:false,touchTwo:null,hand:false,triangles:'32354'});
  for(const [label,width,height] of [['desktop',1280,720],['mobile',390,844],['small phone',320,568],['tall phone',360,896],['landscape phone',568,320],['short phone',390,400],['desktop HD',1920,1080]]) {
   await page.setViewport({width,height,deviceScaleFactor:1});await frame(page);
   const res=await page.evaluate(()=>{
@@ -60,33 +61,41 @@ async function basic() {
      }
     });return box;
    }
-   for(const view of ['game','normal']){
+   for(const view of ['game','normal','inspect']){
     d.setView(view);
-    for(let angle=0;angle<360;angle+=45){d.setYaw(angle*Math.PI/180);out.push({view,angle,male:bounds(d.optimized),well:view==='game'?bounds(d.well):null,
-     distance:d.camera.position.distanceTo(d.controls.target),elevation:Math.asin((d.camera.position.y-d.controls.target.y)/d.camera.position.distanceTo(d.controls.target))});}
+    for(let angle=0;angle<360;angle+=45){d.setYaw(angle*Math.PI/180);out.push({view,angle,male:bounds(d.optimized),well:view!=='inspect'?bounds(d.well):null,
+     distance:d.camera.position.distanceTo(d.controls.target),expectedDistance:d.views[view].distance,
+     elevation:Math.asin((d.camera.position.y-d.controls.target.y)/d.camera.position.distanceTo(d.controls.target))});}
    }
-   d.setView('game');d.setYaw(d.views.game.startYaw);d.setView('normal');d.setYaw(d.views.normal.startYaw);d.setView('game');d.draw();
+   d.setView('game');d.setYaw(d.views.game.startYaw);d.setView('normal');d.setYaw(d.views.normal.startYaw);d.setView('inspect');d.setYaw(d.views.inspect.startYaw);d.setView('game');d.draw();
    return {angles:out,canvas:[d.renderer.domElement.clientWidth,d.renderer.domElement.clientHeight],aspect:d.camera.aspect,
     page:[document.documentElement.clientWidth,document.documentElement.clientHeight,document.documentElement.scrollWidth,document.documentElement.scrollHeight]};
   });
   assert.equal(res.page[0],res.page[2],label+' horizontal overflow');assert.equal(res.page[1],res.page[3],label+' vertical overflow');
   near(res.aspect,res.canvas[0]/res.canvas[1],0.003);
-  for(const x of res.angles){near(x.distance,x.view==='game'?10.6:3.9);near(x.elevation,(x.view==='game'?52:5)*Math.PI/180);
+  for(const x of res.angles){near(x.distance,x.expectedDistance);near(x.elevation,(x.view==='game'?52:5)*Math.PI/180);
    for(const name of x.well?['male','well']:['male']){const [xmin,xmax,ymin,ymax]=x[name];assert.ok(xmin>=-1&&xmax<=1&&ymin>=-1&&ymax<=1,`${label}/${x.view}/${x.angle}/${name} cropped: ${x[name]}`)}
-   if(x.view==='normal')assert.ok(x.male[3]-x.male[2]>1.1,`${label}: normal character too small`);
+   if(x.view==='inspect')assert.ok(x.male[3]-x.male[2]>1.1,`${label}: inspected character too small`);
   }
-  console.log(`PASS ${label}: both views, 8 rotations framed; canvas ${res.canvas.join('x')}`);
+  console.log(`PASS ${label}: all 3 presets, 8 rotations framed; canvas ${res.canvas.join('x')}`);
  }
  await page.setViewport({width:1280,height:720,deviceScaleFactor:1});await frame(page);
  await page.click('[data-view="normal"]');await frame(page);
- let front=await pose(page);assert.equal(front.well,false);near(front.distance,3.9);near(front.elevation,5*Math.PI/180);near(front.yaw,0);
- assert.deepEqual(await page.evaluate(()=>[document.querySelector('[data-view="game"]').getAttribute('aria-pressed'),document.querySelector('[data-view="normal"]').getAttribute('aria-pressed')]),['false','true']);
- await page.click('[data-version="original"]');await frame(page);const original=await pose(page);nearArray(front.position,original.position);nearArray(front.target,original.target);assert.equal(original.well,false);assert.equal(original.version,'original');
- await page.click('[data-version="optimized"]');await frame(page);const optimized=await pose(page);nearArray(front.position,optimized.position);nearArray(front.target,optimized.target);
- await page.click('[data-rotate="1"]');await page.click('[data-rotate="1"]');await frame(page);const side=await pose(page);near(side.yaw,Math.PI/2);near(side.distance,3.9);near(side.elevation,5*Math.PI/180);
+ const normal=await pose(page);assert.equal(normal.well,true);near(normal.distance,6.5);near(normal.elevation,5*Math.PI/180);near(normal.yaw,0);nearArray(normal.target,[-0.3,1.2,0.05]);
+ assert.deepEqual(await page.evaluate(()=>[...document.querySelectorAll('[data-view]')].map(x=>x.getAttribute('aria-pressed'))),['false','true','false']);
+ await page.click('[data-version="original"]');await frame(page);const original=await pose(page);nearArray(normal.position,original.position);nearArray(normal.target,original.target);assert.equal(original.well,true);assert.equal(original.version,'original');
+ await page.click('[data-version="optimized"]');await frame(page);const optimized=await pose(page);nearArray(normal.position,optimized.position);nearArray(normal.target,optimized.target);
+ await page.setViewport({width:390,height:844,deviceScaleFactor:1});await frame(page);const narrow=await pose(page);
+ assert.equal(narrow.well,true);assert.ok(narrow.distance>normal.distance,'ordinary scene was not refitted on resize');near(narrow.yaw,normal.yaw);nearArray(narrow.target,normal.target);
+ await page.setViewport({width:1280,height:720,deviceScaleFactor:1});await frame(page);const wide=await pose(page);nearArray(wide.position,normal.position);nearArray(wide.target,normal.target);
+ await page.click('[data-rotate="1"]');await page.click('[data-rotate="1"]');await frame(page);const side=await pose(page);near(side.yaw,Math.PI/2);near(side.distance,6.5);near(side.elevation,5*Math.PI/180);
+ await page.click('[data-view="inspect"]');await frame(page);const close=await pose(page);assert.equal(close.well,false);near(close.distance,3.9);near(close.elevation,5*Math.PI/180);near(close.yaw,side.yaw);
+ await page.click('[data-version="original"]');await frame(page);const closeOriginal=await pose(page);nearArray(closeOriginal.position,close.position);nearArray(closeOriginal.target,close.target);assert.equal(closeOriginal.version,'original');assert.equal(closeOriginal.well,false);
+ await page.click('[data-version="optimized"]');await frame(page);
+ await page.click('[data-view="normal"]');await frame(page);const restored=await pose(page);nearArray(restored.position,side.position);assert.equal(restored.well,true);
  await page.click('[data-view="game"]');await frame(page);const game=await pose(page);assert.equal(game.well,true);near(game.distance,10.6);near(game.elevation,52*Math.PI/180);near(game.yaw,25*Math.PI/180);
- await page.click('[data-view="normal"]');await frame(page);const restored=await pose(page);nearArray(restored.position,side.position);assert.equal(restored.well,false);
- await page.click('[data-reset]');await frame(page);front=await pose(page);near(front.yaw,0);assert.equal(front.well,false);
+ await page.click('[data-view="normal"]');await frame(page);const restoredAgain=await pose(page);nearArray(restoredAgain.position,side.position);assert.equal(restoredAgain.well,true);
+ await page.click('[data-view="inspect"]');await page.click('[data-reset]');await frame(page);let front=await pose(page);near(front.yaw,0);assert.equal(front.well,false);
  const canvas=await (await page.$('canvas')).boundingBox(),x=canvas.x+canvas.width/2,y=canvas.y+canvas.height/2;
  await page.mouse.move(x,y);await page.mouse.down();await page.mouse.move(x+100,y+80,{steps:5});await page.mouse.up();await frame(page);
  const turned=await pose(page);assert.ok(Math.abs(turned.yaw-front.yaw)>0.05,'drag did not rotate');near(turned.distance,3.9);near(turned.elevation,5*Math.PI/180);nearArray(turned.target,front.target);
@@ -95,16 +104,18 @@ async function basic() {
  console.log('PASS: mode switching, memory of angles, model comparison, reset, mouse orbit and disabled wheel/pan');
 
  const shots=path.join(output,'review');fs.mkdirSync(shots,{recursive:true});
- await page.click('[data-reset]');await page.click('[data-version="optimized"]');await frame(page);await page.screenshot({path:path.join(shots,'01-normal-front.png')});
- await page.click('[data-version="original"]');await frame(page);await page.screenshot({path:path.join(shots,'02-normal-original.png')});
- await page.click('[data-version="optimized"]');await page.click('[data-rotate="1"]');await page.click('[data-rotate="1"]');await frame(page);await page.screenshot({path:path.join(shots,'03-normal-side.png')});
- await page.click('[data-rotate="1"]');await page.click('[data-rotate="1"]');await frame(page);await page.screenshot({path:path.join(shots,'04-normal-back.png')});
- await page.click('[data-view="game"]');await page.click('[data-reset]');await frame(page);await page.screenshot({path:path.join(shots,'05-game-view.png')});
- await page.setViewport({width:390,height:844,deviceScaleFactor:1});await frame(page);await page.click('[data-view="normal"]');await page.click('[data-reset]');await frame(page);await page.screenshot({path:path.join(shots,'06-mobile-normal.png')});
+ await page.click('[data-view="normal"]');await page.click('[data-reset]');await page.click('[data-version="optimized"]');await frame(page);await page.screenshot({path:path.join(shots,'10-normal-with-well.png')});
+ await page.click('[data-view="inspect"]');await page.click('[data-reset]');await frame(page);await page.screenshot({path:path.join(shots,'11-inspect-front.png')});
+ await page.click('[data-version="original"]');await frame(page);await page.screenshot({path:path.join(shots,'12-inspect-original.png')});
+ await page.click('[data-version="optimized"]');await page.click('[data-rotate="1"]');await page.click('[data-rotate="1"]');await frame(page);await page.screenshot({path:path.join(shots,'13-inspect-side.png')});
+ await page.click('[data-rotate="1"]');await page.click('[data-rotate="1"]');await frame(page);await page.screenshot({path:path.join(shots,'14-inspect-back.png')});
+ await page.click('[data-view="game"]');await page.click('[data-reset]');await frame(page);await page.screenshot({path:path.join(shots,'15-game-view.png')});
+ await page.setViewport({width:390,height:844,deviceScaleFactor:1});await frame(page);await page.click('[data-view="normal"]');await page.click('[data-reset]');await frame(page);await page.screenshot({path:path.join(shots,'16-mobile-with-well.png')});
+ await page.click('[data-view="inspect"]');await frame(page);await page.screenshot({path:path.join(shots,'17-mobile-inspect.png')});
  await page.close();
 
  const mobile=await open(undefined,{width:390,height:844,deviceScaleFactor:1,isMobile:true,hasTouch:true});await frame(mobile);
- await mobile.click('[data-view="normal"]');await frame(mobile);
+ await mobile.click('[data-view="inspect"]');await frame(mobile);
  const box=await (await mobile.$('canvas')).boundingBox(),cx=box.x+box.width/2,cy=box.y+box.height/2,client=await mobile.createCDPSession();
  const before=await pose(mobile);
  await client.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:cx-22,y:cy,id:1},{x:cx+22,y:cy,id:2}]});
@@ -145,7 +156,7 @@ async function oldScene() {
 
 async function normalCompare() {
  const page=await open();
- await page.evaluate(()=>{document.querySelector('header').style.display='none';document.querySelector('footer').style.display='none';window.dispatchEvent(new Event('resize'));demo.renderer.setPixelRatio(1);demo.setView('normal')});await frame(page);
+ await page.evaluate(()=>{document.querySelector('header').style.display='none';document.querySelector('footer').style.display='none';window.dispatchEvent(new Event('resize'));demo.renderer.setPixelRatio(1);demo.setView('inspect')});await frame(page);
  const reports=[];
  for(const angle of [0,45,90,135,180,225,270,315]) {
   const r=await page.evaluate(angle=>{
@@ -167,7 +178,7 @@ async function normalCompare() {
   console.log(`Normal ${angle}°: ${r.headCrop.join('x')} head crop mean RGB ${r.meanRGB.toFixed(4)}/255; ${r.changed} pixels differ`);
  }
  assert.ok(reports.some(r=>r.changed>0),'comparison did not toggle models');
- fs.writeFileSync(path.join(output,'normal-comparison.json'),JSON.stringify({description:'Head bounding rectangle including nearby background; fixed ordinary camera and same light; not pixel-identical.',reports},null,2)+'\n');
+ fs.writeFileSync(path.join(output,'normal-comparison.json'),JSON.stringify({description:'Head bounding rectangle including nearby background; close ordinary inspection with well hidden, same light; not pixel-identical.',reports},null,2)+'\n');
  console.log('PASS: ordinary view compared at 8 angles with matched camera/light; differences are not zero');
  await page.close();
 }
