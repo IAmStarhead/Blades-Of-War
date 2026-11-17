@@ -1,0 +1,11 @@
+{
+  "name": "blades-of-war-male-rig-refinement",
+  "private": true,
+  "type": "module",
+  "description": "A separate comparison trial for breathing, ankle/knee and shoulder movement.",
+  "dependencies": {
+    "@gltf-transform/core": "4.5.1",
+    "esbuild": "0.28.2",
+    "three": "0.187.0"
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "sourceSha256": "9d9ee4719111f932573f098b97ee7d55c8357db0e730ba4a8883862a10985bea",
+  "outputSha256": "a442b85eab3e725bb54f87ce5a3e89da05e7cfefa02cf5cfbb817cf6c67fcc4d",
+  "bytes": 1865540,
+  "bones": 22,
+  "triangles": 32354,
+  "armCorrection": {
+    "movedVertices": 162,
+    "maxPositionDelta": 0.005220153151156436,
+    "normalMovedVertices": 255,
+    "maxNormalAngleDegrees": 6.136207442006576
+  },
+  "clips": [
+    "Idle_Breathing",
+    "Test_Arms",
+    "Test_Elbow",
+    "Test_Knee",
+    "Test_Head",
+    "Previous_Idle",
+    "Previous_Arms",
+    "Previous_Knee"
+  ],
+  "durationSeconds": 4,
+  "sourceZipSha256": "4b8263535d8a11594d1acb5e81e80aff5138cf5866e3153420f843c7ede0420b",
+  "wellCodeSha256": "62ef93410bca00fe6b2bc7e2232138edf1077178cb704d59c2aecd9ddf0ce7b5",
+  "pageSha256": "edabcc8f870d81fa92452e2d0e664e0f484dd88eab43548d88098ff73e9506f9",
+  "archiveSha256": "494b0b314c47f8ff288c7ed3d03b834e019738de8101b5dd3e50ce36e6b4ff04"
+}

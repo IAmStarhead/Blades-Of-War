@@ -1,0 +1,75 @@
+<!-- Blades of War: separate male motion refinement and comparison -->
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Blades of War — доработка движений мужчины</title>
+<style>
+:root{color-scheme:dark;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#111715;color:#edf2e9}
+*{box-sizing:border-box}body{margin:0;min-width:290px;height:100dvh;display:flex;flex-direction:column;overflow:hidden}
+header{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:10px 20px;background:#141b19;border-bottom:1px solid #344036;min-height:58px}
+.brand{display:flex;align-items:center;gap:11px}.brand-mark{display:grid;place-items:center;width:32px;height:32px;border:1px solid #a1865c;border-radius:7px;color:#d7bd90;font:19px Georgia,serif}
+h1{font-size:13px;letter-spacing:.14em;margin:0;font-weight:750}.sub{margin:3px 0 0;color:#a0afa2;font-size:11px}.top-note{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#9eab9f}
+main{position:relative;flex:1;min-height:0;background:#2e3930}.viewport{position:absolute;inset:0;touch-action:none}canvas{display:block;width:100%;height:100%}
+.scene-label,.scene-hint{pointer-events:none;position:absolute;font-size:11px;color:#d2ddd1;line-height:1.45;text-shadow:0 1px 5px #000}
+.scene-label{left:19px;top:15px}.scene-label strong{display:block;font-size:10px;letter-spacing:.16em;color:#e3c99b}.scene-label span{color:#cad6c9}
+.scene-hint{left:19px;bottom:14px;padding:7px 10px;border:1px solid #ffffff22;border-radius:6px;background:#18241dd9}
+.detail-view{position:absolute;right:19px;bottom:14px;background:#18241de8;border-color:#ffffff33;font-size:11px;min-height:30px}
+.badge{position:absolute;right:17px;top:15px;background:#152019dd;border:1px solid #ffffff24;border-radius:7px;padding:8px 11px;pointer-events:none}
+.badge span{display:block;color:#a8b8a7;font-size:9px;text-transform:uppercase;letter-spacing:.13em}.badge strong{display:block;color:#f0f0e7;font-size:13px;margin-top:3px}
+footer{background:#151d19;border-top:1px solid #334038;padding:10px 20px 11px;display:flex;flex-direction:column;gap:9px}
+.row{display:flex;align-items:center;flex-wrap:wrap;gap:7px 15px}.group{display:flex;align-items:center;gap:7px;min-width:0}.group-title{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#9cad9f;white-space:nowrap}.buttons{display:flex;gap:5px;flex-wrap:wrap}
+button{font:inherit;color:#d9e4da;background:#25332b;border:1px solid #435348;border-radius:6px;padding:7px 10px;min-height:34px;font-size:12px;cursor:pointer;white-space:nowrap}
+button:hover:not(:disabled){background:#304337;border-color:#78957e}button.active{color:#171e17;background:#d3bb8e;border-color:#dfccaa;font-weight:650}button.active:hover:not(:disabled){background:#e2cda4;border-color:#f1dfbf}button:focus-visible,input:focus-visible{outline:2px solid #f4d7a7;outline-offset:2px}button:disabled{opacity:.45;cursor:default}.rotate{min-width:34px;font-size:15px;padding:5px 8px}
+.phase{flex:1;min-width:190px}.phase input{width:100%;min-width:65px;max-width:225px;accent-color:#d3bb8e}.phase-label{white-space:nowrap;font-size:10px;color:#a8b9a8}
+.comparison{margin-left:auto}.comparison .group-title{color:#c0cdbd}.version-note{font-size:10px;color:#9cad9f;margin-left:5px}
+#error{position:absolute;top:56px;left:16px;right:16px;white-space:pre-wrap;color:#ffc3b9;background:#3d201bf2;border:1px solid #a55a4b;padding:10px 12px;border-radius:6px;font-size:12px;display:none;z-index:2}
+@media(max-width:1000px){footer{padding:9px 13px;gap:7px}.version-note{display:none}.comparison{margin-left:0}.row{gap:6px 12px}.top-note{display:none}}
+@media(max-width:500px){main[data-mode="game"] .viewport{top:50%;bottom:auto;height:min(100%,138vw);transform:translateY(-50%)}}
+@media(max-width:600px){header{padding:7px 12px;min-height:48px}.brand-mark{width:27px;height:27px;font-size:16px}.sub{font-size:10px}.scene-label{left:11px;top:9px;max-width:145px}.scene-label strong{font-size:9px}.scene-label span{font-size:10px}.scene-hint{left:10px;bottom:9px;font-size:10px;padding:5px 7px}.detail-view{right:10px;bottom:9px}.badge{right:10px;top:9px;padding:6px 8px}.badge span{display:none}.badge strong{font-size:10px;margin:0}footer{padding:7px 10px;gap:5px}.row{gap:5px}.group{gap:5px}.group-title{display:none}button{padding:5px 8px;font-size:11px;min-height:30px}.buttons{gap:4px}.motion-group,.motion-group .buttons{width:100%}.motion-group .buttons{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}.motion-group button{padding-left:2px;padding-right:2px}.phase{min-width:120px;flex:1}.phase-label{font-size:9px}.phase input{width:100%;max-width:none}.controls-row{display:flex}.camera-group .buttons{flex-wrap:nowrap}.controls-row .rotate{min-width:29px;padding:3px 6px}.controls-row .reset{display:none}}
+@media(max-width:600px){.comparison .group-title{display:inline;font-size:9px}.comparison{margin-left:0}main[data-mode="detail"] .scene-hint{display:none}}
+@media(max-width:370px){.scene-label span{display:none}.badge{max-width:112px}.badge strong{font-size:9px}.phase-label{display:none}.camera-group button{padding-left:6px;padding-right:6px}.motion-group button{white-space:normal;font-size:10px;line-height:1.1}}
+@media(max-height:420px){header{min-height:35px;padding:4px 12px}.brand-mark{width:24px;height:24px;font-size:14px}.sub{display:none}footer{gap:4px;padding:5px 10px}button{min-height:27px;padding-top:3px;padding-bottom:3px}.scene-hint{display:none}.scene-label{top:7px}.badge{top:7px}}
+</style>
+</head>
+<body>
+<header><div class="brand"><span class="brand-mark" aria-hidden="true">B</span><div><h1>BLADES OF WAR</h1><p class="sub">Доработка мужчины · дыхание, стопа и плечи</p></div></div><div class="top-note">Отдельная проба · не готовая игра</div></header>
+<main aria-label="Область 3D-просмотра">
+  <div class="viewport" id="view"></div>
+  <div class="scene-label"><strong id="view-label">ОСМОТР МУЖЧИНЫ</strong><span id="view-description">Пробное дыхание в покое<br>Колодец скрыт только при осмотре</span></div>
+  <div class="badge"><span>Отдельная копия</span><strong>22 кости · 32 354 треугольника</strong></div>
+  <div class="scene-hint">Перетащите, чтобы повернуть камеру</div>
+  <button type="button" class="detail-view" data-view="detail" aria-pressed="false" aria-label="Показать выбранное движение крупнее" title="Крупнее: нога, плечи или грудь в зависимости от движения">Детали</button>
+  <div id="error" role="alert"></div>
+</main>
+<footer>
+  <div class="row">
+    <div class="group motion-group" role="group" aria-label="Пробное движение"><span class="group-title">Движение</span><div class="buttons">
+      <button type="button" data-motion="idle" class="active">Дыхание</button>
+      <button type="button" data-motion="arms">Плечи и руки</button>
+      <button type="button" data-motion="elbow">Локоть</button>
+      <button type="button" data-motion="knee">Колено и стопа</button>
+      <button type="button" data-motion="head">Голова</button>
+      <button type="button" data-motion="rest">Стоять</button>
+    </div></div>
+    <div class="group comparison" role="group" aria-label="Сравнение движений"><span class="group-title">Сравнение</span><div class="buttons">
+      <button type="button" data-version="before" aria-pressed="false" title="Прежнее движение">Прежняя</button>
+      <button type="button" data-version="after" class="active" aria-pressed="true" title="Новая проба">Новая</button>
+    </div><span class="version-note">Поза и камера сохраняются</span></div>
+  </div>
+  <div class="row controls-row">
+    <div class="group camera-group" role="group" aria-label="Ракурс"><span class="group-title">Камера</span><div class="buttons">
+      <button type="button" data-view="game">Сверху</button><button type="button" data-view="normal">Вместе</button><button type="button" data-view="inspect" class="active">Человек</button><button type="button" data-view="head">Крупно</button>
+    </div></div>
+    <div class="group" role="group" aria-label="Поворот камеры"><button type="button" class="rotate" data-rotate="-1" aria-label="Повернуть камеру влево">↶</button><button type="button" class="reset" data-reset>Начальный вид</button><button type="button" class="rotate" data-rotate="1" aria-label="Повернуть камеру вправо">↷</button></div>
+    <div class="group phase"><button type="button" data-play aria-label="Поставить движение на паузу">Пауза</button><span class="phase-label">Фаза</span><input id="phase" type="range" min="0" max="1000" value="0" aria-label="Фаза движения: перемещение приостанавливает анимацию"></div>
+    <button type="button" data-skeleton aria-pressed="false" title="Показать или скрыть пробный скелет">Скелет</button>
+  </div>
+</footer>
+<script>
+const RIGGED_URI = "__RIGGED_DATA_URI__";
+/*__VIEWER_BUNDLE__*/
+</script>
+</body>
+</html>
