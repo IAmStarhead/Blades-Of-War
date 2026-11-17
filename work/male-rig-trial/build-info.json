@@ -1,0 +1,47 @@
+{
+  "sourceSha256": "009275f703e22426139908f03c44e52a52cc52f20b9f3d6e12fb39ae1285075e",
+  "outputSha256": "9d9ee4719111f932573f098b97ee7d55c8357db0e730ba4a8883862a10985bea",
+  "bytes": 1586504,
+  "triangles": 32354,
+  "bones": 22,
+  "skinMeshes": [
+    "head_1",
+    "head_2"
+  ],
+  "rigidEars": 2,
+  "shoulderGraph": {
+    "uniqueVertices": 10001,
+    "unknownVertices": 542,
+    "iterations": 345,
+    "lastChange": 9.724995624765809e-09,
+    "components": [
+      {
+        "label": 0,
+        "count": 1872,
+        "meanX": 0.2535793773798097
+      },
+      {
+        "label": 1,
+        "count": 4371,
+        "meanX": -1.6728030059544009e-09
+      },
+      {
+        "label": 2,
+        "count": 1872,
+        "meanX": -0.2535797030163499
+      }
+    ]
+  },
+  "clips": [
+    "Idle_Breathing",
+    "Test_Arms",
+    "Test_Elbow",
+    "Test_Knee",
+    "Test_Head"
+  ],
+  "durationSeconds": 4,
+  "sourceZipSha256": "62e31dbee8df16368687c1af9740fc3e0136e68e4cfba9827134e056860f00a6",
+  "wellSourceSha256": "e0433a8dc25a44aa127425d4c4d9b7aa1c62e767d775dc261ac64c0d190eba8b",
+  "pageSha256": "a70b9d64800d8bb8ba0de3e78ace372ae36d842ef167cfe0ad052576e9d62239",
+  "archiveSha256": "4b8263535d8a11594d1acb5e81e80aff5138cf5866e3153420f843c7ede0420b"
+}

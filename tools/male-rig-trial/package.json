@@ -1,0 +1,11 @@
+{
+  "name": "blades-of-war-male-rig-trial",
+  "private": true,
+  "type": "module",
+  "description": "A separate experimental male skeletal rig, test poses and subtle idle breathing.",
+  "dependencies": {
+    "@gltf-transform/core": "4.5.1",
+    "esbuild": "0.28.2",
+    "three": "0.187.0"
+  }
+}
