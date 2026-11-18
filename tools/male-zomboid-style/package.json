@@ -1,0 +1,14 @@
+{
+  "name": "blades-of-war-zomboid-style-trial",
+  "private": true,
+  "type": "module",
+  "description": "Independent game-style walking and jogging trial.",
+  "dependencies": {
+    "@gltf-transform/core": "4.5.1",
+    "esbuild": "0.28.2",
+    "three": "0.187.0"
+  },
+  "devDependencies": {
+    "three-mesh-bvh": "0.9.4"
+  }
+}

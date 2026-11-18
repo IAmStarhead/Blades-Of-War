@@ -1,0 +1,102 @@
+{
+  "sourceSha256": "0525f293409ad40e5146f461964d89d23e863ac57f57b12a51ea453f87867554",
+  "outputSha256": "6849e0a3112c2bc0a8c4fb341ffb7a9d7725a6cd786aa08a2ab63fadcdf37c0a",
+  "bytes": 4723948,
+  "bones": 22,
+  "soleVertices": {
+    "L": 1665,
+    "R": 1667
+  },
+  "clips": [
+    {
+      "name": "Game_Style_Walk",
+      "duration": 1,
+      "speed": 0.9,
+      "stance": 0.62,
+      "footLift": 0.065,
+      "liftExponent": 2,
+      "legReserve": 0.015,
+      "heelDegrees": 5,
+      "toeDegrees": 7,
+      "sampleCount": 120,
+      "stats": {
+        "soleResidual": 3.0227556568895864e-16,
+        "rootClamps": 44,
+        "rootY": [
+          -0.0905152558791893,
+          -0.046
+        ],
+        "kneeForward": 0.06544887840224517,
+        "armRotationDegrees": [
+          -17,
+          17
+        ],
+        "elbowBendDegrees": [
+          10,
+          18
+        ],
+        "flights": 0
+      }
+    },
+    {
+      "name": "Game_Style_Jog",
+      "duration": 0.72,
+      "speed": 1.9,
+      "stance": 0.4,
+      "footLift": 0.12,
+      "liftExponent": 1.3,
+      "legReserve": 0.003,
+      "heelDegrees": 3,
+      "toeDegrees": 6,
+      "sampleCount": 120,
+      "stats": {
+        "soleResidual": 4.0375688903360185e-16,
+        "rootClamps": 24,
+        "rootY": [
+          -0.07851599648729024,
+          -0.049999999999999996
+        ],
+        "kneeForward": 0.02884310614452662,
+        "armRotationDegrees": [
+          -28,
+          28
+        ],
+        "elbowBendDegrees": [
+          53,
+          63
+        ],
+        "flights": 22
+      }
+    }
+  ],
+  "allAnimations": [
+    "Idle_Breathing",
+    "Walk_Loop",
+    "Run_Loop",
+    "Test_Arms",
+    "Test_Elbow",
+    "Test_Knee",
+    "Test_Head",
+    "Previous_Walk",
+    "Previous_Refined_Idle",
+    "Previous_Idle",
+    "Previous_Arms",
+    "Previous_Knee",
+    "Reference_Walk",
+    "Reference_Run",
+    "Corrected_Walk",
+    "Corrected_Run",
+    "Adjusted_Walk",
+    "Adjusted_Run",
+    "Game_Style_Walk",
+    "Game_Style_Jog"
+  ],
+  "sourceZipSha256": "f9ae35be819bd2a7954c0b635c0cf3fa0dcb33f2887f884948f4bf4bb908ac3e",
+  "sharedCodeSha256": {
+    "well-source.mjs": "62ef93410bca00fe6b2bc7e2232138edf1077178cb704d59c2aecd9ddf0ce7b5",
+    "navigation.mjs": "93127f23ebc0185c21a11cceace973e0ab3eb9c3a19b447c5d215590527aa608",
+    "floor-guard.mjs": "539257a8ad078e4793f8cab6a0cb26e31bba6af0d6bc1d4ef4a3defe9d64ee06"
+  },
+  "pageSha256": "30383997f5dc3ce6fdeceba5b56a2304699189e158bdb5b1a8129606db749d8f",
+  "archiveSha256": "23d4e0546e40d66bf388301a3c698c662e0b30d61667e3dcdd96341bacdf91e4"
+}
