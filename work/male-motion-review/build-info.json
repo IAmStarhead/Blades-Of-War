@@ -1,0 +1,135 @@
+{
+  "sourceSha256": "a9b2587d8d5b7977aed04a06540cd1b4882a47a2af4491767a7f5ae34e1828e9",
+  "outputSha256": "be394a6f1124fbe10e352ab2d3bfa0c0aabddce65c3774c2f4e622e52b037e07",
+  "bytes": 6553536,
+  "bones": 22,
+  "skin": {
+    "changedSkin": 514,
+    "maxWeightChange": 0.506373509954731
+  },
+  "soleVertices": {
+    "L": 1665,
+    "R": 1667
+  },
+  "clips": [
+    {
+      "name": "Reviewed_Walk",
+      "duration": 1,
+      "speed": 0.9,
+      "stance": 0.58,
+      "footLift": 0.085,
+      "swingTimePower": 0.8,
+      "swingMinKneeDegrees": 11,
+      "heelDegrees": 9,
+      "toeDegrees": 24,
+      "ankleCentreX": 0.102,
+      "weightShift": 0.006,
+      "hipYawDegrees": 3,
+      "chestYawDegrees": 3.2,
+      "sampleCount": 120,
+      "stats": {
+        "soleResidual": 3.5952144039619327e-16,
+        "swingReachLimitFrames": 4,
+        "rootY": [
+          -0.03687236963063789,
+          -0.009806878680738373
+        ],
+        "kneeForward": 0.036143429948649886,
+        "kneeBendDegrees": [
+          11.00569130633267,
+          65.56460213706191
+        ],
+        "armRotationDegrees": [
+          -22.414067830910486,
+          22.414067830910486
+        ],
+        "elbowBendDegrees": [
+          16.00021932253795,
+          23.99978067746205
+        ],
+        "flights": 0
+      }
+    },
+    {
+      "name": "Reviewed_Run",
+      "duration": 0.7,
+      "speed": 2.4,
+      "stance": 0.36,
+      "footLift": 0.15,
+      "swingTimePower": 0.82,
+      "swingMinKneeDegrees": 12,
+      "heelDegrees": 7,
+      "toeDegrees": 26,
+      "ankleCentreX": 0.1,
+      "weightShift": 0.008,
+      "hipYawDegrees": 3,
+      "chestYawDegrees": 4,
+      "sampleCount": 120,
+      "stats": {
+        "soleResidual": 3.885780586188048e-16,
+        "swingReachLimitFrames": 32,
+        "rootY": [
+          -0.06388829948482533,
+          -0.029365557049225423
+        ],
+        "kneeForward": 0.050281139060559976,
+        "kneeBendDegrees": [
+          16.711111746752536,
+          91.68277466633351
+        ],
+        "armRotationDegrees": [
+          -34.63992301140711,
+          34.63992301140711
+        ],
+        "elbowBendDegrees": [
+          57.00027415317244,
+          66.99972584682756
+        ],
+        "flights": 32
+      }
+    }
+  ],
+  "allAnimations": [
+    "Idle_Breathing",
+    "Walk_Loop",
+    "Run_Loop",
+    "Test_Arms",
+    "Test_Elbow",
+    "Test_Knee",
+    "Test_Head",
+    "Previous_Walk",
+    "Previous_Refined_Idle",
+    "Previous_Idle",
+    "Previous_Arms",
+    "Previous_Knee",
+    "Reference_Walk",
+    "Reference_Run",
+    "Corrected_Walk",
+    "Corrected_Run",
+    "Adjusted_Walk",
+    "Adjusted_Run",
+    "Game_Style_Walk",
+    "Game_Style_Jog",
+    "Relaxed_Walk",
+    "Full_Body_Walk",
+    "Full_Body_Run",
+    "Revised_Walk",
+    "Revised_Run",
+    "Relaxed_Hands_Idle",
+    "Relaxed_Hands_Previous_Idle",
+    "Stealth_Crouch_Idle",
+    "Stealth_Crouch_Walk",
+    "Reviewed_Walk",
+    "Reviewed_Run",
+    "Reviewed_Crouch_Idle",
+    "Reviewed_Crouch_Walk"
+  ],
+  "sourceZipSha256": "c4681c1143ed5eb118674bce1bf8f9356665df703ec5eff2b7f5480a06e23ec0",
+  "sharedCodeSha256": {
+    "well-source.mjs": "62ef93410bca00fe6b2bc7e2232138edf1077178cb704d59c2aecd9ddf0ce7b5",
+    "navigation.mjs": "93127f23ebc0185c21a11cceace973e0ab3eb9c3a19b447c5d215590527aa608",
+    "floor-guard.mjs": "6f6def18282574bc50e584c574d04e21d62a05426aa0aa3ef08ed69e2ec3bca7"
+  },
+  "pageSha256": "718bedec9d8a93465f6d374045db00bcb1acc6d966044973d8e4279d8578ba4b",
+  "archiveSha256": "f3112eacb9235adc9de80f14fbfd7a8bb490961f744fbd13496d5a17ca7c204f"
+}

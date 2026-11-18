@@ -1,0 +1,14 @@
+{
+  "name": "blades-of-war-motion-review",
+  "private": true,
+  "type": "module",
+  "description": "Independent shoulder, hip and running motion review.",
+  "dependencies": {
+    "@gltf-transform/core": "4.5.1",
+    "esbuild": "0.28.2",
+    "three": "0.187.0"
+  },
+  "devDependencies": {
+    "three-mesh-bvh": "0.9.4"
+  }
+}
