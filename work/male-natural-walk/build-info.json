@@ -1,0 +1,77 @@
+{
+  "sourceSha256": "6849e0a3112c2bc0a8c4fb341ffb7a9d7725a6cd786aa08a2ab63fadcdf37c0a",
+  "outputSha256": "0785de99520946cfa9eaf207813f256bd4e944f670f24972150a9d2181c8cdcf",
+  "bytes": 4776908,
+  "bones": 22,
+  "soleVertices": {
+    "L": 1665,
+    "R": 1667
+  },
+  "clips": [
+    {
+      "name": "Relaxed_Walk",
+      "duration": 1,
+      "speed": 0.9,
+      "stance": 0.58,
+      "footLift": 0.09,
+      "swingTimePower": 0.75,
+      "swingMinKneeDegrees": 10.8,
+      "heelDegrees": 10,
+      "toeDegrees": 28,
+      "sampleCount": 120,
+      "stats": {
+        "soleResidual": 3.2786273695961654e-16,
+        "swingReachLimitFrames": 6,
+        "rootY": [
+          -0.03738352774122882,
+          -0.006881839394259237
+        ],
+        "kneeForward": 0.034166555986777564,
+        "kneeBendDegrees": [
+          10.799999999999546,
+          67.45434247864621
+        ],
+        "armRotationDegrees": [
+          -20,
+          20
+        ],
+        "elbowBendDegrees": [
+          14,
+          22
+        ],
+        "flights": 0
+      }
+    }
+  ],
+  "allAnimations": [
+    "Idle_Breathing",
+    "Walk_Loop",
+    "Run_Loop",
+    "Test_Arms",
+    "Test_Elbow",
+    "Test_Knee",
+    "Test_Head",
+    "Previous_Walk",
+    "Previous_Refined_Idle",
+    "Previous_Idle",
+    "Previous_Arms",
+    "Previous_Knee",
+    "Reference_Walk",
+    "Reference_Run",
+    "Corrected_Walk",
+    "Corrected_Run",
+    "Adjusted_Walk",
+    "Adjusted_Run",
+    "Game_Style_Walk",
+    "Game_Style_Jog",
+    "Relaxed_Walk"
+  ],
+  "sourceZipSha256": "23d4e0546e40d66bf388301a3c698c662e0b30d61667e3dcdd96341bacdf91e4",
+  "sharedCodeSha256": {
+    "well-source.mjs": "62ef93410bca00fe6b2bc7e2232138edf1077178cb704d59c2aecd9ddf0ce7b5",
+    "navigation.mjs": "93127f23ebc0185c21a11cceace973e0ab3eb9c3a19b447c5d215590527aa608",
+    "floor-guard.mjs": "539257a8ad078e4793f8cab6a0cb26e31bba6af0d6bc1d4ef4a3defe9d64ee06"
+  },
+  "pageSha256": "3e18aa19217b9324658f52de14cd7b940d600bbee2525b71f57884ef1f122115",
+  "archiveSha256": "3e7df2739c89c8623e31385389f91ee25f6e2ac42571f02bf4fdc419d13c8041"
+}
