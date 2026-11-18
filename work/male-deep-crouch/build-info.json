@@ -1,0 +1,106 @@
+{
+  "sourceSha256": "cfee79f1f8f8d475366384447f1fcf8d3611cafd95e905a11fa44942b1249377",
+  "outputSha256": "6375e7980e1b7119d9245a9796854dd8d52ae7272ad3f6a0473f59a2f561f0ca",
+  "bytes": 8717972,
+  "bones": 22,
+  "body": {
+    "changedVertices": 938,
+    "maxDisplacement": 0.06505870657285025
+  },
+  "shapes": {
+    "Deep_Hip_L": {
+      "changedVertices": 164,
+      "maxDisplacement": 0.03351132331138646
+    },
+    "Deep_Hip_R": {
+      "changedVertices": 164,
+      "maxDisplacement": 0.03367651716834927
+    },
+    "Deep_Knee_Fold": {
+      "changedVertices": 506,
+      "maxDisplacement": 0.04499974101781845
+    }
+  },
+  "depthAdditional": 0.16,
+  "armClearanceDegrees": {
+    "idle": 10,
+    "motion": 5
+  },
+  "crouch": {
+    "idle": {
+      "reachMiss": 0,
+      "ankleError": 2.4628041403925075e-08,
+      "footAngle": 5.16191365590357e-08,
+      "kneeMin": 105.47764001647252,
+      "kneeMax": 106.54962951525643
+    },
+    "walk": {
+      "reachMiss": 0,
+      "ankleError": 2.532448322368976e-08,
+      "footAngle": 7.772866190907789e-06,
+      "kneeMin": 99.43453320709584,
+      "kneeMax": 118.48154754925365
+    }
+  },
+  "newClips": [
+    "Trial_Idle_Soft",
+    "Trial_Idle_Old",
+    "Trial_Walk",
+    "Trial_Run",
+    "Deep_Crouch_Idle",
+    "Deep_Crouch_Walk"
+  ],
+  "allAnimations": [
+    "Idle_Breathing",
+    "Walk_Loop",
+    "Run_Loop",
+    "Test_Arms",
+    "Test_Elbow",
+    "Test_Knee",
+    "Test_Head",
+    "Previous_Walk",
+    "Previous_Refined_Idle",
+    "Previous_Idle",
+    "Previous_Arms",
+    "Previous_Knee",
+    "Reference_Walk",
+    "Reference_Run",
+    "Corrected_Walk",
+    "Corrected_Run",
+    "Adjusted_Walk",
+    "Adjusted_Run",
+    "Game_Style_Walk",
+    "Game_Style_Jog",
+    "Relaxed_Walk",
+    "Full_Body_Walk",
+    "Full_Body_Run",
+    "Revised_Walk",
+    "Revised_Run",
+    "Relaxed_Hands_Idle",
+    "Relaxed_Hands_Previous_Idle",
+    "Stealth_Crouch_Idle",
+    "Stealth_Crouch_Walk",
+    "Reviewed_Walk",
+    "Reviewed_Run",
+    "Reviewed_Crouch_Idle",
+    "Reviewed_Crouch_Walk",
+    "Leg_Refined_Walk",
+    "Leg_Refined_Run",
+    "Leg_Refined_Crouch_Idle",
+    "Leg_Refined_Crouch_Walk",
+    "Trial_Idle_Soft",
+    "Trial_Idle_Old",
+    "Trial_Walk",
+    "Trial_Run",
+    "Deep_Crouch_Idle",
+    "Deep_Crouch_Walk"
+  ],
+  "sourceZipSha256": "5cd1dbb0d61dbc4e0590f13d0c9c5029af0bf703aed93ca13752d5edb972241c",
+  "sharedCodeSha256": {
+    "well-source.mjs": "62ef93410bca00fe6b2bc7e2232138edf1077178cb704d59c2aecd9ddf0ce7b5",
+    "navigation.mjs": "93127f23ebc0185c21a11cceace973e0ab3eb9c3a19b447c5d215590527aa608",
+    "floor-guard.mjs": "6f6def18282574bc50e584c574d04e21d62a05426aa0aa3ef08ed69e2ec3bca7"
+  },
+  "pageSha256": "854a79577cfbc850d6048efa1fe70f218011ef0dd9bd71aa6f984e5aacb99f19",
+  "archiveSha256": "d847402dfd0ead280fcd24f97cbfe7e7d466c83c7cc96884afd975effd8037bf"
+}
