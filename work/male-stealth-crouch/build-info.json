@@ -1,0 +1,106 @@
+{
+  "sourceSha256": "3fc6aecd2d60b85261f9604b514dc54ea6003329020fedb2adad76a1e0119fa5",
+  "outputSha256": "a9b2587d8d5b7977aed04a06540cd1b4882a47a2af4491767a7f5ae34e1828e9",
+  "bytes": 5885468,
+  "bones": 22,
+  "shapes": {
+    "Relaxed_Hands": {
+      "changed": 2266,
+      "maxDisplacement": 0.03508655052447482
+    },
+    "Hip_Flex_L": {
+      "changed": 154,
+      "maxDisplacement": 0.02541260252166013
+    },
+    "Hip_Flex_R": {
+      "changed": 154,
+      "maxDisplacement": 0.025412600900936843
+    }
+  },
+  "crouch": [
+    {
+      "name": "Stealth_Crouch_Idle",
+      "duration": 2.4,
+      "speed": 0,
+      "stance": 1,
+      "stats": {
+        "soleResidual": 4.388850394221322e-16,
+        "rootY": [
+          -0.164,
+          -0.16
+        ],
+        "kneeDegrees": [
+          74.24872617557533,
+          76.19115095662359
+        ],
+        "hipDegrees": [
+          44.501068087662716,
+          50.18869733569891
+        ],
+        "flights": 0
+      }
+    },
+    {
+      "name": "Stealth_Crouch_Walk",
+      "duration": 1.6,
+      "speed": 0.38,
+      "stance": 0.68,
+      "stats": {
+        "soleResidual": 4.185020385794047e-16,
+        "rootY": [
+          -0.166,
+          -0.158
+        ],
+        "kneeDegrees": [
+          69.62464018080692,
+          91.30362086680391
+        ],
+        "hipDegrees": [
+          29.21753845880333,
+          63.96668928929839
+        ],
+        "flights": 0
+      }
+    }
+  ],
+  "allAnimations": [
+    "Idle_Breathing",
+    "Walk_Loop",
+    "Run_Loop",
+    "Test_Arms",
+    "Test_Elbow",
+    "Test_Knee",
+    "Test_Head",
+    "Previous_Walk",
+    "Previous_Refined_Idle",
+    "Previous_Idle",
+    "Previous_Arms",
+    "Previous_Knee",
+    "Reference_Walk",
+    "Reference_Run",
+    "Corrected_Walk",
+    "Corrected_Run",
+    "Adjusted_Walk",
+    "Adjusted_Run",
+    "Game_Style_Walk",
+    "Game_Style_Jog",
+    "Relaxed_Walk",
+    "Full_Body_Walk",
+    "Full_Body_Run",
+    "Revised_Walk",
+    "Revised_Run",
+    "Relaxed_Hands_Idle",
+    "Relaxed_Hands_Previous_Idle",
+    "Stealth_Crouch_Idle",
+    "Stealth_Crouch_Walk"
+  ],
+  "sourceZipSha256": "0ea157fccd1bfcad896cb8ce664bc7a3b176f3d83ad2f8d1a74fcc19e055ab92",
+  "sharedCodeSha256": {
+    "well-source.mjs": "62ef93410bca00fe6b2bc7e2232138edf1077178cb704d59c2aecd9ddf0ce7b5",
+    "navigation.mjs": "93127f23ebc0185c21a11cceace973e0ab3eb9c3a19b447c5d215590527aa608",
+    "floor-guard.mjs": "539257a8ad078e4793f8cab6a0cb26e31bba6af0d6bc1d4ef4a3defe9d64ee06"
+  },
+  "crouchGuardSha256": "6f6def18282574bc50e584c574d04e21d62a05426aa0aa3ef08ed69e2ec3bca7",
+  "pageSha256": "47a4008be7271679d39d157608578292bdb243b76a0abc17dd62a42e080a6449",
+  "archiveSha256": "c4681c1143ed5eb118674bce1bf8f9356665df703ec5eff2b7f5480a06e23ec0"
+}
