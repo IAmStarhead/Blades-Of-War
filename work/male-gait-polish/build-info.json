@@ -1,0 +1,27 @@
+{
+  "sourceSha256": "14fb12a55c690b3919a66c07d3e9715da568fa13bbf7e945538bf0ab4a4b8cd0",
+  "outputSha256": "68d015f8e3e603ddfd912a1b0aca68ac8c743724193e51b8ed82b262f28fee37",
+  "bytes": 11884624,
+  "sculpt": {
+    "changedOver1mm": 183,
+    "maxDisplacement": 0.027573957691111012
+  },
+  "walk": {
+    "source": "Library_Walk (Quaternius Walk_Loop)",
+    "upperArmSpreadReductionDegrees": 2,
+    "forearmYZScale": 0.2,
+    "handRest": true
+  },
+  "run": {
+    "source": "Library_Run (Quaternius Jog_Fwd_Loop)",
+    "maxHeadTwistTransferDegrees": 21.51961280495532,
+    "maxRotationProductErrorRadians": 2.9802322387695312e-08
+  },
+  "addedClips": [
+    "Polish_Walk",
+    "Polish_Run"
+  ],
+  "sourceZipSha256": "8b55bc818cb9944a904194664e1029930a7b9fed3944fae57aba4c4c70a78981",
+  "pageSha256": "10fcff04c0afd50381dfbad9087566bf14d1000561cb9e4e1c758d9804dba730",
+  "archiveSha256": "1860aa1f6b59bc8c629528c1b5afbf3525273792898376a85620ec042a475959"
+}
