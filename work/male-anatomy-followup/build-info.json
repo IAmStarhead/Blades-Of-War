@@ -1,0 +1,20 @@
+{
+  "sourceSha256": "79feb676a09aa801a557ee4a63b3887b7e627b79db3f899535e7fe864b09d81f",
+  "outputSha256": "03063b8287ab2d3bba058afd8575e6263e387b2ed2ac0912fd0149ca775041a1",
+  "bytes": 14104532,
+  "sculpt": {
+    "movedOver1mm": 566,
+    "maxFromLastMetres": 0.04271819151970466,
+    "maxFromGaitPolishMetres": 0.047755465525055094,
+    "centralSmoothingPasses": 4,
+    "centralRearPreviousRetention": 1
+  },
+  "animations": {
+    "total": 49,
+    "changes": "none"
+  },
+  "comparison": "exact latest positions and normals embedded; identical clips and skin",
+  "sourceZipSha256": "40c6508a12d065c20b5c61b129f28b9ca5572e34887136088f3c87b1bdf5e375",
+  "pageSha256": "9478f90469fa3d50f9cbf9b237a26f4244237ea7662fdce34e08f2139169d08d",
+  "archiveSha256": "946a2c9ab7203906014a7baade93b637dc82c8ea0cacf92b118358350cc0d96c"
+}
