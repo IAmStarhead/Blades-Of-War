@@ -1,0 +1,53 @@
+{
+  "sourceSha256": "03063b8287ab2d3bba058afd8575e6263e387b2ed2ac0912fd0149ca775041a1",
+  "outputSha256": "1c94cb1c5fbecc5a1aa4f00683c90bb34ce2eb502ef504781d6faa00fd95c8c3",
+  "bytes": 15323864,
+  "waist": {
+    "movedOver1mm": 264,
+    "maxDisplacementMetres": 0.020487402288212712,
+    "sideAmplitudeMetres": 0.02,
+    "frontAmplitudeMetres": 0.008
+  },
+  "knee": {
+    "strength": 0.75,
+    "fit": [
+      {
+        "side": "L",
+        "samples": 20,
+        "verticesOver1mm": 154,
+        "maxSampleMetres": 0.1275884125225234,
+        "maxAverageRestMetres": 0.08429325299343299,
+        "minSkinDeterminant": 0.21412771219835736
+      },
+      {
+        "side": "R",
+        "samples": 20,
+        "verticesOver1mm": 155,
+        "maxSampleMetres": 0.12230688967218724,
+        "maxAverageRestMetres": 0.08405673041701452,
+        "minSkinDeterminant": 0.2224172450414379
+      }
+    ],
+    "normalFit": {
+      "samples": 20,
+      "verticesOverThreshold": 449,
+      "maxDelta": 0.4587930122699053
+    },
+    "source": "20 representative walk/idle samples per side",
+    "preservedFoldMorph": "Deep_Knee_Fold"
+  },
+  "animations": {
+    "originalCount": 49,
+    "newClips": [
+      "Volume_Crouch_Walk",
+      "Volume_Crouch_Idle"
+    ],
+    "paddedMorphTracks": 36,
+    "originalBoneKeys": "unchanged"
+  },
+  "comparison": "exact latest base positions and normals embedded; original clips and skin retained",
+  "posterior": "unchanged; fold unresolved",
+  "sourceZipSha256": "946a2c9ab7203906014a7baade93b637dc82c8ea0cacf92b118358350cc0d96c",
+  "pageSha256": "3c0c462f63db8b28b2ad3089beb8198ac2bf773e202d47be2aa8e92dd67cc300",
+  "archiveSha256": "25062514d8deeb2aee74dde7acf1d75d222a0e779ec681048228f27ea9ba888e"
+}
