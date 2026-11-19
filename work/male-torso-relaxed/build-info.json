@@ -1,0 +1,32 @@
+{
+  "sourceSha256": "68d015f8e3e603ddfd912a1b0aca68ac8c743724193e51b8ed82b262f28fee37",
+  "outputSha256": "79feb676a09aa801a557ee4a63b3887b7e627b79db3f899535e7fe864b09d81f",
+  "bytes": 13837224,
+  "addedClips": [
+    "Torso_Walk"
+  ],
+  "sculpt": {
+    "movedOver1mm": 542,
+    "maxDisplacementMetres": 0.051355639998305856,
+    "frontVertices": 278,
+    "rearVertices": 228
+  },
+  "walk": {
+    "source": "Polish_Walk (Quaternius Walk_Loop)",
+    "upperArmSpreadReductionDegrees": 10,
+    "correctiveTargets": 4,
+    "underarmSites": 352,
+    "explainedVariance": 0.9999961322359019,
+    "maxFitResidualMetres": 9.455311700742201e-05,
+    "rmsFitResidualMetres": 1.2038868981171971e-05,
+    "maxFitCorrectionMetres": 0.018469769134033292
+  },
+  "paddedTracks": 36,
+  "run": {
+    "source": "Polish_Run",
+    "boneAndPriorMorphKeys": "unchanged"
+  },
+  "sourceZipSha256": "1860aa1f6b59bc8c629528c1b5afbf3525273792898376a85620ec042a475959",
+  "pageSha256": "01271021655ab9fd979eace0b680307f9930c3838aae3d96da20f4226225251c",
+  "archiveSha256": "40c6508a12d065c20b5c61b129f28b9ca5572e34887136088f3c87b1bdf5e375"
+}
