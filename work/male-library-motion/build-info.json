@@ -1,0 +1,78 @@
+{
+  "sourceSha256": "6375e7980e1b7119d9245a9796854dd8d52ae7272ad3f6a0473f59a2f561f0ca",
+  "outputSha256": "14fb12a55c690b3919a66c07d3e9715da568fa13bbf7e945538bf0ab4a4b8cd0",
+  "bytes": 11328392,
+  "sculpt": {
+    "thickness": 0.25,
+    "posteriorWeight": 0.45,
+    "keepRump": 0.3,
+    "changed": 1261,
+    "maxDelta": 0.04153933367218905,
+    "weightChanged": 164
+  },
+  "hipShape": {
+    "L": {
+      "angle": 82.40441233758271,
+      "time": 0.6684027922650179,
+      "vertices": 201,
+      "maxDisplacement": 0.04841982233083282
+    },
+    "R": {
+      "angle": 84.04851181869142,
+      "time": 0.21006944899757704,
+      "vertices": 201,
+      "maxDisplacement": 0.05086289075998546
+    }
+  },
+  "clips": [
+    {
+      "source": "Idle_Loop",
+      "name": "Library_Idle",
+      "duration": 2.5,
+      "frames": 241,
+      "minAnkleY": 0.1105273851962349,
+      "maxAnkleY": 0.11625074928051038,
+      "rawMinSole": -0.0078010150211460585,
+      "maxRootLift": 0.01180101465433836,
+      "rootLiftEnvelope": 0.13,
+      "thighSwingScale": 1,
+      "armSpreadDegrees": 16
+    },
+    {
+      "source": "Walk_Loop",
+      "name": "Library_Walk",
+      "duration": 1.3333333730697632,
+      "frames": 129,
+      "minAnkleY": 0.11512720864622916,
+      "maxAnkleY": 0.33735806059645557,
+      "rawMinSole": -0.023805646352217685,
+      "maxRootLift": 0.027805646881461143,
+      "rootLiftEnvelope": 0.13,
+      "thighSwingScale": 1,
+      "armSpreadDegrees": 22
+    },
+    {
+      "source": "Jog_Fwd_Loop",
+      "name": "Library_Run",
+      "duration": 0.9166666865348816,
+      "frames": 89,
+      "minAnkleY": 0.047298720782109394,
+      "maxAnkleY": 0.3920556398984988,
+      "rawMinSole": -0.10541492044439604,
+      "maxRootLift": 0.10941492021083832,
+      "rootLiftEnvelope": 0.06,
+      "thighSwingScale": 0.65,
+      "armSpreadDegrees": 6
+    }
+  ],
+  "sourceZipSha256": "d847402dfd0ead280fcd24f97cbfe7e7d466c83c7cc96884afd975effd8037bf",
+  "librarySourceSha256": {
+    "AnimationLibrary_Godot_Standard.gltf": "0ff075c7ad6855c5c2c37a171592ee8f0d6ab2f58259e2be77a9b63dd8027765",
+    "AnimationLibrary_Godot_Standard.bin": "6e65377d81558333c4093dbb144a48fd19019343d82b1a3a7992a98ec0e0543c",
+    "LICENSE_CC0_QUATERNIUS.txt": "a2010f343487d3f7618affe54f789f5487602331c0a8d03f49e9a7c547cf0499",
+    "MIRROR_README.md": "370e6ff244ef43b269f936be7d630a77a3eb7ed8bbc3315ffcae5b327b814fcb"
+  },
+  "libraryMirrorCommit": "e24c23cf2a1323488a3faa226ea7ea21f644b73e",
+  "pageSha256": "6607e603139b57b2b8523d0b397d17f5de1166ede513f40fe7a22a2b3b45e61e",
+  "archiveSha256": "8b55bc818cb9944a904194664e1029930a7b9fed3944fae57aba4c4c70a78981"
+}

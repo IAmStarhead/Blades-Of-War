@@ -1,0 +1,11 @@
+{
+  "name": "blades-of-war-library-motion",
+  "private": true,
+  "type": "module",
+  "description": "Retargeted library locomotion and reversible body-shape trial.",
+  "dependencies": {
+    "@gltf-transform/core": "4.5.1",
+    "esbuild": "0.28.2",
+    "three": "0.187.0"
+  }
+}
