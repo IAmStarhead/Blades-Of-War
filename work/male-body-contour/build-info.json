@@ -1,0 +1,26 @@
+{
+  "sourceSha256": "1c94cb1c5fbecc5a1aa4f00683c90bb34ce2eb502ef504781d6faa00fd95c8c3",
+  "outputSha256": "db361ec8c18620802acb8dfa02b534a33e9e249134668ea8258c29c8a0a7fba5",
+  "bytes": 15586388,
+  "sculpt": {
+    "movedOver1mm": 493,
+    "maxDisplacementMetres": 0.028581633686096546,
+    "abdomenVerticesOver1mm": 296,
+    "rearVerticesOver1mm": 119,
+    "abdomenAmplitudeMetres": 0.02,
+    "previousWaistSideRollback": 0.5,
+    "previousAbdomenForwardRollback": 1,
+    "frontBandMinDeltaZMetres": -0.027985818684101105,
+    "frontBandMaxDeltaZMetres": 0,
+    "posteriorRelaxationPasses": 6
+  },
+  "animations": {
+    "count": 51,
+    "changes": "none"
+  },
+  "comparison": "exact last base positions and normals embedded; identical clips, targets and skin",
+  "limitation": "posterior fold remains; crouch and knees remain experimental",
+  "sourceZipSha256": "25062514d8deeb2aee74dde7acf1d75d222a0e779ec681048228f27ea9ba888e",
+  "pageSha256": "0503c606b1d0f55bba6b10071bd311fd8d7312e7d524ee01f8632184495f906d",
+  "archiveSha256": "3e8cc827fde007a226976ea1785c64e906143908271fff1bc685eb0f6258d7ee"
+}
