@@ -1,0 +1,19 @@
+{
+  "method": "Side-by-side, synchronized old and corrected actual skinned characters; deterministic source-time PNG frames piped to FFmpeg.",
+  "fps": 30,
+  "framesPerVideo": 180,
+  "durationSeconds": 6,
+  "dimensions": [
+    1280,
+    720
+  ],
+  "audio": false,
+  "ffmpegVersion": "ffmpeg version n9.0.2-17-g2a571b6068-20260930 Copyright (c) 2000-2026 the FFmpeg developers",
+  "modelSha256": "c72ec5c2386362d4f4c30dc0e541ffa3c6664f9ca4c27d49d8cd428ce87c3847",
+  "previousModelSha256": "b52a204a294ff7bf11e60b3da1be385eb406bdcd732e90d1e8240760f772270e",
+  "viewerSha256": "ab6f04bdd762d0819cbeb9b98ce2c44470bd465adb00e9be2ff9fd6c3bacc5b1",
+  "videosSha256": {
+    "walk_before_after.mp4": "0d373f118a2a6ea83d2b71bbc28ed2bea8a5d9e5f01dbef62401f9bb83887d26",
+    "run_before_after.mp4": "df8fa6afefea4b985dbb1fecb6cda8bd4270d66ae5cbc9fc2633aba361170a32"
+  }
+}

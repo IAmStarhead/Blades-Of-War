@@ -1,0 +1,101 @@
+{
+  "scope": "Separate posture/hip fitting trial. Previous model is byte-identical and is used for honest before/after comparison.",
+  "previousModelSha256": "b52a204a294ff7bf11e60b3da1be385eb406bdcd732e90d1e8240760f772270e",
+  "posture": {
+    "description": "Remove the standing-reference torso-direction bias from the retarget, preserve limb world rotations at keys, and restore the previous sole height profile.",
+    "inputSha256": "b52a204a294ff7bf11e60b3da1be385eb406bdcd732e90d1e8240760f772270e",
+    "referenceSha256": "deb6cf43aa2faaaccd734853dff8567736a49126e1263aee532478d49beea7c6",
+    "referenceYawDegrees": 4.095998785226736,
+    "torsoAlignment": {
+      "Rig_Hips": {
+        "quaternion": [
+          0.16502315136254864,
+          0.0009340636325181746,
+          0.006541129216888573,
+          0.9862675603851482
+        ],
+        "degrees": 19.012521774994855
+      },
+      "Rig_Spine": {
+        "quaternion": [
+          0.1413142510648566,
+          -0.0006900794582951769,
+          -0.004496945528812205,
+          0.9899543341575059
+        ],
+        "degrees": 16.256282058287066
+      },
+      "Rig_Chest": {
+        "quaternion": [
+          -0.06803320299494396,
+          -0.0013570347196444794,
+          0.003856113837651456,
+          0.9976746825158437
+        ],
+        "degrees": 7.816151098721503
+      }
+    },
+    "clips": {
+      "Walk_C_Posture": {
+        "sourceClip": "Walk_C",
+        "duration": 0.9999995231628418,
+        "rotationKeys": 121,
+        "rootKeys": 1025,
+        "maxPreservedWorldRotationErrorDegreesAtKeys": 0.0000017075472925031877,
+        "minRootCorrectionMeters": 0.0022602995161435657,
+        "maxRootCorrectionMeters": 0.005308238893691237
+      },
+      "Run_C_Posture": {
+        "sourceClip": "Run_C",
+        "duration": 0.7666659355163574,
+        "rotationKeys": 93,
+        "rootKeys": 769,
+        "maxPreservedWorldRotationErrorDegreesAtKeys": 0.0000017075472925031877,
+        "minRootCorrectionMeters": 0.002438169655798239,
+        "maxRootCorrectionMeters": 0.005442970954212742
+      }
+    },
+    "outputSha256": "f62d0399af3a4adaa74371a5290eab148f9fee26a2385f00d3f825c2217aeea3"
+  },
+  "skin": {
+    "amount": 0.65,
+    "verticesChanged": 200,
+    "restPositionBoundsMeters": {
+      "min": [
+        -0.05486400052905083,
+        0.7963722944259644,
+        -0.14533169567584991
+      ],
+      "max": [
+        0.05486400052905083,
+        1.019057035446167,
+        0.08598119765520096
+      ]
+    },
+    "maxMovedWeight": 0.43972726590851174,
+    "maxDroppedWeight": 3.725290298461914e-8,
+    "removedUnusedAccessors": 106,
+    "method": "Smoothly transfer a limited share of left/right thigh influence to the pelvis only in the central hip crease; preserve four normalized weights.",
+    "outputSha256": "c72ec5c2386362d4f4c30dc0e541ffa3c6664f9ca4c27d49d8cd428ce87c3847"
+  },
+  "viewerGroundSpeedMps": {
+    "walk": 1.73,
+    "run": 3.52
+  },
+  "filesSha256": {
+    "index.html": "ab6f04bdd762d0819cbeb9b98ce2c44470bd465adb00e9be2ff9fd6c3bacc5b1",
+    "male_posture_C_trial.glb": "c72ec5c2386362d4f4c30dc0e541ffa3c6664f9ca4c27d49d8cd428ce87c3847",
+    "previous_C_trial.glb": "b52a204a294ff7bf11e60b3da1be385eb406bdcd732e90d1e8240760f772270e",
+    "README.md": "662cc68f4adbd42cb25143655d73b9ff8f7731537ea93710f5c7611bc6e3bbb8",
+    "CREDITS.md": "d86eb6b96ab1ceebb5b27f0eecb26edc517464f892a04c44bd3bd8b660109a12",
+    "LICENSE_CC0_ASSETS.md": "f6089cba01cb570a24712b41ab8a586ccd3cc5ef53dc266ca50b95c288956d2c",
+    "LICENSE_MAKEHUMAN.md": "edd99571ca62698f78c943fd4fffb159a413c315fa0d4819d3cec5cadaf8b4f1",
+    "LICENSE_THREE.txt": "8b378ebe60e2fe500158cb0ac71cb5e8b7d92953c2abcc63a0eb90499653b5bc",
+    "sources/accad_male2_run.bvh": "ef33bc8c0c3472f35cb01f494265bdf383dcff006efbe88d0762ab1572f0021c",
+    "sources/accad_male2_run.bvh.LICENSE.txt": "2ec5308fd57689ef8dee57883887ef899c054a21f8c7ae2d856f03fef5245568",
+    "sources/accad_male2_stand_to_walk.bvh": "deb6cf43aa2faaaccd734853dff8567736a49126e1263aee532478d49beea7c6",
+    "sources/accad_male2_stand_to_walk.bvh.LICENSE.txt": "a96e4b1e38160deccf5787938ee4d45a41130f9189ac4e267b1d8dce07187438",
+    "sources/accad_male2_walk.bvh": "6cf2fcba98c7dc5c827896edccc16a8a9444350a8833a24e8ac7f6267c81cab3",
+    "sources/accad_male2_walk.bvh.LICENSE.txt": "815adb88710334d708cffdaa18d041c1d58c4703688f2903b04fa025c2326b9d"
+  }
+}
