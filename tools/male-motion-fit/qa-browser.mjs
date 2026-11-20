@@ -41,6 +41,30 @@ async function snapshot(page) {
       foot: d.rig.getObjectByName('Rig_Foot_L').getWorldPosition(v).toArray(), grid: d.floorTexture.offset.toArray()};
   });
 }
+async function checkFootFraming(page) {
+  const worst = await page.evaluate(() => {
+    const d = motionFit, m = d.model.getObjectByName('NewBody'), p = m.geometry.attributes.position, ids = [], v = d.camera.position.clone();
+    for (let i = 0; i < p.count; i++) if (p.getY(i) < .2 && Math.abs(p.getX(i)) > .035 && Math.abs(p.getX(i)) < .25) ids.push(i);
+    const worst = {x: 0, y: 0};
+    for (const version of ['selected', 'previous']) for (const motion of ['walk', 'run']) {
+      d.setVersion(version); d.setMotion(motion); d.chooseFocus('feet');
+      for (const view of ['front', 'side', 'back', 'rear45']) {
+        d.chooseView(view);
+        for (let i = 0; i < 32; i++) {
+          d.setPhase((i + .37) / 32); d.model.updateMatrixWorld(true); d.camera.updateMatrixWorld(true); m.skeleton.update();
+          for (const id of ids) {
+            m.getVertexPosition(id, v); m.localToWorld(v); v.project(d.camera);
+            if (Math.abs(v.x) > worst.x) { worst.x = Math.abs(v.x); worst.whereX = [version, motion, view, i]; }
+            if (Math.abs(v.y) > worst.y) { worst.y = Math.abs(v.y); worst.whereY = [version, motion, view, i]; }
+          }
+        }
+      }
+    }
+    return {...worst, vertices: ids.length, aspect: d.camera.aspect};
+  });
+  assert.ok(worst.vertices > 2000 && worst.x < .96 && worst.y < .96, `foot preset clips sampled foot vertices: ${JSON.stringify(worst)}`);
+  return worst;
+}
 try {
   const desktop = await open({width: 1440, height: 1000, deviceScaleFactor: 1}); await load(desktop);
   assert.equal(await desktop.$eval('#status', e => e.dataset.state), 'ready');
@@ -118,16 +142,31 @@ try {
         video.onloadedmetadata = () => { clearTimeout(timer); resolve(); }; video.onerror = () => { clearTimeout(timer); reject(Error('video metadata error')); }; video.load(); });
       const canvas = document.createElement('canvas'); canvas.width = video.videoWidth; canvas.height = video.videoHeight;
       const context = canvas.getContext('2d');
-      const frame = t => new Promise((resolve, reject) => { const timer = setTimeout(() => reject(Error('video seek timeout')), 15000);
-        video.onseeked = () => { clearTimeout(timer); context.drawImage(video, 0, 0); resolve(canvas.toDataURL()); };
-        video.onerror = () => { clearTimeout(timer); reject(Error('video seek error')); }; video.currentTime = t; });
+      const frame = async t => {
+        await new Promise((resolve, reject) => { const timer = setTimeout(() => reject(Error('video seek timeout')), 15000);
+          video.onseeked = () => { clearTimeout(timer); resolve(); };
+          video.onerror = () => { clearTimeout(timer); reject(Error('video seek error')); }; video.currentTime = t; });
+        // Allow the sought video frame to reach the compositor before reading
+        // it into a canvas, especially on a loaded headless renderer.
+        await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+        if (video.readyState < 2 || Math.abs(video.currentTime - t) > .04) throw Error('Video did not seek to the requested time');
+        context.drawImage(video, 0, 0); return canvas.toDataURL();
+      };
       const a = await frame(.2), b = await frame(.7), result = {width: video.videoWidth, height: video.videoHeight, duration: video.duration, different: a !== b};
       video.remove(); return result;
     }, mode);
     assert.deepEqual(info, {width: 1280, height: 720, duration: 6, different: true}, `${mode} video`);
   }
+  const desktopFeet = await checkFootFraming(desktop);
+  await desktop.evaluate(() => { motionFit.setVersion('selected'); motionFit.setMotion('run'); motionFit.chooseView('side'); motionFit.chooseFocus('feet'); motionFit.setPhase(.7); });
+  const distanceBeforeResize = await desktop.evaluate(() => motionFit.camera.position.distanceTo(motionFit.orbit.target));
+  await desktop.setViewport({width: 320, height: 700, deviceScaleFactor: 1});
+  await desktop.waitForFunction('motionFit.camera.aspect < .8', {timeout: 10000});
+  const distanceAfterResize = await desktop.evaluate(() => motionFit.camera.position.distanceTo(motionFit.orbit.target));
+  assert.ok(distanceAfterResize > distanceBeforeResize + .5, 'narrow resize expands the foot focus without a new preset click');
+  const resizedFeet = await checkFootFraming(desktop);
   await desktop.close();
-  console.log('PASS: offline desktop, C/previous switching at the same phase, pause/seek, floor, focus, skeleton, camera, byte-exact GLB download and video seek');
+  console.log(`PASS: offline desktop, C/previous switching at the same phase, pause/seek, floor, focus, skeleton, camera, byte-exact GLB download and video seek; foot framing ${desktopFeet.x.toFixed(2)}/${desktopFeet.y.toFixed(2)}, after narrow resize ${resizedFeet.x.toFixed(2)}/${resizedFeet.y.toFixed(2)}`);
   for (const viewport of [{width: 320, height: 700, deviceScaleFactor: 1, isMobile: true, hasTouch: true},
     {width: 390, height: 844, deviceScaleFactor: 2, isMobile: true, hasTouch: true},
     {width: 768, height: 1024, deviceScaleFactor: 1, isMobile: true, hasTouch: true}]) {
@@ -149,7 +188,8 @@ try {
     await touch.send('Input.dispatchTouchEvent', {type: 'touchMove', touchPoints: [{x: x - 50, y, id: 1}, {x: x + 50, y, id: 2}]});
     await touch.send('Input.dispatchTouchEvent', {type: 'touchEnd', touchPoints: []});
     assert.ok(Math.abs(await mobile.evaluate(() => motionFit.camera.position.distanceTo(motionFit.orbit.target)) - dist) > .01, 'pinch zooms');
-    await mobile.close(); console.log(`PASS: ${viewport.width}x${viewport.height} emulation, controls, no overflow, touch rotation and pinch`);
+    const feet = await checkFootFraming(mobile);
+    await mobile.close(); console.log(`PASS: ${viewport.width}x${viewport.height} emulation, controls, no overflow, touch rotation/pinch; foot framing ${feet.x.toFixed(2)}/${feet.y.toFixed(2)}`);
   }
   const fallback = await open({width: 390, height: 844, deviceScaleFactor: 1}, false);
   await fallback.evaluateOnNewDocument(() => {

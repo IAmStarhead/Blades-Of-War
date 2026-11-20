@@ -10,7 +10,7 @@
   "audio": false,
   "ffmpegVersion": "ffmpeg version n9.0.2-17-g2a571b6068-20260930 Copyright (c) 2000-2026 the FFmpeg developers",
   "modelSha256": "b52a204a294ff7bf11e60b3da1be385eb406bdcd732e90d1e8240760f772270e",
-  "viewerSha256": "9c392f872cabf0a40082cab355bbda8b19b72b680e7ccd3d9412a4b757f9d1dd",
+  "viewerSha256": "7d9c01d6501133de87ae440430c2f1115e2db7b0cb33d409d49ee82d9882e633",
   "videosSha256": {
     "walk_C.mp4": "9dbbcf497bbbe0448f62ba4577c522efc7347cf948ad33c55cad6581158d560d",
     "run_C.mp4": "6a87350fbeca93e49806f1e68f4449e825a4f42d11c1f658fbcc1372c64615c5"

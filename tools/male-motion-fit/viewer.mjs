@@ -90,8 +90,15 @@ async function start() {
     if (delta.lengthSq() > 1e-16) { orbit.target.copy(target); camera.position.add(delta); orbit.update(); }
   }
   function yaw() { return Math.atan2(camera.position.x - orbit.target.x, camera.position.z - orbit.target.z); }
+  function focusDistance(angle) {
+    if (state.focus !== 'feet') return focuses[state.focus].distance;
+    // Both feet spread a long way apart during a run. On a narrow screen, a
+    // fixed close-up can crop both out in side view. Fit the known gait envelope
+    // for the chosen preset and aspect; users can still zoom in afterwards.
+    return Math.max(1.95, .25 + (2.5 * Math.abs(Math.sin(angle)) + .45 * Math.abs(Math.cos(angle))) / Math.max(camera.aspect, .3));
+  }
   function positionCamera(angle) {
-    const target = targetForFocus(), distance = focuses[state.focus].distance;
+    const target = targetForFocus(), distance = focusDistance(angle);
     orbit.target.copy(target); camera.position.set(target.x + distance * Math.sin(angle), target.y + distance * .07, target.z + distance * Math.cos(angle));
     camera.lookAt(target); orbit.update(); invalidate();
   }
@@ -177,7 +184,15 @@ async function start() {
   slider.addEventListener('input', e => setPhase(Number(e.target.value) / 1000));
   const resize = () => {
     const width = stage.clientWidth, height = stage.clientHeight; if (!width || !height) return;
-    renderer.setSize(width, height, false); camera.aspect = width / height; camera.updateProjectionMatrix(); invalidate();
+    const previousAspect = camera.aspect;
+    renderer.setSize(width, height, false); camera.aspect = width / height; camera.updateProjectionMatrix();
+    // If the viewport becomes narrower while the feet preset is active, expand
+    // the framing rather than letting a resize hide the feet. Keep the angle.
+    if (state.focus === 'feet' && camera.aspect < previousAspect) {
+      const offset = camera.position.clone().sub(orbit.target), minimum = focusDistance(yaw()) * Math.sqrt(1 + .07 ** 2);
+      if (offset.length() < minimum) { camera.position.copy(orbit.target).add(offset.setLength(minimum)); orbit.update(); }
+    }
+    invalidate();
   };
   new ResizeObserver(resize).observe(stage); window.addEventListener('resize', resize);
   state.ready = true; setMotion('walk'); positionCamera(views.side); resize(); updateControls();
