@@ -1,0 +1,2 @@
+sources/*.bvh -text -whitespace
+sources/*.txt -text -whitespace
