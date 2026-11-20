@@ -1,0 +1,142 @@
+{
+  "scope": "Source-only motion review; no project-character retarget.",
+  "sourceMirror": "https://github.com/rywible/wrela/tree/3dd01b4ef0d1b28848c5020afff1bf66fed0f2eb/content/humanoid/assets",
+  "candidates": {
+    "walk": [
+      {
+        "id": "neutral_fw",
+        "letter": "A",
+        "sha256": "fb0aeb4ab1bb4c56beddd1a8be2f7c08715a30b84b01afa483cd2688d8d7fcc7",
+        "frameRate": 60,
+        "sourceFrameCount": 139,
+        "sourceFramesZeroBased": [
+          27,
+          110
+        ],
+        "originalDatasetFramesZeroBased": [
+          1863,
+          1946
+        ],
+        "durationSeconds": 1.3833609819412231,
+        "averageHorizontalSpeedMetresPerSecond": 0.8553493283226741,
+        "yawAlignmentRadians": 2.388195423108997,
+        "floorCm": -0.8229007548648233,
+        "sampledMaxLowestFootPointCmAboveFloor": 1.8028950841511893,
+        "unblendedLoopLargestNamedJointJumpCm": {
+          "name": "RightToe",
+          "cm": 3.6228200181623276
+        }
+      },
+      {
+        "id": "accad_male1_walk",
+        "letter": "B",
+        "sha256": "5acbd06ab7f5f0dcaa5b70c1caeba3e972e1472050ab92f9b8846ac1c8cd034e",
+        "frameRate": 30,
+        "sourceFrameCount": 183,
+        "sourceFramesZeroBased": [
+          73,
+          107
+        ],
+        "originalDatasetFramesZeroBased": null,
+        "durationSeconds": 1.1333320140838623,
+        "averageHorizontalSpeedMetresPerSecond": 1.29488969070366,
+        "yawAlignmentRadians": -2.3276390718165336,
+        "floorCm": 98.13685166827038,
+        "sampledMaxLowestFootPointCmAboveFloor": 2.657216802018155,
+        "unblendedLoopLargestNamedJointJumpCm": {
+          "name": "RightHand",
+          "cm": 2.4090879224728257
+        }
+      },
+      {
+        "id": "accad_male2_walk",
+        "letter": "C",
+        "sha256": "6cf2fcba98c7dc5c827896edccc16a8a9444350a8833a24e8ac7f6267c81cab3",
+        "frameRate": 120,
+        "sourceFrameCount": 531,
+        "sourceFramesZeroBased": [
+          271,
+          391
+        ],
+        "originalDatasetFramesZeroBased": null,
+        "durationSeconds": 0.9999995231628418,
+        "averageHorizontalSpeedMetresPerSecond": 1.6731929933790521,
+        "yawAlignmentRadians": -0.8022032180348271,
+        "floorCm": 94.24204790399243,
+        "sampledMaxLowestFootPointCmAboveFloor": 2.662708779192343,
+        "unblendedLoopLargestNamedJointJumpCm": {
+          "name": "RightFoot",
+          "cm": 2.495557587306477
+        }
+      }
+    ],
+    "run": [
+      {
+        "id": "neutral_fr",
+        "letter": "A",
+        "sha256": "1f3e394493c1ebb1d75f968f57781eb98868adc899ba19a7339587223ae97457",
+        "frameRate": 60,
+        "sourceFrameCount": 79,
+        "sourceFramesZeroBased": [
+          9,
+          57
+        ],
+        "originalDatasetFramesZeroBased": [
+          508,
+          556
+        ],
+        "durationSeconds": 0.80001600086689,
+        "averageHorizontalSpeedMetresPerSecond": 1.8361494695309488,
+        "yawAlignmentRadians": -0.19530793552024645,
+        "floorCm": -0.37961514546948294,
+        "sampledMaxLowestFootPointCmAboveFloor": 2.398630677059618,
+        "unblendedLoopLargestNamedJointJumpCm": {
+          "name": "RightToe",
+          "cm": 8.952567740385922
+        }
+      },
+      {
+        "id": "accad_male1_run",
+        "letter": "B",
+        "sha256": "90bec698aea33584e4792d581946c1452d7cad0a29a4ee2656df0e04613bb95a",
+        "frameRate": 30,
+        "sourceFrameCount": 46,
+        "sourceFramesZeroBased": [
+          13,
+          32
+        ],
+        "originalDatasetFramesZeroBased": null,
+        "durationSeconds": 0.633332759141922,
+        "averageHorizontalSpeedMetresPerSecond": 4.8971759937259955,
+        "yawAlignmentRadians": -0.8084034748351443,
+        "floorCm": 87.92358877230114,
+        "sampledMaxLowestFootPointCmAboveFloor": 17.36749499657573,
+        "unblendedLoopLargestNamedJointJumpCm": {
+          "name": "LeftToeBase",
+          "cm": 5.519866503026081
+        }
+      },
+      {
+        "id": "accad_male2_run",
+        "letter": "C",
+        "sha256": "ef33bc8c0c3472f35cb01f494265bdf383dcff006efbe88d0762ab1572f0021c",
+        "frameRate": 30,
+        "sourceFrameCount": 58,
+        "sourceFramesZeroBased": [
+          11,
+          34
+        ],
+        "originalDatasetFramesZeroBased": null,
+        "durationSeconds": 0.7666659653186798,
+        "averageHorizontalSpeedMetresPerSecond": 3.73415817154351,
+        "yawAlignmentRadians": -0.8105154038618639,
+        "floorCm": 91.25042575154067,
+        "sampledMaxLowestFootPointCmAboveFloor": 15.624553018738908,
+        "unblendedLoopLargestNamedJointJumpCm": {
+          "name": "RightToeBase",
+          "cm": 4.2805107553011235
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,86 @@
+{
+  "walk": [
+    {
+      "id": "neutral_fw",
+      "letter": "A",
+      "title": "Спокойная прогулка",
+      "subtitle": "100STYLE · Neutral_FW",
+      "description": "Неспешная, с небольшим размахом рук. Может показаться слишком спокойной для энергичного персонажа.",
+      "license": "CC BY 4.0",
+      "frameRate": 60,
+      "startFrame": 27,
+      "endFrame": 110,
+      "datasetStartFrame": 1836,
+      "sha256": "fb0aeb4ab1bb4c56beddd1a8be2f7c08715a30b84b01afa483cd2688d8d7fcc7",
+      "recommended": false
+    },
+    {
+      "id": "accad_male1_walk",
+      "letter": "B",
+      "title": "Уверенный шаг",
+      "subtitle": "ACCAD · Male1_B3_Walk",
+      "description": "Шаг живее, чем A, но без такой спешки, как C. Мой первый кандидат для обычной ходьбы.",
+      "license": "CC BY 3.0",
+      "frameRate": 30,
+      "startFrame": 73,
+      "endFrame": 107,
+      "sha256": "5acbd06ab7f5f0dcaa5b70c1caeba3e972e1472050ab92f9b8846ac1c8cd034e",
+      "recommended": true
+    },
+    {
+      "id": "accad_male2_walk",
+      "letter": "C",
+      "title": "Быстрый шаг",
+      "subtitle": "ACCAD · Male2_B3_Walk",
+      "description": "Более быстрая ходьба с заметным размахом ног. Может быть слишком торопливой для обычного шага.",
+      "license": "CC BY 3.0",
+      "frameRate": 120,
+      "startFrame": 271,
+      "endFrame": 391,
+      "sha256": "6cf2fcba98c7dc5c827896edccc16a8a9444350a8833a24e8ac7f6267c81cab3",
+      "recommended": false
+    }
+  ],
+  "run": [
+    {
+      "id": "neutral_fr",
+      "letter": "A",
+      "title": "Лёгкий бег",
+      "subtitle": "100STYLE · Neutral_FR",
+      "description": "Сдержанная трусца: хороший спокойный вариант, но не выглядит быстрым спринтом. Стык повтора заметен.",
+      "license": "CC BY 4.0",
+      "frameRate": 60,
+      "startFrame": 9,
+      "endFrame": 57,
+      "datasetStartFrame": 499,
+      "sha256": "1f3e394493c1ebb1d75f968f57781eb98868adc899ba19a7339587223ae97457",
+      "recommended": false
+    },
+    {
+      "id": "accad_male1_run",
+      "letter": "B",
+      "title": "Быстрый бег",
+      "subtitle": "ACCAD · Male1_C03_Run",
+      "description": "Самый быстрый и широкий шаг из трёх; скорее вариант для спринта. Исходная запись — 30 кадров/с.",
+      "license": "CC BY 3.0",
+      "frameRate": 30,
+      "startFrame": 13,
+      "endFrame": 32,
+      "sha256": "90bec698aea33584e4792d581946c1452d7cad0a29a4ee2656df0e04613bb95a",
+      "recommended": false
+    },
+    {
+      "id": "accad_male2_run",
+      "letter": "C",
+      "title": "Энергичный бег",
+      "subtitle": "ACCAD · Male2_C3_Run",
+      "description": "Энергичнее A и медленнее B. Мой первый кандидат для бега; может оказаться слишком спортивным.",
+      "license": "CC BY 3.0",
+      "frameRate": 30,
+      "startFrame": 11,
+      "endFrame": 34,
+      "sha256": "ef33bc8c0c3472f35cb01f494265bdf383dcff006efbe88d0762ab1572f0021c",
+      "recommended": true
+    }
+  ]
+}

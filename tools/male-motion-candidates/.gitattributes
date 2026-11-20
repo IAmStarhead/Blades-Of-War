@@ -1,0 +1,8 @@
+*.py text eol=lf
+*.mjs text eol=lf
+*.html text eol=lf
+*.md text eol=lf
+*.json text eol=lf
+*.txt text eol=lf
+# Preserve the pinned upstream recordings byte-for-byte, including CRLF.
+sources/*.bvh binary
