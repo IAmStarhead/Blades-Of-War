@@ -1,0 +1,307 @@
+{
+  "description": "Separate experimental rig and fixed-site paired-cap cut study; does not replace earlier deliveries.",
+  "sourceStatic": {
+    "path": "work/male-static-rebuild/male_static_rebuild.glb",
+    "sha256": "4ff3f49882d1544a856d1d9061a696e13224803fd58250782e456a3bca5982c2"
+  },
+  "sourcePrevious": {
+    "path": "work/male-body-contour/male_body_contour.glb",
+    "sha256": "db361ec8c18620802acb8dfa02b534a33e9e249134668ea8258c29c8a0a7fba5"
+  },
+  "makeHumanCommit": "a8bc2d54ff0ac92e78ff71431b1023eda42bf482",
+  "makeHumanAssets": {
+    "base.obj": {
+      "sha256": "8e761e6624b8f54536409135d1636da63b32486a90d4897f84e121d144f6fb4c",
+      "path": "makehuman/data/3dobjs/base.obj"
+    },
+    "caucasian-male-young.target": {
+      "sha256": "70e228ba7164737dae664454394536fc5935fa48d333c1a97d77e2dc6eacc5f5",
+      "path": "makehuman/data/targets/macrodetails/caucasian-male-young.target"
+    },
+    "universal-male-young-maxmuscle-averageweight.target": {
+      "sha256": "c171ff9cc95e96273beb3e3b1969a01988c2d4982ebc6fe04bf81cf72ee3b295",
+      "path": "makehuman/data/targets/macrodetails/universal-male-young-maxmuscle-averageweight.target"
+    },
+    "default.mhskel": {
+      "sha256": "99f179bce0aa850b45d4191a1d0d234c5851f881c057439470ded3bddf729a24",
+      "path": "makehuman/data/rigs/default.mhskel"
+    },
+    "default_weights.mhw": {
+      "sha256": "0f3641d651ae3d00ad6b4ccee43142edb109d3bd909d27d9e4139ef1beed8625",
+      "path": "makehuman/data/rigs/default_weights.mhw"
+    },
+    "LICENSE.MAKEHUMAN.md": {
+      "sha256": "edd99571ca62698f78c943fd4fffb159a413c315fa0d4819d3cec5cadaf8b4f1",
+      "path": "LICENSE.md"
+    }
+  },
+  "body": {
+    "weightLossMax": 0.029880478087649487,
+    "weightLossP99": 0.0005121231949791749,
+    "postAdjustmentWeightLossMax": 0.00028393835338358375,
+    "faces": 28196,
+    "verts": 14703,
+    "headBoundaryEdges": 1208
+  },
+  "rootCalibration": {
+    "Walk_NewBody": {
+      "source": "Torso_Walk",
+      "samples": 1025,
+      "durationSeconds": 1.3333333730697632,
+      "soleVertices": {
+        "previous": [
+          1724,
+          1728
+        ],
+        "fresh": [
+          1123,
+          1123
+        ]
+      },
+      "verticalAdjustmentMinMeters": -0.032524070981545694,
+      "verticalAdjustmentMaxMeters": 0.017466168719441323,
+      "method": "Match the minimum of either selected foot to the previous animation at each sampled phase; keep original root X/Z and joint rotations."
+    },
+    "Run_NewBody": {
+      "source": "Polish_Run",
+      "samples": 705,
+      "durationSeconds": 0.9166666865348816,
+      "soleVertices": {
+        "previous": [
+          1724,
+          1728
+        ],
+        "fresh": [
+          1123,
+          1123
+        ]
+      },
+      "verticalAdjustmentMinMeters": -0.05671311661289657,
+      "verticalAdjustmentMaxMeters": 0.021417662686954053,
+      "method": "Match the minimum of either selected foot to the previous animation at each sampled phase; keep original root X/Z and joint rotations."
+    }
+  },
+  "segmentedStudy": {
+    "sites": {
+      "Wrist_L": {
+        "part": "Hand_L",
+        "center": [
+          0.31073528140929646,
+          0.9522029135249795,
+          0.06637726315333338
+        ],
+        "normalTowardDistal": [
+          0.22464172331822016,
+          -0.9175867659146354,
+          0.32797960784618974
+        ],
+        "loopVertices": 43,
+        "capAreaSquareMeters": 0.0017107186231233862,
+        "centroidOffsetMeters": 0.002284338492198585,
+        "barrierEdges": 43
+      },
+      "Elbow_L": {
+        "part": "Forearm_L",
+        "center": [
+          0.251378736284571,
+          1.1946546364905344,
+          -0.020286557897028157
+        ],
+        "normalTowardDistal": [
+          0.23301673947371349,
+          -0.9537358509181918,
+          0.18997664540251316
+        ],
+        "loopVertices": 44,
+        "capAreaSquareMeters": 0.00515803087585516,
+        "centroidOffsetMeters": 0.00300324755126938,
+        "barrierEdges": 44
+      },
+      "Ankle_L": {
+        "part": "Foot_L",
+        "center": [
+          0.13919139532911526,
+          0.08635645620475721,
+          -0.0326075709557225
+        ],
+        "normalTowardDistal": [
+          0.030607595015554847,
+          -0.9988997201638203,
+          0.03553201632338237
+        ],
+        "loopVertices": 46,
+        "capAreaSquareMeters": 0.00600732252593122,
+        "centroidOffsetMeters": 0.017042329274604712,
+        "barrierEdges": 46
+      },
+      "Knee_L": {
+        "part": "Shin_L",
+        "center": [
+          0.12549925443686033,
+          0.5332086887335584,
+          -0.048502778313688606
+        ],
+        "normalTowardDistal": [
+          0.030408050606541625,
+          -0.999192143617716,
+          0.02627566537584554
+        ],
+        "loopVertices": 46,
+        "capAreaSquareMeters": 0.009795986271848325,
+        "centroidOffsetMeters": 0.021959930942888187,
+        "barrierEdges": 46
+      },
+      "Wrist_R": {
+        "part": "Hand_R",
+        "center": [
+          -0.31073528140929646,
+          0.9522029135249795,
+          0.06637726315333338
+        ],
+        "normalTowardDistal": [
+          -0.22464172331822016,
+          -0.9175867659146354,
+          0.32797960784618974
+        ],
+        "loopVertices": 43,
+        "capAreaSquareMeters": 0.0017107186231233862,
+        "centroidOffsetMeters": 0.002284338492198585,
+        "barrierEdges": 43
+      },
+      "Elbow_R": {
+        "part": "Forearm_R",
+        "center": [
+          -0.251378736284571,
+          1.1946546364905344,
+          -0.020286557897028157
+        ],
+        "normalTowardDistal": [
+          -0.23301673947371349,
+          -0.9537358509181918,
+          0.18997664540251316
+        ],
+        "loopVertices": 44,
+        "capAreaSquareMeters": 0.00515803087585516,
+        "centroidOffsetMeters": 0.00300324755126938,
+        "barrierEdges": 44
+      },
+      "Ankle_R": {
+        "part": "Foot_R",
+        "center": [
+          -0.13919139532911526,
+          0.08635645620475721,
+          -0.0326075709557225
+        ],
+        "normalTowardDistal": [
+          -0.030607595015554847,
+          -0.9988997201638203,
+          0.03553201632338237
+        ],
+        "loopVertices": 46,
+        "capAreaSquareMeters": 0.00600732252593122,
+        "centroidOffsetMeters": 0.017042329274604712,
+        "barrierEdges": 46
+      },
+      "Knee_R": {
+        "part": "Shin_R",
+        "center": [
+          -0.12549925443686033,
+          0.5332086887335584,
+          -0.048502778313688606
+        ],
+        "normalTowardDistal": [
+          -0.030408050606541625,
+          -0.999192143617716,
+          0.02627566537584554
+        ],
+        "loopVertices": 46,
+        "capAreaSquareMeters": 0.009795986271848325,
+        "centroidOffsetMeters": 0.021959930942888187,
+        "barrierEdges": 46
+      }
+    },
+    "closures": {
+      "Hand_L": {
+        "boundaryEdgesWithCaps": 0,
+        "nonManifoldEdges": 0,
+        "caps": [
+          "Wrist_L_Distal"
+        ]
+      },
+      "Forearm_L": {
+        "boundaryEdgesWithCaps": 0,
+        "nonManifoldEdges": 0,
+        "caps": [
+          "Wrist_L_Proximal",
+          "Elbow_L_Distal"
+        ]
+      },
+      "Foot_L": {
+        "boundaryEdgesWithCaps": 0,
+        "nonManifoldEdges": 0,
+        "caps": [
+          "Ankle_L_Distal"
+        ]
+      },
+      "Shin_L": {
+        "boundaryEdgesWithCaps": 0,
+        "nonManifoldEdges": 0,
+        "caps": [
+          "Ankle_L_Proximal",
+          "Knee_L_Distal"
+        ]
+      },
+      "Hand_R": {
+        "boundaryEdgesWithCaps": 0,
+        "nonManifoldEdges": 0,
+        "caps": [
+          "Wrist_R_Distal"
+        ]
+      },
+      "Forearm_R": {
+        "boundaryEdgesWithCaps": 0,
+        "nonManifoldEdges": 0,
+        "caps": [
+          "Wrist_R_Proximal",
+          "Elbow_R_Distal"
+        ]
+      },
+      "Foot_R": {
+        "boundaryEdgesWithCaps": 0,
+        "nonManifoldEdges": 0,
+        "caps": [
+          "Ankle_R_Distal"
+        ]
+      },
+      "Shin_R": {
+        "boundaryEdgesWithCaps": 0,
+        "nonManifoldEdges": 0,
+        "caps": [
+          "Ankle_R_Proximal",
+          "Knee_R_Distal"
+        ]
+      },
+      "Main": {
+        "boundaryEdgesWithCaps": 1208,
+        "nonManifoldEdges": 0,
+        "caps": [
+          "Elbow_L_Proximal",
+          "Knee_L_Proximal",
+          "Elbow_R_Proximal",
+          "Knee_R_Proximal"
+        ]
+      }
+    },
+    "maxCutInterpolationWeightLoss": 2.9802322387695312e-08
+  },
+  "filesSha256": {
+    "index.html": "b1934346b93db0720f78f7412e0837851b0d3d316ddc6463377bdaadca67de82",
+    "male_rig_rebuild.glb": "8c92f19a522d287ea8bd3fb2a683b27cc7bdc36b0adc4f3aa7ca7de86d11755c",
+    "previous_walk_run_reference.glb": "1521b81a19816208315a27f69bf370f5a490ad0871052050a16dc7b523d1f203",
+    "male_cut_placeholders.glb": "fb5b29137bcdad4abc45b28a99e0e353b490bc21c183eb36c6e0e1670c751947",
+    "README.md": "0d745eb335ea7fb4a1ef3e894aeb1e58f7f2be1c5ffc668c5cf817c66b21b0ef",
+    "LICENSE_CC0_ASSETS.md": "f6089cba01cb570a24712b41ab8a586ccd3cc5ef53dc266ca50b95c288956d2c",
+    "LICENSE_MAKEHUMAN.md": "edd99571ca62698f78c943fd4fffb159a413c315fa0d4819d3cec5cadaf8b4f1",
+    "LICENSE_THREE.txt": "8b378ebe60e2fe500158cb0ac71cb5e8b7d92953c2abcc63a0eb90499653b5bc"
+  }
+}
