@@ -1,0 +1,19 @@
+{
+  "method": "Actual skinned viewer at fixed timestamps; side, front and three-quarter views, plus a close foot view.",
+  "fps": 30,
+  "framesPerVideo": 180,
+  "durationSeconds": 6,
+  "dimensions": [
+    1280,
+    720
+  ],
+  "audio": false,
+  "ffmpegVersion": "ffmpeg version n9.0.2-17-g2a571b6068-20260930 Copyright (c) 2000-2026 the FFmpeg developers",
+  "modelSha256": "844de26eb624dcb6b630157dda1227b6be2c54e4654c35d086c74149be26f45a",
+  "viewerSha256": "d46e072ea7d5106ae4b5390e3947389abcf6ff5960683fe49605640b6c696a62",
+  "videosSha256": {
+    "walk_preview.mp4": "7e70e86ad4aedc68bcb720b9eff94626d7873980b1a0585a812c5fe53f46470b",
+    "run_preview.mp4": "ab42cf9697a17fc39bbb35f4da912cbc9531bc2654c83ce5f9c59ef173e3b599",
+    "feet_preview.mp4": "d24e3fb72e171738900a1a336602541b5fb133926b8937db1adc82b3d28ff40b"
+  }
+}
