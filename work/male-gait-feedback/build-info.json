@@ -1,0 +1,88 @@
+{
+  "scope": "Separate, conservative C follow-up after rejecting the 100STYLE/C mix. Upper body, timing and shared skin are from C; not an in-game integration.",
+  "previousModelSha256": "c0685047069bf2a25e7cdc2c23580543b7e349281ad27d64dc240d63b9446013",
+  "modelSha256": "bc03eabc26ca876dc4f58995a3d77af897c4e6738566cc98060f46f15bd1cb3f",
+  "pose": {
+    "inputSha256": "c0685047069bf2a25e7cdc2c23580543b7e349281ad27d64dc240d63b9446013",
+    "changedTracks": [
+      "Rig_Neck",
+      "Rig_Head",
+      "Rig_Foot_L",
+      "Rig_Foot_R"
+    ],
+    "footStrength": 0.8,
+    "maxRawFootYawDegrees": 14,
+    "method": "Same C clips, timing, torso, arms, leg paths, root and shared skin. Head and neck are rotated in world axes; skinned heel-to-tip direction guides a bounded, smoothed foot-yaw correction, faded out near the ground. No contact lock or changes to foot pitch.",
+    "clips": {
+      "Walk_C_HeadFeet_Trial": {
+        "previous": "Walk_C_Refined",
+        "keys": 121,
+        "durationSeconds": 0.9999995231628418,
+        "headPitchDegrees": -5,
+        "neckPitchDegrees": -1,
+        "headRollDegrees": 2.5,
+        "swingFadeHeightsMeters": [
+          0.008,
+          0.035
+        ],
+        "maxHeadOriginDisplacementMm": 1.5924429159688185,
+        "maxAnkleDisplacementMm": 0,
+        "footYawCorrectionDegrees": {
+          "L": [
+            -11.192894305785591,
+            0.22819661731909596
+          ],
+          "R": [
+            0,
+            9.5976020115449
+          ]
+        }
+      },
+      "Run_C_HeadFeet_Trial": {
+        "previous": "Run_C_Refined",
+        "keys": 93,
+        "durationSeconds": 0.7666659355163574,
+        "headPitchDegrees": -8,
+        "neckPitchDegrees": -2,
+        "headRollDegrees": 1.5,
+        "swingFadeHeightsMeters": [
+          0.015,
+          0.08
+        ],
+        "maxHeadOriginDisplacementMm": 3.184764314176951,
+        "maxAnkleDisplacementMm": 0,
+        "footYawCorrectionDegrees": {
+          "L": [
+            -11.150329330246258,
+            1.9432294922277575
+          ],
+          "R": [
+            -4.117564810306661,
+            0.2922902202081741
+          ]
+        }
+      }
+    },
+    "outputSha256": "bc03eabc26ca876dc4f58995a3d77af897c4e6738566cc98060f46f15bd1cb3f"
+  },
+  "viewerGroundSpeedMps": {
+    "walk": 1.73,
+    "run": 3.52
+  },
+  "filesSha256": {
+    "index.html": "faad1d7f52fe48b8b2121ad84bc9bdafb63742fbd261291eb6574b7e8179dbfe",
+    "male_C_head_feet_trial.glb": "bc03eabc26ca876dc4f58995a3d77af897c4e6738566cc98060f46f15bd1cb3f",
+    "previous_C.glb": "c0685047069bf2a25e7cdc2c23580543b7e349281ad27d64dc240d63b9446013",
+    "README.md": "d866d82bf9d14f3139161a0ba5d471a12f27d422ff46de6a36c1f8a7c5e48863",
+    "CREDITS.md": "84cb89857aadc4b8fd89a1367f683168853e2a51a720b34568700ce12f06aa27",
+    "LICENSE_CC0_ASSETS.md": "f6089cba01cb570a24712b41ab8a586ccd3cc5ef53dc266ca50b95c288956d2c",
+    "LICENSE_MAKEHUMAN.md": "edd99571ca62698f78c943fd4fffb159a413c315fa0d4819d3cec5cadaf8b4f1",
+    "LICENSE_THREE.txt": "8b378ebe60e2fe500158cb0ac71cb5e8b7d92953c2abcc63a0eb90499653b5bc",
+    "sources/accad_male2_walk.bvh": "6cf2fcba98c7dc5c827896edccc16a8a9444350a8833a24e8ac7f6267c81cab3",
+    "sources/accad_male2_walk.bvh.LICENSE.txt": "815adb88710334d708cffdaa18d041c1d58c4703688f2903b04fa025c2326b9d",
+    "sources/accad_male2_run.bvh": "ef33bc8c0c3472f35cb01f494265bdf383dcff006efbe88d0762ab1572f0021c",
+    "sources/accad_male2_run.bvh.LICENSE.txt": "2ec5308fd57689ef8dee57883887ef899c054a21f8c7ae2d856f03fef5245568",
+    "sources/accad_male2_stand_to_walk.bvh": "deb6cf43aa2faaaccd734853dff8567736a49126e1263aee532478d49beea7c6",
+    "sources/accad_male2_stand_to_walk.bvh.LICENSE.txt": "a96e4b1e38160deccf5787938ee4d45a41130f9189ac4e267b1d8dce07187438"
+  }
+}
