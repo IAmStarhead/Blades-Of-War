@@ -1,0 +1,68 @@
+{
+  "scope": "Foot yaw in walk/run and walking-arm width only; not an in-game integration.",
+  "previousModelSha256": "844de26eb624dcb6b630157dda1227b6be2c54e4654c35d086c74149be26f45a",
+  "modelSha256": "9dd20ca505bf5194cd9ab3bf0034343cd134db400a4b907cd0a51caad32ef83e",
+  "pose": {
+    "input": "work/male-game-gait/male_game_gait_trial.glb",
+    "inputSha256": "844de26eb624dcb6b630157dda1227b6be2c54e4654c35d086c74149be26f45a",
+    "changedRotationTracks": {
+      "Walk_Game_Trial": [
+        "Rig_Foot_L",
+        "Rig_Foot_R",
+        "Rig_UpperArm_L",
+        "Rig_UpperArm_R"
+      ],
+      "Run_Game_Trial": [
+        "Rig_Foot_L",
+        "Rig_Foot_R"
+      ]
+    },
+    "outwardWorldYawDegrees": {
+      "Walk_Game_Trial": {
+        "L": 12,
+        "R": 14
+      },
+      "Run_Game_Trial": {
+        "L": 8,
+        "R": 18
+      }
+    },
+    "walkingArmInwardDegrees": {
+      "L": 12,
+      "R": 7
+    },
+    "method": "At each original key, pre-rotate each foot about world up around its ankle; toe rotation inherits that transform. In walking only, pre-rotate each upper arm inward about its parent Z. Other tracks, timing, root, rest pose and skin are unchanged. This is not foot locking.",
+    "clips": {
+      "Walk_Game_Trial": {
+        "durationSeconds": 1.0416666269302368,
+        "footKeys": {
+          "L": 126,
+          "R": 126
+        }
+      },
+      "Run_Game_Trial": {
+        "durationSeconds": 0.7333333492279053,
+        "footKeys": {
+          "L": 81,
+          "R": 81
+        }
+      }
+    },
+    "outputSha256": "9dd20ca505bf5194cd9ab3bf0034343cd134db400a4b907cd0a51caad32ef83e"
+  },
+  "viewerGroundSpeedMps": {
+    "walk": 1.44,
+    "run": 4.37
+  },
+  "filesSha256": {
+    "index.html": "1729943a9e3104b5fd597c429a49d602fe1138cd67063e4f0257a7fd99a95534",
+    "male_feet_arms_trial.glb": "9dd20ca505bf5194cd9ab3bf0034343cd134db400a4b907cd0a51caad32ef83e",
+    "previous_game_gait.glb": "844de26eb624dcb6b630157dda1227b6be2c54e4654c35d086c74149be26f45a",
+    "README.md": "48a7620216bdf85e0f1b8a6b5139f61b4df63ee04a4e301e66a694f7f4a20016",
+    "CREDITS.md": "e8004890a1527204b67e172b795317ee3e0f7b538c8cd6fce8b40ffd9d84fcb4",
+    "LICENSE_CC0_ASSETS.md": "f6089cba01cb570a24712b41ab8a586ccd3cc5ef53dc266ca50b95c288956d2c",
+    "LICENSE_MAKEHUMAN.md": "edd99571ca62698f78c943fd4fffb159a413c315fa0d4819d3cec5cadaf8b4f1",
+    "LICENSE_QUATERNIUS_CC0.txt": "f6089cba01cb570a24712b41ab8a586ccd3cc5ef53dc266ca50b95c288956d2c",
+    "LICENSE_THREE.txt": "8b378ebe60e2fe500158cb0ac71cb5e8b7d92953c2abcc63a0eb90499653b5bc"
+  }
+}

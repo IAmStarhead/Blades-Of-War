@@ -1,0 +1,20 @@
+{
+  "method": "Actual selected character at fixed timestamps; front, three-quarter and side views, plus elevated front/side foot views.",
+  "fps": 30,
+  "framesPerVideo": 180,
+  "durationSeconds": 6,
+  "dimensions": [
+    1280,
+    720
+  ],
+  "audio": false,
+  "ffmpegVersion": "ffmpeg version n9.0.2-17-g2a571b6068-20260930 Copyright (c) 2000-2026 the FFmpeg developers",
+  "modelSha256": "9dd20ca505bf5194cd9ab3bf0034343cd134db400a4b907cd0a51caad32ef83e",
+  "previousModelSha256": "844de26eb624dcb6b630157dda1227b6be2c54e4654c35d086c74149be26f45a",
+  "viewerSha256": "1729943a9e3104b5fd597c429a49d602fe1138cd67063e4f0257a7fd99a95534",
+  "videosSha256": {
+    "walk_preview.mp4": "998682ce708ebaf8ca82360654fab788119fc9325d44a2c7b059d02f16203203",
+    "run_preview.mp4": "1df70e99cfbfaa89bff07822495cbd0b83e5c2fc57a0f9283f7363143f63ea03",
+    "feet_preview.mp4": "337405c1897ba5267046f73282cc1f12356a00ebc43b8f19cf748f837a03fb13"
+  }
+}
