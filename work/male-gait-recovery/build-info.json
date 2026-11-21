@@ -1,0 +1,242 @@
+{
+  "scope": "Separate 100STYLE walking/jogging experiment with adjusted C arms for the jog; previous C is byte-identical. Not a game-engine integration.",
+  "previousModelSha256": "c0685047069bf2a25e7cdc2c23580543b7e349281ad27d64dc240d63b9446013",
+  "modelSha256": "ccb9e718ddbd6708712d11664ec3cc43cb131fea904953c8fa8b92583ace51f6",
+  "partialC": {
+    "input": "male_gait_C_refined.glb",
+    "hipRestore": 0.75,
+    "chestRestore": 0.85,
+    "extraChest": 0.35,
+    "torsoRetain": 0.55,
+    "footStrength": 0.8,
+    "skin": {
+      "hip": 660,
+      "chest": 353,
+      "extra": 413,
+      "maxDropped": 0.0007386134580060766
+    },
+    "clips": {
+      "Walk_C_Refined": {
+        "rotationKeys": 121,
+        "maxHipDisplacementMm": 9.824775521388919,
+        "maxAnkleDisplacementMm": 9.82477658109351,
+        "footCorrectionDegrees": {
+          "L": [
+            -14.658994057895482,
+            8.70275197099511
+          ],
+          "R": [
+            -5.796935497823279,
+            12.650902073310998
+          ]
+        }
+      },
+      "Run_C_Refined": {
+        "rotationKeys": 93,
+        "maxHipDisplacementMm": 10.51522864054602,
+        "maxAnkleDisplacementMm": 10.515236442342191,
+        "footCorrectionDegrees": {
+          "L": [
+            -13.060832406360264,
+            12.850623041457565
+          ],
+          "R": [
+            -11.021530971777242,
+            4.867427683344326
+          ]
+        }
+      }
+    }
+  },
+  "source": {
+    "rigSha256": "bede41254c9e1a27016a7adbb533358dfc5df79076ac9567b848a7d870423d4d",
+    "referenceSha256": "fb0aeb4ab1bb4c56beddd1a8be2f7c08715a30b84b01afa483cd2688d8d7fcc7",
+    "standYawRadians": 0,
+    "legScale": 1.0182033595483686,
+    "clips": {
+      "Walk_C": {
+        "sourceFile": "neutral_fw.bvh",
+        "sourceSha256": "fb0aeb4ab1bb4c56beddd1a8be2f7c08715a30b84b01afa483cd2688d8d7fcc7",
+        "sourceFramesZeroBased": [
+          27,
+          110
+        ],
+        "frameRate": 60,
+        "duration": 1.3833609819412231,
+        "frames": 166,
+        "floorCm": -0.8229007548648233,
+        "yawRadians": 2.388195423108997,
+        "sourceSpeedMps": 0.8553493283226741,
+        "scaledSourceSpeedMps": 0.8709195596855872,
+        "armSpreadDegrees": 12,
+        "thighRotationScale": 1,
+        "maxPreAdjustmentDirectionErrorDegrees": 2.01094285698615,
+        "seamWindowFramesEachEnd": 20,
+        "maxSeamCorrectionDegrees": 2.9850858965024085
+      },
+      "Run_C": {
+        "sourceFile": "neutral_fr.bvh",
+        "sourceSha256": "1f3e394493c1ebb1d75f968f57781eb98868adc899ba19a7339587223ae97457",
+        "sourceFramesZeroBased": [
+          2,
+          50
+        ],
+        "frameRate": 60,
+        "duration": 0.8000160045921803,
+        "frames": 96,
+        "floorCm": -0.37961514546948294,
+        "yawRadians": -0.1858763690433562,
+        "sourceSpeedMps": 1.866104931960271,
+        "scaledSourceSpeedMps": 1.9000743109917277,
+        "armSpreadDegrees": 16,
+        "thighRotationScale": 1,
+        "maxPreAdjustmentDirectionErrorDegrees": 2.693332138233623,
+        "seamWindowFramesEachEnd": 12,
+        "maxSeamCorrectionDegrees": 8.723508493157237
+      }
+    }
+  },
+  "fit": {
+    "shoulderDegrees": 9,
+    "clips": {
+      "Walk_C": {
+        "footDegrees": {
+          "L": [
+            -2.8722854654050143,
+            23.012562836578084
+          ],
+          "R": [
+            -30.995121368605794,
+            -3.0846818383040335
+          ]
+        },
+        "maxArmOriginDisplacementMeters": 0.014012565452385894,
+        "neckTilt": -4,
+        "headTilt": -7
+      },
+      "Run_C": {
+        "footDegrees": {
+          "L": [
+            -1.5704658217973535,
+            29.435279147703067
+          ],
+          "R": [
+            -17.255901084675692,
+            -4.054680207136142
+          ]
+        },
+        "maxArmOriginDisplacementMeters": 0.014012562539288348,
+        "neckTilt": -6,
+        "headTilt": -12
+      }
+    }
+  },
+  "walkKnees": {
+    "biasDegrees": 6,
+    "maxKneeDelta": 0.022770941447430883,
+    "maxAnkleDelta": 0.0012132891136718582,
+    "corrected": 128
+  },
+  "floor": {
+    "Walk_C": {
+      "samples": 1025,
+      "soleVerticesPerSide": [
+        1123,
+        1123
+      ],
+      "nearGroundToleranceMeters": 0.022,
+      "easingWidthMeters": 0.015,
+      "minimumRootAdjustmentMeters": -0.018615567708533527,
+      "maximumRootAdjustmentMeters": -0.0033400145677194154,
+      "minimumDesiredClearanceMeters": 0,
+      "maximumDesiredClearanceMeters": 0,
+      "method": "Match the lowest sampled skinned foot to the adjusted source-marker height; no horizontal lock."
+    },
+    "Run_C": {
+      "samples": 769,
+      "soleVerticesPerSide": [
+        1123,
+        1123
+      ],
+      "nearGroundToleranceMeters": 0.012,
+      "easingWidthMeters": 0.015,
+      "minimumRootAdjustmentMeters": -0.08501896228644307,
+      "maximumRootAdjustmentMeters": -0.033728410613294554,
+      "minimumDesiredClearanceMeters": 0,
+      "maximumDesiredClearanceMeters": 0.012753400053602967,
+      "method": "Match the lowest sampled skinned foot to the adjusted source-marker height; no horizontal lock."
+    }
+  },
+  "jogSwingClearance": {
+    "heightMeters": 0.03,
+    "scaledSourceSpeedMps": 1.9000743109917277,
+    "stats": {
+      "maxLift": 0.023229598880494536,
+      "maxKneeMotion": 0.04084070470346576,
+      "maxAnkleError": 1.847549709387319e-8,
+      "reachClamps": 0,
+      "phases": 67
+    },
+    "requestedKeyCount": 26
+  },
+  "jogArms": {
+    "source": "adjusted C arms",
+    "phaseOffsetCycles": 0.201
+  },
+  "rootSmoothing": {
+    "Walk_C": {
+      "sigmaSeconds": 0.008,
+      "samples": 1025,
+      "minimumLiftMeters": 0,
+      "maximumLiftMeters": 0.0011931016890990298,
+      "p95LiftMeters": 0.00018031650679440833,
+      "maximumSampledAccelerationBeforeMps2": 188.5991844625018,
+      "maximumSampledAccelerationAfterMps2": 17.367939683589153,
+      "method": "Cyclic Gaussian with a smoothed upper envelope; changes root Y only and never intentionally lowers it."
+    },
+    "Run_C": {
+      "sigmaSeconds": 0.006,
+      "samples": 769,
+      "minimumLiftMeters": 0,
+      "maximumLiftMeters": 0.0039014479245123804,
+      "p95LiftMeters": 0.0021620123645556127,
+      "maximumSampledAccelerationBeforeMps2": 1296.413871396446,
+      "maximumSampledAccelerationAfterMps2": 91.36124391735993,
+      "method": "Cyclic Gaussian with a smoothed upper envelope; changes root Y only and never intentionally lowers it."
+    }
+  },
+  "viewerGroundSpeedMps": {
+    "selected": {
+      "walk": 0.87092,
+      "run": 1.9000743
+    },
+    "previous": {
+      "walk": 1.73,
+      "run": 3.52
+    }
+  },
+  "previousPhaseOffsetCycles": {
+    "walk": 0.227,
+    "run": 0.201
+  },
+  "filesSha256": {
+    "index.html": "4ff0669c4f4cb24d786e9bf65ec65184e95f825f460bdc3bd624d0e22f7a062e",
+    "male_gait_alternative.glb": "ccb9e718ddbd6708712d11664ec3cc43cb131fea904953c8fa8b92583ace51f6",
+    "previous_C.glb": "c0685047069bf2a25e7cdc2c23580543b7e349281ad27d64dc240d63b9446013",
+    "README.md": "d223c190cf1973063714139c371a249cffa52ef805b237c9c0ad35da4b638322",
+    "CREDITS.md": "bef1650871fcfeab37fc5661d294f70f9e7b3bedddec6336b5bfc9bf438c0dd1",
+    "LICENSE_CC0_ASSETS.md": "f6089cba01cb570a24712b41ab8a586ccd3cc5ef53dc266ca50b95c288956d2c",
+    "LICENSE_MAKEHUMAN.md": "edd99571ca62698f78c943fd4fffb159a413c315fa0d4819d3cec5cadaf8b4f1",
+    "LICENSE_THREE.txt": "8b378ebe60e2fe500158cb0ac71cb5e8b7d92953c2abcc63a0eb90499653b5bc",
+    "sources/accad_male2_walk.bvh": "6cf2fcba98c7dc5c827896edccc16a8a9444350a8833a24e8ac7f6267c81cab3",
+    "sources/accad_male2_walk.bvh.LICENSE.txt": "815adb88710334d708cffdaa18d041c1d58c4703688f2903b04fa025c2326b9d",
+    "sources/accad_male2_run.bvh": "ef33bc8c0c3472f35cb01f494265bdf383dcff006efbe88d0762ab1572f0021c",
+    "sources/accad_male2_run.bvh.LICENSE.txt": "2ec5308fd57689ef8dee57883887ef899c054a21f8c7ae2d856f03fef5245568",
+    "sources/accad_male2_stand_to_walk.bvh": "deb6cf43aa2faaaccd734853dff8567736a49126e1263aee532478d49beea7c6",
+    "sources/accad_male2_stand_to_walk.bvh.LICENSE.txt": "a96e4b1e38160deccf5787938ee4d45a41130f9189ac4e267b1d8dce07187438",
+    "sources/neutral_fw.bvh": "fb0aeb4ab1bb4c56beddd1a8be2f7c08715a30b84b01afa483cd2688d8d7fcc7",
+    "sources/neutral_fw.bvh.LICENSE.txt": "1110bcf0d91e553c2a9de578b9744393a7e10169dc770cb162c4c8793e58a21e",
+    "sources/neutral_fr.bvh": "1f3e394493c1ebb1d75f968f57781eb98868adc899ba19a7339587223ae97457",
+    "sources/neutral_fr.bvh.LICENSE.txt": "aa5610eb86d6a754e51949b69ff1469bf5c624e65fdc7fcd4b942153617910c4"
+  }
+}

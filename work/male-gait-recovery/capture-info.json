@@ -1,0 +1,20 @@
+{
+  "method": "Side-by-side skinned characters at the same elapsed time, each at its own cadence and grid speed; initially approximately support-aligned; offline PNG frames.",
+  "fps": 30,
+  "framesPerVideo": 180,
+  "durationSeconds": 6,
+  "dimensions": [
+    1280,
+    720
+  ],
+  "audio": false,
+  "ffmpegVersion": "ffmpeg version n9.0.2-17-g2a571b6068-20260930 Copyright (c) 2000-2026 the FFmpeg developers",
+  "modelSha256": "ccb9e718ddbd6708712d11664ec3cc43cb131fea904953c8fa8b92583ace51f6",
+  "previousModelSha256": "c0685047069bf2a25e7cdc2c23580543b7e349281ad27d64dc240d63b9446013",
+  "viewerSha256": "4ff0669c4f4cb24d786e9bf65ec65184e95f825f460bdc3bd624d0e22f7a062e",
+  "videosSha256": {
+    "walk_before_after.mp4": "7b61d2e8a0873aefa2e7830074476061decb07af6d6d5406a98c06d872ede619",
+    "run_before_after.mp4": "bd35869834641da3a23bf4c28c3d94979d3aa1b2bd01ca531025e2fca9b80ee9",
+    "feet_before_after.mp4": "1d32b10d7c19f713ecc522f8b1d1659dec210b7e8f05fd6a7c3166ea644308e7"
+  }
+}
