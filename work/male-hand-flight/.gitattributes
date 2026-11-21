@@ -1,0 +1,8 @@
+*.glb binary
+*.mp4 binary
+*.zip binary
+index.html -text -whitespace
+*.md text eol=lf
+*.json text eol=lf
+SHA256SUMS.txt text eol=lf
+LICENSE_MAKEHUMAN.md -diff

@@ -1,0 +1,21 @@
+{
+  "method": "Actual selected character at fixed timestamps: full-body walk/run, individual walking hands, and rear/side running feet.",
+  "fps": 30,
+  "framesPerVideo": 180,
+  "durationSeconds": 6,
+  "dimensions": [
+    1280,
+    720
+  ],
+  "audio": false,
+  "ffmpegVersion": "ffmpeg version n9.0.2-17-g2a571b6068-20260930 Copyright (c) 2000-2026 the FFmpeg developers",
+  "modelSha256": "576077e068f2c48a88c208be0ad72b4214e42164d1e5b0f0f9f7050f3967e2bf",
+  "previousModelSha256": "9dd20ca505bf5194cd9ab3bf0034343cd134db400a4b907cd0a51caad32ef83e",
+  "viewerSha256": "2d1bb86f16d8efa6c3b9d66fc7c3539fea2cc3b4cb823405becc917d1eaaba96",
+  "videosSha256": {
+    "walk_preview.mp4": "2e45d55f1ea524a8aa2097767001a2c1b25f8c90743042dd4583e59998e28506",
+    "run_preview.mp4": "aab2f7ecec05cd5ada516af27405d7e830c5c919ffea2e5dde0e8924801c1726",
+    "hands_preview.mp4": "2cc98e9dce5bad3f85041003623b57a372543e59ccb6499086cca82d81eed71f",
+    "feet_preview.mp4": "6b44c5d4d1aaba9dec93027ee863c3aac9ba31a5814a856173ec85ac702bec3f"
+  }
+}

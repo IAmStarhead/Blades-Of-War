@@ -1,0 +1,145 @@
+{
+  "scope": "Walking fingers and running rear-airborne foot rotation only; not an in-game integration.",
+  "previousModelSha256": "9dd20ca505bf5194cd9ab3bf0034343cd134db400a4b907cd0a51caad32ef83e",
+  "modelSha256": "576077e068f2c48a88c208be0ad72b4214e42164d1e5b0f0f9f7050f3967e2bf",
+  "pose": {
+    "input": "work/male-gait-limbs/male_feet_arms_trial.glb",
+    "inputSha256": "9dd20ca505bf5194cd9ab3bf0034343cd134db400a4b907cd0a51caad32ef83e",
+    "method": "Walking: add local finger rotation tracks based on this rig’s rest-palm normal, with a small cyclical flex. Wrist/arm tracks are untouched. Running: blend a shin-local pitch and a partial reversal of the previous world-yaw correction only when the original sole is raised and the ankle is behind the hips; restore the previous foot track near the floor or in front. This is not foot locking.",
+    "walking": {
+      "fingerTracksAdded": [
+        "Rig_Finger1_1_L",
+        "Rig_Finger1_2_L",
+        "Rig_Finger1_3_L",
+        "Rig_Finger2_1_L",
+        "Rig_Finger2_2_L",
+        "Rig_Finger2_3_L",
+        "Rig_Finger3_1_L",
+        "Rig_Finger3_2_L",
+        "Rig_Finger3_3_L",
+        "Rig_Finger4_1_L",
+        "Rig_Finger4_2_L",
+        "Rig_Finger4_3_L",
+        "Rig_Finger5_1_L",
+        "Rig_Finger5_2_L",
+        "Rig_Finger5_3_L",
+        "Rig_Finger1_1_R",
+        "Rig_Finger1_2_R",
+        "Rig_Finger1_3_R",
+        "Rig_Finger2_1_R",
+        "Rig_Finger2_2_R",
+        "Rig_Finger2_3_R",
+        "Rig_Finger3_1_R",
+        "Rig_Finger3_2_R",
+        "Rig_Finger3_3_R",
+        "Rig_Finger4_1_R",
+        "Rig_Finger4_2_R",
+        "Rig_Finger4_3_R",
+        "Rig_Finger5_1_R",
+        "Rig_Finger5_2_R",
+        "Rig_Finger5_3_R"
+      ],
+      "palmNormal": {
+        "L": [
+          0.9808311566371081,
+          0.17043223873384997,
+          0.09446213087836075
+        ],
+        "R": [
+          -0.9808311566371081,
+          0.17043223873384997,
+          0.09446213087836075
+        ]
+      },
+      "curlDegreesByFinger": {
+        "2": [
+          9,
+          7,
+          5
+        ],
+        "3": [
+          10,
+          8,
+          6
+        ],
+        "4": [
+          11,
+          9,
+          7
+        ],
+        "5": [
+          12,
+          10,
+          7
+        ]
+      },
+      "thumbAdductionDegrees": [
+        10,
+        8,
+        4
+      ],
+      "otherRootAdductionDegrees": {
+        "2": 6,
+        "3": 0,
+        "4": -1.5,
+        "5": -3
+      },
+      "thumbBendDegrees": [
+        0,
+        6,
+        3
+      ],
+      "flexOscillationDegrees": [
+        1.2,
+        0.8,
+        0.4
+      ]
+    },
+    "running": {
+      "pitchDegreesAtFullWeight": -14,
+      "reversedPreviousWorldYawFraction": 0.8,
+      "previousOutwardYawDegrees": {
+        "L": 8,
+        "R": 18
+      },
+      "originalSoleHeightWeightMeters": [
+        0.055,
+        0.145
+      ],
+      "ankleBehindHipsWeightMeters": [
+        0.09,
+        0.27
+      ],
+      "sides": {
+        "L": {
+          "changedKeys": 41,
+          "weightMin": 0.0008349985271935973,
+          "weightMax": 1,
+          "maximumCorrectionDegrees": 16.404421044844057
+        },
+        "R": {
+          "changedKeys": 32,
+          "weightMin": 0.007108880609580382,
+          "weightMax": 1,
+          "maximumCorrectionDegrees": 21.03598752093071
+        }
+      }
+    },
+    "outputSha256": "576077e068f2c48a88c208be0ad72b4214e42164d1e5b0f0f9f7050f3967e2bf"
+  },
+  "viewerGroundSpeedMps": {
+    "walk": 1.44,
+    "run": 4.37
+  },
+  "filesSha256": {
+    "index.html": "2d1bb86f16d8efa6c3b9d66fc7c3539fea2cc3b4cb823405becc917d1eaaba96",
+    "male_hands_airfoot_trial.glb": "576077e068f2c48a88c208be0ad72b4214e42164d1e5b0f0f9f7050f3967e2bf",
+    "previous_feet_arms.glb": "9dd20ca505bf5194cd9ab3bf0034343cd134db400a4b907cd0a51caad32ef83e",
+    "README.md": "e4f6fae05612ccfa2f10e66df10ee874722dc9d530a264ada413575fc2bfacf1",
+    "CREDITS.md": "efbfd389032adf7526b083d784455898539f6cb5149d7bef8ef9a2addd3ac855",
+    "LICENSE_CC0_ASSETS.md": "f6089cba01cb570a24712b41ab8a586ccd3cc5ef53dc266ca50b95c288956d2c",
+    "LICENSE_MAKEHUMAN.md": "edd99571ca62698f78c943fd4fffb159a413c315fa0d4819d3cec5cadaf8b4f1",
+    "LICENSE_QUATERNIUS_CC0.txt": "f6089cba01cb570a24712b41ab8a586ccd3cc5ef53dc266ca50b95c288956d2c",
+    "LICENSE_THREE.txt": "8b378ebe60e2fe500158cb0ac71cb5e8b7d92953c2abcc63a0eb90499653b5bc"
+  }
+}
