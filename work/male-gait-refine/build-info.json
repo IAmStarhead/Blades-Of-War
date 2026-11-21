@@ -1,0 +1,88 @@
+{
+  "scope": "Separate shoulder, upper-thigh and toe-direction fitting trial. The previous posture model is byte-identical for honest comparison.",
+  "previousModelSha256": "c72ec5c2386362d4f4c30dc0e541ffa3c6664f9ca4c27d49d8cd428ce87c3847",
+  "pose": {
+    "inputSha256": "c72ec5c2386362d4f4c30dc0e541ffa3c6664f9ca4c27d49d8cd428ce87c3847",
+    "standingReferenceSha256": "deb6cf43aa2faaaccd734853dff8567736a49126e1263aee532478d49beea7c6",
+    "referenceYawDegrees": 4.095998785226736,
+    "shoulderInverseReferenceFactor": 1.25,
+    "spineWorldPitchDegrees": -3,
+    "footWorldYawOutwardDegrees": {
+      "Walk_C_Refined": {
+        "L": 22,
+        "R": 10
+      },
+      "Run_C_Refined": {
+        "L": 30,
+        "R": 12
+      }
+    },
+    "shinTwistAroundBoneOutwardDegrees": {
+      "L": 12,
+      "R": 5
+    },
+    "clips": {
+      "Walk_C_Refined": {
+        "previous": "Walk_C_Posture",
+        "duration": 0.9999995231628418,
+        "rotationKeys": 121,
+        "maxAnkleDisplacementMetersAtKeys": 2.0023338613402197e-8,
+        "maxFootWorldAngleErrorDegreesAtKeys": 0.0000024148365394514667
+      },
+      "Run_C_Refined": {
+        "previous": "Run_C_Posture",
+        "duration": 0.7666659355163574,
+        "rotationKeys": 93,
+        "maxAnkleDisplacementMetersAtKeys": 4.5160817404404295e-8,
+        "maxFootWorldAngleErrorDegreesAtKeys": 0.0000024148365394514667
+      }
+    },
+    "method": "Correct shoulder/upper-arm alignment and local skin separately, move spine/chest slightly back, and yaw feet outward while sharing part of the turn along each shin. Preserve ankle positions and foot roll at rotation keys; this is not planted-foot IK.",
+    "outputSha256": "745922786958c3131f65fb34283eca7abacd258bfff301b45d990f0623f4a5d1"
+  },
+  "skin": {
+    "shoulderPasses": [
+      {
+        "mode": "chest-to-arm",
+        "amount": 0.4,
+        "verticesChanged": 370,
+        "maxMovedWeight": 0.34314315319061284
+      },
+      {
+        "mode": "chest-and-arm-to-shoulder",
+        "amount": 0.4,
+        "verticesChanged": 478,
+        "maxMovedWeight": 0.39940000772476203
+      }
+    ],
+    "hip": {
+      "verticesChanged": 660,
+      "oldWidthMeters": 0.29,
+      "newWidthMeters": 0.4,
+      "maxMovedWeight": 0.27867220395047543
+    },
+    "maxDroppedWeightBeforeRenormalization": 0.0009990334510803223,
+    "outputSha256": "c0685047069bf2a25e7cdc2c23580543b7e349281ad27d64dc240d63b9446013",
+    "method": "Smooth, localized four-influence shoulder redistribution plus a broader pelvis-to-thigh blend; shared skin, not a clip-specific corrective."
+  },
+  "viewerGroundSpeedMps": {
+    "walk": 1.73,
+    "run": 3.52
+  },
+  "filesSha256": {
+    "index.html": "2bcaa11018e85e2b8d81118dc90657339e2c99e9ea3fb11f3377738c51f5d6f3",
+    "male_gait_C_refined.glb": "c0685047069bf2a25e7cdc2c23580543b7e349281ad27d64dc240d63b9446013",
+    "previous_posture_C.glb": "c72ec5c2386362d4f4c30dc0e541ffa3c6664f9ca4c27d49d8cd428ce87c3847",
+    "README.md": "abbfd478ce647620b4ede83ea7f746a8af2bc7e80a0fc18f5036ab4f7a605c6d",
+    "CREDITS.md": "93f19dbaf0dde3b311306f4d04dead0c2e5fbb1022e4c2137156d0aeaa0c9966",
+    "LICENSE_CC0_ASSETS.md": "f6089cba01cb570a24712b41ab8a586ccd3cc5ef53dc266ca50b95c288956d2c",
+    "LICENSE_MAKEHUMAN.md": "edd99571ca62698f78c943fd4fffb159a413c315fa0d4819d3cec5cadaf8b4f1",
+    "LICENSE_THREE.txt": "8b378ebe60e2fe500158cb0ac71cb5e8b7d92953c2abcc63a0eb90499653b5bc",
+    "sources/accad_male2_run.bvh": "ef33bc8c0c3472f35cb01f494265bdf383dcff006efbe88d0762ab1572f0021c",
+    "sources/accad_male2_run.bvh.LICENSE.txt": "2ec5308fd57689ef8dee57883887ef899c054a21f8c7ae2d856f03fef5245568",
+    "sources/accad_male2_stand_to_walk.bvh": "deb6cf43aa2faaaccd734853dff8567736a49126e1263aee532478d49beea7c6",
+    "sources/accad_male2_stand_to_walk.bvh.LICENSE.txt": "a96e4b1e38160deccf5787938ee4d45a41130f9189ac4e267b1d8dce07187438",
+    "sources/accad_male2_walk.bvh": "6cf2fcba98c7dc5c827896edccc16a8a9444350a8833a24e8ac7f6267c81cab3",
+    "sources/accad_male2_walk.bvh.LICENSE.txt": "815adb88710334d708cffdaa18d041c1d58c4703688f2903b04fa025c2326b9d"
+  }
+}

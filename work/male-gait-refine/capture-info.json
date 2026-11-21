@@ -1,0 +1,20 @@
+{
+  "method": "Side-by-side actual skinned characters at the same source time; side views plus elevated foot view, captured offline and encoded from PNG frames.",
+  "fps": 30,
+  "framesPerVideo": 180,
+  "durationSeconds": 6,
+  "dimensions": [
+    1280,
+    720
+  ],
+  "audio": false,
+  "ffmpegVersion": "ffmpeg version n9.0.2-17-g2a571b6068-20260930 Copyright (c) 2000-2026 the FFmpeg developers",
+  "modelSha256": "c0685047069bf2a25e7cdc2c23580543b7e349281ad27d64dc240d63b9446013",
+  "previousModelSha256": "c72ec5c2386362d4f4c30dc0e541ffa3c6664f9ca4c27d49d8cd428ce87c3847",
+  "viewerSha256": "2bcaa11018e85e2b8d81118dc90657339e2c99e9ea3fb11f3377738c51f5d6f3",
+  "videosSha256": {
+    "walk_before_after.mp4": "d74627b12a7874b5935d8d5a1406bf2855b786afdbbbce7f33c606979d2a5ee6",
+    "run_before_after.mp4": "be623717d2a5319324263d0c50e434584c5fa5f9ac7d248b193786d000111fde",
+    "feet_before_after.mp4": "4de9c0932f269374cd8a45bb5272404c0ba723d5a53f5a27014e4b755c06a55e"
+  }
+}
