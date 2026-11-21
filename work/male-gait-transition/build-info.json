@@ -1,0 +1,27 @@
+{
+  "scope": "Runtime phase-locked walk/run blend on the unchanged last character; no engine integration or baked transition.",
+  "sourceModel": "work/male-hand-flight/male_hands_airfoot_trial.glb",
+  "sourceModelSha256": "576077e068f2c48a88c208be0ad72b4214e42164d1e5b0f0f9f7050f3967e2bf",
+  "modelSha256": "576077e068f2c48a88c208be0ad72b4214e42164d1e5b0f0f9f7050f3967e2bf",
+  "runPhaseOffsetCycles": -0.09375,
+  "responsePerSecond": 11,
+  "viewerGroundSpeedMps": {
+    "walk": 1.44,
+    "run": 4.37
+  },
+  "guard": "Anticipatory phase/weight lift envelope plus measured C1 fallback against selected skinned soles, world floor Y=0; no horizontal foot lock.",
+  "filesSha256": {
+    ".gitattributes": "d3de64892b73e7377d4189e1bba8f79f5f3d55a964187f9cd301fd0540cce0fd",
+    "index.html": "dc0ccf4248b556c08741cbe77f1e12a1c277d4160f0c662ad77d3e3d1da48729",
+    "male_hands_airfoot_trial.glb": "576077e068f2c48a88c208be0ad72b4214e42164d1e5b0f0f9f7050f3967e2bf",
+    "README.md": "554a5bb7dea482c719b338159307caf2459ab7f8cc2803caff04006bc7bbc836",
+    "CREDITS.md": "50e1c3ecc3ba580d79e528d5a22076a6fab9375f94aa65280aad883994b6207e",
+    "phase-clock.mjs": "c1b1c452f75e0edc6332fd2e4bed9c9d7f693ebbf2db42e1e2a2e4a75fe3865f",
+    "floor-envelope.mjs": "2510d60af6c984a755f9becd3da8f5b3e559aff8791fb6c75f7afa608f0096f3",
+    "locomotion-three.mjs": "bfedd7ecba30a08fe8f2b0d97badb302dbf1981d09b6976ed6af52b1bd8eb878",
+    "LICENSE_CC0_ASSETS.md": "f6089cba01cb570a24712b41ab8a586ccd3cc5ef53dc266ca50b95c288956d2c",
+    "LICENSE_MAKEHUMAN.md": "edd99571ca62698f78c943fd4fffb159a413c315fa0d4819d3cec5cadaf8b4f1",
+    "LICENSE_QUATERNIUS_CC0.txt": "f6089cba01cb570a24712b41ab8a586ccd3cc5ef53dc266ca50b95c288956d2c",
+    "LICENSE_THREE.txt": "8b378ebe60e2fe500158cb0ac71cb5e8b7d92953c2abcc63a0eb90499653b5bc"
+  }
+}

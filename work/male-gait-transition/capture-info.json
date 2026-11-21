@@ -1,0 +1,18 @@
+{
+  "method": "Actual bundled viewer, deterministic 30 fps; target run at 2.0 s, target walk at 5.4 s; one full-body and one side-foot perspective.",
+  "fps": 30,
+  "framesPerVideo": 255,
+  "durationSeconds": 8.5,
+  "dimensions": [
+    1280,
+    720
+  ],
+  "audio": false,
+  "ffmpegVersion": "ffmpeg version n9.0.2-17-g2a571b6068-20260930 Copyright (c) 2000-2026 the FFmpeg developers",
+  "modelSha256": "576077e068f2c48a88c208be0ad72b4214e42164d1e5b0f0f9f7050f3967e2bf",
+  "viewerSha256": "dc0ccf4248b556c08741cbe77f1e12a1c277d4160f0c662ad77d3e3d1da48729",
+  "videosSha256": {
+    "transition_preview.mp4": "e02427005420e12e9fa47a095350a6f5597d4ff384612525e8d6df579cf7b033",
+    "transition_feet.mp4": "e60a3c796caf1615381d01d2350ce7144cd0b3499b9b3fdfcabb9b5f2cf40d02"
+  }
+}
