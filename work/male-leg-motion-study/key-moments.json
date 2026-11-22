@@ -1,0 +1,168 @@
+{
+  "method": "Actor-relative knee and selected material vertex; magnitude of difference between consecutive 16 ms displacement vectors, in mm. Volume switch is sampled at exactly the same pose; not a physical jump, acceleration in SI units, or a realism score.",
+  "dtSeconds": 0.016,
+  "vertexId": 3224,
+  "details": {
+    "flat15phase": {
+      "delivered": {
+        "phase": 0.2986363571635948,
+        "z": 1.4,
+        "reachShiftMm": 0,
+        "kneeSecondDifferenceMm": 2.6569131196784395,
+        "kneeSecondDifferenceVectorMm": [
+          0.5370013976155469,
+          1.197091840139053,
+          2.3103653284168857
+        ],
+        "vertexWithoutVolumeMm": 2.9652035718846776,
+        "vertexWithVolumeMm": 2.8781270828941894,
+        "morphContributionMm": 0.5485208692944322,
+        "morphWeight": 0.1177073141388412
+      },
+      "candidate": {
+        "phase": 0.2986363571635948,
+        "z": 1.4,
+        "reachShiftMm": 0,
+        "kneeSecondDifferenceMm": 2.6569131196784395,
+        "kneeSecondDifferenceVectorMm": [
+          0.5370013976155469,
+          1.197091840139053,
+          2.3103653284168857
+        ],
+        "vertexWithoutVolumeMm": 2.9652035718846776,
+        "vertexWithVolumeMm": 2.8781270828941894,
+        "morphContributionMm": 0.5485208692944322,
+        "morphWeight": 0.1177073141388412
+      }
+    },
+    "uphill15_release": {
+      "delivered": {
+        "phase": 0.2986363571635948,
+        "z": 1.4,
+        "reachShiftMm": 0.3130946674010371,
+        "kneeSecondDifferenceMm": 82.98752844773851,
+        "kneeSecondDifferenceVectorMm": [
+          2.6721854693823737,
+          -38.642873586431925,
+          73.39289900027435
+        ],
+        "vertexWithoutVolumeMm": 80.33394496473542,
+        "vertexWithVolumeMm": 84.34871528921063,
+        "morphContributionMm": 4.206448461823841,
+        "morphWeight": 0.013147349365451888
+      },
+      "candidate": {
+        "phase": 0.2986363571635948,
+        "z": 1.4,
+        "reachShiftMm": 22.847362060415378,
+        "kneeSecondDifferenceMm": 14.546363454624679,
+        "kneeSecondDifferenceVectorMm": [
+          0.772855882021084,
+          -4.55803347295225,
+          13.792161338931352
+        ],
+        "vertexWithoutVolumeMm": 13.93336433126726,
+        "vertexWithVolumeMm": 14.916443065883122,
+        "morphContributionMm": 1.1581555954271205,
+        "morphWeight": 0.03357886582722339
+      }
+    },
+    "uphill20_release": {
+      "delivered": {
+        "phase": 0.2890909028250326,
+        "z": 1.4,
+        "reachShiftMm": 0.5463759082033892,
+        "kneeSecondDifferenceMm": 79.66320721939985,
+        "kneeSecondDifferenceVectorMm": [
+          1.3516568224624104,
+          -38.521035936282644,
+          69.71749707721119
+        ],
+        "vertexWithoutVolumeMm": 77.17689193348745,
+        "vertexWithVolumeMm": 80.95091808786201,
+        "morphContributionMm": 3.932791600119008,
+        "morphWeight": 0.013194313218828956
+      },
+      "candidate": {
+        "phase": 0.2890909028250326,
+        "z": 1.4,
+        "reachShiftMm": 21.24342305351934,
+        "kneeSecondDifferenceMm": 16.600645394637333,
+        "kneeSecondDifferenceVectorMm": [
+          -0.4536713385246971,
+          -6.7666255307248235,
+          15.152174390563156
+        ],
+        "vertexWithoutVolumeMm": 16.059539764825548,
+        "vertexWithVolumeMm": 17.031712262741674,
+        "morphContributionMm": 1.081210114758508,
+        "morphWeight": 0.03361182450779591
+      }
+    },
+    "uphill20_lateral": {
+      "delivered": {
+        "phase": 0.7690908924213129,
+        "z": 1.4,
+        "reachShiftMm": 0,
+        "kneeSecondDifferenceMm": 63.08560912314086,
+        "kneeSecondDifferenceVectorMm": [
+          -62.844797634976594,
+          -5.501777636983229,
+          0.23649839268924389
+        ],
+        "vertexWithoutVolumeMm": 62.16926602714752,
+        "vertexWithVolumeMm": 61.90718554692729,
+        "morphContributionMm": 0.8635319931934904,
+        "morphWeight": 0.20616789113054332
+      },
+      "candidate": {
+        "phase": 0.7690908924213129,
+        "z": 1.4,
+        "reachShiftMm": 7.835010858493141,
+        "kneeSecondDifferenceMm": 11.043442023113327,
+        "kneeSecondDifferenceVectorMm": [
+          -5.81543614327383,
+          -6.691364766015839,
+          -6.58513111103276
+        ],
+        "vertexWithoutVolumeMm": 12.172873098241737,
+        "vertexWithVolumeMm": 12.373982835679035,
+        "morphContributionMm": 0.6301742714404239,
+        "morphWeight": 0.20385552178048136
+      }
+    },
+    "route15_release": {
+      "delivered": {
+        "phase": 0.29818179004448564,
+        "z": 1.4602399999999998,
+        "reachShiftMm": 1.1044231666068605,
+        "kneeSecondDifferenceMm": 81.69454855869307,
+        "kneeSecondDifferenceVectorMm": [
+          2.5935282509898654,
+          -38.08363949945593,
+          72.2281750973639
+        ],
+        "vertexWithoutVolumeMm": 79.09719333142128,
+        "vertexWithVolumeMm": 83.02502039412829,
+        "morphContributionMm": 4.114063407442297,
+        "morphWeight": 0.013149510665126263
+      },
+      "candidate": {
+        "phase": 0.29818179004448564,
+        "z": 1.4602399999999998,
+        "reachShiftMm": 23.2774231037427,
+        "kneeSecondDifferenceMm": 14.670070905134036,
+        "kneeSecondDifferenceVectorMm": [
+          0.7208616504763843,
+          -4.676125667965048,
+          13.88615092745038
+        ],
+        "vertexWithoutVolumeMm": 14.061614141375768,
+        "vertexWithVolumeMm": 15.041703989226916,
+        "morphContributionMm": 1.1499578930261831,
+        "morphWeight": 0.033237083951810076
+      }
+    }
+  },
+  "limitations": "These selected instants do not establish the absence of other abrupt motion, ground sliding, collisions or perceptual artefacts."
+}

@@ -1,0 +1,237 @@
+{
+  "method": "Actor-relative knee: maximum magnitude of change between successive 16 ms displacement vectors in each sampled trajectory. Not an instantaneous jump, anatomical acceleration, or a complete visual-quality score.",
+  "timeStepSeconds": 0.016,
+  "cases": 528,
+  "gradeRows": [
+    {
+      "scenario": "route",
+      "grade": 0,
+      "cases": 8,
+      "oldMaxMm": 44.83771136464929,
+      "candidateMaxMm": 44.83771136464929,
+      "medianChangeMm": 0,
+      "worstIncreaseMm": 0,
+      "improvedOver5mm": 0,
+      "worsenedOver5mm": 0
+    },
+    {
+      "scenario": "route",
+      "grade": 5,
+      "cases": 8,
+      "oldMaxMm": 46.615584921592145,
+      "candidateMaxMm": 45.29119175347817,
+      "medianChangeMm": -5.575426905757094,
+      "worstIncreaseMm": 0,
+      "improvedOver5mm": 4,
+      "worsenedOver5mm": 0
+    },
+    {
+      "scenario": "route",
+      "grade": 10,
+      "cases": 8,
+      "oldMaxMm": 64.27460319878843,
+      "candidateMaxMm": 44.83771136464939,
+      "medianChangeMm": -18.186077734494116,
+      "worstIncreaseMm": -14.310386523469928,
+      "improvedOver5mm": 8,
+      "worsenedOver5mm": 0
+    },
+    {
+      "scenario": "route",
+      "grade": 15,
+      "cases": 8,
+      "oldMaxMm": 75.02544534730012,
+      "candidateMaxMm": 55.058361757706805,
+      "medianChangeMm": -19.939532012470867,
+      "worstIncreaseMm": -17.359715497341533,
+      "improvedOver5mm": 8,
+      "worsenedOver5mm": 0
+    },
+    {
+      "scenario": "route",
+      "grade": 17.5,
+      "cases": 8,
+      "oldMaxMm": 84.67951973210697,
+      "candidateMaxMm": 58.03922279062637,
+      "medianChangeMm": -25.37444699943144,
+      "worstIncreaseMm": -15.104945269389258,
+      "improvedOver5mm": 8,
+      "worsenedOver5mm": 0
+    },
+    {
+      "scenario": "route",
+      "grade": 20,
+      "cases": 8,
+      "oldMaxMm": 83.54885267251113,
+      "candidateMaxMm": 51.570125435091015,
+      "medianChangeMm": -25.87104232352074,
+      "worstIncreaseMm": -17.24500866291361,
+      "improvedOver5mm": 8,
+      "worsenedOver5mm": 0
+    },
+    {
+      "scenario": "reversal",
+      "grade": 0,
+      "cases": 80,
+      "oldMaxMm": 43.214767533074586,
+      "candidateMaxMm": 43.214767533074586,
+      "medianChangeMm": 0,
+      "worstIncreaseMm": 0,
+      "improvedOver5mm": 0,
+      "worsenedOver5mm": 0
+    },
+    {
+      "scenario": "reversal",
+      "grade": 5,
+      "cases": 80,
+      "oldMaxMm": 46.70989398238968,
+      "candidateMaxMm": 43.214767533074614,
+      "medianChangeMm": -1.6853098253613377,
+      "worstIncreaseMm": 10.805998779418426,
+      "improvedOver5mm": 27,
+      "worsenedOver5mm": 1
+    },
+    {
+      "scenario": "reversal",
+      "grade": 10,
+      "cases": 80,
+      "oldMaxMm": 72.23823871690082,
+      "candidateMaxMm": 43.214767533074685,
+      "medianChangeMm": -10.423997863287557,
+      "worstIncreaseMm": 6.376307260618903,
+      "improvedOver5mm": 58,
+      "worsenedOver5mm": 1
+    },
+    {
+      "scenario": "reversal",
+      "grade": 15,
+      "cases": 80,
+      "oldMaxMm": 74.32908560139904,
+      "candidateMaxMm": 44.57328709345279,
+      "medianChangeMm": -17.306977176687894,
+      "worstIncreaseMm": 6.083463668851159,
+      "improvedOver5mm": 66,
+      "worsenedOver5mm": 1
+    },
+    {
+      "scenario": "reversal",
+      "grade": 17.5,
+      "cases": 80,
+      "oldMaxMm": 78.59519670199195,
+      "candidateMaxMm": 46.102814341976334,
+      "medianChangeMm": -21.668578838922855,
+      "worstIncreaseMm": 12.861844328390069,
+      "improvedOver5mm": 64,
+      "worsenedOver5mm": 1
+    },
+    {
+      "scenario": "reversal",
+      "grade": 20,
+      "cases": 80,
+      "oldMaxMm": 74.89056356447081,
+      "candidateMaxMm": 48.73911197620045,
+      "medianChangeMm": -22.38147724454082,
+      "worstIncreaseMm": 15.125557580740363,
+      "improvedOver5mm": 71,
+      "worsenedOver5mm": 1
+    }
+  ],
+  "regressions": [
+    {
+      "grade": 20,
+      "scenario": "reversal",
+      "mode": "run",
+      "startPhase": 0.92125,
+      "startZ": 5.5,
+      "oldMaxMm": 33.613554395460085,
+      "candidateMaxMm": 48.73911197620045,
+      "differenceMm": 15.125557580740363,
+      "candidateMoment": {
+        "t": 0.096,
+        "phase": 0.047792018038871786,
+        "weight": 0.7151681047335319,
+        "z": 5.887819394091244,
+        "joint": "R",
+        "shift": 0,
+        "lift": 0.0008476184412086669
+      }
+    },
+    {
+      "grade": 17.5,
+      "scenario": "reversal",
+      "mode": "run",
+      "startPhase": 0.92125,
+      "startZ": 5.5,
+      "oldMaxMm": 33.10221597335868,
+      "candidateMaxMm": 45.96406030174875,
+      "differenceMm": 12.861844328390069,
+      "candidateMoment": {
+        "t": 0.096,
+        "phase": 0.047792018038871786,
+        "weight": 0.7151681047335319,
+        "z": 5.887819394091244,
+        "joint": "R",
+        "shift": 0,
+        "lift": 0.0008476184412086669
+      }
+    },
+    {
+      "grade": 5,
+      "scenario": "reversal",
+      "mode": "run",
+      "startPhase": 0.42125,
+      "startZ": -1.55,
+      "oldMaxMm": 20.247841047667116,
+      "candidateMaxMm": 31.053839827085543,
+      "differenceMm": 10.805998779418426,
+      "candidateMoment": {
+        "t": 0.16,
+        "phase": 0.6245013549535687,
+        "weight": 0.4748438241516196,
+        "z": -0.9591803505241622,
+        "joint": "L",
+        "shift": 0.006610807436813415,
+        "lift": 0.005156242099652194
+      }
+    },
+    {
+      "grade": 10,
+      "scenario": "reversal",
+      "mode": "run",
+      "startPhase": 0.42125,
+      "startZ": -1.55,
+      "oldMaxMm": 25.133641064024232,
+      "candidateMaxMm": 31.509948324643133,
+      "differenceMm": 6.376307260618903,
+      "candidateMoment": {
+        "t": 0.14400000000000002,
+        "phase": 0.6058983531093372,
+        "weight": 0.5301149473920531,
+        "z": -1.0057613297339445,
+        "joint": "L",
+        "shift": 0.011297005453912545,
+        "lift": 0.006561706253559501
+      }
+    },
+    {
+      "grade": 15,
+      "scenario": "reversal",
+      "mode": "run",
+      "startPhase": 0.92125,
+      "startZ": 5.5,
+      "oldMaxMm": 32.67643106294002,
+      "candidateMaxMm": 38.75989473179118,
+      "differenceMm": 6.083463668851159,
+      "candidateMoment": {
+        "t": 0.096,
+        "phase": 0.047792018038871786,
+        "weight": 0.7151681047335319,
+        "z": 5.887819394091244,
+        "joint": "R",
+        "shift": 0,
+        "lift": 0.0008476184412086669
+      }
+    }
+  ],
+  "limitations": "Finite test course, motions and starting phases only. Each row reports the maximum for a case, which may occur at different moments. Candidate changes the stride and does not lock feet."
+}

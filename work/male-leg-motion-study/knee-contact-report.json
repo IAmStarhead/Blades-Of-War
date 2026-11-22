@@ -1,0 +1,26 @@
+{
+  "kneeL": {
+    "poses": 577,
+    "beforeHitPoses": 0,
+    "afterHitPoses": 0,
+    "newHitPoses": 0,
+    "beforePairs": 0,
+    "afterPairs": 0,
+    "newPairs": 0,
+    "minimumAreaRatioBefore": 0.3341205207358881,
+    "minimumAreaRatioAfter": 0.3471204285388343,
+    "examples": []
+  },
+  "kneeR": {
+    "poses": 577,
+    "beforeHitPoses": 0,
+    "afterHitPoses": 0,
+    "newHitPoses": 0,
+    "beforePairs": 0,
+    "afterPairs": 0,
+    "newPairs": 0,
+    "minimumAreaRatioBefore": 0.3147698287240906,
+    "minimumAreaRatioAfter": 0.32899099769739776,
+    "examples": []
+  }
+}

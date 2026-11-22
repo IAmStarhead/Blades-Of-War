@@ -1,0 +1,97 @@
+{
+  "method": "Projected anterior-posterior width of corresponding material rings; not a true instantaneous volumetric cross-section.",
+  "example": {
+    "phase": 0.9020178539918424,
+    "runPhase": 0.8082678539918424,
+    "active": false,
+    "z": 6.6,
+    "angleDegrees": 98.14339964611838,
+    "before": 0.08187865172039133,
+    "after": 0.11822794920427282,
+    "rest": 0.12560118314120994,
+    "nearby": {
+      "0.46": {
+        "before": 0.0990687584126757,
+        "after": 0.12451008336921188,
+        "rest": 0.12527527411510203
+      },
+      "0.5": {
+        "before": 0.0849829134169442,
+        "after": 0.11859921786504324,
+        "rest": 0.12348676428360934
+      },
+      "0.5332": {
+        "before": 0.08187865172039133,
+        "after": 0.11822794920427282,
+        "rest": 0.12560118314120994
+      },
+      "0.56": {
+        "before": 0.08522370006604829,
+        "after": 0.12050944600874924,
+        "rest": 0.12582983707257284
+      },
+      "0.6": {
+        "before": 0.0987186252316965,
+        "after": 0.12658873566320672,
+        "rest": 0.12898250001872813
+      }
+    }
+  },
+  "comparison": {
+    "count": 1920,
+    "strongCount": 725,
+    "improved": 725,
+    "minBaseRatio": 0.583707111140248,
+    "minAfterRatio": 0.9292240702759449,
+    "maxAfterRatio": 0.9979065153480178,
+    "minRecovery": 0.8078680354601542,
+    "maxRecovery": 0.840325413270497,
+    "maxWeightError": 0,
+    "maxStrongAngle": 108.01758608467709,
+    "byGrade": {
+      "0": {
+        "poses": 320,
+        "strong": 156,
+        "minBaseRatio": 0.583707111140248,
+        "minAfterRatio": 0.9292240702759449,
+        "minRecovery": 0.8078680354601542
+      },
+      "15": {
+        "poses": 320,
+        "strong": 253,
+        "minBaseRatio": 0.646796843010866,
+        "minAfterRatio": 0.9388545179912597,
+        "minRecovery": 0.815740129387301
+      },
+      "20": {
+        "poses": 320,
+        "strong": 316,
+        "minBaseRatio": 0.6517575823520939,
+        "minAfterRatio": 0.939236498638582,
+        "minRecovery": 0.8199217913252759
+      }
+    }
+  },
+  "repeat": {
+    "sameState": true,
+    "soleSamples": 172,
+    "soleDifference": 0,
+    "firstWidth": 0.1195628632050284,
+    "repeatWidth": 0.1195628632050284,
+    "firstWeights": [
+      0.3284468790966343,
+      0.14668901521688352
+    ],
+    "repeatWeights": [
+      0.3284468790966343,
+      0.14668901521688352
+    ]
+  },
+  "continuity": {
+    "trajectories": 48,
+    "frames": 3360,
+    "maxCorrectionStep": 0.004831763412757019,
+    "maxWeightStep": 0.05965253630400996,
+    "testedVertices": 125
+  }
+}

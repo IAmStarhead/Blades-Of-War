@@ -1,0 +1,19 @@
+grade 0°: 1680 poses, raw/protected min -5.48/1.14 mm; near-ground p95/max 20.03/23.33 mm; max target shortening 0.0 mm.
+grade 5°: 1680 poses, raw/protected min -21.26/1.00 mm; near-ground p95/max 19.55/23.33 mm; max target shortening 51.5 mm.
+grade 10°: 1680 poses, raw/protected min -50.43/1.14 mm; near-ground p95/max 20.03/23.33 mm; max target shortening 83.5 mm.
+grade 15°: 1680 poses, raw/protected min -82.42/1.00 mm; near-ground p95/max 20.09/24.60 mm; max target shortening 109.6 mm.
+grade 17.5°: 1680 poses, raw/protected min -100.15/1.00 mm; near-ground p95/max 20.25/25.49 mm; max target shortening 124.8 mm.
+grade 20°: 1680 poses, raw/protected min -119.26/1.00 mm; near-ground p95/max 20.25/26.67 mm; max target shortening 134.8 mm.
+PASS 32 complete uphill walk/run routes at four starting phases; maximum near-ground gap 20.97 mm.
+PASS 320 10 ms transition trajectories, 320 switches and 640 reversals without an instantaneous pose/clock reset; max joint 102.0 mm, angle 12.64°, lift change 3.37 mm.
+PASS 256 fixed-phase crossings of ramp shoulders: max joint rotation 1.004° per 1 cm; activation 0.001745°.
+0° walk steady: max sampled joint rotation 0.570° per 1 ms.
+0° walk reverse: max sampled joint rotation 0.889° per 1 ms.
+0° run steady: max sampled joint rotation 0.889° per 1 ms.
+0° run reverse: max sampled joint rotation 0.981° per 1 ms.
+20° walk steady: max sampled joint rotation 0.570° per 1 ms.
+20° walk reverse: max sampled joint rotation 1.210° per 1 ms.
+20° run steady: max sampled joint rotation 1.146° per 1 ms.
+20° run reverse: max sampled joint rotation 1.267° per 1 ms.
+PASS independent Three.js sole-skinning parity, terrain following and repeated samples without accumulated corrections.
+NOTE: near-ground means raw flat-animation sole <20 mm, not a certified planted-contact event; horizontal sliding is not constrained.
