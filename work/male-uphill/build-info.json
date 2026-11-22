@@ -1,0 +1,30 @@
+{
+  "scope": "Straight uphill runtime demonstration, not an engine integration or baked clips.",
+  "sourceModel": "work/male-hand-flight/male_hands_airfoot_trial.glb",
+  "sourceModelSha256": "576077e068f2c48a88c208be0ad72b4214e42164d1e5b0f0f9f7050f3967e2bf",
+  "modelSha256": "576077e068f2c48a88c208be0ad72b4214e42164d1e5b0f0f9f7050f3967e2bf",
+  "runPhaseOffsetCycles": -0.09375,
+  "responsePerSecond": 11,
+  "horizontalSpeedMps": {
+    "walk": 1.44,
+    "run": 4.37
+  },
+  "terrain": "Smooth straight heightfield, 0–20 degrees; flat-to-ramp and ramp-to-flat transitions.",
+  "adaptation": "Selected skinned sole measurement, ground-following feet, ankle tilt, 2-bone IK, bounded stride shortening and root guard. No foot lock.",
+  "filesSha256": {
+    ".gitattributes": "d3de64892b73e7377d4189e1bba8f79f5f3d55a964187f9cd301fd0540cce0fd",
+    "index.html": "dff90af88d0ab2d0d53983e321f478fb0dfe6b58f0f222c12cac54d9efb0df37",
+    "male_hands_airfoot_trial.glb": "576077e068f2c48a88c208be0ad72b4214e42164d1e5b0f0f9f7050f3967e2bf",
+    "README.md": "6f61ac452391d7e9f753a04053c020b709b3e3bfe165977e858c99a64fd24ca9",
+    "CREDITS.md": "602f8fe5ceb8f5e642d62be849ff01ed13950eba93289ed5c6a64f0d9d2d0538",
+    "terrain.mjs": "d098f14ae675edea8b73e9036a482a9bf80f86edae46025a4b829a35906904ea",
+    "uphill-controller.mjs": "71140694b4d60d5ec3e6c1a03ff6a4a72077b3573fc94c7b3350c02c638a1be4",
+    "phase-clock.mjs": "c1b1c452f75e0edc6332fd2e4bed9c9d7f693ebbf2db42e1e2a2e4a75fe3865f",
+    "floor-envelope.mjs": "2510d60af6c984a755f9becd3da8f5b3e559aff8791fb6c75f7afa608f0096f3",
+    "locomotion-three.mjs": "bfedd7ecba30a08fe8f2b0d97badb302dbf1981d09b6976ed6af52b1bd8eb878",
+    "LICENSE_CC0_ASSETS.md": "f6089cba01cb570a24712b41ab8a586ccd3cc5ef53dc266ca50b95c288956d2c",
+    "LICENSE_MAKEHUMAN.md": "edd99571ca62698f78c943fd4fffb159a413c315fa0d4819d3cec5cadaf8b4f1",
+    "LICENSE_QUATERNIUS_CC0.txt": "f6089cba01cb570a24712b41ab8a586ccd3cc5ef53dc266ca50b95c288956d2c",
+    "LICENSE_THREE.txt": "8b378ebe60e2fe500158cb0ac71cb5e8b7d92953c2abcc63a0eb90499653b5bc"
+  }
+}

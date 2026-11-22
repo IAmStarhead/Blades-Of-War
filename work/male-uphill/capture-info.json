@@ -1,0 +1,57 @@
+{
+  "method": "Actual bundled viewer, deterministic 30 fps, straight 15° course. The run repeats at half speed after 2.5 s.",
+  "schedule": "Transition and feet: target run at 1.7 s, walk at 2.4 s; both switches occur on the full grade.",
+  "markers": {
+    "walk": [],
+    "run": [],
+    "transition": [
+      {
+        "frame": 51,
+        "target": "run",
+        "z": -0.2519999999999982,
+        "slopeDegrees": 14.999999999999998
+      },
+      {
+        "frame": 72,
+        "target": "walk",
+        "z": 2.2754427092149863,
+        "slopeDegrees": 14.999999999999998
+      }
+    ],
+    "feet": [
+      {
+        "frame": 51,
+        "target": "run",
+        "z": -0.2519999999999982,
+        "slopeDegrees": 14.999999999999998
+      },
+      {
+        "frame": 72,
+        "target": "walk",
+        "z": 2.2754427092149863,
+        "slopeDegrees": 14.999999999999998
+      }
+    ]
+  },
+  "fps": 30,
+  "framesPerVideo": {
+    "uphill_walk.mp4": 210,
+    "uphill_run.mp4": 210,
+    "uphill_transition.mp4": 180,
+    "uphill_feet.mp4": 180
+  },
+  "dimensions": [
+    1280,
+    720
+  ],
+  "audio": false,
+  "ffmpegVersion": "ffmpeg version n9.0.2-17-g2a571b6068-20260930 Copyright (c) 2000-2026 the FFmpeg developers",
+  "modelSha256": "576077e068f2c48a88c208be0ad72b4214e42164d1e5b0f0f9f7050f3967e2bf",
+  "viewerSha256": "dff90af88d0ab2d0d53983e321f478fb0dfe6b58f0f222c12cac54d9efb0df37",
+  "videosSha256": {
+    "uphill_walk.mp4": "c98a767d1cbc91ff346951fde93dae0efc6f27ae1fe9f00b9d99957607725c8b",
+    "uphill_run.mp4": "e13313052e4665720fb0800a3a1b82e9b5c2ea71be4f9c2cf6500acf35f49eb0",
+    "uphill_transition.mp4": "ad57f86f4d1d49eaa3b0b9fda855c2fb94cef2ad07ea578eaed9743d5c42e26f",
+    "uphill_feet.mp4": "9a4b302c276e569c288fdb16fd9831907da5d5358f65e65c748d2ff1fd0d7150"
+  }
+}
