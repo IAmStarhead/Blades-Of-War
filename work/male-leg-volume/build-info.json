@@ -1,0 +1,73 @@
+{
+  "scope": "Separate knee-volume trial on the existing straight uphill demonstration; no game integration.",
+  "previousModelSha256": "576077e068f2c48a88c208be0ad72b4214e42164d1e5b0f0f9f7050f3967e2bf",
+  "modelSha256": "eb569ef2269a8d7e40378590614beebc933edd3bdcd7340f8146494ceb975484",
+  "pose": {
+    "source": "work/male-hand-flight/male_hands_airfoot_trial.glb",
+    "sourceSha256": "576077e068f2c48a88c208be0ad72b4214e42164d1e5b0f0f9f7050f3967e2bf",
+    "gain": 0.85,
+    "maskPower": 1.35,
+    "method": "Two bind-space depth morphs, localized by the existing thigh/shin blend; pose-angle driver approximates 85% compensation of linear-blend shrink. Keyed for each original clip and recomputed after transition/terrain IK in the viewer.",
+    "targets": [
+      {
+        "side": "L",
+        "positionVertices": 245,
+        "normalVertices": 287,
+        "restYRange": [
+          0.35497599840164185,
+          0.7115874290466309
+        ],
+        "maxUnitPositionDelta": 0.1253691268134844,
+        "maxUnitNormalDelta": 0.8341921348134855
+      },
+      {
+        "side": "R",
+        "positionVertices": 245,
+        "normalVertices": 287,
+        "restYRange": [
+          0.35497599840164185,
+          0.7115874290466309
+        ],
+        "maxUnitPositionDelta": 0.1253691268134844,
+        "maxUnitNormalDelta": 0.8341921241365992
+      }
+    ],
+    "clips": [
+      {
+        "name": "Walk_Game_Trial",
+        "duration": 1.0416666269302368,
+        "keys": 257,
+        "maximumWeight": 0.14679774641990662
+      },
+      {
+        "name": "Run_Game_Trial",
+        "duration": 0.7333333492279053,
+        "keys": 257,
+        "maximumWeight": 0.6041136980056763
+      }
+    ],
+    "outputSha256": "eb569ef2269a8d7e40378590614beebc933edd3bdcd7340f8146494ceb975484"
+  },
+  "runtime": "Baked weights for original single clips; recompute from the current local knee quaternions after blending and terrain IK.",
+  "runPhaseOffsetCycles": -0.09375,
+  "terrain": "0–20° smooth straight heightfield; no foot lock.",
+  "filesSha256": {
+    ".gitattributes": "2ac22e11ea851e6ca5ef5ffcd391551c53a00a80d334bfc8b11178aac6395a9f",
+    "index.html": "54881fea21b19115578de6dc6f001a160a7e72fd46c3c29066ef008c274c8de7",
+    "male_leg_volume_trial.glb": "eb569ef2269a8d7e40378590614beebc933edd3bdcd7340f8146494ceb975484",
+    "author-report.json": "ef6c26bf0c3b05a3f2139d3270a76126a04b10622dcb01c7919f1a3439eb5735",
+    "README.md": "4a15f6621690eda5247b7838c42184e48a5ece7a325802867beaabcb3e5a16df",
+    "DEVELOPMENT.md": "045efb06df2f22233517aa1fc13c90561f0d8a26ef1865320da06ff08ca9d52c",
+    "CREDITS.md": "2539076aefcf6b26133c29022df1b407e6799cb8b875ee0e55b21ea24f6fdadb",
+    "terrain.mjs": "d098f14ae675edea8b73e9036a482a9bf80f86edae46025a4b829a35906904ea",
+    "uphill-controller.mjs": "71140694b4d60d5ec3e6c1a03ff6a4a72077b3573fc94c7b3350c02c638a1be4",
+    "phase-clock.mjs": "c1b1c452f75e0edc6332fd2e4bed9c9d7f693ebbf2db42e1e2a2e4a75fe3865f",
+    "floor-envelope.mjs": "2510d60af6c984a755f9becd3da8f5b3e559aff8791fb6c75f7afa608f0096f3",
+    "locomotion-three.mjs": "bfedd7ecba30a08fe8f2b0d97badb302dbf1981d09b6976ed6af52b1bd8eb878",
+    "knee-volume.mjs": "d6f0ac2ebe7a55012022738a16ca17dc03e549f5e52502b2c583efa0185879b0",
+    "LICENSE_CC0_ASSETS.md": "f6089cba01cb570a24712b41ab8a586ccd3cc5ef53dc266ca50b95c288956d2c",
+    "LICENSE_MAKEHUMAN.md": "edd99571ca62698f78c943fd4fffb159a413c315fa0d4819d3cec5cadaf8b4f1",
+    "LICENSE_QUATERNIUS_CC0.txt": "f6089cba01cb570a24712b41ab8a586ccd3cc5ef53dc266ca50b95c288956d2c",
+    "LICENSE_THREE.txt": "8b378ebe60e2fe500158cb0ac71cb5e8b7d92953c2abcc63a0eb90499653b5bc"
+  }
+}

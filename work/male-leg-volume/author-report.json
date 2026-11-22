@@ -1,0 +1,46 @@
+{
+  "source": "work/male-hand-flight/male_hands_airfoot_trial.glb",
+  "sourceSha256": "576077e068f2c48a88c208be0ad72b4214e42164d1e5b0f0f9f7050f3967e2bf",
+  "gain": 0.85,
+  "maskPower": 1.35,
+  "method": "Two bind-space depth morphs, localized by the existing thigh/shin blend; pose-angle driver approximates 85% compensation of linear-blend shrink. Keyed for each original clip and recomputed after transition/terrain IK in the viewer.",
+  "targets": [
+    {
+      "side": "L",
+      "positionVertices": 245,
+      "normalVertices": 287,
+      "restYRange": [
+        0.35497599840164185,
+        0.7115874290466309
+      ],
+      "maxUnitPositionDelta": 0.1253691268134844,
+      "maxUnitNormalDelta": 0.8341921348134855
+    },
+    {
+      "side": "R",
+      "positionVertices": 245,
+      "normalVertices": 287,
+      "restYRange": [
+        0.35497599840164185,
+        0.7115874290466309
+      ],
+      "maxUnitPositionDelta": 0.1253691268134844,
+      "maxUnitNormalDelta": 0.8341921241365992
+    }
+  ],
+  "clips": [
+    {
+      "name": "Walk_Game_Trial",
+      "duration": 1.0416666269302368,
+      "keys": 257,
+      "maximumWeight": 0.14679774641990662
+    },
+    {
+      "name": "Run_Game_Trial",
+      "duration": 0.7333333492279053,
+      "keys": 257,
+      "maximumWeight": 0.6041136980056763
+    }
+  ],
+  "outputSha256": "eb569ef2269a8d7e40378590614beebc933edd3bdcd7340f8146494ceb975484"
+}
