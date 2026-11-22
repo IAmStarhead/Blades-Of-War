@@ -1,0 +1,61 @@
+{
+  "scope": "Separate flat-ground playable scene; not a complete game.",
+  "modelSha256": "eb569ef2269a8d7e40378590614beebc933edd3bdcd7340f8146494ceb975484",
+  "wellSourceSha256": "62ef93410bca00fe6b2bc7e2232138edf1077178cb704d59c2aecd9ddf0ce7b5",
+  "runPhaseOffset": -0.09375,
+  "generatedCrouch": [
+    {
+      "name": "Crouch_Idle_Trial",
+      "duration": 2.4,
+      "speed": 0,
+      "stats": {
+        "soleResidual": 3.677613769070831e-16,
+        "reachMiss": 0,
+        "rootY": [
+          -0.1965,
+          -0.1935
+        ],
+        "kneeDegrees": [
+          75.20979929113666,
+          76.05258428218607
+        ],
+        "hipDegrees": [
+          41.86489341062071,
+          44.54363153423369
+        ],
+        "flightFrames": 0
+      }
+    },
+    {
+      "name": "Crouch_Walk_Trial",
+      "duration": 1.6,
+      "speed": 0.38,
+      "stats": {
+        "soleResidual": 4.579669976578771e-16,
+        "reachMiss": 0,
+        "rootY": [
+          -0.198,
+          -0.192
+        ],
+        "kneeDegrees": [
+          66.77758736915546,
+          87.99892876745339
+        ],
+        "hipDegrees": [
+          28.111173341049515,
+          55.1837186455524
+        ],
+        "flightFrames": 0
+      }
+    }
+  ],
+  "assetsSha256": {
+    "index.html": "3712e7a8df6e86249da7b90d97eb019fefca3d0213cd0387b7459b35d61933f2",
+    "README.md": "3995023106245dc8e83aec9d4feec7644fc5529384e99df455799a57e0f1031b",
+    "CREDITS.md": "d2ece6f3333a4c77a69cbb28b93aa4bfaafa61331ff4b2b3856af7d7d0ebefa0",
+    "LICENSE_CC0_ASSETS.md": "f6089cba01cb570a24712b41ab8a586ccd3cc5ef53dc266ca50b95c288956d2c",
+    "LICENSE_MAKEHUMAN.md": "edd99571ca62698f78c943fd4fffb159a413c315fa0d4819d3cec5cadaf8b4f1",
+    "LICENSE_QUATERNIUS_CC0.txt": "f6089cba01cb570a24712b41ab8a586ccd3cc5ef53dc266ca50b95c288956d2c",
+    "LICENSE_THREE.txt": "8b378ebe60e2fe500158cb0ac71cb5e8b7d92953c2abcc63a0eb90499653b5bc"
+  }
+}

@@ -1,0 +1,109 @@
+{
+  "status": "pass",
+  "transport": "same-origin HTTP",
+  "htmlSha256": "3712e7a8df6e86249da7b90d97eb019fefca3d0213cd0387b7459b35d61933f2",
+  "scope": "Discrete automated samples and emulated touch; not proof of naturalness, collision-free motion or performance on a physical phone.",
+  "results": {
+    "initial": {
+      "clips": [
+        "Walk_Game_Trial",
+        "Run_Game_Trial"
+      ],
+      "bones": 52,
+      "status": "Стоит",
+      "well": "BowStoneWellProp",
+      "vertexCount": 2246
+    },
+    "parity": {
+      "bone": 4.996003610813204e-16,
+      "vertex": 7.771561172376096e-16,
+      "morph": 2.220446049250313e-16,
+      "floor": 0,
+      "cases": 80
+    },
+    "routes": {
+      "count": 48,
+      "detours": 20,
+      "maxError": 0.01194355287661919,
+      "minRadius": 1.4902480209529243
+    },
+    "interactions": {
+      "count": 12,
+      "maxSteps": 151
+    },
+    "transitions": [
+      {
+        "scenario": "walk-crouch",
+        "maxJoint": 0.05008627651442165,
+        "minClear": 0.0012499999655645447,
+        "maxLift": 0.0073527276547679776,
+        "crouch": 1
+      },
+      {
+        "scenario": "run-crouch",
+        "maxJoint": 0.10826292435030889,
+        "minClear": 0.0012499999999914986,
+        "maxLift": 0.003191233395497349,
+        "crouch": 1
+      },
+      {
+        "scenario": "crouch-walk",
+        "maxJoint": 0.07390173051161174,
+        "minClear": 0.001249999999999598,
+        "maxLift": 0.011003569064035917,
+        "crouch": 0
+      },
+      {
+        "scenario": "reverse",
+        "maxJoint": 0.16691318545021464,
+        "minClear": 0.0023350942975499146,
+        "maxLift": 0.0043046971177936495,
+        "crouch": 0
+      }
+    ],
+    "phaseSweep": {
+      "cases": 64,
+      "maxJointStep": 0.10286464482005746,
+      "maxSecondDifference": 0.07286426892667362,
+      "maxLift": 0.013849654204283048
+    },
+    "layouts": [
+      {
+        "width": 320,
+        "height": 568,
+        "controls": 6,
+        "groundTap": true,
+        "wellTap": true,
+        "cameraDrag": true
+      },
+      {
+        "width": 390,
+        "height": 844,
+        "controls": 6,
+        "groundTap": true,
+        "wellTap": true,
+        "cameraDrag": true
+      },
+      {
+        "width": 768,
+        "height": 1024,
+        "controls": 6,
+        "groundTap": true,
+        "wellTap": true,
+        "cameraDrag": true
+      },
+      {
+        "width": 844,
+        "height": 390,
+        "controls": 6,
+        "groundTap": true,
+        "wellTap": true,
+        "cameraDrag": true
+      }
+    ],
+    "reducedMotion": {
+      "enabled": true,
+      "idleTime": 0
+    }
+  }
+}

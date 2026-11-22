@@ -1,0 +1,48 @@
+{
+  "kind": "game-scene-fixed-timestep",
+  "description": "Scripted capture of the actual separate scene, no audio; fixed 1/24-second controller steps.",
+  "htmlSha256": "3712e7a8df6e86249da7b90d97eb019fefca3d0213cd0387b7459b35d61933f2",
+  "width": 960,
+  "height": 540,
+  "fps": 24,
+  "frames": 336,
+  "duration": 14,
+  "sha256": "818752199e60a43e35c346b9de43dcd93386e4c29416bc2920caaebdb29317df",
+  "sequence": [
+    {
+      "from": 0,
+      "to": 1,
+      "label": "Спокойная стойка"
+    },
+    {
+      "from": 1,
+      "to": 2.208,
+      "label": "Ходьба и поворот"
+    },
+    {
+      "from": 2.208,
+      "to": 3.75,
+      "label": "Переход от ходьбы к бегу"
+    },
+    {
+      "from": 3.75,
+      "to": 6.416,
+      "label": "Бег и поворот"
+    },
+    {
+      "from": 6.416,
+      "to": 9.792,
+      "label": "Присед и движение"
+    },
+    {
+      "from": 9.792,
+      "to": 10.5,
+      "label": "Остановка"
+    },
+    {
+      "from": 10.5,
+      "to": 14,
+      "label": "Подход и осмотр колодца"
+    }
+  ]
+}
