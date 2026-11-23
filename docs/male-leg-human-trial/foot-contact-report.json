@@ -1,0 +1,157 @@
+{
+  "status": "measured, not a pass/fail judgement",
+  "htmlSha256": {
+    "previous": "552a72e26a33274422041cac7c584b325fb276d22e8ba5370ed1b97d8f3584b1",
+    "trial": "9fa527f1230a5e26c3d97fc81a9a6f0dc11e2002d7a354b74837a8bed30888cb"
+  },
+  "method": "60 Hz, straight travel at 0.38 m/s after settling and warming up. Actual morphed and skinned vertices in the rest-space foot regions, in world coordinates. A complete episode tracks the SAME vertex while y <= 0.012 m for at least 6 samples. Ground ray is y=0; rendered ground top is y=-0.002 m. Episodes touching either end of the sample are excluded.",
+  "limitations": "Near-floor is not known physical contact. Net horizontal travel is not a force measurement or a direct measurement of the whole foot sliding; heel-to-toe roll, clearance threshold, sampling, and vertex clustering affect it. Vertices/episodes are not independent. No foot lock is implemented. Limited straight-line sample only; no medical or naturalness claim.",
+  "results": {
+    "previous": {
+      "frames": 192,
+      "fps": 60,
+      "speedMps": {
+        "min": 0.3799999999999848,
+        "max": 0.38000000000001144
+      },
+      "crouchWeight": {
+        "min": 0.9999999999999998,
+        "max": 0.9999999999999998
+      },
+      "thresholdM": 0.012,
+      "minimumSamples": 6,
+      "frameCountNeitherFootNearGround": 0,
+      "minimumVertexY": 0.0019666100036878345,
+      "loopContinuity": {
+        "wraps": 2,
+        "maximumJointStepM": 0.04799178923606384,
+        "maximumJointSample": {
+          "frame": 3,
+          "phase": 0.2881030701753926,
+          "joint": "Rig_Foot_R"
+        },
+        "maximumJointSecondDifferenceM": 0.012195868317504225,
+        "maximumJointStepAtWrapM": 0.008402613381567265
+      },
+      "sides": {
+        "L": {
+          "sampledVertices": 1091,
+          "minimumHeightM": 0.0019666100036878345,
+          "maximumOfFrameMinimaM": 0.04055069369091726,
+          "framesWithVertexWithinThreshold": 126,
+          "completeVertexEpisodes": 374,
+          "netHorizontalM": {
+            "median": 0.26956376481020117,
+            "p90": 0.2985704914174434,
+            "max": 0.32141673499213036
+          },
+          "worstEpisode": {
+            "vertexIndex": 9048,
+            "startFrame": 83,
+            "startPhase": 0.12143640350870921,
+            "count": 56,
+            "path": 0.33517147703289657,
+            "minY": 0.00862511083929498,
+            "net": 0.32141673499213036,
+            "seconds": 0.9166666666666666
+          }
+        },
+        "R": {
+          "sampledVertices": 1091,
+          "minimumHeightM": 0.001975519156644984,
+          "maximumOfFrameMinimaM": 0.04905293967692276,
+          "framesWithVertexWithinThreshold": 110,
+          "completeVertexEpisodes": 654,
+          "netHorizontalM": {
+            "median": 0.20793483508230662,
+            "p90": 0.2592185066896326,
+            "max": 0.27655437320334125
+          },
+          "worstEpisode": {
+            "vertexIndex": 3496,
+            "startFrame": 132,
+            "startPhase": 0.6318530701753766,
+            "count": 54,
+            "path": 0.2821616994462823,
+            "minY": 0.001975519156644984,
+            "net": 0.27655437320334125,
+            "seconds": 0.8833333333333333
+          }
+        }
+      }
+    },
+    "trial": {
+      "frames": 192,
+      "fps": 60,
+      "speedMps": {
+        "min": 0.3799999999999848,
+        "max": 0.38000000000001144
+      },
+      "crouchWeight": {
+        "min": 0.9999999999999998,
+        "max": 0.9999999999999998
+      },
+      "thresholdM": 0.012,
+      "minimumSamples": 6,
+      "frameCountNeitherFootNearGround": 0,
+      "minimumVertexY": 0.0018813115250189971,
+      "loopContinuity": {
+        "wraps": 2,
+        "maximumJointStepM": 0.02881526987779209,
+        "maximumJointSample": {
+          "frame": 73,
+          "phase": 0.017269736842041805,
+          "joint": "Rig_Foot_L"
+        },
+        "maximumJointSecondDifferenceM": 0.016544031418731536,
+        "maximumJointStepAtWrapM": 0.022358550513045448
+      },
+      "sides": {
+        "L": {
+          "sampledVertices": 1091,
+          "minimumHeightM": 0.0018813115250189971,
+          "maximumOfFrameMinimaM": 0.0878803112484552,
+          "framesWithVertexWithinThreshold": 104,
+          "completeVertexEpisodes": 666,
+          "netHorizontalM": {
+            "median": 0.003756980389746721,
+            "p90": 0.07147462083283129,
+            "max": 0.07437644930832808
+          },
+          "worstEpisode": {
+            "vertexIndex": 8109,
+            "startFrame": 25,
+            "startPhase": 0.5172697368420511,
+            "count": 49,
+            "path": 0.08144882855238697,
+            "minY": 0.0025630133535368624,
+            "net": 0.07437644930832808,
+            "seconds": 0.8
+          }
+        },
+        "R": {
+          "sampledVertices": 1091,
+          "minimumHeightM": 0.0019289953126197384,
+          "maximumOfFrameMinimaM": 0.12371886498709248,
+          "framesWithVertexWithinThreshold": 96,
+          "completeVertexEpisodes": 346,
+          "netHorizontalM": {
+            "median": 0.0044545032581359955,
+            "p90": 0.03470180120760576,
+            "max": 0.039718171396316775
+          },
+          "worstEpisode": {
+            "vertexIndex": 3571,
+            "startFrame": 74,
+            "startPhase": 0.027686403508708546,
+            "count": 48,
+            "path": 0.04790615206850077,
+            "minY": 0.0019553337992081476,
+            "net": 0.039718171396316775,
+            "seconds": 0.7833333333333333
+          }
+        }
+      }
+    }
+  }
+}

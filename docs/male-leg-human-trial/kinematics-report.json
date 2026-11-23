@@ -1,0 +1,676 @@
+{
+  "method": "FK at the listed HMC key frames, yaw and translation removed, then compare unit directions of left/right thigh and shin. Search one discrete offset among 96 model phases to minimize mean angle over four segments and the selected keys.",
+  "limitations": "Different people, skeletal proportions, speeds, and styles; this phase-only fit does not synchronize recordings. Max/mean are not a medical norm or naturalness score and say nothing about feet, skin, force, transitions, or the entire dataset. HMC smooth interpolation differs from this trial between keys.",
+  "sourceSha256": {
+    "rig": "24979f497bc7b75eaea811cd078ddb6d1d054be305fa2c1712a3e14605f60d73",
+    "walk": "a4fd36340b55d45ed1e92c85783ace73bf43f2864f0839f61c5edec4ed3c7222",
+    "run": "d46f8eae1c8cc1eae338eba0d5b00168f1faf0553322d81dc5d6006df7fa745b",
+    "crouch": "f44ef97de42d3c2a468d5d8a14156a0ede4deee42550bd9e5a0b70a8a805f184"
+  },
+  "viewerHtmlSha256": {
+    "old": "552a72e26a33274422041cac7c584b325fb276d22e8ba5370ed1b97d8f3584b1",
+    "trial": "9fa527f1230a5e26c3d97fc81a9a6f0dc11e2002d7a354b74837a8bed30888cb"
+  },
+  "sampleSha256": {
+    "old": "7652796c6ede277d2f74b30227cf16dd9f4f1009f9303c001adfaeecdff14e29",
+    "trial": "f3eebac645fe75908ca47c3f62927b77e4f7ec54aacb5bea388becd854f4bf26"
+  },
+  "results": {
+    "walk": {
+      "referenceClip": "Walk 12",
+      "dataset": "100style",
+      "frameRange": [
+        28,
+        68
+      ],
+      "keyFrames": [
+        28,
+        30,
+        32,
+        34,
+        36,
+        38,
+        40,
+        42,
+        44,
+        46,
+        48,
+        50,
+        52,
+        54,
+        56,
+        58,
+        60,
+        62,
+        64,
+        66
+      ],
+      "models": {
+        "old": {
+          "phaseOffset96": 91,
+          "meanSegmentDirectionErrorDegrees": 7.139327259059473,
+          "maxSegmentDirectionErrorDegrees": 14.570138040822673,
+          "selected": [
+            {
+              "frame": 28,
+              "modelPhaseIndex": 91,
+              "referenceBendLRDegrees": [
+                64.95368583989267,
+                18.204817572729553
+              ],
+              "modelBendLRDegrees": [
+                61.441816680690344,
+                26.7307378783469
+              ],
+              "segmentDirectionErrorDegrees": [
+                [
+                  5.72962827937511,
+                  4.475196447388209
+                ],
+                [
+                  4.757788282148851,
+                  5.3084312729196474
+                ]
+              ]
+            },
+            {
+              "frame": 38,
+              "modelPhaseIndex": 19,
+              "referenceBendLRDegrees": [
+                2.632852769081383,
+                9.966944201376581
+              ],
+              "modelBendLRDegrees": [
+                19.189362437897227,
+                24.699485801442435
+              ],
+              "segmentDirectionErrorDegrees": [
+                [
+                  8.296529415618823,
+                  8.272509931089717
+                ],
+                [
+                  6.816023515478211,
+                  11.251078607949646
+                ]
+              ]
+            },
+            {
+              "frame": 48,
+              "modelPhaseIndex": 43,
+              "referenceBendLRDegrees": [
+                13.086648379616275,
+                64.92883897679377
+              ],
+              "modelBendLRDegrees": [
+                28.919435964231575,
+                52.34526798768725
+              ],
+              "segmentDirectionErrorDegrees": [
+                [
+                  8.090625818626977,
+                  9.190930779150305
+                ],
+                [
+                  11.010669899842997,
+                  1.6486703421963822
+                ]
+              ]
+            },
+            {
+              "frame": 58,
+              "modelPhaseIndex": 67,
+              "referenceBendLRDegrees": [
+                6.788330624455929,
+                2.2412998488837177
+              ],
+              "modelBendLRDegrees": [
+                25.648315085414808,
+                14.9489783285955
+              ],
+              "segmentDirectionErrorDegrees": [
+                [
+                  7.609504136988807,
+                  14.570138040822673
+                ],
+                [
+                  7.6385293336463365,
+                  5.189075225061628
+                ]
+              ]
+            }
+          ]
+        },
+        "trial": {
+          "phaseOffset96": 91,
+          "meanSegmentDirectionErrorDegrees": 7.139327259059473,
+          "maxSegmentDirectionErrorDegrees": 14.570138040822673,
+          "selected": [
+            {
+              "frame": 28,
+              "modelPhaseIndex": 91,
+              "referenceBendLRDegrees": [
+                64.95368583989267,
+                18.204817572729553
+              ],
+              "modelBendLRDegrees": [
+                61.441816680690344,
+                26.7307378783469
+              ],
+              "segmentDirectionErrorDegrees": [
+                [
+                  5.72962827937511,
+                  4.475196447388209
+                ],
+                [
+                  4.757788282148851,
+                  5.3084312729196474
+                ]
+              ]
+            },
+            {
+              "frame": 38,
+              "modelPhaseIndex": 19,
+              "referenceBendLRDegrees": [
+                2.632852769081383,
+                9.966944201376581
+              ],
+              "modelBendLRDegrees": [
+                19.189362437897227,
+                24.699485801442435
+              ],
+              "segmentDirectionErrorDegrees": [
+                [
+                  8.296529415618823,
+                  8.272509931089717
+                ],
+                [
+                  6.816023515478211,
+                  11.251078607949646
+                ]
+              ]
+            },
+            {
+              "frame": 48,
+              "modelPhaseIndex": 43,
+              "referenceBendLRDegrees": [
+                13.086648379616275,
+                64.92883897679377
+              ],
+              "modelBendLRDegrees": [
+                28.919435964231575,
+                52.34526798768725
+              ],
+              "segmentDirectionErrorDegrees": [
+                [
+                  8.090625818626977,
+                  9.190930779150305
+                ],
+                [
+                  11.010669899842997,
+                  1.6486703421963822
+                ]
+              ]
+            },
+            {
+              "frame": 58,
+              "modelPhaseIndex": 67,
+              "referenceBendLRDegrees": [
+                6.788330624455929,
+                2.2412998488837177
+              ],
+              "modelBendLRDegrees": [
+                25.648315085414808,
+                14.9489783285955
+              ],
+              "segmentDirectionErrorDegrees": [
+                [
+                  7.609504136988807,
+                  14.570138040822673
+                ],
+                [
+                  7.6385293336463365,
+                  5.189075225061628
+                ]
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "run": {
+      "referenceClip": "Run 9",
+      "dataset": "cmu",
+      "frameRange": [
+        30,
+        54
+      ],
+      "keyFrames": [
+        30,
+        32,
+        34,
+        36,
+        38,
+        40,
+        42,
+        44,
+        46,
+        48,
+        50,
+        52
+      ],
+      "models": {
+        "old": {
+          "phaseOffset96": 88,
+          "meanSegmentDirectionErrorDegrees": 14.194021642813269,
+          "maxSegmentDirectionErrorDegrees": 45.227580500644564,
+          "selected": [
+            {
+              "frame": 30,
+              "modelPhaseIndex": 88,
+              "referenceBendLRDegrees": [
+                66.7203063638454,
+                59.32688801469281
+              ],
+              "modelBendLRDegrees": [
+                99.28071832410305,
+                31.483690556918795
+              ],
+              "segmentDirectionErrorDegrees": [
+                [
+                  11.912457298829077,
+                  42.52889658210435
+                ],
+                [
+                  8.357571640249644,
+                  21.010564035734145
+                ]
+              ]
+            },
+            {
+              "frame": 36,
+              "modelPhaseIndex": 16,
+              "referenceBendLRDegrees": [
+                68.13328665455025,
+                48.2850011061295
+              ],
+              "modelBendLRDegrees": [
+                67.44478423326629,
+                17.985294773980726
+              ],
+              "segmentDirectionErrorDegrees": [
+                [
+                  0.7871118732958599,
+                  7.531282898150269
+                ],
+                [
+                  24.307418149911072,
+                  6.470217998321606
+                ]
+              ]
+            },
+            {
+              "frame": 42,
+              "modelPhaseIndex": 40,
+              "referenceBendLRDegrees": [
+                48.053057227651834,
+                67.8322189682687
+              ],
+              "modelBendLRDegrees": [
+                30.97074066134428,
+                96.70482893604277
+              ],
+              "segmentDirectionErrorDegrees": [
+                [
+                  6.69763440787475,
+                  14.67973469780871
+                ],
+                [
+                  4.702940267389169,
+                  32.796310949207424
+                ]
+              ]
+            },
+            {
+              "frame": 48,
+              "modelPhaseIndex": 64,
+              "referenceBendLRDegrees": [
+                33.254369114498225,
+                56.01728083625237
+              ],
+              "modelBendLRDegrees": [
+                25.839602744780297,
+                60.50567516412952
+              ],
+              "segmentDirectionErrorDegrees": [
+                [
+                  24.40097941853578,
+                  15.106057624799496
+                ],
+                [
+                  3.8431305472611976,
+                  9.299895946351224
+                ]
+              ]
+            }
+          ]
+        },
+        "trial": {
+          "phaseOffset96": 88,
+          "meanSegmentDirectionErrorDegrees": 14.194021642813269,
+          "maxSegmentDirectionErrorDegrees": 45.227580500644564,
+          "selected": [
+            {
+              "frame": 30,
+              "modelPhaseIndex": 88,
+              "referenceBendLRDegrees": [
+                66.7203063638454,
+                59.32688801469281
+              ],
+              "modelBendLRDegrees": [
+                99.28071832410305,
+                31.483690556918795
+              ],
+              "segmentDirectionErrorDegrees": [
+                [
+                  11.912457298829077,
+                  42.52889658210435
+                ],
+                [
+                  8.357571640249644,
+                  21.010564035734145
+                ]
+              ]
+            },
+            {
+              "frame": 36,
+              "modelPhaseIndex": 16,
+              "referenceBendLRDegrees": [
+                68.13328665455025,
+                48.2850011061295
+              ],
+              "modelBendLRDegrees": [
+                67.44478423326629,
+                17.985294773980726
+              ],
+              "segmentDirectionErrorDegrees": [
+                [
+                  0.7871118732958599,
+                  7.531282898150269
+                ],
+                [
+                  24.307418149911072,
+                  6.470217998321606
+                ]
+              ]
+            },
+            {
+              "frame": 42,
+              "modelPhaseIndex": 40,
+              "referenceBendLRDegrees": [
+                48.053057227651834,
+                67.8322189682687
+              ],
+              "modelBendLRDegrees": [
+                30.97074066134428,
+                96.70482893604277
+              ],
+              "segmentDirectionErrorDegrees": [
+                [
+                  6.69763440787475,
+                  14.67973469780871
+                ],
+                [
+                  4.702940267389169,
+                  32.796310949207424
+                ]
+              ]
+            },
+            {
+              "frame": 48,
+              "modelPhaseIndex": 64,
+              "referenceBendLRDegrees": [
+                33.254369114498225,
+                56.01728083625237
+              ],
+              "modelBendLRDegrees": [
+                25.839602744780297,
+                60.50567516412952
+              ],
+              "segmentDirectionErrorDegrees": [
+                [
+                  24.40097941853578,
+                  15.106057624799496
+                ],
+                [
+                  3.8431305472611976,
+                  9.299895946351224
+                ]
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "crouchWalk": {
+      "referenceClip": "Crouch walk 7",
+      "dataset": "100style",
+      "frameRange": [
+        42,
+        78
+      ],
+      "keyFrames": [
+        42,
+        44,
+        46,
+        48,
+        50,
+        52,
+        54,
+        56,
+        58,
+        60,
+        62,
+        64,
+        66,
+        68,
+        70,
+        72,
+        74,
+        76
+      ],
+      "models": {
+        "old": {
+          "phaseOffset96": 60,
+          "meanSegmentDirectionErrorDegrees": 22.379887710108804,
+          "maxSegmentDirectionErrorDegrees": 37.96320813743869,
+          "selected": [
+            {
+              "frame": 42,
+              "modelPhaseIndex": 60,
+              "referenceBendLRDegrees": [
+                62.783567167305954,
+                49.22288984864557
+              ],
+              "modelBendLRDegrees": [
+                98.88712344833611,
+                82.28720569342383
+              ],
+              "segmentDirectionErrorDegrees": [
+                [
+                  8.009575800030595,
+                  29.644888119164953
+                ],
+                [
+                  34.56849451478095,
+                  2.832579159295437
+                ]
+              ]
+            },
+            {
+              "frame": 52,
+              "modelPhaseIndex": 87,
+              "referenceBendLRDegrees": [
+                44.01593862709523,
+                45.374274429559506
+              ],
+              "modelBendLRDegrees": [
+                87.88186428568399,
+                95.2812017572481
+              ],
+              "segmentDirectionErrorDegrees": [
+                [
+                  35.70674556456256,
+                  13.021607142226648
+                ],
+                [
+                  31.137362197190267,
+                  21.65072855869012
+                ]
+              ]
+            },
+            {
+              "frame": 60,
+              "modelPhaseIndex": 12,
+              "referenceBendLRDegrees": [
+                45.525720710266555,
+                60.38720109993503
+              ],
+              "modelBendLRDegrees": [
+                82.58613808115433,
+                99.3233702919352
+              ],
+              "segmentDirectionErrorDegrees": [
+                [
+                  34.85390151771395,
+                  5.755160924793052
+                ],
+                [
+                  18.17500605119675,
+                  26.490735123761393
+                ]
+              ]
+            },
+            {
+              "frame": 68,
+              "modelPhaseIndex": 33,
+              "referenceBendLRDegrees": [
+                46.67819433697105,
+                58.92265308141544
+              ],
+              "modelBendLRDegrees": [
+                93.36890172075992,
+                98.52357617935684
+              ],
+              "segmentDirectionErrorDegrees": [
+                [
+                  34.167954933281656,
+                  14.567634732649282
+                ],
+                [
+                  37.84696867638704,
+                  9.458465954849943
+                ]
+              ]
+            }
+          ]
+        },
+        "trial": {
+          "phaseOffset96": 0,
+          "meanSegmentDirectionErrorDegrees": 1.5161306520172484,
+          "maxSegmentDirectionErrorDegrees": 10.922047510611623,
+          "selected": [
+            {
+              "frame": 42,
+              "modelPhaseIndex": 0,
+              "referenceBendLRDegrees": [
+                62.783567167305954,
+                49.22288984864557
+              ],
+              "modelBendLRDegrees": [
+                65.46513879222817,
+                50.47769141782056
+              ],
+              "segmentDirectionErrorDegrees": [
+                [
+                  4.127990291533597,
+                  10.664635278707209
+                ],
+                [
+                  1.3919077405388154,
+                  4.274251173222274
+                ]
+              ]
+            },
+            {
+              "frame": 52,
+              "modelPhaseIndex": 27,
+              "referenceBendLRDegrees": [
+                44.01593862709523,
+                45.374274429559506
+              ],
+              "modelBendLRDegrees": [
+                43.636161875842376,
+                45.546583130701016
+              ],
+              "segmentDirectionErrorDegrees": [
+                [
+                  0.15346108605645928,
+                  0.4319556025723445
+                ],
+                [
+                  0.19204110877793268,
+                  0.041968876497502375
+                ]
+              ]
+            },
+            {
+              "frame": 60,
+              "modelPhaseIndex": 48,
+              "referenceBendLRDegrees": [
+                45.525720710266555,
+                60.38720109993503
+              ],
+              "modelBendLRDegrees": [
+                48.18808129899063,
+                63.309439394190534
+              ],
+              "segmentDirectionErrorDegrees": [
+                [
+                  0.9970704761068087,
+                  3.8097093012618117
+                ],
+                [
+                  5.225186223021517,
+                  4.622758059831081
+                ]
+              ]
+            },
+            {
+              "frame": 68,
+              "modelPhaseIndex": 69,
+              "referenceBendLRDegrees": [
+                46.67819433697105,
+                58.92265308141544
+              ],
+              "modelBendLRDegrees": [
+                46.7712800815854,
+                59.3857824202768
+              ],
+              "segmentDirectionErrorDegrees": [
+                [
+                  0.09111503690925674,
+                  0.7660543621637965
+                ],
+                [
+                  0.29314997234956686,
+                  0.7569339193814811
+                ]
+              ]
+            }
+          ]
+        }
+      }
+    }
+  }
+}

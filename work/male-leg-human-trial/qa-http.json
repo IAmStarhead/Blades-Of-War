@@ -1,0 +1,140 @@
+{
+  "status": "pass",
+  "transport": "same-origin HTTP",
+  "htmlSha256": "9fa527f1230a5e26c3d97fc81a9a6f0dc11e2002d7a354b74837a8bed30888cb",
+  "scope": "Discrete automated samples and emulated touch; not proof of naturalness, collision-free motion or performance on a physical phone.",
+  "results": {
+    "initial": {
+      "clips": [
+        "Walk_Game_Trial",
+        "Run_Game_Trial"
+      ],
+      "bones": 52,
+      "status": "Стоит",
+      "well": "BowStoneWellProp",
+      "vertexCount": 2246
+    },
+    "parity": {
+      "bone": 4.996003610813204e-16,
+      "vertex": 7.771561172376096e-16,
+      "morph": 2.220446049250313e-16,
+      "floor": 0,
+      "cases": 80
+    },
+    "routes": {
+      "count": 48,
+      "detours": 20,
+      "maxError": 0.01194355287661919,
+      "minRadius": 1.4903577621030095
+    },
+    "interactions": {
+      "count": 12,
+      "maxSteps": 151
+    },
+    "transitions": [
+      {
+        "scenario": "walk-crouch",
+        "maxJoint": 0.07323454129833691,
+        "minClear": 0.0012499999995659484,
+        "maxLift": 0.013090900789075856,
+        "crouch": 0.9999999960240399
+      },
+      {
+        "scenario": "run-crouch",
+        "maxJoint": 0.13651949409329256,
+        "minClear": 0.0017032226495606122,
+        "maxLift": 0.0012914141838696641,
+        "crouch": 0.9999999960240399
+      },
+      {
+        "scenario": "crouch-walk",
+        "maxJoint": 0.07385957815223929,
+        "minClear": 0.00124999999553672,
+        "maxLift": 0.005670514903998112,
+        "crouch": 3.975958125556894e-9
+      },
+      {
+        "scenario": "reverse",
+        "maxJoint": 0.16305364001349998,
+        "minClear": 0.00124999999324874,
+        "maxLift": 0.01124041820040218,
+        "crouch": 6.568853018150322e-8
+      }
+    ],
+    "phaseSweep": {
+      "cases": 64,
+      "maxJointStep": 0.11493831911499912,
+      "maxSecondDifference": 0.07046972065970322,
+      "maxLift": 0.014887594321520273
+    },
+    "responsiveness": {
+      "gaitCases": 72,
+      "crouchEntries": 48,
+      "reversals": 9,
+      "minGaitMove": 1,
+      "maxBlendStep": 0.0255945734256825,
+      "crouchTiming": {
+        "0.1": 0.05,
+        "0.5": 0.11666666666666667,
+        "0.9": 0.26666666666666666,
+        "0.98": 0.4
+      },
+      "maxSpeedAt90": 0.3799999999999848,
+      "maxCrouchStep": 0.09112308940745695,
+      "maxLift": 0.015107637201234335
+    },
+    "focus": {
+      "button": true,
+      "keyboard": true,
+      "farDistance": 10.90745754451203,
+      "nearDistance": 3.871303293406959
+    },
+    "layouts": [
+      {
+        "width": 320,
+        "height": 568,
+        "controls": 7,
+        "groundTap": true,
+        "wellTap": true,
+        "cameraDrag": true,
+        "focusFramed": true
+      },
+      {
+        "width": 390,
+        "height": 844,
+        "controls": 7,
+        "groundTap": true,
+        "wellTap": true,
+        "cameraDrag": true,
+        "focusFramed": true
+      },
+      {
+        "width": 768,
+        "height": 1024,
+        "controls": 7,
+        "groundTap": true,
+        "wellTap": true,
+        "cameraDrag": true,
+        "focusFramed": true
+      },
+      {
+        "width": 844,
+        "height": 390,
+        "controls": 7,
+        "groundTap": true,
+        "wellTap": true,
+        "cameraDrag": true,
+        "focusFramed": true
+      }
+    ],
+    "liveTouch": {
+      "moved": true,
+      "crouchResponded": true,
+      "manual": false
+    },
+    "reducedMotion": {
+      "enabled": true,
+      "idleTime": 0
+    }
+  }
+}
