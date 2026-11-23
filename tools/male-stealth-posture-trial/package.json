@@ -1,0 +1,20 @@
+{
+  "name": "blades-of-war-male-stealth-posture-trial",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Separate stealth posture and motion comparison trial",
+  "dependencies": {
+    "@gltf-transform/core": "4.5.1",
+    "esbuild": "0.28.2",
+    "three": "0.187.0"
+  },
+  "scripts": {
+    "author": "node author-crouch.mjs",
+    "build": "node build.mjs",
+    "test": "node qa.mjs",
+    "test:report": "node qa-report.mjs",
+    "check:contact": "node measure-foot-contact.mjs",
+    "check:ground": "node check-ground.mjs"
+  }
+}

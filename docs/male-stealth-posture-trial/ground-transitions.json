@@ -1,0 +1,282 @@
+{
+  "status": "measured",
+  "htmlSha256": "f0ed071fdf6e466ccaaa0ae6eab4410b11ca4bfd9de4095af9288369734046f8",
+  "scope": "60 Hz samples in nine flat-ground scenarios; foot-region vertices only. Near-floor is not proof of physical contact or zero sliding. Flight while running is not assessed as an error.",
+  "thresholdM": 0.012,
+  "footVertices": {
+    "L": 1091,
+    "R": 1091
+  },
+  "results": [
+    {
+      "name": "enter-idle",
+      "samples": 120,
+      "minimumVertexY": 0.0012499999948058053,
+      "maxGapAll": 0.002000011306088902,
+      "framesWithNeitherFootWithinThreshold": 0,
+      "worstAll": {
+        "frame": 109,
+        "seconds": 1.8333333333333333,
+        "heights": {
+          "L": 0.002000025403091698,
+          "R": 0.002000011306088902
+        },
+        "speed": 0,
+        "crouch": 0.9999999999675103
+      },
+      "deepFrames": 102,
+      "maxDeepGap": 0.002000011306088902,
+      "deepFramesWithNeitherFootWithinThreshold": 0,
+      "longestSuchRunFrames": 0,
+      "worst": {
+        "frame": 109,
+        "seconds": 1.8333333333333333,
+        "heights": {
+          "L": 0.002000025403091698,
+          "R": 0.002000011306088902
+        },
+        "speed": 0,
+        "crouch": 0.9999999999675103
+      }
+    },
+    {
+      "name": "exit-idle",
+      "samples": 120,
+      "minimumVertexY": 0.001249995650035923,
+      "maxGapAll": 0.0012750137676099688,
+      "framesWithNeitherFootWithinThreshold": 0,
+      "worstAll": {
+        "frame": 47,
+        "seconds": 0.8,
+        "heights": {
+          "L": 0.0012752932874744473,
+          "R": 0.0012750137676099688
+        },
+        "speed": 0,
+        "crouch": 0.00007987476059324228
+      },
+      "deepFrames": 1,
+      "maxDeepGap": 0.001249999995435418,
+      "deepFramesWithNeitherFootWithinThreshold": 0,
+      "longestSuchRunFrames": 0,
+      "worst": {
+        "frame": 0,
+        "seconds": 0.016666666666666666,
+        "heights": {
+          "L": 0.001249999995435418,
+          "R": 0.0012499999984612997
+        },
+        "speed": 0,
+        "crouch": 0.9735009788369788
+      }
+    },
+    {
+      "name": "enter-walk",
+      "samples": 120,
+      "minimumVertexY": 0.0012499997591334225,
+      "maxGapAll": 0.005041344302542258,
+      "framesWithNeitherFootWithinThreshold": 0,
+      "worstAll": {
+        "frame": 75,
+        "seconds": 1.2666666666666666,
+        "heights": {
+          "L": 0.005041344302542258,
+          "R": 0.009308276329276242
+        },
+        "speed": 0.3799999999999848,
+        "crouch": 0.9999998879440714
+      },
+      "deepFrames": 102,
+      "maxDeepGap": 0.005041344302542258,
+      "deepFramesWithNeitherFootWithinThreshold": 0,
+      "longestSuchRunFrames": 0,
+      "worst": {
+        "frame": 75,
+        "seconds": 1.2666666666666666,
+        "heights": {
+          "L": 0.005041344302542258,
+          "R": 0.009308276329276242
+        },
+        "speed": 0.3799999999999848,
+        "crouch": 0.9999998879440714
+      }
+    },
+    {
+      "name": "exit-walk",
+      "samples": 120,
+      "minimumVertexY": 0.0012499998246721573,
+      "maxGapAll": 0.00872708545605333,
+      "framesWithNeitherFootWithinThreshold": 0,
+      "worstAll": {
+        "frame": 86,
+        "seconds": 1.45,
+        "heights": {
+          "L": 0.00872708545605333,
+          "R": 0.010157976374870587
+        },
+        "speed": 1.4400000000000013,
+        "crouch": 8.148476541392546e-9
+      },
+      "deepFrames": 1,
+      "maxDeepGap": 0.0013602561064564173,
+      "deepFramesWithNeitherFootWithinThreshold": 0,
+      "longestSuchRunFrames": 0,
+      "worst": {
+        "frame": 0,
+        "seconds": 0.016666666666666666,
+        "heights": {
+          "L": 0.033328550602323787,
+          "R": 0.0013602561064564173
+        },
+        "speed": 0.45500000000002316,
+        "crouch": 0.9735009788369788
+      }
+    },
+    {
+      "name": "enter-run",
+      "samples": 120,
+      "minimumVertexY": 0.0012499999999999456,
+      "maxGapAll": 0.005041346945240291,
+      "framesWithNeitherFootWithinThreshold": 0,
+      "worstAll": {
+        "frame": 75,
+        "seconds": 1.2666666666666666,
+        "heights": {
+          "L": 0.005041346945240291,
+          "R": 0.009308284168623074
+        },
+        "speed": 0.38000000000000145,
+        "crouch": 0.9999998879440714
+      },
+      "deepFrames": 102,
+      "maxDeepGap": 0.005041346945240291,
+      "deepFramesWithNeitherFootWithinThreshold": 0,
+      "longestSuchRunFrames": 0,
+      "worst": {
+        "frame": 75,
+        "seconds": 1.2666666666666666,
+        "heights": {
+          "L": 0.005041346945240291,
+          "R": 0.009308284168623074
+        },
+        "speed": 0.38000000000000145,
+        "crouch": 0.9999998879440714
+      }
+    },
+    {
+      "name": "exit-run",
+      "samples": 120,
+      "minimumVertexY": 0.0012499998246721573,
+      "maxGapAll": 0.07350827588080705,
+      "framesWithNeitherFootWithinThreshold": 47,
+      "worstAll": {
+        "frame": 103,
+        "seconds": 1.7333333333333334,
+        "heights": {
+          "L": 0.12389195641089978,
+          "R": 0.07350827588080705
+        },
+        "speed": 4.369999999999998,
+        "crouch": 1.3794540375768396e-10
+      },
+      "deepFrames": 1,
+      "maxDeepGap": 0.0013602561064564173,
+      "deepFramesWithNeitherFootWithinThreshold": 0,
+      "longestSuchRunFrames": 0,
+      "worst": {
+        "frame": 0,
+        "seconds": 0.016666666666666666,
+        "heights": {
+          "L": 0.033328550602323787,
+          "R": 0.0013602561064564173
+        },
+        "speed": 0.45500000000002316,
+        "crouch": 0.9735009788369788
+      }
+    },
+    {
+      "name": "reverse-walk",
+      "samples": 120,
+      "minimumVertexY": 0.0012499997591334225,
+      "maxGapAll": 0.009001333677401458,
+      "framesWithNeitherFootWithinThreshold": 0,
+      "worstAll": {
+        "frame": 91,
+        "seconds": 1.5333333333333332,
+        "heights": {
+          "L": 0.010199689842879361,
+          "R": 0.009001333677401458
+        },
+        "speed": 1.4400000000000013,
+        "crouch": 0.00003049095248183584
+      },
+      "deepFrames": 0,
+      "maxDeepGap": 0,
+      "deepFramesWithNeitherFootWithinThreshold": 0,
+      "longestSuchRunFrames": 0,
+      "worst": null
+    },
+    {
+      "name": "turn-crouched",
+      "samples": 120,
+      "minimumVertexY": 0.0012499999781220323,
+      "maxGapAll": 0.005736873777495176,
+      "framesWithNeitherFootWithinThreshold": 0,
+      "worstAll": {
+        "frame": 93,
+        "seconds": 1.5666666666666667,
+        "heights": {
+          "L": 0.0071963612696459706,
+          "R": 0.005736873777495176
+        },
+        "speed": 0.3799999999999848,
+        "crouch": 0.9999999999999998
+      },
+      "deepFrames": 120,
+      "maxDeepGap": 0.005736873777495176,
+      "deepFramesWithNeitherFootWithinThreshold": 0,
+      "longestSuchRunFrames": 0,
+      "worst": {
+        "frame": 93,
+        "seconds": 1.5666666666666667,
+        "heights": {
+          "L": 0.0071963612696459706,
+          "R": 0.005736873777495176
+        },
+        "speed": 0.3799999999999848,
+        "crouch": 0.9999999999999998
+      }
+    },
+    {
+      "name": "stop-crouched",
+      "samples": 120,
+      "minimumVertexY": 0.0019133700348341089,
+      "maxGapAll": 0.002679556108708844,
+      "framesWithNeitherFootWithinThreshold": 0,
+      "worstAll": {
+        "frame": 6,
+        "seconds": 0.11666666666666667,
+        "heights": {
+          "L": 0.019371620448318347,
+          "R": 0.002679556108708844
+        },
+        "speed": 0,
+        "crouch": 0.9999999999994674
+      },
+      "deepFrames": 120,
+      "maxDeepGap": 0.002679556108708844,
+      "deepFramesWithNeitherFootWithinThreshold": 0,
+      "longestSuchRunFrames": 0,
+      "worst": {
+        "frame": 6,
+        "seconds": 0.11666666666666667,
+        "heights": {
+          "L": 0.019371620448318347,
+          "R": 0.002679556108708844
+        },
+        "speed": 0,
+        "crouch": 0.9999999999994674
+      }
+    }
+  ]
+}

@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#17211d">
+<link rel="icon" href="data:,">
+<title>Blades of War — отдельная проба стелс-стойки</title>
+<style>
+:root{color-scheme:dark;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#151c18;color:#f0eee5}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden}
+body{min-width:280px}button{font:inherit}button:focus-visible,summary:focus-visible{outline:3px solid #f4d8a0;outline-offset:3px}
+.app{height:100dvh;display:flex;flex-direction:column;min-height:0;background:#19221d}
+.header{height:60px;flex:none;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 22px;border-bottom:1px solid #d7c6a824;background:#1a241e;z-index:3}
+.brand{display:flex;align-items:center;gap:11px;min-width:0}.seal{display:grid;place-items:center;width:32px;height:32px;flex:none;border:1px solid #bda77b;color:#e3c797;font:700 16px Georgia,serif;transform:rotate(45deg)}.seal span{transform:rotate(-45deg)}
+.brand strong{display:block;letter-spacing:.16em;font:700 13px Georgia,serif;white-space:nowrap}.brand small{display:block;margin-top:4px;color:#9ea99c;font-size:10px;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap}
+.header-right{display:flex;align-items:center;gap:12px}.version{font-size:10px;letter-spacing:.12em;color:#a8b2a3;text-transform:uppercase;white-space:nowrap}.compare-link{font-size:11px;color:#e4d4b3;white-space:nowrap;text-underline-offset:3px}.compare-link:focus-visible{outline:3px solid #f4d8a0;outline-offset:3px}
+details{position:relative}summary{display:grid;place-items:center;list-style:none;width:36px;height:36px;border:1px solid #82908067;border-radius:50%;cursor:pointer;color:#e4d4b3;font-weight:700}summary::-webkit-details-marker{display:none}summary:hover{background:#ffffff10}
+.guide{position:absolute;right:0;top:44px;width:min(330px,calc(100vw - 28px));padding:17px 18px;background:#202c25f7;border:1px solid #9a9e7d;border-radius:10px;box-shadow:0 12px 30px #10171199;color:#d7ddd1;font-size:13px;line-height:1.55}.guide strong{color:#f2e1bb}.guide p{margin:0 0 10px}.guide p:last-child{margin:0}
+.stage{position:relative;flex:1;min-height:0;overflow:hidden;background:#536251}#view{position:absolute;inset:0;touch-action:none;cursor:crosshair}canvas{width:100%;height:100%;display:block;touch-action:none}
+.location{position:absolute;top:20px;left:22px;pointer-events:none;text-shadow:0 2px 8px #111a15b8}.location small{display:block;font-size:10px;font-weight:700;letter-spacing:.19em;color:#f5deb0}.location strong{display:block;font:400 24px Georgia,serif;margin-top:4px;color:#fff8e7}.location p{margin:6px 0 0;font-size:11px;color:#e2e9d8}
+.scene-status{position:absolute;left:22px;bottom:18px;pointer-events:none;display:flex;align-items:center;gap:8px;padding:8px 11px;border:1px solid #d7c6a866;background:#1b2923d9;border-radius:7px;color:#f2eee1;box-shadow:0 5px 16px #10171133;font-size:12px;max-width:calc(100% - 160px)}.dot{width:6px;height:6px;border-radius:50%;background:#d1b883;flex:none;box-shadow:0 0 8px #e4c98c}
+.camera-tools{position:absolute;right:18px;bottom:16px;display:flex;gap:6px}.camera-tools button{width:44px;height:44px;border:1px solid #d8cfad77;border-radius:7px;background:#1c2923d9;color:#f0e2c1;font-size:23px;cursor:pointer}.camera-tools button:hover{background:#34463b}
+.error{position:absolute;inset:20% auto auto 50%;transform:translateX(-50%);width:min(520px,90%);padding:18px;background:#361f1df2;border:1px solid #f3a399;border-radius:10px;line-height:1.5;z-index:2}.error[hidden]{display:none}
+.footer{flex:none;border-top:1px solid #d7c6a824;background:#1a241e;padding:12px 22px max(12px,env(safe-area-inset-bottom));display:flex;align-items:center;gap:16px;justify-content:space-between}
+.hint{max-width:440px;color:#aebbad;font-size:12px;line-height:1.5}.hint strong{color:#e9dcc0;font-weight:600}.mobile-hint{display:none}
+.actions{display:flex;gap:8px;align-items:stretch}.action{min-height:48px;border:1px solid #77847577;border-radius:7px;padding:8px 14px;color:#e6eadf;background:#2a382e;cursor:pointer;white-space:nowrap;font-size:12px;font-weight:650}.action:hover{background:#374a3b;border-color:#b9ab86}.action.active{background:#75633f;border-color:#d4bd8b;color:#fff8e9}.action.primary{background:#c0a772;border-color:#d2bd8c;color:#1c291f}.action.primary:hover{background:#d9c28d}.action:disabled{opacity:.5;cursor:not-allowed}.key{opacity:.65;font-size:10px;margin-left:5px}
+@media(max-width:790px){.header{height:54px;padding:0 15px}.brand strong{font-size:12px}.brand small{font-size:9px}.version{display:none}.footer{padding:9px 10px max(10px,env(safe-area-inset-bottom));display:block}.hint{display:none}.mobile-hint{display:block;margin:0 2px 8px;color:#adbbac;font-size:11px;line-height:1.2}.actions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}.action{min-width:0;padding:7px 3px;white-space:normal;font-size:11px;line-height:1.2;min-height:48px}.key{display:none}.location{top:15px;left:15px}.location strong{font-size:21px}.location p{font-size:10px}.scene-status{left:12px;bottom:12px;font-size:11px;max-width:calc(100% - 165px)}.camera-tools{right:10px;bottom:10px}.camera-tools button{width:44px;height:44px}}
+@media(max-height:470px) and (orientation:landscape){.header{height:42px}.brand small,.mobile-hint{display:none}.seal{width:25px;height:25px}.footer{padding:5px 10px max(5px,env(safe-area-inset-bottom))}.action{min-height:44px}.location{top:10px}.location strong{font-size:18px}.location p{display:none}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="header">
+    <div class="brand"><div class="seal" aria-hidden="true"><span>B</span></div><div><strong>BLADES OF WAR</strong><small>Персонаж · игровая проба</small></div></div>
+    <div class="header-right"><span class="version">Стелс · проба стойки</span><a class="compare-link" href="study.html">Сравнение</a><details><summary aria-label="Как управлять">?</summary><div class="guide">
+      <p><strong>Двигаться:</strong> нажмите на землю или удерживайте WASD / стрелки. Shift во время движения — бег; на телефоне используйте кнопку темпа.</p>
+      <p><strong>Присесть:</strong> C или кнопка «Присесть». В приседе персонаж идёт медленно.</p>
+      <p><strong>Колодец:</strong> нажмите на него, кнопку «Осмотреть» или E. Персонаж подойдёт и осмотрит его. Это анимационная проба, не добыча воды.</p>
+      <p><strong>Камера:</strong> потяните сцену или используйте ↶ / ↷. Кнопка + или V включает крупный план персонажа; − возвращает общий план. Esc останавливает движение.</p>
+      <p>Стойка и руки изменены вручную; движение ног основано на прежней адаптации 100STYLE (Ian Mason, Sebastian Starke, Taku Komura; CC BY 4.0) через HumanMotionCraft.</p>
+    </div></details></div>
+  </header>
+  <main class="stage" aria-label="Игровая сцена у колодца">
+    <div id="view"></div>
+    <div class="location"><small>ПРОБА СТЕЛС-СТОЙКИ</small><strong>У колодца</strong><p>Новая поза · прежняя сцена сохранена</p></div>
+    <div class="scene-status" role="status" aria-live="polite"><span class="dot"></span><span id="status">Загрузка сцены…</span></div>
+    <div class="camera-tools" aria-label="Управление камерой"><button type="button" data-camera="-1" aria-label="Повернуть камеру влево">↶</button><button type="button" data-camera="1" aria-label="Повернуть камеру вправо">↷</button><button type="button" id="focus" aria-label="Крупный план персонажа" aria-pressed="false" title="Крупный план персонажа">+</button></div>
+    <div class="error" id="error" role="alert" hidden></div>
+  </main>
+  <footer class="footer">
+    <div class="hint"><strong>Щелчок</strong> — идти · <strong>WASD / стрелки</strong> — движение · <strong>Shift</strong> — бег<br>Потяните сцену для поворота · <strong>+</strong> — крупный план · <strong>?</strong> — подсказки.</div>
+    <p class="mobile-hint">Коснитесь земли, чтобы идти · + для крупного плана</p>
+    <div class="actions">
+      <button class="action" type="button" id="pace" aria-pressed="false">Ходьба <span class="key">⇧</span></button>
+      <button class="action" type="button" id="crouch" aria-pressed="false">Присесть <span class="key">C</span></button>
+      <button class="action primary" type="button" id="interact">Осмотреть <span class="key">E</span></button>
+      <button class="action" type="button" id="reset">В начало</button>
+    </div>
+  </footer>
+</div>
+<script>
+const MODEL_URI='data:model/gltf-binary;base64,__MODEL_BASE64__';
+__VIEWER_BUNDLE__
+</script>
+</body>
+</html>
