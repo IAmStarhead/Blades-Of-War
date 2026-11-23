@@ -1,0 +1,75 @@
+{
+  "scope": "Separate flat-ground playable scene; not a complete game or stealth system.",
+  "modelSha256": "eb569ef2269a8d7e40378590614beebc933edd3bdcd7340f8146494ceb975484",
+  "wellSourceSha256": "62ef93410bca00fe6b2bc7e2232138edf1077178cb704d59c2aecd9ddf0ce7b5",
+  "runPhaseOffset": -0.09375,
+  "animationControl": {
+    "gaitBlend": "critically damped actual-speed target",
+    "gaitResponse": 18,
+    "crouchBlend": "critically damped runtime blend",
+    "crouchResponse": 15,
+    "crouchBraking": 15,
+    "note": "The library crouch is retargeted and mixed with the previous fitted crouch; no standalone crouch-entry clip or planted-foot lock."
+  },
+  "generatedCrouch": [
+    {
+      "name": "Crouch_Hybrid_Idle",
+      "sourceName": "Crouch_Idle_Loop",
+      "duration": 2.4,
+      "speed": 0,
+      "stats": {
+        "legScale": 1.0670310166352266,
+        "sourceWeight": 0.45,
+        "phaseOffset": 0,
+        "sourceDuration": 2.9166667461395264,
+        "maxSourceCorrection": 0.006775859804436049,
+        "maxBlendCorrection": 0.044417977461736514,
+        "rawMinimum": [
+          -0.04241797746173651,
+          -0.04165981458125741
+        ],
+        "kneeDegrees": [
+          83.34302970522532,
+          99.83211802260544
+        ],
+        "maxIdleFootGap": 0.012110432249467552,
+        "maxFitMiss": 0,
+        "maxIdleResidual": 4.718447854656915e-16
+      }
+    },
+    {
+      "name": "Crouch_Hybrid_Walk",
+      "sourceName": "Crouch_Fwd_Loop",
+      "duration": 1.6,
+      "speed": 0.38,
+      "stats": {
+        "legScale": 1.0670310166352266,
+        "sourceWeight": 0.45,
+        "phaseOffset": -0.06666666666666667,
+        "sourceDuration": 2,
+        "maxSourceCorrection": 0.015861709639486833,
+        "maxBlendCorrection": 0.03322762476797438,
+        "rawMinimum": [
+          -0.031227624767974384,
+          -0.0029851345983213425
+        ],
+        "kneeDegrees": [
+          77.83627923381454,
+          106.50080621642209
+        ],
+        "maxIdleFootGap": 0,
+        "maxFitMiss": 0,
+        "maxIdleResidual": 0
+      }
+    }
+  ],
+  "assetsSha256": {
+    "index.html": "552a72e26a33274422041cac7c584b325fb276d22e8ba5370ed1b97d8f3584b1",
+    "README.md": "31395f0d9145d94f0fb4a9dbb6da68576e37f6eeb19172e5d89cb3f51d4e2a7d",
+    "CREDITS.md": "fada21169b3c9ea992cde8e3ae43ed92c3cdf51c6a9948e4fe6a8a9cfac21c8e",
+    "LICENSE_CC0_ASSETS.md": "f6089cba01cb570a24712b41ab8a586ccd3cc5ef53dc266ca50b95c288956d2c",
+    "LICENSE_MAKEHUMAN.md": "edd99571ca62698f78c943fd4fffb159a413c315fa0d4819d3cec5cadaf8b4f1",
+    "LICENSE_QUATERNIUS_CC0.txt": "f6089cba01cb570a24712b41ab8a586ccd3cc5ef53dc266ca50b95c288956d2c",
+    "LICENSE_THREE.txt": "8b378ebe60e2fe500158cb0ac71cb5e8b7d92953c2abcc63a0eb90499653b5bc"
+  }
+}
