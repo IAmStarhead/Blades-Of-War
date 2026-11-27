@@ -1,0 +1,15 @@
+{
+  "status": "pass",
+  "transport": "same-origin HTTP",
+  "htmlSha256": "206c5aeb0f20d7f9837fc685465090291f84894f449ea3a248b3a8253d1a8a9b",
+  "videoSha256": "96ab5cdfa03c180074f8b1c2d108109df1c7241b92f9f737f8f9190299795358",
+  "range": true,
+  "result": {
+    "duration": 33,
+    "seeked": 17.16,
+    "after": 17.465148,
+    "width": 540,
+    "height": 594
+  },
+  "scope": "Browser playback/seek and HTTP Range checks; not a physical-phone test."
+}

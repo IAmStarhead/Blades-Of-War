@@ -1,0 +1,28 @@
+{
+  "name": "blades-of-war-unarmed-combat-trial",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Separate unarmed combat trial on the earlier character scene",
+  "dependencies": {
+    "@gltf-transform/core": "4.5.1",
+    "esbuild": "0.28.2",
+    "three": "0.187.0"
+  },
+  "scripts": {
+    "author": "node author.mjs",
+    "build": "node build.mjs",
+    "test": "node qa.mjs",
+    "preview": "node serve.mjs",
+    "package:trial": "python3 package.py",
+    "check:video": "node qa-video.mjs",
+    "check:contact": "node measure-gait-contact.mjs",
+    "export:collision": "node export-collision.mjs",
+    "record": "node record.mjs",
+    "check:package": "node qa-package.mjs"
+  },
+  "devDependencies": {
+    "@sparticuz/chromium": "153.0.0",
+    "puppeteer-core": "25.17.0"
+  }
+}

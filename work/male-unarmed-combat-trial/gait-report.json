@@ -1,0 +1,78 @@
+{
+  "status": "measured",
+  "htmlSha256": "206c5aeb0f20d7f9837fc685465090291f84894f449ea3a248b3a8253d1a8a9b",
+  "method": "Two and a half seconds at 60 Hz of steady straight walking, running and combat walking (one starting phase each). A near-floor episode follows the SAME skinned vertex while y <= 0.012 m for at least six samples; an episode still active at the end is marked truncated. Ground surface is at y=-0.002 m.",
+  "limitations": "Near-floor is not known physical contact. Net movement is not a force measurement or the motion of an entire foot; toe roll, threshold and correlated vertices matter. No horizontal foot lock is implemented, and blends and short/reversed routes can still slide. Does not assess all poses, surfaces or naturalness.",
+  "fps": 60,
+  "thresholdM": 0.012,
+  "minimumSamples": 6,
+  "footVertices": {
+    "L": 1091,
+    "R": 1091
+  },
+  "rows": [
+    {
+      "mode": "walk",
+      "seed": 0,
+      "frames": 150,
+      "minimumVertexY": 0.00213550010993435,
+      "episodes": 737,
+      "netHorizontalM": {
+        "median": 0.04020643211809925,
+        "p90": 0.05987800471904668,
+        "max": 0.06694536848931633
+      },
+      "worst": {
+        "side": "R",
+        "vertex": 4518,
+        "startFrame": 0,
+        "count": 17,
+        "path": 0.06982311850643076,
+        "net": 0.06694536848931633,
+        "truncated": false
+      }
+    },
+    {
+      "mode": "run",
+      "seed": 0,
+      "frames": 150,
+      "minimumVertexY": 0.002238814150139889,
+      "episodes": 291,
+      "netHorizontalM": {
+        "median": 0.038957561742492264,
+        "p90": 0.042262297123814276,
+        "max": 0.11604391338731676
+      },
+      "worst": {
+        "side": "R",
+        "vertex": 4563,
+        "startFrame": 35,
+        "count": 10,
+        "path": 0.13273819443601173,
+        "net": 0.11604391338731676,
+        "truncated": false
+      }
+    },
+    {
+      "mode": "combat",
+      "seed": 0,
+      "frames": 150,
+      "minimumVertexY": 0.002211328993642038,
+      "episodes": 540,
+      "netHorizontalM": {
+        "median": 0.0410212799689023,
+        "p90": 0.06193937041984642,
+        "max": 0.06582261099905258
+      },
+      "worst": {
+        "side": "R",
+        "vertex": 4476,
+        "startFrame": 78,
+        "count": 26,
+        "path": 0.07041380601570185,
+        "net": 0.06582261099905258,
+        "truncated": false
+      }
+    }
+  ]
+}

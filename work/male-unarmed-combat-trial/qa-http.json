@@ -1,0 +1,217 @@
+{
+  "status": "pass",
+  "transport": "same-origin HTTP",
+  "htmlSha256": "206c5aeb0f20d7f9837fc685465090291f84894f449ea3a248b3a8253d1a8a9b",
+  "scope": "Discrete samples and browser-emulated events only; no full collision proof, artistic approval, physical contact simulation or physical-phone test.",
+  "results": {
+    "initial": {
+      "clips": [
+        "Walk_Game_Trial",
+        "Run_Game_Trial"
+      ],
+      "bones": 52,
+      "well": "BowStoneWellProp",
+      "status": "Стоит",
+      "crouch": false,
+      "fightClips": [
+        "walk",
+        "run",
+        "idle",
+        "inspect",
+        "guard",
+        "combatWalk",
+        "jab",
+        "cross",
+        "kickR",
+        "kickL"
+      ],
+      "vertices": 2246
+    },
+    "parity": {
+      "cases": 80,
+      "bone": 0,
+      "vertex": 0,
+      "morph": 0,
+      "floor": 0,
+      "afterCombatCases": 20,
+      "afterCombatMax": 1.021405182655144e-14
+    },
+    "transitions": {
+      "cases": 72,
+      "maxJointStep": 0.10700282305806706,
+      "maxSecondDifference": 0.08091871034911645,
+      "minSole": 0.0012499999832107178,
+      "maxCorrection": 0.012459610383381128
+    },
+    "attacks": [
+      {
+        "name": "jab",
+        "maxTravel": [
+          0.43565307146557425,
+          0.25490642287561166,
+          0.006496598447908207,
+          0.011925053576691037
+        ],
+        "peakFoot": 0.11181148061823704,
+        "maxStep": 0.15362724378213563,
+        "minFloor": 0.0017203157638424485,
+        "ended": true,
+        "weights": 0.0008389711252524235
+      },
+      {
+        "name": "cross",
+        "maxTravel": [
+          0.14390366058574916,
+          0.5153341440346584,
+          0.021976687895718917,
+          0.15670470650837956
+        ],
+        "peakFoot": 0.18848364542534912,
+        "maxStep": 0.1462484776385004,
+        "minFloor": 0.001907305080211201,
+        "ended": true,
+        "weights": 0.0008389718631000438
+      },
+      {
+        "name": "kickR",
+        "maxTravel": [
+          0.7110340621887866,
+          0.5819085650196522,
+          0.2159817576681309,
+          1.7948849088200114
+        ],
+        "peakFoot": 1.142721044937901,
+        "maxStep": 0.11439893171983315,
+        "minFloor": 0.001,
+        "ended": true,
+        "weights": 0.0008389719092043182
+      },
+      {
+        "name": "kickL",
+        "maxTravel": [
+          0.411429912075374,
+          0.5219338541447545,
+          1.5269498917110924,
+          0.5047293700594241
+        ],
+        "peakFoot": 1.1427193786490493,
+        "maxStep": 0.11458721806950059,
+        "minFloor": 0.0009999999999999974,
+        "ended": true,
+        "weights": 0.0008389719092043182
+      }
+    ],
+    "interruptions": {
+      "cases": 16,
+      "maxJointStep": 0.15358748090032426,
+      "minSole": 0.0009999999999999974
+    },
+    "keyboard": {
+      "walk": true,
+      "run": true,
+      "combatSpeed": 1.1,
+      "punch": true,
+      "kickAlternates": true,
+      "interrupt": {
+        "wasStrike": false,
+        "active": false,
+        "distance": 0.05577097076280746,
+        "speed": 0.9999999999999964,
+        "fighting": true
+      },
+      "exit": true,
+      "crouchKeyInactive": true,
+      "braking": [
+        {
+          "mode": "walk",
+          "slowed": 0.9733333333333332,
+          "restarted": 1.0483333333333331,
+          "turnDelta": 0.1166666666666667
+        },
+        {
+          "mode": "run",
+          "slowed": 3.9033333333333347,
+          "restarted": 3.978333333333335,
+          "turnDelta": 0.1166666666666667
+        }
+      ]
+    },
+    "mouse": {
+      "ground": true,
+      "cancelKick": true,
+      "drag": true,
+      "well": true
+    },
+    "routes": {
+      "count": 24,
+      "detours": 9,
+      "minRadius": 1.4902077012068256
+    },
+    "inspections": {
+      "count": 8
+    },
+    "layouts": [
+      {
+        "width": 320,
+        "height": 568,
+        "controls": 9,
+        "fight": true,
+        "punch": true,
+        "kick": true,
+        "focus": true,
+        "ground": true,
+        "drag": true,
+        "framingCases": 8,
+        "maxJointX": 0.8528866488810292,
+        "maxJointY": 0.5589241368802791
+      },
+      {
+        "width": 390,
+        "height": 844,
+        "controls": 9,
+        "fight": true,
+        "punch": true,
+        "kick": true,
+        "focus": true,
+        "ground": true,
+        "drag": true,
+        "framingCases": 8,
+        "maxJointX": 0.8314285808300518,
+        "maxJointY": 0.37254371698555133
+      },
+      {
+        "width": 768,
+        "height": 1024,
+        "controls": 9,
+        "fight": true,
+        "punch": true,
+        "kick": true,
+        "focus": true,
+        "ground": true,
+        "drag": true,
+        "framingCases": 8,
+        "maxJointX": 0.8558182594592944,
+        "maxJointY": 0.581502644099769
+      },
+      {
+        "width": 844,
+        "height": 390,
+        "controls": 9,
+        "fight": true,
+        "punch": true,
+        "kick": true,
+        "focus": true,
+        "ground": true,
+        "drag": true,
+        "framingCases": 8,
+        "maxJointX": 0.2992644782683077,
+        "maxJointY": 0.6279849582683674
+      }
+    ],
+    "liveTouch": {
+      "manual": false,
+      "attack": "kickR",
+      "combat": 0.061766566574793624
+    }
+  }
+}
