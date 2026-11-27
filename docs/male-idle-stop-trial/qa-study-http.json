@@ -1,0 +1,55 @@
+{
+  "status": "pass",
+  "transport": "same-origin HTTP",
+  "studySha256": "5ca257730ccf3e552fbf16741bd53b83dfc808593f0d0dcfea73e07c2c0f6dd2",
+  "scope": "Emulated browser, video playback/seek and link checks; not proof of performance on a physical device.",
+  "results": {
+    "videos": [
+      {
+        "duration": 14,
+        "currentTime": 8,
+        "readyState": 4,
+        "videoWidth": 960,
+        "videoHeight": 560
+      },
+      {
+        "duration": 56,
+        "currentTime": 8,
+        "readyState": 4,
+        "videoWidth": 960,
+        "videoHeight": 560
+      }
+    ],
+    "range": true,
+    "layouts": [
+      {
+        "width": 320,
+        "height": 568,
+        "documentWidth": 320,
+        "images": 1,
+        "links": 14
+      },
+      {
+        "width": 390,
+        "height": 844,
+        "documentWidth": 390,
+        "images": 1,
+        "links": 14
+      },
+      {
+        "width": 768,
+        "height": 1024,
+        "documentWidth": 768,
+        "images": 1,
+        "links": 14
+      },
+      {
+        "width": 1280,
+        "height": 800,
+        "documentWidth": 1280,
+        "images": 1,
+        "links": 14
+      }
+    ]
+  }
+}

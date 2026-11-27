@@ -1,0 +1,111 @@
+{
+  "htmlSha256": "d72670574cdb60d700c5fbd521ccc04da48768b9d6993185b05f0caff3c94ed9",
+  "count": 230,
+  "vertices": 7147,
+  "scope": "Only selected hand, foot, hip and knee surfaces and discrete poses; not all body regions or motion. Contact depth is not measured.",
+  "method": "Actual Three.js skinned+morphed vertices, chosen regions and discrete poses only.",
+  "tests": {
+    "handL": {
+      "poses": 0,
+      "pairs": 0,
+      "max": 0,
+      "examples": []
+    },
+    "handR": {
+      "poses": 0,
+      "pairs": 0,
+      "max": 0,
+      "examples": []
+    },
+    "footL": {
+      "poses": 0,
+      "pairs": 0,
+      "max": 0,
+      "examples": []
+    },
+    "footR": {
+      "poses": 0,
+      "pairs": 0,
+      "max": 0,
+      "examples": []
+    },
+    "handL-hip": {
+      "poses": 0,
+      "pairs": 0,
+      "max": 0,
+      "examples": []
+    },
+    "handR-hip": {
+      "poses": 0,
+      "pairs": 0,
+      "max": 0,
+      "examples": []
+    },
+    "handL-kneeL": {
+      "poses": 0,
+      "pairs": 0,
+      "max": 0,
+      "examples": []
+    },
+    "handR-kneeR": {
+      "poses": 0,
+      "pairs": 0,
+      "max": 0,
+      "examples": []
+    },
+    "handL-kneeR": {
+      "poses": 0,
+      "pairs": 0,
+      "max": 0,
+      "examples": []
+    },
+    "handR-kneeL": {
+      "poses": 0,
+      "pairs": 0,
+      "max": 0,
+      "examples": []
+    },
+    "handL-handR": {
+      "poses": 0,
+      "pairs": 0,
+      "max": 0,
+      "examples": []
+    },
+    "handL-footL": {
+      "poses": 0,
+      "pairs": 0,
+      "max": 0,
+      "examples": []
+    },
+    "handL-footR": {
+      "poses": 0,
+      "pairs": 0,
+      "max": 0,
+      "examples": []
+    },
+    "handR-footL": {
+      "poses": 0,
+      "pairs": 0,
+      "max": 0,
+      "examples": []
+    },
+    "handR-footR": {
+      "poses": 0,
+      "pairs": 0,
+      "max": 0,
+      "examples": []
+    },
+    "footL-footR": {
+      "poses": 0,
+      "pairs": 0,
+      "max": 0,
+      "examples": []
+    },
+    "kneeL-kneeR": {
+      "poses": 0,
+      "pairs": 0,
+      "max": 0,
+      "examples": []
+    }
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "name": "blades-of-war-male-idle-stop-trial",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Separate idle, stopping and transition animation trial",
+  "dependencies": {
+    "@gltf-transform/core": "4.5.1",
+    "esbuild": "0.28.2",
+    "three": "0.187.0"
+  },
+  "scripts": {
+    "author": "node author.mjs",
+    "build": "node build.mjs",
+    "test": "node qa.mjs",
+    "check:study": "node qa-study.mjs",
+    "check:contact": "node measure-stop-contact.mjs",
+    "preview": "node serve.mjs"
+  }
+}

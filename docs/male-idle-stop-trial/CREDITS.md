@@ -1,0 +1,24 @@
+# Credits and changes — idle and stopping trial
+
+This is a separate experiment, not an unmodified recording or a licence for the whole game. The previous posture trial and its assets are unchanged; crouching is disabled in the new trial only. The videos show rendered project scenes, not original footage.
+
+## Idle: MakeHuman / HumanMotionCraft
+
+The starting motion is HumanMotionCraft's [Standing/Idle.clip.json](https://github.com/YalKouassi/HumanMotionCraft/blob/5eda21e0be7e2c9912b204eabb1a5d79ecd90d06/assets/library/animations/Standing/Idle.clip.json), SHA-256 `c72b12a0938a28fc9889f95eed9bf6becb57e58133b56435a847dcce8bdf2445`. The source identifies it as `origin: osb`; HumanMotionCraft [attributes its OSB poses and animations](https://github.com/YalKouassi/HumanMotionCraft/blob/5eda21e0be7e2c9912b204eabb1a5d79ecd90d06/ATTRIBUTION.md) to the MakeHuman community pose packs, via the Anny pose library, CC0 1.0. We retargeted the 30 fps keys to a different 52-bone rig, removed root heading and forward travel, retained a small lateral weight shift, used the existing walk's finger tracks, added small authored breathing and closed the loop. Runtime blending, floor correction, knee-volume morphs and limited foot fitting make additional changes.
+
+## Stops: HumanMotionCraft / NVIDIA Kimodo
+
+HumanMotionCraft lists `dataset: kimodo` clips as generated with NVIDIA Kimodo-SOMA-RP-v1.2 and then retargeted/cut by its project. These are **generated movements, not motion-capture recordings**, even though the JSON includes `origin: mocap`. Its [attribution](https://github.com/YalKouassi/HumanMotionCraft/blob/5eda21e0be7e2c9912b204eabb1a5d79ecd90d06/ATTRIBUTION.md) states that NVIDIA's Open Model License claims no ownership of the model's outputs; see its complete [NOTICE](NOTICE_HUMANMOTIONCRAFT.txt), including the Kimodo and Meta Llama 3 notices. HumanMotionCraft is not affiliated with NVIDIA. This delivery contains the adapted motion data, not the Kimodo model, its text encoder or their weights.
+
+- [Locomotion/Stop 8.clip.json](https://github.com/YalKouassi/HumanMotionCraft/blob/5eda21e0be7e2c9912b204eabb1a5d79ecd90d06/assets/library/animations/Locomotion/Stop%208.clip.json), SHA-256 `13a40f6cc4112ee46133f79eba3bba31de26f08575df48b1ad12298f4ef811b0`: starting source for the walking stop.
+- [Locomotion/Stop 7.clip.json](https://github.com/YalKouassi/HumanMotionCraft/blob/5eda21e0be7e2c9912b204eabb1a5d79ecd90d06/assets/library/animations/Locomotion/Stop%207.clip.json), SHA-256 `56b150339dd41fa48569895080653b048ce0baa751480ccfd608bb7ad65845f2`: starting source for the running stop.
+
+For this trial, we take source frames 40–89 at 30 fps, remove yaw and horizontal root travel from the skeletal clips, retarget onto a different character, widen one arm during the running stop, and generate mirrored versions and several phase-aware entry points. The controller uses a monotonic speed/distance curve derived from the source, blending into and out of the adapted clip; contact fitting and vertical floor correction further modify poses. Intermediate keys use SLERP/linear interpolation rather than HumanMotionCraft's original interpolation. The result is an authored adaptation, not an untouched source clip.
+
+## Source rig, character and existing gait
+
+The [HumanMotionCraft default rig](https://github.com/YalKouassi/HumanMotionCraft/blob/5eda21e0be7e2c9912b204eabb1a5d79ecd90d06/assets/rig/default_rig.json), SHA-256 `24979f497bc7b75eaea811cd078ddb6d1d054be305fa2c1712a3e14605f60d73`, is used during retargeting. HumanMotionCraft attributes it to **Anny**, Copyright © 2025 NAVER Corporation, [Apache-2.0](LICENSE_ANNY_APACHE-2.0.txt), itself from MakeHuman MPFB2, CC0 1.0. HumanMotionCraft is independent of NAVER.
+
+The scene embeds the unchanged `work/male-leg-volume/male_leg_volume_trial.glb` (SHA-256 `eb569ef2269a8d7e40378590614beebc933edd3bdcd7340f8146494ceb975484`) and the unchanged procedural well `tools/male-rig-trial/well-source.mjs` (SHA-256 `62ef93410bca00fe6b2bc7e2232138edf1077178cb704d59c2aecd9ddf0ce7b5`). The character uses MakeHuman assets; its adapted gait traces to **Quaternius — Animated Human Low Poly**, CC0, and inherited body fitting used ACCAD / The Ohio State University motion, CC BY 3.0. Detailed provenance, credits and the earlier modifications are retained in [INHERITED_CREDITS.md](INHERITED_CREDITS.md); its opening crouch section describes an earlier scene, not this trial. The relevant [MakeHuman](LICENSE_MAKEHUMAN.md), [CC0 asset](LICENSE_CC0_ASSETS.md) and [Quaternius CC0](LICENSE_QUATERNIUS_CC0.txt) texts are included here.
+
+Viewer: [Three.js](https://threejs.org/), [MIT](LICENSE_THREE.txt). The comparison videos are renders from the two project scenes; their floor markers exist only in those recordings. The earlier trial already had a small authored breathing motion, so the video does not depict a literally static previous idle.

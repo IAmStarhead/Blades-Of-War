@@ -1,0 +1,163 @@
+{
+  "status": "pass",
+  "transport": "same-origin HTTP",
+  "htmlSha256": "d72670574cdb60d700c5fbd521ccc04da48768b9d6993185b05f0caff3c94ed9",
+  "scope": "Discrete automated samples and emulated touch; not proof of naturalness, whole-body collision-free motion, zero sliding or physical-phone performance.",
+  "results": {
+    "initial": {
+      "clips": [
+        "Walk_Game_Trial",
+        "Run_Game_Trial"
+      ],
+      "rig": 52,
+      "floorVertices": 2246,
+      "status": "Стоит",
+      "focus": true,
+      "crouchButton": false,
+      "crouchAPI": "undefined",
+      "well": "BowStoneWellProp"
+    },
+    "idle": {
+      "duration": 5.9333333,
+      "maxChestDegrees": 1.3995451530033862,
+      "lateralRange": 0.024137100351001556,
+      "seamAngle": 2.9802322387695312e-8,
+      "hipsPresent": true
+    },
+    "gaitParity": {
+      "bone": 4.996003610813204e-16,
+      "vertex": 7.771561172376096e-16,
+      "morph": 2.220446049250313e-16,
+      "floor": 0,
+      "cases": 80
+    },
+    "transitions": {
+      "cases": 48,
+      "maxJointStepM": 0.13023658925394832,
+      "maxSecondDifferenceM": 0.06423151758581576,
+      "minSampledFootY": 0.0009999999999999996,
+      "maxVerticalLiftM": 0.008990218989037731,
+      "choices": [
+        "brakeWalk",
+        "brakeWalkMirror",
+        "brakeRunMirror",
+        "brakeRun"
+      ],
+      "starts": [
+        40,
+        42,
+        44,
+        46,
+        48,
+        50
+      ]
+    },
+    "interruptions": {
+      "cases": 10,
+      "maxJointStepM": 0.11770859277070393
+    },
+    "reversals": [
+      {
+        "mode": "walk",
+        "brake": true,
+        "speed": 1.44,
+        "yaw": 0
+      },
+      {
+        "mode": "run",
+        "brake": true,
+        "speed": 4.37,
+        "yaw": 0
+      }
+    ],
+    "routes": {
+      "count": 32,
+      "detours": 14,
+      "maxError": 2.1810325415876494e-7
+    },
+    "shortRoutes": {
+      "count": 18,
+      "maxError": 4.959393384851296e-8,
+      "closeRetarget": [
+        {
+          "mode": "walk",
+          "seen": true,
+          "remaining": false,
+          "error": 8.522148389254389e-9,
+          "steps": 241
+        },
+        {
+          "mode": "run",
+          "seen": true,
+          "remaining": false,
+          "error": 8.350890718869639e-9,
+          "steps": 193
+        }
+      ]
+    },
+    "interactions": {
+      "count": 12,
+      "maxSteps": 276
+    },
+    "realKeyboardAndStop": {
+      "firstBrake": {
+        "speed": 4.296490227989233,
+        "kind": "run",
+        "status": "Тормозит после бега"
+      },
+      "button": true,
+      "escape": true
+    },
+    "mouse": {
+      "ground": true,
+      "drag": true
+    },
+    "layouts": [
+      {
+        "width": 320,
+        "height": 568,
+        "controls": 7,
+        "groundTap": true,
+        "stopTap": true,
+        "cameraDrag": true,
+        "focusFramed": true
+      },
+      {
+        "width": 390,
+        "height": 844,
+        "controls": 7,
+        "groundTap": true,
+        "stopTap": true,
+        "cameraDrag": true,
+        "focusFramed": true
+      },
+      {
+        "width": 768,
+        "height": 1024,
+        "controls": 7,
+        "groundTap": true,
+        "stopTap": true,
+        "cameraDrag": true,
+        "focusFramed": true
+      },
+      {
+        "width": 844,
+        "height": 390,
+        "controls": 7,
+        "groundTap": true,
+        "stopTap": true,
+        "cameraDrag": true,
+        "focusFramed": true
+      }
+    ],
+    "liveTouch": {
+      "manual": false,
+      "moved": true,
+      "stopped": true
+    },
+    "reducedMotion": {
+      "enabled": true,
+      "idleTime": 0
+    }
+  }
+}
