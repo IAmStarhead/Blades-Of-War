@@ -1,0 +1,289 @@
+{
+  "status": "pass",
+  "transport": "local file with network disabled",
+  "htmlSha256": "a709eb7a397440c3ea9195cc80b67d1f9c021a075e52f4762496dce2d9525636",
+  "scope": "Discrete automated samples and emulated touch; not proof of naturalness, whole-body collision-free motion, zero sliding or physical-phone performance.",
+  "results": {
+    "initial": {
+      "clips": [
+        "Walk_Game_Trial",
+        "Run_Game_Trial"
+      ],
+      "rig": 52,
+      "floorVertices": 2246,
+      "status": "Стоит",
+      "focus": true,
+      "crouchButton": false,
+      "crouchAPI": "undefined",
+      "well": "BowStoneWellProp"
+    },
+    "idle": {
+      "duration": 3.3333333,
+      "maxChestDegrees": 0.950206059740378,
+      "lateralRange": 0,
+      "seamAngle": 0,
+      "hipsPresent": true
+    },
+    "cycles": {
+      "loopSeams": 3,
+      "runStop": "CMU_Run_Stop"
+    },
+    "transitions": {
+      "cases": 48,
+      "maxJointStepM": 0.09295936466042672,
+      "maxSecondDifferenceM": 0.0353567272906368,
+      "minSampledFootY": 0.0009999999999999992,
+      "maxVerticalLiftM": 0.014185081613601814,
+      "choices": [
+        "brakeWalkMirror",
+        "brakeWalk",
+        "brakeRunMirror",
+        "brakeRun"
+      ],
+      "starts": [
+        100,
+        110,
+        120,
+        130,
+        138,
+        142,
+        146,
+        150,
+        154,
+        158,
+        162
+      ]
+    },
+    "interruptions": {
+      "cases": 10,
+      "maxJointStepM": 0.08377415545927534
+    },
+    "reversals": [
+      {
+        "mode": "walk",
+        "began": true,
+        "interrupted": true,
+        "turned": 0.20000000000000018,
+        "speed": 0.98,
+        "yaw": 0
+      },
+      {
+        "mode": "run",
+        "began": true,
+        "interrupted": true,
+        "turned": 0.20000000000000018,
+        "speed": 2.15,
+        "yaw": 0
+      }
+    ],
+    "routes": {
+      "count": 32,
+      "detours": 14,
+      "maxError": 1.8608162485931114e-7
+    },
+    "shortRoutes": {
+      "count": 18,
+      "maxError": 1.8562093773155652e-7,
+      "closeRetarget": [
+        {
+          "mode": "walk",
+          "seen": true,
+          "remaining": false,
+          "error": 8.881784197001252e-16,
+          "steps": 137
+        },
+        {
+          "mode": "run",
+          "seen": true,
+          "remaining": false,
+          "error": 5.3475422218306674e-15,
+          "steps": 184
+        }
+      ]
+    },
+    "interactions": {
+      "count": 12,
+      "maxSteps": 259
+    },
+    "realKeyboardAndStop": {
+      "firstBrake": {
+        "speed": 2.149950479802809,
+        "kind": "run",
+        "status": "Тормозит после бега"
+      },
+      "button": true,
+      "escape": true,
+      "restarts": [
+        {
+          "mode": "walk",
+          "delay": 1,
+          "key": "w",
+          "interrupted": true,
+          "moved": true
+        },
+        {
+          "mode": "walk",
+          "delay": 1,
+          "key": "s",
+          "interrupted": true,
+          "moved": true
+        },
+        {
+          "mode": "walk",
+          "delay": 6,
+          "key": "w",
+          "interrupted": true,
+          "moved": true
+        },
+        {
+          "mode": "walk",
+          "delay": 6,
+          "key": "s",
+          "interrupted": true,
+          "moved": true
+        },
+        {
+          "mode": "walk",
+          "delay": 18,
+          "key": "w",
+          "interrupted": true,
+          "moved": true
+        },
+        {
+          "mode": "walk",
+          "delay": 18,
+          "key": "s",
+          "interrupted": true,
+          "moved": true
+        },
+        {
+          "mode": "walk",
+          "delay": 36,
+          "key": "w",
+          "interrupted": true,
+          "moved": true
+        },
+        {
+          "mode": "walk",
+          "delay": 36,
+          "key": "s",
+          "interrupted": true,
+          "moved": true
+        },
+        {
+          "mode": "run",
+          "delay": 1,
+          "key": "w",
+          "interrupted": true,
+          "moved": true
+        },
+        {
+          "mode": "run",
+          "delay": 1,
+          "key": "s",
+          "interrupted": true,
+          "moved": true
+        },
+        {
+          "mode": "run",
+          "delay": 6,
+          "key": "w",
+          "interrupted": true,
+          "moved": true
+        },
+        {
+          "mode": "run",
+          "delay": 6,
+          "key": "s",
+          "interrupted": true,
+          "moved": true
+        },
+        {
+          "mode": "run",
+          "delay": 18,
+          "key": "w",
+          "interrupted": true,
+          "moved": true
+        },
+        {
+          "mode": "run",
+          "delay": 18,
+          "key": "s",
+          "interrupted": true,
+          "moved": true
+        },
+        {
+          "mode": "run",
+          "delay": 36,
+          "key": "w",
+          "interrupted": true,
+          "moved": true
+        },
+        {
+          "mode": "run",
+          "delay": 36,
+          "key": "s",
+          "interrupted": true,
+          "moved": true
+        }
+      ]
+    },
+    "mouse": {
+      "ground": true,
+      "drag": true,
+      "restartDuringStop": true
+    },
+    "layouts": [
+      {
+        "width": 320,
+        "height": 568,
+        "controls": 7,
+        "groundTap": true,
+        "stopTap": true,
+        "restartDuringStop": true,
+        "cameraDrag": true,
+        "focusFramed": true
+      },
+      {
+        "width": 390,
+        "height": 844,
+        "controls": 7,
+        "groundTap": true,
+        "stopTap": true,
+        "restartDuringStop": true,
+        "cameraDrag": true,
+        "focusFramed": true
+      },
+      {
+        "width": 768,
+        "height": 1024,
+        "controls": 7,
+        "groundTap": true,
+        "stopTap": true,
+        "restartDuringStop": true,
+        "cameraDrag": true,
+        "focusFramed": true
+      },
+      {
+        "width": 844,
+        "height": 390,
+        "controls": 7,
+        "groundTap": true,
+        "stopTap": true,
+        "restartDuringStop": true,
+        "cameraDrag": true,
+        "focusFramed": true
+      }
+    ],
+    "liveTouch": {
+      "manual": false,
+      "moved": true,
+      "restartedDuringBrake": true,
+      "stopped": true
+    },
+    "reducedMotion": {
+      "enabled": true,
+      "idleTime": 0
+    }
+  }
+}

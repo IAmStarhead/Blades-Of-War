@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#17211d">
+<title>Примеры движения — Blades of War</title>
+<style>
+:root{color-scheme:dark;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#17211d;color:#edf0e6}
+*{box-sizing:border-box}body{margin:0;line-height:1.55}a{color:#ead19d;text-underline-offset:3px}a:focus-visible{outline:3px solid #e9ca8d;outline-offset:4px}
+header{padding:18px clamp(18px,5vw,52px);border-bottom:1px solid #ffffff22;background:#202c24;display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap}
+.brand{font:700 14px Georgia,serif;letter-spacing:.14em}main{max-width:1100px;margin:auto;padding:42px clamp(18px,5vw,52px) 70px}
+.eyebrow{font-size:11px;letter-spacing:.16em;color:#d9bd87;font-weight:700}h1{font:400 clamp(29px,5vw,44px) Georgia,serif;margin:8px 0 12px;line-height:1.15}h2{font:400 27px Georgia,serif;margin:0 0 10px}.intro{max-width:760px;color:#c4d0c1;margin:0 0 32px}
+section{border-top:1px solid #ffffff25;padding:30px 0}section p{max-width:840px;color:#c7d2c5;margin:0 0 16px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}figure{margin:0;background:#26372b;border:1px solid #ffffff1c;border-radius:9px;overflow:hidden}img,video{display:block;width:100%;height:auto;background:#26372b}figcaption{font-size:13px;padding:13px 15px;color:#d5dfd0}figcaption strong{display:block;color:#f0e5d0;margin-bottom:4px}.video{max-width:540px}.meta{font-size:13px;color:#a9baaa}footer{border-top:1px solid #ffffff25;padding-top:22px;color:#b7c6b6;font-size:13px}@media(max-width:650px){main{padding-top:28px}.grid{grid-template-columns:1fr}header{padding:15px 18px}}
+</style>
+</head>
+<body>
+<header><span class="brand">BLADES OF WAR · ПРОБА</span><a href="index.html">← Вернуться к сцене</a></header>
+<main>
+  <span class="eyebrow">ИССЛЕДОВАНИЕ ДВИЖЕНИЯ</span>
+  <h1>Примеры и новая проба</h1>
+  <p class="intro">Для этой версии я сверялся с записями людей и другими анимированными моделями. Это разные люди, скорости и скелеты: кадры помогают увидеть фазы шага, но не являются эталоном для каждого персонажа.</p>
+  <section>
+    <h2>Новая проба в движении</h2>
+    <p>Ожидание, ходьба, бег и остановки спереди, сбоку и сзади. Камера следует за персонажем; точки на земле добавлены только для этой записи. Для управления и разворотов вернитесь в сцену.</p>
+    <figure class="video"><video controls preload="metadata" playsinline src="movement.mp4">Ваш браузер не поддерживает видео.</video><figcaption><strong>Запись сцены · 22,5 секунды</strong>Это анимация модели, а не видеозапись человека.</figcaption></figure>
+  </section>
+  <section>
+    <h2>Реальные люди</h2>
+    <p>Посмотрите на перенос и опору стопы, положение колена и движение рук. Исходные видео открываются по ссылкам при наличии интернета.</p>
+    <div class="grid">
+      <figure><img src="evidence/people-walk.jpg" alt="Четыре последовательные фазы ходьбы одного человека с боковой и задней камеры"><figcaption><strong>Ходьба · две синхронные камеры</strong><a href="https://github.com/mikecredence/wgvp/blob/5cbedd1e2f75addb88f44b059ce8a88e30ce4a34/examples/two_camera/OWN03/SP/OWN03_SP.mp4">Оригинальное видео OWN03</a> · кадры вырезаны и собраны в лист.</figcaption></figure>
+      <figure><img src="evidence/people-run.jpg" alt="Последовательные кадры бега мужчины сбоку и женщины сзади"><figcaption><strong>Бег · два разных человека</strong><a href="https://github.com/zzzhushi/running-gait-analysis/blob/14cb02910007fcbabc70a5585e2206a0d3e3fca7/tests/data/male_side.mp4">Видео сбоку</a> · <a href="https://github.com/zzzhushi/running-gait-analysis/blob/14cb02910007fcbabc70a5585e2206a0d3e3fca7/tests/data/female_rear_view.mp4">видео сзади</a>. Записи не синхронизированы.</figcaption></figure>
+    </div>
+  </section>
+  <section>
+    <h2>Другие анимированные модели</h2>
+    <p>Эти кадры показаны на другом манекене из HumanMotionCraft. Ходьба основана на 100STYLE, бег — на CMU; это исследовательские примеры, а не точные кадры новой сцены.</p>
+    <div class="grid">
+      <figure><img src="evidence/reference-walk-12.jpg" alt="Анимированный манекен в четырёх фазах ходьбы с четырёх ракурсов"><figcaption><strong>Ходьба · 100STYLE → манекен</strong><a href="https://www.ianxmason.com/100style/">Проект 100STYLE</a> · кадры реконструированы на модели.</figcaption></figure>
+      <figure><img src="evidence/reference-run-9.jpg" alt="Анимированный манекен в фазах бега с разных ракурсов"><figcaption><strong>Бег · CMU → манекен</strong><a href="https://mocap.cs.cmu.edu/">База движений CMU</a> · другая запись и другой персонаж.</figcaption></figure>
+    </div>
+  </section>
+  <footer><p>Новая проба — изменённая адаптация записей, не физическая симуляция. Стопы могут скользить при переходах. Сведения об источниках и лицензиях: <a href="CREDITS.md">CREDITS.md</a>.</p><a href="index.html">Вернуться к сцене ↑</a></footer>
+</main>
+</body>
+</html>

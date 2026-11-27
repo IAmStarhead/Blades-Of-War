@@ -1,0 +1,447 @@
+{
+  "status": "measured",
+  "htmlSha256": "a709eb7a397440c3ea9195cc80b67d1f9c021a075e52f4762496dce2d9525636",
+  "method": "60 Hz straight-line stops from eight walk and eight run phases. A near-floor episode follows the SAME skinned vertex while y <= 0.012 m for at least six samples; an episode still active at the end is marked truncated. Ground surface is at y=-0.002 m.",
+  "limitations": "Near-floor is not known physical contact. Net movement is not a force measurement or the motion of an entire foot; toe roll, threshold and correlated vertices matter. No horizontal foot lock is implemented, and blends and short/reversed routes can still slide. Does not assess all poses, surfaces or naturalness.",
+  "fps": 60,
+  "thresholdM": 0.012,
+  "minimumSamples": 6,
+  "footVertices": {
+    "L": 1091,
+    "R": 1091
+  },
+  "rows": [
+    {
+      "mode": "walk",
+      "seed": 0,
+      "selection": {
+        "choice": "brakeWalkMirror",
+        "start": 162
+      },
+      "frames": 150,
+      "minimumVertexY": 0.0009999999922184085,
+      "settledSamples": 94,
+      "maximumSettledGap": 0.002103182656465139,
+      "episodes": 864,
+      "netHorizontalM": {
+        "median": 0.08378459609141216,
+        "p90": 0.14886607522898557,
+        "max": 0.1875831241985668
+      },
+      "worst": {
+        "side": "L",
+        "vertex": 8562,
+        "startFrame": 0,
+        "count": 12,
+        "path": 0.18947368733368308,
+        "net": 0.1875831241985668,
+        "truncated": false
+      }
+    },
+    {
+      "mode": "walk",
+      "seed": 1,
+      "selection": {
+        "choice": "brakeWalk",
+        "start": 138
+      },
+      "frames": 150,
+      "minimumVertexY": 0.0010604688828777303,
+      "settledSamples": 83,
+      "maximumSettledGap": 0.002103182656465139,
+      "episodes": 871,
+      "netHorizontalM": {
+        "median": 0.05910853574103929,
+        "p90": 0.1492290669237463,
+        "max": 0.18490657439211236
+      },
+      "worst": {
+        "side": "R",
+        "vertex": 3754,
+        "startFrame": 3,
+        "count": 23,
+        "path": 0.19211816947395668,
+        "net": 0.18490657439211236,
+        "truncated": false
+      }
+    },
+    {
+      "mode": "walk",
+      "seed": 2,
+      "selection": {
+        "choice": "brakeWalk",
+        "start": 146
+      },
+      "frames": 150,
+      "minimumVertexY": 0.0009999999580792575,
+      "settledSamples": 83,
+      "maximumSettledGap": 0.002103182656465139,
+      "episodes": 1015,
+      "netHorizontalM": {
+        "median": 0.0376758747116826,
+        "p90": 0.07934483479671567,
+        "max": 0.08153552830130349
+      },
+      "worst": {
+        "side": "R",
+        "vertex": 3470,
+        "startFrame": 40,
+        "count": 26,
+        "path": 0.1553380664093167,
+        "net": 0.08153552830130349,
+        "truncated": false
+      }
+    },
+    {
+      "mode": "walk",
+      "seed": 3,
+      "selection": {
+        "choice": "brakeWalk",
+        "start": 158
+      },
+      "frames": 150,
+      "minimumVertexY": 0.0009999999907078735,
+      "settledSamples": 91,
+      "maximumSettledGap": 0.002103182656465139,
+      "episodes": 843,
+      "netHorizontalM": {
+        "median": 0.07545746382817442,
+        "p90": 0.12546389590286647,
+        "max": 0.1441183545764859
+      },
+      "worst": {
+        "side": "L",
+        "vertex": 8035,
+        "startFrame": 12,
+        "count": 138,
+        "path": 0.18831736214905273,
+        "net": 0.1441183545764859,
+        "truncated": true
+      }
+    },
+    {
+      "mode": "walk",
+      "seed": 4,
+      "selection": {
+        "choice": "brakeWalk",
+        "start": 162
+      },
+      "frames": 150,
+      "minimumVertexY": 0.0009999999999998482,
+      "settledSamples": 94,
+      "maximumSettledGap": 0.002103182656465139,
+      "episodes": 768,
+      "netHorizontalM": {
+        "median": 0.08608219110422284,
+        "p90": 0.13608666482794193,
+        "max": 0.18514655117239495
+      },
+      "worst": {
+        "side": "R",
+        "vertex": 4023,
+        "startFrame": 0,
+        "count": 12,
+        "path": 0.18641054421098596,
+        "net": 0.18514655117239495,
+        "truncated": false
+      }
+    },
+    {
+      "mode": "walk",
+      "seed": 5,
+      "selection": {
+        "choice": "brakeWalkMirror",
+        "start": 138
+      },
+      "frames": 150,
+      "minimumVertexY": 0.001106592962590417,
+      "settledSamples": 83,
+      "maximumSettledGap": 0.002103182656465139,
+      "episodes": 910,
+      "netHorizontalM": {
+        "median": 0.06267231829095452,
+        "p90": 0.1614917269701728,
+        "max": 0.1939411948755733
+      },
+      "worst": {
+        "side": "L",
+        "vertex": 8294,
+        "startFrame": 1,
+        "count": 25,
+        "path": 0.20521661368841712,
+        "net": 0.1939411948755733,
+        "truncated": false
+      }
+    },
+    {
+      "mode": "walk",
+      "seed": 6,
+      "selection": {
+        "choice": "brakeWalkMirror",
+        "start": 146
+      },
+      "frames": 150,
+      "minimumVertexY": 0.0009999999927230593,
+      "settledSamples": 83,
+      "maximumSettledGap": 0.002103182656465139,
+      "episodes": 1006,
+      "netHorizontalM": {
+        "median": 0.041955158389643685,
+        "p90": 0.07333915600422222,
+        "max": 0.08089762890710764
+      },
+      "worst": {
+        "side": "L",
+        "vertex": 8109,
+        "startFrame": 39,
+        "count": 111,
+        "path": 0.16223606196587703,
+        "net": 0.08089762890710764,
+        "truncated": true
+      }
+    },
+    {
+      "mode": "walk",
+      "seed": 7,
+      "selection": {
+        "choice": "brakeWalkMirror",
+        "start": 158
+      },
+      "frames": 150,
+      "minimumVertexY": 0.0009999999854575386,
+      "settledSamples": 91,
+      "maximumSettledGap": 0.002103182656465139,
+      "episodes": 970,
+      "netHorizontalM": {
+        "median": 0.06920514864523666,
+        "p90": 0.08948454964461208,
+        "max": 0.14986975224630814
+      },
+      "worst": {
+        "side": "R",
+        "vertex": 3916,
+        "startFrame": 10,
+        "count": 140,
+        "path": 0.2139786161271519,
+        "net": 0.14986975224630814,
+        "truncated": true
+      }
+    },
+    {
+      "mode": "run",
+      "seed": 0,
+      "selection": {
+        "choice": "brakeRunMirror",
+        "start": 130
+      },
+      "frames": 150,
+      "minimumVertexY": 0.000999999966777005,
+      "settledSamples": 82,
+      "maximumSettledGap": 0.002103182656465139,
+      "episodes": 1053,
+      "netHorizontalM": {
+        "median": 0.03913770965848236,
+        "p90": 0.07839935924979755,
+        "max": 0.08296766322623735
+      },
+      "worst": {
+        "side": "R",
+        "vertex": 3470,
+        "startFrame": 58,
+        "count": 10,
+        "path": 0.08594528436955781,
+        "net": 0.08296766322623735,
+        "truncated": false
+      }
+    },
+    {
+      "mode": "run",
+      "seed": 1,
+      "selection": {
+        "choice": "brakeRunMirror",
+        "start": 130
+      },
+      "frames": 150,
+      "minimumVertexY": 0.0009999999573445896,
+      "settledSamples": 82,
+      "maximumSettledGap": 0.002103182656465139,
+      "episodes": 1077,
+      "netHorizontalM": {
+        "median": 0.08627203286854147,
+        "p90": 0.2566489278252208,
+        "max": 0.29008202791990856
+      },
+      "worst": {
+        "side": "R",
+        "vertex": 3603,
+        "startFrame": 0,
+        "count": 25,
+        "path": 0.3740620198218865,
+        "net": 0.29008202791990856,
+        "truncated": false
+      }
+    },
+    {
+      "mode": "run",
+      "seed": 2,
+      "selection": {
+        "choice": "brakeRun",
+        "start": 110
+      },
+      "frames": 150,
+      "minimumVertexY": 0.0011461253608757744,
+      "settledSamples": 72,
+      "maximumSettledGap": 0.002103182656465139,
+      "episodes": 979,
+      "netHorizontalM": {
+        "median": 0.03542781095748048,
+        "p90": 0.08967102292857101,
+        "max": 0.11566498870305474
+      },
+      "worst": {
+        "side": "L",
+        "vertex": 8806,
+        "startFrame": 7,
+        "count": 8,
+        "path": 0.14376021727880878,
+        "net": 0.11566498870305474,
+        "truncated": false
+      }
+    },
+    {
+      "mode": "run",
+      "seed": 3,
+      "selection": {
+        "choice": "brakeRun",
+        "start": 120
+      },
+      "frames": 150,
+      "minimumVertexY": 0.0017301390800506964,
+      "settledSamples": 77,
+      "maximumSettledGap": 0.002103182656465139,
+      "episodes": 914,
+      "netHorizontalM": {
+        "median": 0.0364780160327742,
+        "p90": 0.05503677176733626,
+        "max": 0.0705113980613673
+      },
+      "worst": {
+        "side": "L",
+        "vertex": 8070,
+        "startFrame": 10,
+        "count": 14,
+        "path": 0.08616431367107756,
+        "net": 0.0705113980613673,
+        "truncated": false
+      }
+    },
+    {
+      "mode": "run",
+      "seed": 4,
+      "selection": {
+        "choice": "brakeRun",
+        "start": 130
+      },
+      "frames": 150,
+      "minimumVertexY": 0.0009999999999999014,
+      "settledSamples": 82,
+      "maximumSettledGap": 0.002103182656465139,
+      "episodes": 920,
+      "netHorizontalM": {
+        "median": 0.025687079796671616,
+        "p90": 0.06310207591823849,
+        "max": 0.06689389374766919
+      },
+      "worst": {
+        "side": "R",
+        "vertex": 4359,
+        "startFrame": 42,
+        "count": 108,
+        "path": 0.15112924200197192,
+        "net": 0.06689389374766919,
+        "truncated": true
+      }
+    },
+    {
+      "mode": "run",
+      "seed": 5,
+      "selection": {
+        "choice": "brakeRun",
+        "start": 130
+      },
+      "frames": 150,
+      "minimumVertexY": 0.0009999999834533907,
+      "settledSamples": 82,
+      "maximumSettledGap": 0.002103182656465139,
+      "episodes": 1072,
+      "netHorizontalM": {
+        "median": 0.0545541700574266,
+        "p90": 0.23901166227059198,
+        "max": 0.2950087594111565
+      },
+      "worst": {
+        "side": "L",
+        "vertex": 8845,
+        "startFrame": 1,
+        "count": 24,
+        "path": 0.3762784083345285,
+        "net": 0.2950087594111565,
+        "truncated": false
+      }
+    },
+    {
+      "mode": "run",
+      "seed": 6,
+      "selection": {
+        "choice": "brakeRunMirror",
+        "start": 110
+      },
+      "frames": 150,
+      "minimumVertexY": 0.0009999999990800664,
+      "settledSamples": 72,
+      "maximumSettledGap": 0.002103182656465139,
+      "episodes": 1026,
+      "netHorizontalM": {
+        "median": 0.03879524537714815,
+        "p90": 0.0877919986804039,
+        "max": 0.11260090624741544
+      },
+      "worst": {
+        "side": "R",
+        "vertex": 4451,
+        "startFrame": 10,
+        "count": 16,
+        "path": 0.14528556785379498,
+        "net": 0.11260090624741544,
+        "truncated": false
+      }
+    },
+    {
+      "mode": "run",
+      "seed": 7,
+      "selection": {
+        "choice": "brakeRunMirror",
+        "start": 120
+      },
+      "frames": 150,
+      "minimumVertexY": 0.001392481077204178,
+      "settledSamples": 77,
+      "maximumSettledGap": 0.002103182656465139,
+      "episodes": 975,
+      "netHorizontalM": {
+        "median": 0.03529246940165494,
+        "p90": 0.06672477072644165,
+        "max": 0.07530481041501141
+      },
+      "worst": {
+        "side": "R",
+        "vertex": 3530,
+        "startFrame": 9,
+        "count": 15,
+        "path": 0.09467932941997498,
+        "net": 0.07530481041501141,
+        "truncated": false
+      }
+    }
+  ]
+}

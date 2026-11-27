@@ -1,0 +1,35 @@
+{
+  "status": "pass",
+  "transport": "local file with network disabled",
+  "htmlSha256": "a709eb7a397440c3ea9195cc80b67d1f9c021a075e52f4762496dce2d9525636",
+  "studySha256": "87dc905798ad50335747eec93cc3f41cd8c1fc75dae7667d44a02fc1dc49bba6",
+  "videoSha256": "a6b5ccb81123269861964b53944cce52c18dc9abb7d16f7c4569e2aae477e36d",
+  "layouts": [
+    {
+      "width": 320,
+      "height": 568,
+      "images": 4,
+      "duration": 22.5,
+      "seek": true,
+      "play": true
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "images": 4,
+      "duration": 22.5,
+      "seek": true,
+      "play": true
+    },
+    {
+      "width": 1100,
+      "height": 750,
+      "images": 4,
+      "duration": 22.5,
+      "seek": true,
+      "play": true
+    }
+  ],
+  "range": null,
+  "scope": "Browser emulation and sampled local assets; external reference links not loaded offline."
+}

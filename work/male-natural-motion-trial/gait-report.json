@@ -1,0 +1,57 @@
+{
+  "status": "measured",
+  "htmlSha256": "a709eb7a397440c3ea9195cc80b67d1f9c021a075e52f4762496dce2d9525636",
+  "method": "Two and a half seconds at 60 Hz of steady straight walking and running (one starting phase each). A near-floor episode follows the SAME skinned vertex while y <= 0.012 m for at least six samples; an episode still active at the end is marked truncated. Ground surface is at y=-0.002 m.",
+  "limitations": "Near-floor is not known physical contact. Net movement is not a force measurement or the motion of an entire foot; toe roll, threshold and correlated vertices matter. No horizontal foot lock is implemented, and blends and short/reversed routes can still slide. Does not assess all poses, surfaces or naturalness.",
+  "fps": 60,
+  "thresholdM": 0.012,
+  "minimumSamples": 6,
+  "footVertices": {
+    "L": 1091,
+    "R": 1091
+  },
+  "rows": [
+    {
+      "mode": "walk",
+      "seed": 0,
+      "frames": 150,
+      "minimumVertexY": 0.001623229492300704,
+      "episodes": 1194,
+      "netHorizontalM": {
+        "median": 0.03697282678130122,
+        "p90": 0.058613267586432885,
+        "max": 0.08557147227822126
+      },
+      "worst": {
+        "side": "L",
+        "vertex": 8109,
+        "startFrame": 71,
+        "count": 16,
+        "path": 0.11777905222166689,
+        "net": 0.08557147227822126,
+        "truncated": false
+      }
+    },
+    {
+      "mode": "run",
+      "seed": 0,
+      "frames": 150,
+      "minimumVertexY": 0.0016345740180124914,
+      "episodes": 1543,
+      "netHorizontalM": {
+        "median": 0.035914529914506256,
+        "p90": 0.04548540831293131,
+        "max": 0.05301952242998179
+      },
+      "worst": {
+        "side": "R",
+        "vertex": 3529,
+        "startFrame": 3,
+        "count": 18,
+        "path": 0.07101475112532071,
+        "net": 0.05301952242998179,
+        "truncated": false
+      }
+    }
+  ]
+}

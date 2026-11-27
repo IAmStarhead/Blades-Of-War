@@ -1,0 +1,4 @@
+# Preserve the byte-identical tested pages and report/checksum inputs.
+index.html -text
+study.html -text
+*.json -text

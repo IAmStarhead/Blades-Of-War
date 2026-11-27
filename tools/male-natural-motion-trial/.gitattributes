@@ -1,0 +1,5 @@
+# The author verifies the bytes of the upstream BVH captures; preserve their
+# original line endings, including the CMU conversion's CRLF, on every OS.
+reference/*.bvh -text
+clips.json -text
+index.template.html -text
