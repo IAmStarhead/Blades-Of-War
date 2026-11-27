@@ -15,6 +15,8 @@
     "test": "node qa.mjs",
     "check:study": "node qa-study.mjs",
     "check:contact": "node measure-stop-contact.mjs",
+    "package:trial": "python3 package.py",
+    "check:package": "node qa-package.mjs",
     "preview": "node serve.mjs"
   }
 }

@@ -56,3 +56,5 @@ node tools/male-idle-stop-trial/record.mjs --idle /tmp/idle.mp4
 ```
 
 Оба ролика используют фиксированный шаг симуляции 1/60 секунды и 30 кадров видео в секунду; это не тест производительности физического устройства. SHA проверяемого HTML указан в JSON-отчётах.
+
+Чтобы собрать компактный архив только этой пробы, выполните `npm run package:trial --prefix tools/male-idle-stop-trial`. Скрипт создаёт `work/male-idle-stop-trial/BladesOfWar_Ozhidanie_i_Ostanovka.zip`: внутри находятся автономная сцена, видео, отчёты и лицензии, но не весь репозиторий и не прежняя интерактивная сцена. Проверка уже распакованного ZIP в браузере: `npm run check:package --prefix tools/male-idle-stop-trial`.
